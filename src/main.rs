@@ -13,4 +13,6 @@ fn main() {
     let instruction = Instruction::of_string(&text);
     println!("Instruction constructed! {}", instruction);
     let g = Graph::new(instruction.constructor);
+    println!("The graph: ");
+    g.print();
 }
