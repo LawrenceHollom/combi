@@ -1,6 +1,7 @@
 extern crate utilities;
 
 use utilities::*;
+use std::fmt;
 
 pub enum Constructor {
     RandomRegularBipartite(Order, Degree),
@@ -30,14 +31,16 @@ impl Constructor {
             &_ => panic!(),
         }
     }
+}
 
-    pub fn to_string(&self) -> &str {
+impl fmt::Display for Constructor {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Constructor::RandomRegularBipartite(_order, _deg) => {
-                "Random regular bipartite"
+            Constructor::RandomRegularBipartite(order, deg) => {
+                write!(f, "Random regular bipartite or order {} and degree {}", order, deg)
             },
-            Constructor::Complete(_order) => {
-                "Complete"
+            Constructor::Complete(order) => {
+                write!(f, "Complete of order {}", order)
             },
         }
     }
@@ -50,11 +53,14 @@ impl Operation {
             &_ => panic!(),
         }
     }
+}
 
-    pub fn to_string(&self) -> &str {
-        match self {
+impl fmt::Display for Operation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let name = match self {
             Operation::DominationNumber => "Domination number",
-        }
+        };
+        write!(f, "{}", name)
     }
 }
 
@@ -68,9 +74,10 @@ impl Instruction {
             operation,
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
-        "Constructor: ".to_owned() + self.constructor.to_string() 
-                + "\nOperation: " + self.operation.to_string()
+impl fmt::Display for Instruction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Constructor: {}\nOperation: {}", self.constructor, self.operation)
     }
 }
