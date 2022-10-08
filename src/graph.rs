@@ -161,6 +161,35 @@ impl Graph {
         }
     }
 
+    pub fn complement(&self) -> Graph {
+        let n = self.n.to_usize();
+        let mut new_adj = vec![vec![false; n]; n];
+        let mut new_adj_list = vec![vec![n-1]; n];
+        let new_deg: Vec<Degree> = self.deg.iter().map(|x| Degree::of_usize(n - x.to_usize() - 1)).collect();
+
+        for i in 0..(n-1) {
+            for j in (i+1)..n {
+                new_adj[i][j] = !self.adj[i][j];
+                new_adj[j][i] = !self.adj[j][i];
+            }
+        }
+        
+        for i in 0..n {
+            for j in 0..n {
+                if new_adj[i][j] {
+                    new_adj_list[i].push(j);
+                }
+            }
+        }
+
+        Graph {
+            n: self.n,
+            adj: new_adj,
+            adj_list: new_adj_list,
+            deg: new_deg,
+        }
+    }
+
     pub fn print(&self) {
         let n: usize = self.n.to_usize();
         for i in 0..(n-1) {

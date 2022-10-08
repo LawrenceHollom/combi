@@ -10,6 +10,9 @@ pub enum Constructor {
 
 pub enum Operation {
     DominationNumber,
+    ChromaticNumber,
+    MaxAcyclicSubgraph,
+    CliqueCoveringNumber,
 }
 
 pub struct Instruction {
@@ -50,6 +53,9 @@ impl Operation {
     pub fn of_string(text: &str) -> Operation {
         match text.trim() {
             "domination" => Operation::DominationNumber,
+            "chromatic" | "chi" => Operation::ChromaticNumber,
+            "max_acyclic" | "acyclic" => Operation::MaxAcyclicSubgraph,
+            "clique_cover" | "theta" => Operation::CliqueCoveringNumber,
             &_ => panic!(),
         }
     }
@@ -59,6 +65,9 @@ impl fmt::Display for Operation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let name = match self {
             Operation::DominationNumber => "Domination number",
+            Operation::ChromaticNumber => "Chromatic number",
+            Operation::MaxAcyclicSubgraph => "Max acyclic subgraph size",
+            Operation::CliqueCoveringNumber => "Clique covering number",
         };
         write!(f, "{}", name)
     }

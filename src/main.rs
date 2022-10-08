@@ -2,6 +2,7 @@ use std::io;
 
 mod instruction;
 mod graph;
+mod operation;
 
 use instruction::*;
 use graph::Graph;
@@ -15,4 +16,6 @@ fn main() {
     let g = Graph::new(instruction.constructor);
     println!("The graph: ");
     g.print();
+    let number = operation::operate(g, &instruction.operation);
+    println!("{}: {}", instruction.operation, number);
 }

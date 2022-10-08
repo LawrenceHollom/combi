@@ -41,3 +41,11 @@ impl fmt::Display for Degree {
         write!(f, "{}", self.0)
     }
 }
+
+pub fn pow(base: u64, exp: u64) -> u64 {
+    if exp == 0 {
+        1
+    } else {
+        base * pow(base, exp - 1)
+    }
+}
