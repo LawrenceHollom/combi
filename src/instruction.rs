@@ -52,7 +52,7 @@ impl fmt::Display for Constructor {
 impl Operation {
     pub fn of_string(text: &str) -> Operation {
         match text.trim() {
-            "domination" => Operation::DominationNumber,
+            "domination" | "dominator" | "gamma" => Operation::DominationNumber,
             "chromatic" | "chi" => Operation::ChromaticNumber,
             "max_acyclic" | "acyclic" => Operation::MaxAcyclicSubgraph,
             "clique_cover" | "theta" => Operation::CliqueCoveringNumber,
