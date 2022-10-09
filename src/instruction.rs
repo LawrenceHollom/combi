@@ -1,14 +1,20 @@
 extern crate utilities;
 
 use utilities::*;
+use std::fmt;
 
 pub enum Constructor {
     RandomRegularBipartite(Order, Degree),
     Complete(Order),
+    FanoPlane,
+    Petersen,
 }
 
 pub enum Operation {
     DominationNumber,
+    ChromaticNumber,
+    MaxAcyclicSubgraph,
+    CliqueCoveringNumber,
 }
 
 pub struct Instruction {
@@ -21,24 +27,36 @@ impl Constructor {
         // must be otf func_tion(a, b, c, ...)
         let pars: Vec<&str> = text.split('(').collect();
         let func: &str = pars[0];
-        let args: Vec<&str> = pars[1].split(',').map(|par| par.trim().trim_matches(')')).collect();
+        
+        let args: Vec<&str> = 
+            if pars.len() > 1 {
+                pars[1].split(',').map(|par| par.trim().trim_matches(')')).collect()
+            } else {
+                vec![]
+            };
+        
         match func {
             "rrb" | "random_regular_bipartite" => 
                 Constructor::RandomRegularBipartite(Order::of_string(args[0]), Degree::of_string(args[1])),
-            "complete" | "K" => 
-                Constructor::Complete(Order::of_string(args[0])),
+            "complete" | "K" => Constructor::Complete(Order::of_string(args[0])),
+            "fano" => Constructor::FanoPlane,
+            "petersen" => Constructor::Petersen,
             &_ => panic!(),
         }
     }
+}
 
-    pub fn to_string(&self) -> &str {
+impl fmt::Display for Constructor {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Constructor::RandomRegularBipartite(_order, _deg) => {
-                "Random regular bipartite"
+            Constructor::RandomRegularBipartite(order, deg) => {
+                write!(f, "Random regular bipartite or order {} and degree {}", order, deg)
             },
-            Constructor::Complete(_order) => {
-                "Complete"
+            Constructor::Complete(order) => {
+                write!(f, "Complete of order {}", order)
             },
+            Constructor::FanoPlane => write!(f, "the Fano plane"),
+            Constructor::Petersen => write!(f, "the Petersen graph"),
         }
     }
 }
@@ -46,15 +64,24 @@ impl Constructor {
 impl Operation {
     pub fn of_string(text: &str) -> Operation {
         match text.trim() {
-            "domination" => Operation::DominationNumber,
+            "domination" | "dominator" | "gamma" => Operation::DominationNumber,
+            "chromatic" | "chi" => Operation::ChromaticNumber,
+            "max_acyclic" | "acyclic" => Operation::MaxAcyclicSubgraph,
+            "clique_cover" | "theta" => Operation::CliqueCoveringNumber,
             &_ => panic!(),
         }
     }
+}
 
-    pub fn to_string(&self) -> &str {
-        match self {
+impl fmt::Display for Operation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let name = match self {
             Operation::DominationNumber => "Domination number",
-        }
+            Operation::ChromaticNumber => "Chromatic number",
+            Operation::MaxAcyclicSubgraph => "Max acyclic subgraph size",
+            Operation::CliqueCoveringNumber => "Clique covering number",
+        };
+        write!(f, "{}", name)
     }
 }
 
@@ -68,9 +95,10 @@ impl Instruction {
             operation,
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
-        "Constructor: ".to_owned() + self.constructor.to_string() 
-                + "\nOperation: " + self.operation.to_string()
+impl fmt::Display for Instruction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Constructor: {}\nOperation: {}", self.constructor, self.operation)
     }
 }
