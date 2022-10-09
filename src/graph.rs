@@ -82,9 +82,9 @@ impl Graph {
                             }
                         }
                     } else {
-                        for y in 0..part {
-                            if adj[x][y] && flood[y] == n {
-                                flood[y] = x;
+                        for (y, floodness) in flood.iter_mut().enumerate().take(part) {
+                            if adj[x][y] && *floodness == n {
+                                *floodness = x;
                                 let _ = q.add(y);
                             }
                         }
@@ -136,10 +136,10 @@ impl Graph {
             }
         }
 
-        for i in 0..n {
+        for (i, nbrs) in adj_list.iter_mut().enumerate() {
             for j in 0..n {
                 if i != j {
-                    adj_list[i].push(j);
+                    nbrs.push(j);
                 }
             }
         }

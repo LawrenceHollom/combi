@@ -7,7 +7,7 @@ fn can_dominate_rec(g: &Graph, dominator: &mut Vec<bool>, last_pick: usize, rema
         let mut is_dominating = true;
         for i in 0..n {
             if !dominator[i] {
-                is_dominating &= g.adj_list[i].iter().fold(false, |accum, val| accum || dominator[*val]);
+                is_dominating &= g.adj_list[i].iter().any(|val| dominator[*val]);
             }
         }
         is_dominating
