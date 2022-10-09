@@ -152,12 +152,51 @@ impl Graph {
         }
     }
 
+    fn new_fano_plane() -> Graph {
+        let adj_list: Vec<Vec<usize>> = vec![vec![1, 5, 6], vec![0, 2, 3, 5, 6], vec![1, 3, 6], 
+            vec![1, 2, 4, 5, 6], vec![3, 5, 6], vec![0, 1, 3, 4, 6], vec![0, 1, 2, 3, 4, 5]];
+        let n: usize = 7;
+        let mut adj = vec![vec![false; n]; n];
+        for i in 0..n {
+            for j in adj_list[i].iter() {
+                adj[i][*j] = true;
+            }
+        }
+        let deg = vec![3, 5, 3, 5, 3, 5, 6].iter().map(|x| Degree::of_usize(*x)).collect();
+        Graph {
+            n: Order::of_usize(n),
+            adj,
+            adj_list,
+            deg
+        }
+    }
+
+    fn new_petersen() -> Graph {
+        let adj_list: Vec<Vec<usize>> = vec![vec![1, 4, 5], vec![0, 2, 6], vec![1, 3, 7], vec![2, 4, 8], vec![0, 3, 9],
+            vec![0, 7, 8], vec![1, 8, 9], vec![2, 5, 9], vec![3, 5, 6], vec![4, 6, 7]];
+        let n: usize = 10;
+        let mut adj = vec![vec![false; n]; n];
+        for i in 0..n {
+            for j in adj_list[i].iter() {
+                adj[i][*j] = true;
+            }
+        }
+        let deg = vec![3; n].iter().map(|x| Degree::of_usize(*x)).collect();
+        Graph {
+            n: Order::of_usize(n),
+            adj,
+            adj_list,
+            deg
+        }
+    }
+
     pub fn new(constructor: Constructor) -> Graph {
         match constructor {
             Constructor::RandomRegularBipartite(order, degree) =>
                 Graph::new_random_regular_bipartite(order, degree),
-            Constructor::Complete(order) =>
-                Graph::new_complete(order),
+            Constructor::Complete(order) => Graph::new_complete(order),
+            Constructor::FanoPlane => Graph::new_fano_plane(),
+            Constructor::Petersen => Graph::new_petersen(),
         }
     }
 

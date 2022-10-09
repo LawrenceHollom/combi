@@ -6,6 +6,8 @@ use std::fmt;
 pub enum Constructor {
     RandomRegularBipartite(Order, Degree),
     Complete(Order),
+    FanoPlane,
+    Petersen,
 }
 
 pub enum Operation {
@@ -25,12 +27,20 @@ impl Constructor {
         // must be otf func_tion(a, b, c, ...)
         let pars: Vec<&str> = text.split('(').collect();
         let func: &str = pars[0];
-        let args: Vec<&str> = pars[1].split(',').map(|par| par.trim().trim_matches(')')).collect();
+        
+        let args: Vec<&str> = 
+            if pars.len() > 1 {
+                pars[1].split(',').map(|par| par.trim().trim_matches(')')).collect()
+            } else {
+                vec![]
+            };
+        
         match func {
             "rrb" | "random_regular_bipartite" => 
                 Constructor::RandomRegularBipartite(Order::of_string(args[0]), Degree::of_string(args[1])),
-            "complete" | "K" => 
-                Constructor::Complete(Order::of_string(args[0])),
+            "complete" | "K" => Constructor::Complete(Order::of_string(args[0])),
+            "fano" => Constructor::FanoPlane,
+            "petersen" => Constructor::Petersen,
             &_ => panic!(),
         }
     }
@@ -45,6 +55,8 @@ impl fmt::Display for Constructor {
             Constructor::Complete(order) => {
                 write!(f, "Complete of order {}", order)
             },
+            Constructor::FanoPlane => write!(f, "the Fano plane"),
+            Constructor::Petersen => write!(f, "the Petersen graph"),
         }
     }
 }

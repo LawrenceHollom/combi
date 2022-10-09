@@ -11,6 +11,10 @@ impl Order {
         Order(text.parse().unwrap())
     }
 
+    pub fn of_usize(n: usize) -> Order {
+        Order(n)
+    }
+
     pub fn to_usize(&self) -> usize {
         self.0 as usize
     }
