@@ -14,11 +14,11 @@ fn main() {
     let instruction = Instruction::of_string(&text);
     println!("Instruction constructed! {}", instruction);
     let g = Graph::new(&instruction.constructor);
-    println!("The graph: ");
-    g.print();
+    //println!("The graph: ");
+    //g.print();
     let numbers: Vec<String> = instruction.operations
             .iter()
-            .map(|op| u32::to_string(&operation::operate(&g, op)))
+            .map(|op| operation::operate(&g, op))
             .collect();
     println!("{}: [{}]", instruction.operations_string(), numbers.join(", "));
 }

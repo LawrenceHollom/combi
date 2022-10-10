@@ -9,11 +9,28 @@ pub enum Constructor {
     Petersen,
 }
 
-pub enum Operation {
+pub enum IntOperation {
     DominationNumber,
     ChromaticNumber,
     MaxAcyclicSubgraph,
     CliqueCoveringNumber,
+}
+
+pub enum BoolOperation {
+    More(Box<IntOperation>, Box<IntOperation>),
+    Less(Box<IntOperation>, Box<IntOperation>),
+    NotMore(Box<IntOperation>, Box<IntOperation>),
+    NotLess(Box<IntOperation>, Box<IntOperation>),
+}
+
+pub enum UnitOperation {
+    Print,
+}
+
+pub enum Operation {
+    Int(IntOperation),
+    Bool(BoolOperation),
+    Unit(UnitOperation),
 }
 
 pub struct Instruction {
@@ -60,27 +77,129 @@ impl fmt::Display for Constructor {
     }
 }
 
+impl IntOperation {
+    pub fn of_string_result(text: &str) -> Option<IntOperation> {
+        match text.trim().to_lowercase().as_str() {
+            "domination" | "dominator" | "gamma" => Some(IntOperation::DominationNumber),
+            "chromatic" | "chi" => Some(IntOperation::ChromaticNumber),
+            "max_acyclic" | "acyclic" => Some(IntOperation::MaxAcyclicSubgraph),
+            "clique_cover" | "theta" => Some(IntOperation::CliqueCoveringNumber),
+            &_ => None,
+        }
+    }
+}
+
+impl BoolOperation {
+    fn wrap_operation(text: &str, sep: &str, wrapper: fn(IntOperation, IntOperation) -> BoolOperation) -> Option<BoolOperation> {
+        let pars: Vec<&str> = text.split(sep).map(|x| x.trim()).collect();
+        if pars.len() == 2 {
+            IntOperation::of_string_result(pars[0]).map(|op1| 
+                IntOperation::of_string_result(pars[1]).map(|op2|
+                    wrapper(op1, op2)
+            )).flatten()
+        } else {
+            None
+        }
+    }
+
+    pub fn of_string_result(text: &str) -> Option<BoolOperation> {
+        if text.contains(">=") {
+            fn wrapper (op1: IntOperation, op2: IntOperation) -> BoolOperation { 
+                BoolOperation::NotLess(Box::new(op1), Box::new(op2))
+            }
+            BoolOperation::wrap_operation(text, ">=", wrapper)
+        } else if text.contains("<=") {
+            fn wrapper (op1: IntOperation, op2: IntOperation) -> BoolOperation { 
+                BoolOperation::NotMore(Box::new(op1), Box::new(op2))
+            }
+            BoolOperation::wrap_operation(text, "<=", wrapper)
+        } else if text.contains(">") {
+            fn wrapper (op1: IntOperation, op2: IntOperation) -> BoolOperation { 
+                BoolOperation::More(Box::new(op1), Box::new(op2))
+            }
+            BoolOperation::wrap_operation(text, ">", wrapper)
+        } else if text.contains("<") {
+            fn wrapper (op1: IntOperation, op2: IntOperation) -> BoolOperation { 
+                BoolOperation::Less(Box::new(op1), Box::new(op2))
+            }
+            BoolOperation::wrap_operation(text, "<", wrapper)
+        } else {
+            None
+        }
+    }
+}
+
+impl UnitOperation {
+    pub fn of_string_result(text: &str) -> Option<UnitOperation> {
+        match text.trim().to_lowercase().as_str() {
+            "print" => Some(UnitOperation::Print),
+            &_ => None,
+        }
+    }
+}
+
 impl Operation {
     pub fn of_string(text: &str) -> Operation {
-        match text.trim() {
-            "domination" | "dominator" | "gamma" => Operation::DominationNumber,
-            "chromatic" | "chi" => Operation::ChromaticNumber,
-            "max_acyclic" | "acyclic" => Operation::MaxAcyclicSubgraph,
-            "clique_cover" | "theta" => Operation::CliqueCoveringNumber,
-            &_ => panic!(),
-        }
+        IntOperation::of_string_result(text).map(|x| Operation::Int(x))
+            .or(BoolOperation::of_string_result(text).map(|x| Operation::Bool(x)))
+            .or(UnitOperation::of_string_result(text).map(|x| Operation::Unit(x)))
+            .unwrap()
+    }
+}
+
+impl fmt::Display for IntOperation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let name = match self {
+            IntOperation::DominationNumber => "Domination number",
+            IntOperation::ChromaticNumber => "Chromatic number",
+            IntOperation::MaxAcyclicSubgraph => "Max acyclic subgraph size",
+            IntOperation::CliqueCoveringNumber => "Clique covering number",
+        };
+        write!(f, "{}", name)
+    }
+}
+
+impl fmt::Display for BoolOperation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let str;
+        let name = match self {
+            BoolOperation::More(op1, op2) => {
+                str = format!("Is ({} > {})", *op1, *op2);
+                &str
+            },
+            BoolOperation::Less(op1, op2) => {
+                str = format!("Is ({} < {})", *op1, *op2);
+                &str
+            },
+            BoolOperation::NotMore(op1, op2) => {
+                str = format!("Is ({} <= {})", *op1, *op2);
+                &str
+            },
+            BoolOperation::NotLess(op1, op2) => {
+                str = format!("Is ({} >= {})", *op1, *op2);
+                &str
+            },
+        };
+        write!(f, "{}", name)
+    }
+}
+
+impl fmt::Display for UnitOperation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let name = match self {
+            UnitOperation::Print => "Print",
+        };
+        write!(f, "{}", name)
     }
 }
 
 impl fmt::Display for Operation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let name = match self {
-            Operation::DominationNumber => "Domination number",
-            Operation::ChromaticNumber => "Chromatic number",
-            Operation::MaxAcyclicSubgraph => "Max acyclic subgraph size",
-            Operation::CliqueCoveringNumber => "Clique covering number",
-        };
-        write!(f, "{}", name)
+        match self {
+            Operation::Int(op) => write!(f, "{}", op),
+            Operation::Bool(op) => write!(f, "{}", op),
+            Operation::Unit(op) => write!(f, "{}", op),
+        }
     }
 }
 
