@@ -4,6 +4,7 @@ use regex;
 
 pub enum Constructor {
     RandomRegularBipartite(Order, Degree),
+    ErdosRenyi(Order, f64),
     Complete(Order),
     FanoPlane,
     Petersen,
@@ -54,8 +55,13 @@ impl Constructor {
             };
         
         match func {
-            "rrb" | "random_regular_bipartite" => 
-                Constructor::RandomRegularBipartite(Order::of_string(args[0]), Degree::of_string(args[1])),
+            "rrb" | "random_regular_bipartite" => {
+                Constructor::RandomRegularBipartite(Order::of_string(args[0]), 
+                    Degree::of_string(args[1]))
+            },
+            "erdos_renyi" | "er" => {
+                Constructor::ErdosRenyi(Order::of_string(args[0]), args[1].parse().unwrap())
+            }
             "complete" | "K" => Constructor::Complete(Order::of_string(args[0])),
             "fano" => Constructor::FanoPlane,
             "petersen" => Constructor::Petersen,
@@ -75,6 +81,9 @@ impl fmt::Display for Constructor {
             },
             Constructor::FanoPlane => write!(f, "the Fano plane"),
             Constructor::Petersen => write!(f, "the Petersen graph"),
+            Constructor::ErdosRenyi(order, p) => {
+                write!(f, "Erdos-Renyi random graph of order {} with probability {}", order, p)
+            }
         }
     }
 }

@@ -118,6 +118,35 @@ impl Graph {
         }
     }
 
+    fn new_erdos_renyi(order: &Order, p: f64) -> Graph {
+        let n = order.to_usize();
+        
+        let mut adj = vec![vec![false; n]; n];
+        let mut deg = vec![0; n];
+        let mut adj_list = vec![vec![]; n];
+        let mut rng = thread_rng();
+
+        for i in 0..(n-1) {
+            for j in (i+1)..n {
+                if rng.gen_bool(p) {
+                    adj[i][j] = true;
+                    adj[j][i] = true;
+                    deg[i] += 1;
+                    deg[j] += 1;
+                    adj_list[i].push(j);
+                    adj_list[j].push(i);
+                }
+            }
+        }
+
+        Graph { 
+            n: *order,
+            adj,
+            adj_list,
+            deg: deg.iter().map(|d| Degree::of_usize(*d)).collect()
+        }
+    }
+
     fn new_complete(order: &Order) -> Graph {
         let n = order.to_usize();
         let mut adj = vec![vec![false; n]; n];
@@ -188,8 +217,12 @@ impl Graph {
 
     pub fn new(constructor: &Constructor) -> Graph {
         match constructor {
-            Constructor::RandomRegularBipartite(order, degree) =>
-                Graph::new_random_regular_bipartite(order, degree),
+            Constructor::RandomRegularBipartite(order, degree) => {
+                Graph::new_random_regular_bipartite(order, degree)
+            },
+            Constructor::ErdosRenyi(order, p) => {
+                Graph::new_erdos_renyi(order, *p)
+            },
             Constructor::Complete(order) => Graph::new_complete(order),
             Constructor::FanoPlane => Graph::new_fano_plane(),
             Constructor::Petersen => Graph::new_petersen(),
