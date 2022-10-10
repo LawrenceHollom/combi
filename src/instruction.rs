@@ -35,6 +35,7 @@ pub enum Operation {
 }
 
 pub struct Instruction {
+    pub repeats: usize,
     pub constructor: Constructor,
     pub operations: Vec<Operation>,
 }
@@ -208,11 +209,14 @@ impl Instruction {
     pub fn of_string(text: &str) -> Instruction {
         let re = regex::Regex::new(r"->|=>").unwrap();
         let pars: Vec<&str> = re.split(text).map(|par| par.trim()).collect();
-        let constructor = Constructor::of_string(pars[0]);
-        let operations = pars[1].split(',')
+        let offset = pars.len() - 2;
+        let repeats: usize = if offset > 0 { pars[0].parse().unwrap_or(1) } else { 1 };
+        let constructor = Constructor::of_string(pars[offset]);
+        let operations = pars[offset + 1].split(',')
             .map(|str| Operation::of_string(str)).collect();
 
         Instruction {
+            repeats,
             constructor,
             operations,
         }

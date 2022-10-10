@@ -14,12 +14,15 @@ fn main() {
     io::stdin().read_line(&mut text).expect("Failed to read line");
     let instruction = Instruction::of_string(&text);
     println!("Instruction constructed! {}", instruction);
-    let g = Graph::new(&instruction.constructor);
-    
-    let mut operator = Operator::new();
-    let numbers: Vec<String> = instruction.operations
-            .iter()
-            .map(|op| operator.operate(&g, op))
-            .collect();
-    println!("{}: [{}]", instruction.operations_string(), numbers.join(", "));
+
+    for _ in 0..instruction.repeats {
+        let g = Graph::new(&instruction.constructor);
+        
+        let mut operator = Operator::new();
+        let numbers: Vec<String> = instruction.operations
+                .iter()
+                .map(|op| operator.operate(&g, op))
+                .collect();
+        println!("{}: [{}]", instruction.operations_string(), numbers.join(", "));
+    }
 }
