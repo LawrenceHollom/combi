@@ -5,6 +5,7 @@ mod graph;
 mod operator;
 
 use instruction::*;
+use operator::Operator;
 use graph::Graph;
 
 fn main() {
@@ -14,11 +15,11 @@ fn main() {
     let instruction = Instruction::of_string(&text);
     println!("Instruction constructed! {}", instruction);
     let g = Graph::new(&instruction.constructor);
-    //println!("The graph: ");
-    //g.print();
+    
+    let mut operator = Operator::new();
     let numbers: Vec<String> = instruction.operations
             .iter()
-            .map(|op| operator::operate(&g, op))
+            .map(|op| operator.operate(&g, op))
             .collect();
     println!("{}: [{}]", instruction.operations_string(), numbers.join(", "));
 }

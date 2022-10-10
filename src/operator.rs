@@ -2,46 +2,65 @@ mod domination;
 mod chromatic;
 mod max_acyclic;
 
+use std::collections::HashMap;
+
 use crate::instruction::*;
 use crate::graph::*;
 
-fn operate_int(g: &Graph, operation: &IntOperation) -> u32 {
-    match operation {
-        IntOperation::DominationNumber => domination::domination_number(g),
-        IntOperation::ChromaticNumber => chromatic::chromatic_number(g),
-        IntOperation::MaxAcyclicSubgraph => max_acyclic::max_acyclic_subgraph(g),
-        IntOperation::CliqueCoveringNumber => chromatic::chromatic_number(&g.complement()),
-    }
+pub struct Operator {
+    previous_values: HashMap<IntOperation, u32>
 }
 
-fn operate_bool(g: &Graph, operation: &BoolOperation) -> bool {
-    match operation {
-        BoolOperation::Less(op1, op2) => 
-            operate_int(g, op1) < operate_int(g, op2),
-        BoolOperation::More(op1, op2) => 
-            operate_int(g, op1) > operate_int(g, op2),
-        BoolOperation::NotLess(op1, op2) => 
-            operate_int(g, op1) >= operate_int(g, op2),
-        BoolOperation::NotMore(op1, op2) => 
-            operate_int(g, op1) <= operate_int(g, op2),
-    }
-}
-
-fn operate_unit(g: &Graph, operation: &UnitOperation) {
-    match operation {
-        UnitOperation::Print => g.print(),
-    }
-}
-
-pub fn operate(g: &Graph, operation: &Operation) -> String {
-    match operation {
-        Operation::Int(op) => 
-            u32::to_string(&operate_int(g, op)),
-        Operation::Bool(op) =>
-            bool::to_string(&operate_bool(g, op)),
-        Operation::Unit(op) => {
-            operate_unit(g, op);
-            "()".to_owned()
+impl Operator {
+    fn operate_int(&mut self, g: &Graph, operation: &IntOperation) -> u32 {
+        match self.previous_values.get(operation) {
+            Some(value) => *value,
+            None => {
+                let value = match operation {
+                    IntOperation::DominationNumber => domination::domination_number(g),
+                    IntOperation::ChromaticNumber => chromatic::chromatic_number(g),
+                    IntOperation::MaxAcyclicSubgraph => max_acyclic::max_acyclic_subgraph(g),
+                    IntOperation::CliqueCoveringNumber => chromatic::chromatic_number(&g.complement()),
+                };
+                self.previous_values.insert(*operation, value);
+                value
+            }
         }
+    }
+
+    fn operate_bool(&mut self, g: &Graph, operation: &BoolOperation) -> bool {
+        match operation {
+            BoolOperation::Less(op1, op2) => 
+                self.operate_int(g, op1) < self.operate_int(g, op2),
+            BoolOperation::More(op1, op2) => 
+                self.operate_int(g, op1) > self.operate_int(g, op2),
+            BoolOperation::NotLess(op1, op2) => 
+                self.operate_int(g, op1) >= self.operate_int(g, op2),
+            BoolOperation::NotMore(op1, op2) => 
+                self.operate_int(g, op1) <= self.operate_int(g, op2),
+        }
+    }
+
+    fn operate_unit(&mut self, g: &Graph, operation: &UnitOperation) {
+        match operation {
+            UnitOperation::Print => g.print(),
+        }
+    }
+
+    pub fn operate(&mut self, g: &Graph, operation: &Operation) -> String {
+        match operation {
+            Operation::Int(op) => 
+                u32::to_string(&self.operate_int(g, op)),
+            Operation::Bool(op) =>
+                bool::to_string(&self.operate_bool(g, op)),
+            Operation::Unit(op) => {
+                self.operate_unit(g, op);
+                "()".to_owned()
+            }
+        }
+    }
+
+    pub fn new() -> Operator {
+        Operator { previous_values: HashMap::new() }
     }
 }

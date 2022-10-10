@@ -26,7 +26,6 @@ fn can_be_coloured_rec(g: &Graph, num_colours: usize, max_colour_used: usize, co
 }
 
 fn can_be_coloured(g: &Graph, num_colours: usize) -> bool {
-    //println!("Testing if chromatic number is {}", num_colours);
     let mut colour = vec![g.n.to_usize(); g.n.to_usize()];
     colour[0] = 0;
     can_be_coloured_rec(g, num_colours, 0, &mut colour, 1)

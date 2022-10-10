@@ -9,6 +9,7 @@ pub enum Constructor {
     Petersen,
 }
 
+#[derive(Eq, Hash, PartialEq, Copy, Clone)]
 pub enum IntOperation {
     DominationNumber,
     ChromaticNumber,
