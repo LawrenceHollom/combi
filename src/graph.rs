@@ -1,7 +1,3 @@
-extern crate utilities;
-extern crate rand;
-extern crate queues;
-
 use utilities::*;
 use crate::instruction::*;
 
@@ -16,7 +12,7 @@ pub struct Graph {
 }
 
 impl Graph {
-    fn new_random_regular_bipartite(order: Order, degree: Degree) -> Graph {
+    fn new_random_regular_bipartite(order: &Order, degree: &Degree) -> Graph {
         // CR someday: if degree > order / 4 then generate the complement instead (needs less alternating paths)
         let n = order.to_usize();
         let d = degree.to_usize();
@@ -115,18 +111,18 @@ impl Graph {
         }
 
         Graph {
-            n: order,
+            n: *order,
             adj,
             adj_list,
             deg: deg.iter().map(|d| Degree::of_usize(*d)).collect()
         }
     }
 
-    fn new_complete(order: Order) -> Graph {
+    fn new_complete(order: &Order) -> Graph {
         let n = order.to_usize();
         let mut adj = vec![vec![false; n]; n];
         let mut adj_list = vec![vec![n-1]; n];
-        let deg: Vec<Degree> = vec![Degree::of_usize(n-1); n];
+        let deg: Vec<Degree> = vec![n-1; n].iter().map(|x| Degree::of_usize(*x)).collect();
 
         // This could be done directly and non-mutably; possibly would be more idiomatic
         for i in 0..(n-1) {
@@ -145,7 +141,7 @@ impl Graph {
         }
 
         Graph {
-            n: order,
+            n: *order,
             adj,
             adj_list,
             deg,
@@ -190,7 +186,7 @@ impl Graph {
         }
     }
 
-    pub fn new(constructor: Constructor) -> Graph {
+    pub fn new(constructor: &Constructor) -> Graph {
         match constructor {
             Constructor::RandomRegularBipartite(order, degree) =>
                 Graph::new_random_regular_bipartite(order, degree),

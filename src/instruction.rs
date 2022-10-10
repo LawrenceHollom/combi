@@ -1,7 +1,6 @@
-extern crate utilities;
-
 use utilities::*;
 use std::fmt;
+use regex;
 
 pub enum Constructor {
     RandomRegularBipartite(Order, Degree),
@@ -19,7 +18,7 @@ pub enum Operation {
 
 pub struct Instruction {
     pub constructor: Constructor,
-    pub operation: Operation,
+    pub operations: Vec<Operation>,
 }
 
 impl Constructor {
@@ -87,18 +86,26 @@ impl fmt::Display for Operation {
 
 impl Instruction {
     pub fn of_string(text: &str) -> Instruction {
-        let pars: Vec<&str> = text.split("->").map(|par| par.trim()).collect();
+        let re = regex::Regex::new(r"->|=>").unwrap();
+        let pars: Vec<&str> = re.split(text).map(|par| par.trim()).collect();
         let constructor = Constructor::of_string(pars[0]);
-        let operation = Operation::of_string(pars[1]);
+        let operations = pars[1].split(',')
+            .map(|str| Operation::of_string(str)).collect();
+
         Instruction {
             constructor,
-            operation,
+            operations,
         }
+    }
+
+    pub fn operations_string(&self) -> String {
+        let operations_strs: Vec<String> = self.operations.iter().map(|x| format!("{x}")).collect();
+        operations_strs.join(", ")
     }
 }
 
 impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Constructor: {}\nOperation: {}", self.constructor, self.operation)
+        write!(f, "Constructor: {}\nOperations: [{}]", self.constructor, self.operations_string())
     }
 }

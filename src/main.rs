@@ -13,9 +13,12 @@ fn main() {
     io::stdin().read_line(&mut text).expect("Failed to read line");
     let instruction = Instruction::of_string(&text);
     println!("Instruction constructed! {}", instruction);
-    let g = Graph::new(instruction.constructor);
+    let g = Graph::new(&instruction.constructor);
     println!("The graph: ");
     g.print();
-    let number = operation::operate(g, &instruction.operation);
-    println!("{}: {}", instruction.operation, number);
+    let numbers: Vec<String> = instruction.operations
+            .iter()
+            .map(|op| u32::to_string(&operation::operate(&g, op)))
+            .collect();
+    println!("{}: [{}]", instruction.operations_string(), numbers.join(", "));
 }
