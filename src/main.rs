@@ -2,7 +2,7 @@ use std::io;
 
 mod instruction;
 mod graph;
-mod operation;
+mod operator;
 
 use instruction::*;
 use graph::Graph;
@@ -18,7 +18,7 @@ fn main() {
     //g.print();
     let numbers: Vec<String> = instruction.operations
             .iter()
-            .map(|op| operation::operate(&g, op))
+            .map(|op| operator::operate(&g, op))
             .collect();
     println!("{}: [{}]", instruction.operations_string(), numbers.join(", "));
 }

@@ -34,7 +34,6 @@ fn operate_unit(g: &Graph, operation: &UnitOperation) {
 }
 
 pub fn operate(g: &Graph, operation: &Operation) -> String {
-
     match operation {
         Operation::Int(op) => 
             u32::to_string(&operate_int(g, op)),
