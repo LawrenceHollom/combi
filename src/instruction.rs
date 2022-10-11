@@ -6,6 +6,7 @@ pub enum Constructor {
     RandomRegularBipartite(Order, Degree),
     ErdosRenyi(Order, f64),
     Complete(Order),
+    Cyclic(Order),
     FanoPlane,
     Petersen,
 }
@@ -63,6 +64,7 @@ impl Constructor {
                 Constructor::ErdosRenyi(Order::of_string(args[0]), args[1].parse().unwrap())
             }
             "complete" | "K" => Constructor::Complete(Order::of_string(args[0])),
+            "cyclic" | "C" => Constructor::Cyclic(Order::of_string(args[0])),
             "fano" => Constructor::FanoPlane,
             "petersen" => Constructor::Petersen,
             &_ => panic!(),
@@ -78,6 +80,9 @@ impl fmt::Display for Constructor {
             },
             Constructor::Complete(order) => {
                 write!(f, "Complete of order {}", order)
+            },
+            Constructor::Cyclic(order) => {
+                write!(f, "Cyclic of order {}", order)
             },
             Constructor::FanoPlane => write!(f, "the Fano plane"),
             Constructor::Petersen => write!(f, "the Petersen graph"),

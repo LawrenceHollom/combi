@@ -150,7 +150,7 @@ impl Graph {
     fn new_complete(order: &Order) -> Graph {
         let n = order.to_usize();
         let mut adj = vec![vec![false; n]; n];
-        let mut adj_list = vec![vec![n-1]; n];
+        let mut adj_list = vec![vec![]; n];
         let deg: Vec<Degree> = vec![n-1; n].iter().map(|x| Degree::of_usize(*x)).collect();
 
         // This could be done directly and non-mutably; possibly would be more idiomatic
@@ -167,6 +167,28 @@ impl Graph {
                     nbrs.push(j);
                 }
             }
+        }
+
+        Graph {
+            n: *order,
+            adj,
+            adj_list,
+            deg,
+        }
+    }
+
+    fn new_cyclic(order: &Order) -> Graph {
+        let n = order.to_usize();
+        let mut adj = vec![vec![false; n]; n];
+        let mut adj_list = vec![vec![]; n];
+        let deg: Vec<Degree> = vec![2; n].iter().map(|x| Degree::of_usize(*x)).collect();
+
+        // This could be done directly and non-mutably; possibly would be more idiomatic
+        for i in 0..n {
+            adj[i][(i + 1) % n] = true;
+            adj[i][(i + n - 1) % n] = true;
+            adj_list[i].push((i + 1) % n);
+            adj_list[i].push((i + n - 1) % n);
         }
 
         Graph {
@@ -224,6 +246,7 @@ impl Graph {
                 Graph::new_erdos_renyi(order, *p)
             },
             Constructor::Complete(order) => Graph::new_complete(order),
+            Constructor::Cyclic(order) => Graph::new_cyclic(order),
             Constructor::FanoPlane => Graph::new_fano_plane(),
             Constructor::Petersen => Graph::new_petersen(),
         }
