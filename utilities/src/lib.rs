@@ -1,5 +1,7 @@
 use std::fmt;
 
+pub mod polynomial;
+
 #[derive(Copy, Clone)]
 pub struct Order(usize);
 
@@ -26,6 +28,8 @@ impl fmt::Display for Order {
 }
 
 impl Degree {
+    pub const ZERO: Degree = Degree(0);
+
     pub fn of_string(text: &str) -> Degree {
         Degree(text.parse().unwrap())
     }
@@ -36,6 +40,10 @@ impl Degree {
 
     pub fn to_usize(&self) -> usize {
         self.0 as usize
+    }
+
+    pub fn incr(&self) -> Degree {
+        Degree(self.0 + 1)
     }
 }
 

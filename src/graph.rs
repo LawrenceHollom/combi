@@ -237,6 +237,34 @@ impl Graph {
         }
     }
 
+    pub fn bunkbed(&self) -> Graph {
+        let n = self.n.to_usize();
+        let mut adj = vec![vec![false; 2*n]; 2*n];
+        let mut adj_list = vec![vec![]; 2*n];
+        let mut deg: Vec<Degree> = vec![];
+
+        for j in 0..2 as usize {
+            for i in 0..n {
+                deg.push(self.deg[i].incr());
+                adj[i + j * n][i + (1 - j) * n] = true; //post
+                adj_list[i + j * n].push(i + (1 - j) * n);
+                for k in 0..n {
+                    if self.adj[i][k] {
+                        adj[i + j * n][k + j * n] = true;
+                        adj_list[i + j * n].push(k + j * n);
+                    }
+                }
+            }
+        }
+
+        Graph {
+            n: Order::of_usize(2*n),
+            adj,
+            adj_list,
+            deg
+        }
+    }
+
     pub fn new(constructor: &Constructor) -> Graph {
         match constructor {
             Constructor::RandomRegularBipartite(order, degree) => {
@@ -290,5 +318,9 @@ impl Graph {
                 }
             }
         }
+    }
+
+    pub fn size(&self) -> usize {
+        self.deg.iter().fold(0, |accum, val| accum + val.to_usize())
     }
 }

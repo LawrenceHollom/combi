@@ -1,6 +1,8 @@
 mod domination;
 mod chromatic;
 mod max_acyclic;
+mod bunkbed;
+mod percolate;
 
 use std::collections::HashMap;
 
@@ -44,6 +46,7 @@ impl Operator {
     fn operate_unit(&mut self, g: &Graph, operation: &UnitOperation) {
         match operation {
             UnitOperation::Print => g.print(),
+            UnitOperation::RawBunkbed => bunkbed::print_polynomials(g),
         }
     }
 

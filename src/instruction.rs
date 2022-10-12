@@ -28,6 +28,7 @@ pub enum BoolOperation {
 
 pub enum UnitOperation {
     Print,
+    RawBunkbed,
 }
 
 pub enum Operation {
@@ -149,6 +150,7 @@ impl UnitOperation {
     pub fn of_string_result(text: &str) -> Option<UnitOperation> {
         match text.trim().to_lowercase().as_str() {
             "print" => Some(UnitOperation::Print),
+            "bunkbed" => Some(UnitOperation::RawBunkbed),
             &_ => None,
         }
     }
@@ -204,6 +206,7 @@ impl fmt::Display for UnitOperation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let name = match self {
             UnitOperation::Print => "Print",
+            UnitOperation::RawBunkbed => "Raw bunkbed",
         };
         write!(f, "{}", name)
     }
