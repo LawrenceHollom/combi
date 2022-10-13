@@ -7,6 +7,7 @@ pub enum Constructor {
     ErdosRenyi(Order, f64),
     Complete(Order),
     Cyclic(Order),
+    Path(Order),
     FanoPlane,
     Petersen,
 }
@@ -66,6 +67,7 @@ impl Constructor {
             }
             "complete" | "K" => Constructor::Complete(Order::of_string(args[0])),
             "cyclic" | "C" => Constructor::Cyclic(Order::of_string(args[0])),
+            "path" | "P" => Constructor::Path(Order::of_string(args[0])),
             "fano" => Constructor::FanoPlane,
             "petersen" => Constructor::Petersen,
             &_ => panic!(),
@@ -84,6 +86,9 @@ impl fmt::Display for Constructor {
             },
             Constructor::Cyclic(order) => {
                 write!(f, "Cyclic of order {}", order)
+            },
+            Constructor::Path(order) => {
+                write!(f, "Path of order {}", order)
             },
             Constructor::FanoPlane => write!(f, "the Fano plane"),
             Constructor::Petersen => write!(f, "the Petersen graph"),

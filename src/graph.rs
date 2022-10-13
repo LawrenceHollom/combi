@@ -199,6 +199,32 @@ impl Graph {
         }
     }
 
+    fn new_path(order: &Order) -> Graph {
+        let n = order.to_usize();
+        let mut adj = vec![vec![false; n]; n];
+        let mut adj_list = vec![vec![]; n];
+        let deg: Vec<Degree> = vec![2; n].iter().map(|x| Degree::of_usize(*x)).collect();
+
+        // This could be done directly and non-mutably; possibly would be more idiomatic
+        for i in 0..n {
+            if i + 1 < n {
+                adj[i][i + 1] = true;
+                adj_list[i].push(i + 1);
+            }
+            if i >= 1 {
+                adj[i][i - 1] = true;
+                adj_list[i].push(i - 1);
+            }
+        }
+
+        Graph {
+            n: *order,
+            adj,
+            adj_list,
+            deg,
+        }
+    }
+
     fn new_fano_plane() -> Graph {
         let adj_list: Vec<Vec<usize>> = vec![vec![1, 5, 6], vec![0, 2, 3, 5, 6], vec![1, 3, 6], 
             vec![1, 2, 4, 5, 6], vec![3, 5, 6], vec![0, 1, 3, 4, 6], vec![0, 1, 2, 3, 4, 5]];
@@ -275,6 +301,7 @@ impl Graph {
             },
             Constructor::Complete(order) => Graph::new_complete(order),
             Constructor::Cyclic(order) => Graph::new_cyclic(order),
+            Constructor::Path(order) => Graph::new_path(order),
             Constructor::FanoPlane => Graph::new_fano_plane(),
             Constructor::Petersen => Graph::new_petersen(),
         }
