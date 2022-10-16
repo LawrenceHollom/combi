@@ -13,3 +13,7 @@
  - Optimise code; it's very slow
  - Don't print out trailing zeroes in a polynomial
  - Add the up/down bunkbed which runs in 2^|E| time
+
+ == ITERATOR ==
+ - Detect identical nodes in graphs and iterate over subsets more efficiently
+ - e.g. there are only 3 ways to pick 2 vertices from K_{s,t}
