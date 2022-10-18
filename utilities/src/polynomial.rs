@@ -35,11 +35,7 @@ impl Polynomial {
         }
     }
 
-    pub fn add(&self, rhs: &Polynomial) -> Polynomial {
-        let mut coefs: Vec<i64> = vec![];
-        for x in self.coefs.iter() {
-            coefs.push(*x);
-        }
+    fn add_vec_inplace(coefs: &mut Vec<i64>, rhs: &Polynomial) {
         for (pos, y) in rhs.coefs.iter().enumerate() {
             if pos >= coefs.len() {
                 coefs.push(*y);
@@ -47,7 +43,42 @@ impl Polynomial {
                 coefs[pos] += *y;
             }
         }
+    }
+
+    pub fn add(&self, rhs: &Polynomial) -> Polynomial {
+        let mut coefs: Vec<i64> = vec![];
+        for x in self.coefs.iter() {
+            coefs.push(*x);
+        }
+        Self::add_vec_inplace(&mut coefs, rhs);
         Polynomial::of_vec(&coefs)
+    }
+
+    pub fn add_inplace(&mut self, rhs: &Polynomial) {
+        Self::add_vec_inplace(&mut self.coefs, rhs)
+    }
+
+    fn sub_vec_inplace(coefs: &mut Vec<i64>, rhs: &Polynomial) {
+        for (pos, y) in rhs.coefs.iter().enumerate() {
+            if pos >= coefs.len() {
+                coefs.push(-*y);
+            } else {
+                coefs[pos] -= *y;
+            }
+        }
+    }
+
+    pub fn sub(&self, rhs: &Polynomial) -> Polynomial {
+        let mut coefs: Vec<i64> = vec![];
+        for x in self.coefs.iter() {
+            coefs.push(*x);
+        }
+        Self::sub_vec_inplace(&mut coefs, rhs);
+        Polynomial::of_vec(&coefs)
+    }
+
+    pub fn sub_inplace(&mut self, rhs: &Polynomial) {
+        Self::sub_vec_inplace(&mut self.coefs, rhs)
     }
 
     pub fn mul(&self, rhs: &Polynomial) -> Polynomial {
@@ -62,6 +93,15 @@ impl Polynomial {
             }
         }
         Polynomial::of_vec(&coefs)
+    }
+
+    pub fn apply(&self, g: &Polynomial) -> Polynomial {
+        let mut out = Polynomial::new();
+        for (i, xi) in self.coefs.iter().enumerate() {
+            // Highly efficient, as always
+            out.add_inplace(&g.pow(i).mul(&Self::of_vec(&vec![*xi])));
+        }
+        out
     }
 }
 

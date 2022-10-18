@@ -30,6 +30,7 @@ pub enum BoolOperation {
 pub enum UnitOperation {
     Print,
     RawBunkbed,
+    BunkbedPosts,
 }
 
 pub enum Operation {
@@ -62,7 +63,7 @@ impl Constructor {
                 Constructor::RandomRegularBipartite(Order::of_string(args[0]), 
                     Degree::of_string(args[1]))
             },
-            "erdos_renyi" | "er" => {
+            "erdos_renyi" | "er" | "G" => {
                 Constructor::ErdosRenyi(Order::of_string(args[0]), args[1].parse().unwrap())
             }
             "complete" | "K" => Constructor::Complete(Order::of_string(args[0])),
@@ -156,6 +157,7 @@ impl UnitOperation {
         match text.trim().to_lowercase().as_str() {
             "print" => Some(UnitOperation::Print),
             "bunkbed" => Some(UnitOperation::RawBunkbed),
+            "bunkbed_posts" | "posts" => Some(UnitOperation::BunkbedPosts),
             &_ => None,
         }
     }
@@ -212,6 +214,7 @@ impl fmt::Display for UnitOperation {
         let name = match self {
             UnitOperation::Print => "Print",
             UnitOperation::RawBunkbed => "Raw bunkbed",
+            UnitOperation::BunkbedPosts => "Bunkbed posts",
         };
         write!(f, "{}", name)
     }

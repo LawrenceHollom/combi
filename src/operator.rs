@@ -3,6 +3,7 @@ mod chromatic;
 mod max_acyclic;
 mod bunkbed;
 mod percolate;
+mod bunkbed_posts;
 
 use std::collections::HashMap;
 
@@ -47,6 +48,7 @@ impl Operator {
         match operation {
             UnitOperation::Print => g.print(),
             UnitOperation::RawBunkbed => bunkbed::print_polynomials(g),
+            UnitOperation::BunkbedPosts => bunkbed_posts::print_polynomials(g),
         }
     }
 

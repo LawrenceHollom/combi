@@ -348,6 +348,6 @@ impl Graph {
     }
 
     pub fn size(&self) -> usize {
-        self.deg.iter().fold(0, |accum, val| accum + val.to_usize())
+        self.deg.iter().fold(0, |accum, val| accum + val.to_usize()) / 2
     }
 }
