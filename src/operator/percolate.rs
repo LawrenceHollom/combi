@@ -1,5 +1,6 @@
 use crate::graph::*;
 
+use std::io::*;
 use queues::*;
 
 use utilities::polynomial::*;
@@ -55,9 +56,15 @@ impl Percolator {
         let n = g.n.to_usize();
         let mut percolator = Percolator::new(n, g.size());
 
-        println!("Starting the big loop! size: {}", utilities::pow(2, g.size() as u64));
-
-        for subset in 0..utilities::pow(2, g.size() as u64) {
+        let loop_max = utilities::pow(2, g.size() as u64);
+        println!("Starting the big loop! size: {}", loop_max);
+        let mut next_alert = 1;
+        for subset in 0..loop_max {
+            if (100 * subset) / loop_max >= next_alert {
+                print!("{}% ", next_alert);
+                std::io::stdout().flush().unwrap();
+                next_alert += 1;
+            }
             let mut edges = vec![false; g.size()];
             let mut num_edges = 0;
             let mut sta = subset;
