@@ -5,6 +5,7 @@ use regex;
 pub enum Constructor {
     RandomRegularBipartite(Order, Degree),
     ErdosRenyi(Order, f64),
+    Grid(Order, Order),
     Complete(Order),
     Cyclic(Order),
     Path(Order),
@@ -58,13 +59,16 @@ impl Constructor {
                 vec![]
             };
         
-        match func {
+        match func.to_lowercase().as_str() {
             "rrb" | "random_regular_bipartite" => {
                 Constructor::RandomRegularBipartite(Order::of_string(args[0]), 
                     Degree::of_string(args[1]))
             },
             "erdos_renyi" | "er" | "G" => {
                 Constructor::ErdosRenyi(Order::of_string(args[0]), args[1].parse().unwrap())
+            }
+            "grid" => {
+                Constructor::Grid(Order::of_string(args[0]), Order::of_string(args[1]))
             }
             "complete" | "K" => Constructor::Complete(Order::of_string(args[0])),
             "cyclic" | "C" => Constructor::Cyclic(Order::of_string(args[0])),
@@ -82,6 +86,12 @@ impl fmt::Display for Constructor {
             Constructor::RandomRegularBipartite(order, deg) => {
                 write!(f, "Random regular bipartite or order {} and degree {}", order, deg)
             },
+            Constructor::ErdosRenyi(order, p) => {
+                write!(f, "Erdos-Renyi random graph of order {} with probability {}", order, p)
+            },
+            Constructor::Grid(height, width) => {
+                write!(f, "Grid graph on {} x {} vertices", height, width)
+            }
             Constructor::Complete(order) => {
                 write!(f, "Complete of order {}", order)
             },
@@ -93,9 +103,6 @@ impl fmt::Display for Constructor {
             },
             Constructor::FanoPlane => write!(f, "the Fano plane"),
             Constructor::Petersen => write!(f, "the Petersen graph"),
-            Constructor::ErdosRenyi(order, p) => {
-                write!(f, "Erdos-Renyi random graph of order {} with probability {}", order, p)
-            }
         }
     }
 }
