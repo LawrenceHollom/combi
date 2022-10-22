@@ -1,5 +1,7 @@
 use std::fmt;
 
+mod unimode;
+
 pub struct Polynomial {
     coefs: Vec<i64>,
 }
@@ -102,6 +104,28 @@ impl Polynomial {
             out.add_inplace(&g.pow(i).mul(&Self::of_vec(&vec![*xi])));
         }
         out
+    }
+
+    pub fn evaluate(&self, x: f64) -> f64 {
+        let mut out = 0.0;
+        for (i, xi) in self.coefs.iter().enumerate() {
+            out += x.powf(i as f64) * (*xi as f64);
+        }
+        out
+    }
+
+    pub fn differentiate(&self) -> Polynomial {
+        let mut coefs: Vec<i64> = vec![];
+        for (i, xi) in self.coefs.iter().enumerate() {
+            if i > 0 {
+                coefs.push(*xi * (i as i64));
+            }
+        }
+        Polynomial::of_vec(&coefs)
+    }
+
+    pub fn find_prob_unimode(&self) -> Result<f64, &'static str> {
+        unimode::find_unimode(&self, 0.0, 1.0)
     }
 }
 

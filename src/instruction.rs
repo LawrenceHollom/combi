@@ -64,18 +64,18 @@ impl Constructor {
                 Constructor::RandomRegularBipartite(Order::of_string(args[0]), 
                     Degree::of_string(args[1]))
             },
-            "erdos_renyi" | "er" | "G" => {
+            "erdos_renyi" | "er" | "g" => {
                 Constructor::ErdosRenyi(Order::of_string(args[0]), args[1].parse().unwrap())
             }
             "grid" => {
                 Constructor::Grid(Order::of_string(args[0]), Order::of_string(args[1]))
             }
-            "complete" | "K" => Constructor::Complete(Order::of_string(args[0])),
-            "cyclic" | "C" => Constructor::Cyclic(Order::of_string(args[0])),
-            "path" | "P" => Constructor::Path(Order::of_string(args[0])),
+            "complete" | "k" => Constructor::Complete(Order::of_string(args[0])),
+            "cyclic" | "c" => Constructor::Cyclic(Order::of_string(args[0])),
+            "path" | "p" => Constructor::Path(Order::of_string(args[0])),
             "fano" => Constructor::FanoPlane,
             "petersen" => Constructor::Petersen,
-            &_ => panic!(),
+            &_ => panic!("Could not find graph constructor!"),
         }
     }
 }

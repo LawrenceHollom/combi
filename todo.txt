@@ -13,9 +13,7 @@
  - e.g. there are only 3 ways to pick 2 vertices from K_{s,t}
 
  == BUNKBEDS ==
- - Write code to find the turning point(s) of these polynomials
- -- Differentiate, set equal to zero and then interval bisect
- -- Add some kind of test for if the function really is unimodal as well
+  - The code is very (very) slow, and naive. Should be some wins to be had in terms of speed
 
  == BUGS ==
  - C(2) has incorrect degrees (they should be 1)
