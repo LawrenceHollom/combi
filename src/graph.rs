@@ -4,6 +4,7 @@ use crate::instruction::*;
 use rand::{thread_rng, Rng};
 use queues::*;
 
+mod products;
 mod erdos_renyi;
 mod grid;
 mod random_regular_bipartite;
@@ -166,6 +167,21 @@ impl Graph {
 
     pub fn new(constructor: &Constructor) -> Graph {
         match constructor {
+            Constructor::BoxProduct(constr1, constr2) => {
+                products::new_box(&Self::new(constr1), &Self::new(constr2))
+            },
+            Constructor::TensorProduct(constr1, constr2) => {
+                products::new_tensor(&Self::new(constr1), &Self::new(constr2))
+            },
+            Constructor::LexProduct(constr1, constr2) => {
+                products::new_lex(&Self::new(constr1), &Self::new(constr2))
+            },
+            Constructor::StrongProduct(constr1, constr2) => {
+                products::new_strong(&Self::new(constr1), &Self::new(constr2))
+            },
+            Constructor::ConormalProduct(constr1, constr2) => {
+                products::new_conormal(&Self::new(constr1), &Self::new(constr2))
+            },
             Constructor::RandomRegularBipartite(order, degree) => {
                 random_regular_bipartite::new(order, degree)
             },

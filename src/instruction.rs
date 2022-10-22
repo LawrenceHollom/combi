@@ -3,6 +3,11 @@ use std::fmt;
 use regex;
 
 pub enum Constructor {
+    BoxProduct(Box<Constructor>, Box<Constructor>),
+    TensorProduct(Box<Constructor>, Box<Constructor>),
+    LexProduct(Box<Constructor>, Box<Constructor>),
+    StrongProduct(Box<Constructor>, Box<Constructor>),
+    ConormalProduct(Box<Constructor>, Box<Constructor>),
     RandomRegularBipartite(Order, Degree),
     ErdosRenyi(Order, f64),
     Grid(Order, Order),
@@ -49,27 +54,58 @@ pub struct Instruction {
 impl Constructor {
     pub fn of_string(text: &str) -> Constructor {
         // must be otf func_tion(a, b, c, ...)
-        let pars: Vec<&str> = text.split('(').collect();
-        let func: &str = pars[0];
-        
-        let args: Vec<&str> = 
-            if pars.len() > 1 {
-                pars[1].split(',').map(|par| par.trim().trim_matches(')')).collect()
-            } else {
-                vec![]
-            };
-        
+        let (func, args) = match text.split_once('(') {
+            Some((func, args_string)) => {
+                let mut depth = 0;
+                let mut last_index = 0;
+                let mut args = vec![];
+                for (i, c) in args_string.as_bytes().iter().enumerate() {
+                    if *c == '(' as u8 {
+                        depth += 1;
+                    } else if *c == ')' as u8 {
+                        depth -= 1;
+                    } else if *c == ',' as u8 && depth == 0 {
+                        args.push(&args_string[last_index..i]);
+                        last_index = i + 1;
+                    }
+                }
+                args.push(&args_string[last_index..args_string.len()].trim_end_matches(')'));
+                (func, args)
+            }
+            None => (text, vec![]),
+        };
+                
         match func.to_lowercase().as_str() {
+            "cartesian" | "box" => {
+                Constructor::BoxProduct(Box::new(Constructor::of_string(args[0])), 
+                Box::new(Constructor::of_string(args[1])))
+            },
+            "tensor" | "x" => {
+                Constructor::TensorProduct(Box::new(Constructor::of_string(args[0])), 
+                Box::new(Constructor::of_string(args[1])))
+            },
+            "lex" | "." => {
+                Constructor::LexProduct(Box::new(Constructor::of_string(args[0])), 
+                Box::new(Constructor::of_string(args[1])))
+            },
+            "strong" | "and" => {
+                Constructor::StrongProduct(Box::new(Constructor::of_string(args[0])), 
+                Box::new(Constructor::of_string(args[1])))
+            },
+            "conormal" | "or" | "*" => {
+                Constructor::ConormalProduct(Box::new(Constructor::of_string(args[0])), 
+                Box::new(Constructor::of_string(args[1])))
+            },
             "rrb" | "random_regular_bipartite" => {
                 Constructor::RandomRegularBipartite(Order::of_string(args[0]), 
                     Degree::of_string(args[1]))
             },
             "erdos_renyi" | "er" | "g" => {
                 Constructor::ErdosRenyi(Order::of_string(args[0]), args[1].parse().unwrap())
-            }
+            },
             "grid" => {
                 Constructor::Grid(Order::of_string(args[0]), Order::of_string(args[1]))
-            }
+            },
             "complete" | "k" => Constructor::Complete(Order::of_string(args[0])),
             "cyclic" | "c" => Constructor::Cyclic(Order::of_string(args[0])),
             "path" | "p" => Constructor::Path(Order::of_string(args[0])),
@@ -83,6 +119,21 @@ impl Constructor {
 impl fmt::Display for Constructor {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            Constructor::BoxProduct(constr1, constr2) => {
+                write!(f, "Box product of ({}) and ({})", constr1, constr2)
+            },
+            Constructor::TensorProduct(constr1, constr2) => {
+                write!(f, "Tensor product of ({}) and ({})", constr1, constr2)
+            },
+            Constructor::LexProduct(constr1, constr2) => {
+                write!(f, "Lexicographical product of ({}) and ({})", constr1, constr2)
+            },
+            Constructor::StrongProduct(constr1, constr2) => {
+                write!(f, "Strong product of ({}) and ({})", constr1, constr2)
+            },
+            Constructor::ConormalProduct(constr1, constr2) => {
+                write!(f, "Conormal product of ({}) and ({})", constr1, constr2)
+            },
             Constructor::RandomRegularBipartite(order, deg) => {
                 write!(f, "Random regular bipartite or order {} and degree {}", order, deg)
             },
