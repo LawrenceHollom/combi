@@ -50,7 +50,11 @@ impl Graph {
         let n = order.to_usize();
         let mut adj = vec![vec![false; n]; n];
         let mut adj_list = vec![vec![]; n];
-        let deg: Vec<Degree> = vec![2; n].iter().map(|x| Degree::of_usize(*x)).collect();
+        let deg: Vec<Degree> = {
+            if n == 1 { vec![0; n] }
+            else if n == 2 { vec![1; n] }
+            else { vec![2; n]}
+        }.iter().map(|x| Degree::of_usize(*x)).collect();
 
         // This could be done directly and non-mutably; possibly would be more idiomatic
         for i in 0..n {

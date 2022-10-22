@@ -16,4 +16,4 @@
   - The code is very (very) slow, and naive. Should be some wins to be had in terms of speed
 
  == BUGS ==
- - C(2) has incorrect degrees (they should be 1)
+ - Awkward crash when asking for e.g. rrb(4,2); something goes oob
