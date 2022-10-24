@@ -1,5 +1,4 @@
  == INSTRUCTIONS ==
- - Add product graphs (all kinds of products)
  - Add more complex random graph constructions
  - Add computation of path cover number (have java code for this?)
  - Option run until either an upper bound of a graph is found safing a condition (which is also printed)

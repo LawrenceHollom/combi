@@ -99,6 +99,27 @@ impl Graph {
         }
     }
 
+    fn new_star(order: &Order) -> Graph {
+        let n = order.to_usize();
+        let mut adj = vec![vec![false; n]; n];
+        let mut adj_list = vec![vec![]; n];
+        let deg: Vec<Degree> = (0..n).map(|x| Degree::of_usize(if x == 0 { n - 1 } else { 1 })).collect();
+
+        for i in 1..n {
+            adj[0][i] = true;
+            adj[i][0] = true;
+            adj_list[0].push(i);
+            adj_list[i].push(0);
+        }
+
+        Graph {
+            n: *order,
+            adj,
+            adj_list,
+            deg,
+        }
+    }
+
     fn new_fano_plane() -> Graph {
         let adj_list: Vec<Vec<usize>> = vec![vec![1, 5, 6], vec![0, 2, 3, 5, 6], vec![1, 3, 6], 
             vec![1, 2, 4, 5, 6], vec![3, 5, 6], vec![0, 1, 3, 4, 6], vec![0, 1, 2, 3, 4, 5]];
@@ -194,6 +215,7 @@ impl Graph {
             Constructor::Complete(order) => Graph::new_complete(order),
             Constructor::Cyclic(order) => Graph::new_cyclic(order),
             Constructor::Path(order) => Graph::new_path(order),
+            Constructor::Star(order) => Graph::new_star(order),
             Constructor::FanoPlane => Graph::new_fano_plane(),
             Constructor::Petersen => Graph::new_petersen(),
         }

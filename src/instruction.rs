@@ -14,6 +14,7 @@ pub enum Constructor {
     Complete(Order),
     Cyclic(Order),
     Path(Order),
+    Star(Order),
     FanoPlane,
     Petersen,
 }
@@ -109,6 +110,7 @@ impl Constructor {
             "complete" | "k" => Constructor::Complete(Order::of_string(args[0])),
             "cyclic" | "c" => Constructor::Cyclic(Order::of_string(args[0])),
             "path" | "p" => Constructor::Path(Order::of_string(args[0])),
+            "star" | "s" => Constructor::Star(Order::of_string(args[0])),
             "fano" => Constructor::FanoPlane,
             "petersen" => Constructor::Petersen,
             &_ => panic!("Could not find graph constructor!"),
@@ -151,6 +153,9 @@ impl fmt::Display for Constructor {
             },
             Constructor::Path(order) => {
                 write!(f, "Path of order {}", order)
+            },
+            Constructor::Star(order) => {
+                write!(f, "Star of order {}", order)
             },
             Constructor::FanoPlane => write!(f, "the Fano plane"),
             Constructor::Petersen => write!(f, "the Petersen graph"),
