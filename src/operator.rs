@@ -31,7 +31,7 @@ impl Operator {
         }
     }
 
-    fn operate_bool(&mut self, g: &Graph, operation: &BoolOperation) -> bool {
+    pub fn operate_bool(&mut self, g: &Graph, operation: &BoolOperation) -> bool {
         match operation {
             BoolOperation::Less(op1, op2) => 
                 self.operate_int(g, op1) < self.operate_int(g, op2),

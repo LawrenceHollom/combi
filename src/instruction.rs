@@ -1,6 +1,5 @@
 use utilities::*;
 use std::fmt;
-use regex;
 
 pub enum Constructor {
     BoxProduct(Box<Constructor>, Box<Constructor>),
@@ -46,56 +45,31 @@ pub enum Operation {
     Unit(UnitOperation),
 }
 
-pub struct Instruction {
-    pub repeats: usize,
-    pub constructor: Constructor,
-    pub operations: Vec<Operation>,
-}
-
 impl Constructor {
     pub fn of_string(text: &str) -> Constructor {
         // must be otf func_tion(a, b, c, ...)
-        let (func, args) = match text.split_once('(') {
-            Some((func, args_string)) => {
-                let mut depth = 0;
-                let mut last_index = 0;
-                let mut args = vec![];
-                for (i, c) in args_string.as_bytes().iter().enumerate() {
-                    if *c == '(' as u8 {
-                        depth += 1;
-                    } else if *c == ')' as u8 {
-                        depth -= 1;
-                    } else if *c == ',' as u8 && depth == 0 {
-                        args.push(&args_string[last_index..i]);
-                        last_index = i + 1;
-                    }
-                }
-                args.push(&args_string[last_index..args_string.len()].trim_end_matches(')'));
-                (func, args)
-            }
-            None => (text, vec![]),
-        };
+        let (func, args) = parse_function_like(text);
                 
         match func.to_lowercase().as_str() {
             "cartesian" | "box" => {
                 Constructor::BoxProduct(Box::new(Constructor::of_string(args[0])), 
-                Box::new(Constructor::of_string(args[1])))
+                    Box::new(Constructor::of_string(args[1])))
             },
             "tensor" | "x" => {
                 Constructor::TensorProduct(Box::new(Constructor::of_string(args[0])), 
-                Box::new(Constructor::of_string(args[1])))
+                    Box::new(Constructor::of_string(args[1])))
             },
             "lex" | "." => {
                 Constructor::LexProduct(Box::new(Constructor::of_string(args[0])), 
-                Box::new(Constructor::of_string(args[1])))
+                    Box::new(Constructor::of_string(args[1])))
             },
             "strong" | "and" => {
                 Constructor::StrongProduct(Box::new(Constructor::of_string(args[0])), 
-                Box::new(Constructor::of_string(args[1])))
+                    Box::new(Constructor::of_string(args[1])))
             },
             "conormal" | "or" | "*" => {
                 Constructor::ConormalProduct(Box::new(Constructor::of_string(args[0])), 
-                Box::new(Constructor::of_string(args[1])))
+                    Box::new(Constructor::of_string(args[1])))
             },
             "rrb" | "random_regular_bipartite" => {
                 Constructor::RandomRegularBipartite(Order::of_string(args[0]), 
@@ -290,34 +264,5 @@ impl fmt::Display for Operation {
             Operation::Bool(op) => write!(f, "{}", op),
             Operation::Unit(op) => write!(f, "{}", op),
         }
-    }
-}
-
-impl Instruction {
-    pub fn of_string(text: &str) -> Instruction {
-        let re = regex::Regex::new(r"->|=>").unwrap();
-        let pars: Vec<&str> = re.split(text).map(|par| par.trim()).collect();
-        let offset = pars.len() - 2;
-        let repeats: usize = if offset > 0 { pars[0].parse().unwrap_or(1) } else { 1 };
-        let constructor = Constructor::of_string(pars[offset]);
-        let operations = pars[offset + 1].split(',')
-            .map(|str| Operation::of_string(str)).collect();
-
-        Instruction {
-            repeats,
-            constructor,
-            operations,
-        }
-    }
-
-    pub fn operations_string(&self) -> String {
-        let operations_strs: Vec<String> = self.operations.iter().map(|x| format!("{x}")).collect();
-        operations_strs.join(", ")
-    }
-}
-
-impl fmt::Display for Instruction {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Constructor: {}\nOperations: [{}]", self.constructor, self.operations_string())
     }
 }
