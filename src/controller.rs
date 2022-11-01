@@ -128,14 +128,34 @@ impl Instruction {
     }
 
     fn execute_tabulate(&self, tab: &Tabulation) {
+        let reps = 100;
         let propn = f64::round((tab.end - tab.start) / tab.step) as usize;
+        let operators: Vec<FloatOperation> = self.operations
+            .iter()
+            .map(|x| match x {
+                Operation::Int(op) => Some(FloatOperation::OfInt(*op)),
+                Operation::Bool(op) => Some(FloatOperation::OfBool(*op)),
+                Operation::Float(op) => Some(*op),
+                Operation::Unit(_op) => None,
+            })
+            .flatten()
+            .collect();
+        let mut rows = vec![];
         for i in 0..=propn {
+            let mut sums = vec![0.0; operators.len()];
             let p = tab.start + (tab.step * (i as f64));
-            for j in 0..100 {
+            for _j in 0..reps {
                 let constr = Constructor::ErdosRenyi(tab.order, p);
-                let g = self.execute_single_return(&constr);
-                panic!("You haven't kept track of sums of things!")
+                let g = Graph::new(&constr);
+                let mut operator = Operator::new();
+                for (op, sum) in operators.iter().zip(sums.iter_mut()) {
+                    *sum += operator.operate_float(&g, op);
+                }
             }
+            for sum in sums.iter_mut() {
+                *sum /= reps as f64
+            }
+            rows.push(sums);
         }
     }
 

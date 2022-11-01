@@ -44,6 +44,10 @@ impl Operator {
         }
     }
 
+    pub fn operate_float(&mut self, g: &Graph, operation: &FloatOperation) -> f64 {
+        
+    }
+
     fn operate_unit(&mut self, g: &Graph, operation: &UnitOperation) {
         match operation {
             UnitOperation::Print => g.print(),

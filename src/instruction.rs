@@ -26,13 +26,22 @@ pub enum IntOperation {
     CliqueCoveringNumber,
 }
 
-pub enum BoolOperation {
-    More(Box<IntOperation>, Box<IntOperation>),
-    Less(Box<IntOperation>, Box<IntOperation>),
-    NotMore(Box<IntOperation>, Box<IntOperation>),
-    NotLess(Box<IntOperation>, Box<IntOperation>),
+#[derive(Eq, Hash, PartialEq, Copy, Clone)]
+pub enum FloatOperation {
+    OfInt(IntOperation),
+    OfBool(BoolOperation),
+    Ratio(IntOperation, IntOperation),
 }
 
+#[derive(Eq, Hash, PartialEq, Copy, Clone)]
+pub enum BoolOperation {
+    More(IntOperation, IntOperation),
+    Less(IntOperation, IntOperation),
+    NotMore(IntOperation, IntOperation),
+    NotLess(IntOperation, IntOperation),
+}
+
+#[derive(Eq, Hash, PartialEq, Copy, Clone)]
 pub enum UnitOperation {
     Print,
     RawBunkbed,
@@ -42,6 +51,7 @@ pub enum UnitOperation {
 pub enum Operation {
     Int(IntOperation),
     Bool(BoolOperation),
+    Float(FloatOperation),
     Unit(UnitOperation),
 }
 
@@ -165,22 +175,22 @@ impl BoolOperation {
     pub fn of_string_result(text: &str) -> Option<BoolOperation> {
         if text.contains(">=") {
             fn wrapper (op1: IntOperation, op2: IntOperation) -> BoolOperation { 
-                BoolOperation::NotLess(Box::new(op1), Box::new(op2))
+                BoolOperation::NotLess(op1, op2)
             }
             BoolOperation::wrap_operation(text, ">=", wrapper)
         } else if text.contains("<=") {
             fn wrapper (op1: IntOperation, op2: IntOperation) -> BoolOperation { 
-                BoolOperation::NotMore(Box::new(op1), Box::new(op2))
+                BoolOperation::NotMore(op1, op2)
             }
             BoolOperation::wrap_operation(text, "<=", wrapper)
         } else if text.contains(">") {
             fn wrapper (op1: IntOperation, op2: IntOperation) -> BoolOperation { 
-                BoolOperation::More(Box::new(op1), Box::new(op2))
+                BoolOperation::More(op1, op2)
             }
             BoolOperation::wrap_operation(text, ">", wrapper)
         } else if text.contains("<") {
             fn wrapper (op1: IntOperation, op2: IntOperation) -> BoolOperation { 
-                BoolOperation::Less(Box::new(op1), Box::new(op2))
+                BoolOperation::Less(op1, op2)
             }
             BoolOperation::wrap_operation(text, "<", wrapper)
         } else {

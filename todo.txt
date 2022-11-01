@@ -26,4 +26,3 @@
  - So need to know the threshold expression; e.g. for giant component care about p * n.
  - Need:
  -- FloatOperation
- -- Tabulate construction (assume we always want to do this with G(n,p))
