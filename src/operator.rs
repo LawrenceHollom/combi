@@ -1,6 +1,7 @@
 mod domination;
 mod chromatic;
 mod max_acyclic;
+mod components;
 mod bunkbed;
 mod percolate;
 mod bunkbed_posts;
@@ -20,6 +21,9 @@ impl Operator {
             Some(value) => *value,
             None => {
                 let value = match operation {
+                    IntOperation::Order => g.n.to_usize() as u32,
+                    IntOperation::Size => g.size() as u32,
+                    IntOperation::LargestComponent => components::largest_component(g),
                     IntOperation::DominationNumber => domination::domination_number(g),
                     IntOperation::ChromaticNumber => chromatic::chromatic_number(g),
                     IntOperation::MaxAcyclicSubgraph => max_acyclic::max_acyclic_subgraph(g),
@@ -44,6 +48,17 @@ impl Operator {
         }
     }
 
+    pub fn operate_float(&mut self, g: &Graph, operation: &FloatOperation) -> f64 {
+        match operation {
+            FloatOperation::OfBool(operation) => 
+                if self.operate_bool(g, operation) { 1.0 } else { 0.0 },
+            FloatOperation::OfInt(operation) =>
+                self.operate_int(g, operation) as f64,
+            FloatOperation::Ratio(op1, op2) =>
+                (self.operate_int(g, op1) as f64) / (self.operate_int(g, op2) as f64),
+        }
+    }
+
     fn operate_unit(&mut self, g: &Graph, operation: &UnitOperation) {
         match operation {
             UnitOperation::Print => g.print(),
@@ -58,6 +73,8 @@ impl Operator {
                 u32::to_string(&self.operate_int(g, op)),
             Operation::Bool(op) =>
                 bool::to_string(&self.operate_bool(g, op)),
+            Operation::Float(op) =>
+                format!("{:.4}", self.operate_float(g, op)),
             Operation::Unit(op) => {
                 self.operate_unit(g, op);
                 "()".to_owned()

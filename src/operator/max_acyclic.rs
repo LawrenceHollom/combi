@@ -60,7 +60,7 @@ pub fn max_acyclic_subgraph(g: &Graph) -> u32 {
                                 }
                             }
                         },
-                        _error => break 'flood_fill,
+                        Err(_err) => break 'flood_fill,
                     }
                 }
             }

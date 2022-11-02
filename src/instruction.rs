@@ -20,19 +20,31 @@ pub enum Constructor {
 
 #[derive(Eq, Hash, PartialEq, Copy, Clone)]
 pub enum IntOperation {
+    Order,
+    Size,
+    LargestComponent,
     DominationNumber,
     ChromaticNumber,
     MaxAcyclicSubgraph,
     CliqueCoveringNumber,
 }
 
-pub enum BoolOperation {
-    More(Box<IntOperation>, Box<IntOperation>),
-    Less(Box<IntOperation>, Box<IntOperation>),
-    NotMore(Box<IntOperation>, Box<IntOperation>),
-    NotLess(Box<IntOperation>, Box<IntOperation>),
+#[derive(Eq, Hash, PartialEq, Copy, Clone)]
+pub enum FloatOperation {
+    OfInt(IntOperation),
+    OfBool(BoolOperation),
+    Ratio(IntOperation, IntOperation),
 }
 
+#[derive(Eq, Hash, PartialEq, Copy, Clone)]
+pub enum BoolOperation {
+    More(IntOperation, IntOperation),
+    Less(IntOperation, IntOperation),
+    NotMore(IntOperation, IntOperation),
+    NotLess(IntOperation, IntOperation),
+}
+
+#[derive(Eq, Hash, PartialEq, Copy, Clone)]
 pub enum UnitOperation {
     Print,
     RawBunkbed,
@@ -42,6 +54,7 @@ pub enum UnitOperation {
 pub enum Operation {
     Int(IntOperation),
     Bool(BoolOperation),
+    Float(FloatOperation),
     Unit(UnitOperation),
 }
 
@@ -140,6 +153,9 @@ impl fmt::Display for Constructor {
 impl IntOperation {
     pub fn of_string_result(text: &str) -> Option<IntOperation> {
         match text.trim().to_lowercase().as_str() {
+            "order" | "n" => Some(IntOperation::Order),
+            "size" | "edges" => Some(IntOperation::Size),
+            "largest_component" | "largest" => Some(IntOperation::LargestComponent),
             "domination" | "dominator" | "gamma" => Some(IntOperation::DominationNumber),
             "chromatic" | "chi" => Some(IntOperation::ChromaticNumber),
             "max_acyclic" | "acyclic" => Some(IntOperation::MaxAcyclicSubgraph),
@@ -165,24 +181,42 @@ impl BoolOperation {
     pub fn of_string_result(text: &str) -> Option<BoolOperation> {
         if text.contains(">=") {
             fn wrapper (op1: IntOperation, op2: IntOperation) -> BoolOperation { 
-                BoolOperation::NotLess(Box::new(op1), Box::new(op2))
+                BoolOperation::NotLess(op1, op2)
             }
             BoolOperation::wrap_operation(text, ">=", wrapper)
         } else if text.contains("<=") {
             fn wrapper (op1: IntOperation, op2: IntOperation) -> BoolOperation { 
-                BoolOperation::NotMore(Box::new(op1), Box::new(op2))
+                BoolOperation::NotMore(op1, op2)
             }
             BoolOperation::wrap_operation(text, "<=", wrapper)
         } else if text.contains(">") {
             fn wrapper (op1: IntOperation, op2: IntOperation) -> BoolOperation { 
-                BoolOperation::More(Box::new(op1), Box::new(op2))
+                BoolOperation::More(op1, op2)
             }
             BoolOperation::wrap_operation(text, ">", wrapper)
         } else if text.contains("<") {
             fn wrapper (op1: IntOperation, op2: IntOperation) -> BoolOperation { 
-                BoolOperation::Less(Box::new(op1), Box::new(op2))
+                BoolOperation::Less(op1, op2)
             }
             BoolOperation::wrap_operation(text, "<", wrapper)
+        } else {
+            None
+        }
+    }
+}
+
+impl FloatOperation {
+    fn of_string_result(text: &str) -> Option<FloatOperation> {
+        if text.contains("/") {
+            let pars: Vec<&str> = text.split("/").map(|x| x.trim()).collect();
+            if pars.len() == 2 {
+                IntOperation::of_string_result(pars[0]).map(|op1| 
+                    IntOperation::of_string_result(pars[1]).map(|op2|
+                        FloatOperation::Ratio(op1, op2)
+                )).flatten()
+            } else {
+                None
+            }
         } else {
             None
         }
@@ -204,6 +238,7 @@ impl Operation {
     pub fn of_string(text: &str) -> Operation {
         IntOperation::of_string_result(text).map(|x| Operation::Int(x))
             .or(BoolOperation::of_string_result(text).map(|x| Operation::Bool(x)))
+            .or(FloatOperation::of_string_result(text).map(|x| Operation::Float(x)))
             .or(UnitOperation::of_string_result(text).map(|x| Operation::Unit(x)))
             .unwrap()
     }
@@ -212,6 +247,9 @@ impl Operation {
 impl fmt::Display for IntOperation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let name = match self {
+            IntOperation::Order => "Order",
+            IntOperation::Size => "Size",
+            IntOperation::LargestComponent => "Largest component",
             IntOperation::DominationNumber => "Domination number",
             IntOperation::ChromaticNumber => "Chromatic number",
             IntOperation::MaxAcyclicSubgraph => "Max acyclic subgraph size",
@@ -223,24 +261,26 @@ impl fmt::Display for IntOperation {
 
 impl fmt::Display for BoolOperation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let str;
         let name = match self {
-            BoolOperation::More(op1, op2) => {
-                str = format!("Is ({} > {})", *op1, *op2);
-                &str
-            },
-            BoolOperation::Less(op1, op2) => {
-                str = format!("Is ({} < {})", *op1, *op2);
-                &str
-            },
-            BoolOperation::NotMore(op1, op2) => {
-                str = format!("Is ({} <= {})", *op1, *op2);
-                &str
-            },
-            BoolOperation::NotLess(op1, op2) => {
-                str = format!("Is ({} >= {})", *op1, *op2);
-                &str
-            },
+            BoolOperation::More(op1, op2) => 
+                format!("Is ({} > {})", *op1, *op2),
+            BoolOperation::Less(op1, op2) => 
+                format!("Is ({} < {})", *op1, *op2),
+            BoolOperation::NotMore(op1, op2) => 
+                format!("Is ({} <= {})", *op1, *op2),
+            BoolOperation::NotLess(op1, op2) => 
+                format!("Is ({} >= {})", *op1, *op2),
+        };
+        write!(f, "{}", name)
+    }
+}
+
+impl fmt::Display for FloatOperation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let name = match self {
+            FloatOperation::OfBool(op) => format!("Of Bool ({})", op),
+            FloatOperation::OfInt(op) => format!("Of int ({})", op),
+            FloatOperation::Ratio(op1, op2) => format!("Ratio ({}) / ({})", op1, op2),
         };
         write!(f, "{}", name)
     }
@@ -262,6 +302,7 @@ impl fmt::Display for Operation {
         match self {
             Operation::Int(op) => write!(f, "{}", op),
             Operation::Bool(op) => write!(f, "{}", op),
+            Operation::Float(op) => write!(f, "{}", op),
             Operation::Unit(op) => write!(f, "{}", op),
         }
     }
