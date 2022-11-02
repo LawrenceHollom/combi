@@ -28,6 +28,7 @@ pub enum IntOperation {
     ChromaticNumber,
     MaxAcyclicSubgraph,
     CliqueCoveringNumber,
+    NumOnLongMonotone,
 }
 
 #[derive(Eq, Hash, PartialEq, Copy, Clone)]
@@ -44,6 +45,7 @@ pub enum BoolOperation {
     NotMore(IntOperation, IntOperation),
     NotLess(IntOperation, IntOperation),
     IsConnected,
+    HasLongMonotone,
 }
 
 #[derive(Eq, Hash, PartialEq, Copy, Clone)]
@@ -163,6 +165,7 @@ impl IntOperation {
             "chromatic" | "chi" => Some(IntOperation::ChromaticNumber),
             "max_acyclic" | "acyclic" => Some(IntOperation::MaxAcyclicSubgraph),
             "clique_cover" | "theta" => Some(IntOperation::CliqueCoveringNumber),
+            "num_on_long_monotone" | "num_monot" => Some(IntOperation::NumOnLongMonotone),
             &_ => None,
         }
     }
@@ -205,6 +208,7 @@ impl BoolOperation {
         } else {
             match text.trim().to_lowercase().as_str() {
                 "is_connected" | "connected" => Some(BoolOperation::IsConnected),
+                "has_long_monotone" | "has_monot" | "is_monot" => Some(BoolOperation::HasLongMonotone),
                 &_ => None,
             }
         }
@@ -261,6 +265,7 @@ impl fmt::Display for IntOperation {
             IntOperation::ChromaticNumber => "Chromatic number",
             IntOperation::MaxAcyclicSubgraph => "Max acyclic subgraph size",
             IntOperation::CliqueCoveringNumber => "Clique covering number",
+            IntOperation::NumOnLongMonotone => "Number of vertices on a 1->n monotone path",
         };
         write!(f, "{}", name)
     }
@@ -278,6 +283,7 @@ impl fmt::Display for BoolOperation {
             BoolOperation::NotLess(op1, op2) => 
                 format!("Is ({} >= {})", *op1, *op2),
             BoolOperation::IsConnected => "Is connected".to_owned(),
+            BoolOperation::HasLongMonotone => "Has 1->n monotone path".to_owned()
         };
         write!(f, "{}", name)
     }

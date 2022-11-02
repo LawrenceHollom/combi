@@ -2,6 +2,7 @@ mod domination;
 mod chromatic;
 mod max_acyclic;
 mod components;
+mod monotone;
 mod bunkbed;
 mod percolate;
 mod bunkbed_posts;
@@ -29,6 +30,7 @@ impl Operator {
                     IntOperation::ChromaticNumber => chromatic::chromatic_number(g),
                     IntOperation::MaxAcyclicSubgraph => max_acyclic::max_acyclic_subgraph(g),
                     IntOperation::CliqueCoveringNumber => chromatic::chromatic_number(&g.complement()),
+                    IntOperation::NumOnLongMonotone => monotone::num_on_long_monotone(&g),
                 };
                 self.previous_values.insert(*operation, value);
                 value
@@ -47,6 +49,7 @@ impl Operator {
             BoolOperation::NotMore(op1, op2) => 
                 self.operate_int(g, op1) <= self.operate_int(g, op2),
             BoolOperation::IsConnected => components::is_connected(g),
+            BoolOperation::HasLongMonotone => monotone::has_long_monotone(g),
         }
     }
 
