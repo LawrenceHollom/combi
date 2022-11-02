@@ -20,6 +20,9 @@ pub enum Constructor {
 
 #[derive(Eq, Hash, PartialEq, Copy, Clone)]
 pub enum IntOperation {
+    Order,
+    Size,
+    LargestComponent,
     DominationNumber,
     ChromaticNumber,
     MaxAcyclicSubgraph,
@@ -150,6 +153,9 @@ impl fmt::Display for Constructor {
 impl IntOperation {
     pub fn of_string_result(text: &str) -> Option<IntOperation> {
         match text.trim().to_lowercase().as_str() {
+            "order" | "n" => Some(IntOperation::Order),
+            "size" | "edges" => Some(IntOperation::Size),
+            "largest_component" | "largest" => Some(IntOperation::LargestComponent),
             "domination" | "dominator" | "gamma" => Some(IntOperation::DominationNumber),
             "chromatic" | "chi" => Some(IntOperation::ChromaticNumber),
             "max_acyclic" | "acyclic" => Some(IntOperation::MaxAcyclicSubgraph),
@@ -241,6 +247,9 @@ impl Operation {
 impl fmt::Display for IntOperation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let name = match self {
+            IntOperation::Order => "Order",
+            IntOperation::Size => "Size",
+            IntOperation::LargestComponent => "Largest component",
             IntOperation::DominationNumber => "Domination number",
             IntOperation::ChromaticNumber => "Chromatic number",
             IntOperation::MaxAcyclicSubgraph => "Max acyclic subgraph size",

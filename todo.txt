@@ -2,9 +2,6 @@
  - Add more complex random graph constructions
  - Add computation of path cover number (have java code for this?)
 
- == MERGE REPEATS AND CONSTRUCTIONS ==
- - Inefficiency if a bool operation is shared between the stop condition and the print conditions
-
  == THE KITCHEN SINK ==
  - Add option to test hypothesis via a big list of graphs; basically just try everything in increasing order order
  -- Maybe option for increasing size order?
@@ -18,14 +15,6 @@
 
  == BUGS ==
  - Awkward crash when asking for e.g. rrb(4,2); something goes oob
-
- == G(n,p) SIMULATOR ==
- - Want to be able to answer questions otf "When does the giant component emerge?"
- - But for arbitrary functions of the graph
- - Output is a big table of values p/threshold -> value
- - So need to know the threshold expression; e.g. for giant component care about p * n.
- - Need:
- -- FloatOperation
 
  == PARSERS FAIL FOR COMPLEX CONSTRUCTIONS ==
  - Need to replace ".contains" commands in instruction.rs with proper tree-parsing.

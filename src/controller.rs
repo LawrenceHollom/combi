@@ -155,6 +155,11 @@ impl Instruction {
             for sum in sums.iter_mut() {
                 *sum /= reps as f64
             }
+            print!("p: {:.4}", p);
+            for x in sums.iter() {
+                print!(" {:.4}", x);
+            }
+            println!();
             rows.push(sums);
         }
     }

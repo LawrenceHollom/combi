@@ -1,6 +1,7 @@
 mod domination;
 mod chromatic;
 mod max_acyclic;
+mod components;
 mod bunkbed;
 mod percolate;
 mod bunkbed_posts;
@@ -20,6 +21,9 @@ impl Operator {
             Some(value) => *value,
             None => {
                 let value = match operation {
+                    IntOperation::Order => g.n.to_usize() as u32,
+                    IntOperation::Size => g.size() as u32,
+                    IntOperation::LargestComponent => components::largest_component(g),
                     IntOperation::DominationNumber => domination::domination_number(g),
                     IntOperation::ChromaticNumber => chromatic::chromatic_number(g),
                     IntOperation::MaxAcyclicSubgraph => max_acyclic::max_acyclic_subgraph(g),
