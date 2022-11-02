@@ -26,3 +26,6 @@
  - So need to know the threshold expression; e.g. for giant component care about p * n.
  - Need:
  -- FloatOperation
+
+ == PARSERS FAIL FOR COMPLEX CONSTRUCTIONS ==
+ - Need to replace ".contains" commands in instruction.rs with proper tree-parsing.

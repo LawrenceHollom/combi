@@ -199,6 +199,24 @@ impl BoolOperation {
     }
 }
 
+impl FloatOperation {
+    fn of_string_result(text: &str) -> Option<FloatOperation> {
+        if text.contains("/") {
+            let pars: Vec<&str> = text.split("/").map(|x| x.trim()).collect();
+            if pars.len() == 2 {
+                IntOperation::of_string_result(pars[0]).map(|op1| 
+                    IntOperation::of_string_result(pars[1]).map(|op2|
+                        FloatOperation::Ratio(op1, op2)
+                )).flatten()
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+}
+
 impl UnitOperation {
     pub fn of_string_result(text: &str) -> Option<UnitOperation> {
         match text.trim().to_lowercase().as_str() {
@@ -214,6 +232,7 @@ impl Operation {
     pub fn of_string(text: &str) -> Operation {
         IntOperation::of_string_result(text).map(|x| Operation::Int(x))
             .or(BoolOperation::of_string_result(text).map(|x| Operation::Bool(x)))
+            .or(FloatOperation::of_string_result(text).map(|x| Operation::Float(x)))
             .or(UnitOperation::of_string_result(text).map(|x| Operation::Unit(x)))
             .unwrap()
     }
@@ -233,24 +252,26 @@ impl fmt::Display for IntOperation {
 
 impl fmt::Display for BoolOperation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let str;
         let name = match self {
-            BoolOperation::More(op1, op2) => {
-                str = format!("Is ({} > {})", *op1, *op2);
-                &str
-            },
-            BoolOperation::Less(op1, op2) => {
-                str = format!("Is ({} < {})", *op1, *op2);
-                &str
-            },
-            BoolOperation::NotMore(op1, op2) => {
-                str = format!("Is ({} <= {})", *op1, *op2);
-                &str
-            },
-            BoolOperation::NotLess(op1, op2) => {
-                str = format!("Is ({} >= {})", *op1, *op2);
-                &str
-            },
+            BoolOperation::More(op1, op2) => 
+                format!("Is ({} > {})", *op1, *op2),
+            BoolOperation::Less(op1, op2) => 
+                format!("Is ({} < {})", *op1, *op2),
+            BoolOperation::NotMore(op1, op2) => 
+                format!("Is ({} <= {})", *op1, *op2),
+            BoolOperation::NotLess(op1, op2) => 
+                format!("Is ({} >= {})", *op1, *op2),
+        };
+        write!(f, "{}", name)
+    }
+}
+
+impl fmt::Display for FloatOperation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let name = match self {
+            FloatOperation::OfBool(op) => format!("Of Bool ({})", op),
+            FloatOperation::OfInt(op) => format!("Of int ({})", op),
+            FloatOperation::Ratio(op1, op2) => format!("Ratio ({}) / ({})", op1, op2),
         };
         write!(f, "{}", name)
     }
@@ -272,6 +293,7 @@ impl fmt::Display for Operation {
         match self {
             Operation::Int(op) => write!(f, "{}", op),
             Operation::Bool(op) => write!(f, "{}", op),
+            Operation::Float(op) => write!(f, "{}", op),
             Operation::Unit(op) => write!(f, "{}", op),
         }
     }

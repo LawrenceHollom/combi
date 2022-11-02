@@ -45,7 +45,14 @@ impl Operator {
     }
 
     pub fn operate_float(&mut self, g: &Graph, operation: &FloatOperation) -> f64 {
-        
+        match operation {
+            FloatOperation::OfBool(operation) => 
+                if self.operate_bool(g, operation) { 1.0 } else { 0.0 },
+            FloatOperation::OfInt(operation) =>
+                self.operate_int(g, operation) as f64,
+            FloatOperation::Ratio(op1, op2) =>
+                (self.operate_int(g, op1) as f64) / (self.operate_int(g, op2) as f64),
+        }
     }
 
     fn operate_unit(&mut self, g: &Graph, operation: &UnitOperation) {
@@ -62,6 +69,8 @@ impl Operator {
                 u32::to_string(&self.operate_int(g, op)),
             Operation::Bool(op) =>
                 bool::to_string(&self.operate_bool(g, op)),
+            Operation::Float(op) =>
+                f64::to_string(&self.operate_float(g, op)),
             Operation::Unit(op) => {
                 self.operate_unit(g, op);
                 "()".to_owned()
