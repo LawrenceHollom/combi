@@ -24,6 +24,7 @@ impl Operator {
                     IntOperation::Order => g.n.to_usize() as u32,
                     IntOperation::Size => g.size() as u32,
                     IntOperation::LargestComponent => components::largest_component(g),
+                    IntOperation::NumComponents => components::num_components(g),
                     IntOperation::DominationNumber => domination::domination_number(g),
                     IntOperation::ChromaticNumber => chromatic::chromatic_number(g),
                     IntOperation::MaxAcyclicSubgraph => max_acyclic::max_acyclic_subgraph(g),
@@ -45,6 +46,7 @@ impl Operator {
                 self.operate_int(g, op1) >= self.operate_int(g, op2),
             BoolOperation::NotMore(op1, op2) => 
                 self.operate_int(g, op1) <= self.operate_int(g, op2),
+            BoolOperation::IsConnected => components::is_connected(g),
         }
     }
 

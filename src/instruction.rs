@@ -23,6 +23,7 @@ pub enum IntOperation {
     Order,
     Size,
     LargestComponent,
+    NumComponents,
     DominationNumber,
     ChromaticNumber,
     MaxAcyclicSubgraph,
@@ -42,6 +43,7 @@ pub enum BoolOperation {
     Less(IntOperation, IntOperation),
     NotMore(IntOperation, IntOperation),
     NotLess(IntOperation, IntOperation),
+    IsConnected,
 }
 
 #[derive(Eq, Hash, PartialEq, Copy, Clone)]
@@ -156,6 +158,7 @@ impl IntOperation {
             "order" | "n" => Some(IntOperation::Order),
             "size" | "edges" => Some(IntOperation::Size),
             "largest_component" | "largest" => Some(IntOperation::LargestComponent),
+            "num_components" | "comps" => Some(IntOperation::NumComponents),
             "domination" | "dominator" | "gamma" => Some(IntOperation::DominationNumber),
             "chromatic" | "chi" => Some(IntOperation::ChromaticNumber),
             "max_acyclic" | "acyclic" => Some(IntOperation::MaxAcyclicSubgraph),
@@ -200,7 +203,10 @@ impl BoolOperation {
             }
             BoolOperation::wrap_operation(text, "<", wrapper)
         } else {
-            None
+            match text.trim().to_lowercase().as_str() {
+                "is_connected" | "connected" => Some(BoolOperation::IsConnected),
+                &_ => None,
+            }
         }
     }
 }
@@ -250,6 +256,7 @@ impl fmt::Display for IntOperation {
             IntOperation::Order => "Order",
             IntOperation::Size => "Size",
             IntOperation::LargestComponent => "Largest component",
+            IntOperation::NumComponents => "Number of components",
             IntOperation::DominationNumber => "Domination number",
             IntOperation::ChromaticNumber => "Chromatic number",
             IntOperation::MaxAcyclicSubgraph => "Max acyclic subgraph size",
@@ -270,6 +277,7 @@ impl fmt::Display for BoolOperation {
                 format!("Is ({} <= {})", *op1, *op2),
             BoolOperation::NotLess(op1, op2) => 
                 format!("Is ({} >= {})", *op1, *op2),
+            BoolOperation::IsConnected => "Is connected".to_owned(),
         };
         write!(f, "{}", name)
     }
