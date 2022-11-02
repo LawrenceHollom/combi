@@ -74,7 +74,7 @@ impl Operator {
             Operation::Bool(op) =>
                 bool::to_string(&self.operate_bool(g, op)),
             Operation::Float(op) =>
-                f64::to_string(&self.operate_float(g, op)),
+                format!("{:.4}", self.operate_float(g, op)),
             Operation::Unit(op) => {
                 self.operate_unit(g, op);
                 "()".to_owned()
