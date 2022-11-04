@@ -8,6 +8,7 @@ mod products;
 mod erdos_renyi;
 mod grid;
 mod random_regular_bipartite;
+mod tree;
 
 pub struct Graph {
     pub n: Order,
@@ -203,6 +204,9 @@ impl Graph {
             Constructor::ConormalProduct(constr1, constr2) => {
                 products::new_conormal(&Self::new(constr1), &Self::new(constr2))
             },
+            Constructor::RootedTree(parents) => {
+                tree::new_rooted(parents)
+            }
             Constructor::RandomRegularBipartite(order, degree) => {
                 random_regular_bipartite::new(order, degree)
             },

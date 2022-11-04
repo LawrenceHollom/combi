@@ -31,6 +31,9 @@ impl Operator {
                     IntOperation::MaxAcyclicSubgraph => max_acyclic::max_acyclic_subgraph(g),
                     IntOperation::CliqueCoveringNumber => chromatic::chromatic_number(&g.complement()),
                     IntOperation::NumOnLongMonotone => monotone::num_on_long_monotone(&g),
+                    IntOperation::MaxMonotonePath => monotone::max_monotone(&g),
+                    IntOperation::TotalDominationGameLength => domination::total_domination_game_length(&g),
+                    IntOperation::Number(k) => *k,
                 };
                 self.previous_values.insert(*operation, value);
                 value
@@ -69,6 +72,7 @@ impl Operator {
             UnitOperation::Print => g.print(),
             UnitOperation::RawBunkbed => bunkbed::print_polynomials(g),
             UnitOperation::BunkbedPosts => bunkbed_posts::print_polynomials(g),
+            UnitOperation::Unit => (),
         }
     }
 

@@ -48,3 +48,20 @@ pub fn num_on_long_monotone(g: &Graph) -> u32 {
     }
     num_monotted
 }
+
+pub fn max_monotone(g: &Graph) -> u32 {
+    let n = g.n.to_usize();
+    let mut dp: Vec<u32> = vec![1; n];
+    let mut max: u32 = 1;
+    for i in 0..n {
+        for j in g.adj_list[i].iter() {
+            if *j < i && dp[*j] >= dp[i] {
+                dp[i] = dp[*j] + 1;
+                if dp[i] > max {
+                    max = dp[i];
+                }
+            }
+        }
+    }
+    max
+}

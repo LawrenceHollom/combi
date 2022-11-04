@@ -1,6 +1,7 @@
  == INSTRUCTIONS ==
  - Add more complex random graph constructions
  - Add computation of path cover number (have java code for this?)
+ - Add size of largest clique (omega) and independence number (alpha)
 
  == THE KITCHEN SINK ==
  - Add option to test hypothesis via a big list of graphs; basically just try everything in increasing order order
@@ -18,3 +19,11 @@
 
  == PARSERS FAIL FOR COMPLEX CONSTRUCTIONS ==
  - Need to replace ".contains" commands in instruction.rs with proper tree-parsing.
+
+ == TREE CONSTRUCTOR ==
+ - Allow manual entry of a specific tree
+ - Hack in a max degree condition (an optional argument at the end of the controller)
+
+ == BOOL OPERATIONS ==
+ - Add logical connectives
+ - Will run into copy issues.

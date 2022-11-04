@@ -45,6 +45,10 @@ impl Degree {
     pub fn incr(&self) -> Degree {
         Degree(self.0 + 1)
     }
+
+    pub fn equals(&self, d: usize) -> bool {
+        self.0 == d
+    }
 }
 
 impl fmt::Display for Degree {

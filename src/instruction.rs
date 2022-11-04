@@ -7,6 +7,7 @@ pub enum Constructor {
     LexProduct(Box<Constructor>, Box<Constructor>),
     StrongProduct(Box<Constructor>, Box<Constructor>),
     ConormalProduct(Box<Constructor>, Box<Constructor>),
+    RootedTree(Vec<usize>),
     RandomRegularBipartite(Order, Degree),
     ErdosRenyi(Order, f64),
     Grid(Order, Order),
@@ -29,6 +30,9 @@ pub enum IntOperation {
     MaxAcyclicSubgraph,
     CliqueCoveringNumber,
     NumOnLongMonotone,
+    MaxMonotonePath,
+    TotalDominationGameLength,
+    Number(u32),
 }
 
 #[derive(Eq, Hash, PartialEq, Copy, Clone)]
@@ -53,6 +57,7 @@ pub enum UnitOperation {
     Print,
     RawBunkbed,
     BunkbedPosts,
+    Unit,
 }
 
 pub enum Operation {
@@ -127,6 +132,9 @@ impl fmt::Display for Constructor {
             Constructor::ConormalProduct(constr1, constr2) => {
                 write!(f, "Conormal product of ({}) and ({})", constr1, constr2)
             },
+            Constructor::RootedTree(parents) => {
+                write!(f, "Rooted tree with parent pattern {:?}", parents)
+            },
             Constructor::RandomRegularBipartite(order, deg) => {
                 write!(f, "Random regular bipartite or order {} and degree {}", order, deg)
             },
@@ -166,7 +174,9 @@ impl IntOperation {
             "max_acyclic" | "acyclic" => Some(IntOperation::MaxAcyclicSubgraph),
             "clique_cover" | "theta" => Some(IntOperation::CliqueCoveringNumber),
             "num_on_long_monotone" | "num_monot" => Some(IntOperation::NumOnLongMonotone),
-            &_ => None,
+            "max_monot" => Some(IntOperation::MaxMonotonePath),
+            "total_domination_game" | "gamma_tg" => Some(IntOperation::TotalDominationGameLength),
+            str => str.parse().ok().map(|x| IntOperation::Number(x)),
         }
     }
 }
@@ -239,6 +249,7 @@ impl UnitOperation {
             "print" => Some(UnitOperation::Print),
             "bunkbed" => Some(UnitOperation::RawBunkbed),
             "bunkbed_posts" | "posts" => Some(UnitOperation::BunkbedPosts),
+            "()" => Some(UnitOperation::Unit),
             &_ => None,
         }
     }
@@ -256,6 +267,7 @@ impl Operation {
 
 impl fmt::Display for IntOperation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let sta;
         let name = match self {
             IntOperation::Order => "Order",
             IntOperation::Size => "Size",
@@ -266,6 +278,12 @@ impl fmt::Display for IntOperation {
             IntOperation::MaxAcyclicSubgraph => "Max acyclic subgraph size",
             IntOperation::CliqueCoveringNumber => "Clique covering number",
             IntOperation::NumOnLongMonotone => "Number of vertices on a 1->n monotone path",
+            IntOperation::MaxMonotonePath => "Length of longest monotone path",
+            IntOperation::TotalDominationGameLength => "Length of the total domination game",
+            IntOperation::Number(n) => {
+                sta = n.to_string();
+                sta.as_str()
+            }
         };
         write!(f, "{}", name)
     }
@@ -306,6 +324,7 @@ impl fmt::Display for UnitOperation {
             UnitOperation::Print => "Print",
             UnitOperation::RawBunkbed => "Raw bunkbed",
             UnitOperation::BunkbedPosts => "Bunkbed posts",
+            UnitOperation::Unit => "Do nothing",
         };
         write!(f, "{}", name)
     }

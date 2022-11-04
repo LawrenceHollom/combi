@@ -19,6 +19,8 @@ pub enum Controller {
     Repeat(Constructor, usize),
     Tabulate(Tabulation),
     Until(Constructor, BoolOperation),
+    SearchTrees(usize, BoolOperation),
+    KitchenSink(BoolOperation),
 }
 
 pub struct Instruction {
@@ -57,6 +59,13 @@ impl Controller {
                 Controller::Until(Constructor::of_string(args[0]), 
                     BoolOperation::of_string_result(args[1]).unwrap())
             },
+            "search_trees" | "trees" => {
+                Controller::SearchTrees(args[0].parse().unwrap(), 
+                    BoolOperation::of_string_result(args[1]).unwrap())
+            }
+            "kitchen" | "kitchen_sink" | "sink" => {
+                Controller::KitchenSink(BoolOperation::of_string_result(args[0]).unwrap())
+            }
             &_ => {
                 Controller::Single(Constructor::of_string(text))
             }
@@ -78,6 +87,12 @@ impl fmt::Display for Controller {
             },
             Controller::Single(constr) => {
                 write!(f, "{}", constr)
+            }
+            Controller::SearchTrees(n, condition) => {
+                write!(f, "Search all trees of order {} until ({})", n, condition)
+            }
+            Controller::KitchenSink(condition) => {
+                write!(f, "Search the kitchen sink for a graph satisfying ({})", condition)
             }
         }
     }
@@ -181,12 +196,77 @@ impl Instruction {
         }
     }
 
+    fn search_trees(&self, n: usize, condition: &BoolOperation) {
+        fn construct_tree(n: usize, parents: &Vec<usize>, condition: &BoolOperation) -> bool {
+            // Check all children of any node are in decreasing order of degree.
+            let mut num_children: Vec<usize> = vec![0; n-1];
+            for i in 0..(n-1) {
+                num_children[parents[i]] += 1;
+            }
+            let mut is_in_order = true;
+            for i in 0..(n-2) {
+                if parents[i] == parents[i+1] && num_children[i] > num_children[i+1] {
+                    is_in_order = false;
+                }
+            }
+            if is_in_order {
+                let mut operator = Operator::new();
+                // We just copy the vector of parents because fuck it, that's why.
+                let g = Graph::new(&Constructor::RootedTree(parents.to_vec()));
+                
+                let success = operator.operate_bool(&g, condition);
+                if success {
+                    println!("Success!");
+                    g.print();
+                }
+
+                success
+            } else {
+                false
+            }
+        }
+
+        fn search_trees_rec(n: usize, pos: usize, min: usize, parents: &mut Vec<usize>, condition: &BoolOperation) -> bool {
+            if pos == 11 {
+                println!("{:?}", parents);
+            }
+
+            if pos == n-1 {
+                construct_tree(n, parents, condition)
+            } else {
+                for i in min..(pos+1) {
+                    parents[pos] = i;
+                    let min = if pos < 2 { i } else { i.max(parents[pos - 2] + 1)};
+                    let success = search_trees_rec(n, pos + 1, min, parents, condition);
+                    if success {
+                        return true;
+                    }
+                }
+                false
+            }
+        }
+
+        let mut parents = vec![0; n-1];
+        let success = search_trees_rec(n, 0, 0, &mut parents, condition);
+        if success {
+            println!("Above tree found!")
+        } else {
+            println!("No tree found!")
+        }
+    }
+
+    fn kitchen_sink(&self, _condition: &BoolOperation) {
+
+    }
+
     pub fn execute(&self) {
         match &self.controller {
-            Controller::Single(constr) => self.execute_single(&constr),
-            Controller::Repeat(constr, reps) => self.execute_reps(&constr, *reps),
-            Controller::Tabulate(tabulation) => self.execute_tabulate(&tabulation),
-            Controller::Until(constr, condition) => self.execute_until(&constr, &condition),
+            Controller::Single(constr) => self.execute_single(constr),
+            Controller::Repeat(constr, reps) => self.execute_reps(constr, *reps),
+            Controller::Tabulate(tabulation) => self.execute_tabulate(tabulation),
+            Controller::Until(constr, condition) => self.execute_until(constr, condition),
+            Controller::SearchTrees(n, condition) => self.search_trees(*n, condition),
+            Controller::KitchenSink(condition) => self.kitchen_sink(condition),
         }
     }
 }
