@@ -19,7 +19,7 @@ pub enum Controller {
     Repeat(Constructor, usize),
     Tabulate(Tabulation),
     Until(Constructor, BoolOperation),
-    SearchTrees(usize, BoolOperation),
+    SearchTrees(usize, BoolOperation, Degree),
     KitchenSink(BoolOperation),
 }
 
@@ -60,8 +60,10 @@ impl Controller {
                     BoolOperation::of_string_result(args[1]).unwrap())
             },
             "search_trees" | "trees" => {
-                Controller::SearchTrees(args[0].parse().unwrap(), 
-                    BoolOperation::of_string_result(args[1]).unwrap())
+                let n: usize = args[0].parse().unwrap();
+                Controller::SearchTrees(n, 
+                    BoolOperation::of_string_result(args[1]).unwrap(),
+                    if args.len() >= 3 { Degree::of_string(args[2]) } else { Degree::of_usize(n) })
             }
             "kitchen" | "kitchen_sink" | "sink" => {
                 Controller::KitchenSink(BoolOperation::of_string_result(args[0]).unwrap())
@@ -88,8 +90,8 @@ impl fmt::Display for Controller {
             Controller::Single(constr) => {
                 write!(f, "{}", constr)
             }
-            Controller::SearchTrees(n, condition) => {
-                write!(f, "Search all trees of order {} until ({})", n, condition)
+            Controller::SearchTrees(n, condition, max_degree) => {
+                write!(f, "Search all trees of order {} and max_degree {} until ({})", n, max_degree, condition)
             }
             Controller::KitchenSink(condition) => {
                 write!(f, "Search the kitchen sink for a graph satisfying ({})", condition)
@@ -196,7 +198,7 @@ impl Instruction {
         }
     }
 
-    fn search_trees(&self, n: usize, condition: &BoolOperation) {
+    fn search_trees(&self, n: usize, condition: &BoolOperation, max_degree: &Degree) {
         fn construct_tree(n: usize, parents: &Vec<usize>, condition: &BoolOperation) -> bool {
             // Check all children of any node are in decreasing order of degree.
             let mut num_children: Vec<usize> = vec![0; n-1];
@@ -226,7 +228,7 @@ impl Instruction {
             }
         }
 
-        fn search_trees_rec(n: usize, pos: usize, min: usize, parents: &mut Vec<usize>, condition: &BoolOperation) -> bool {
+        fn search_trees_rec(n: usize, pos: usize, min: usize, parents: &mut Vec<usize>, condition: &BoolOperation, max_deg: usize) -> bool {
             if pos == 11 {
                 println!("{:?}", parents);
             }
@@ -236,8 +238,8 @@ impl Instruction {
             } else {
                 for i in min..(pos+1) {
                     parents[pos] = i;
-                    let min = if pos < 2 { i } else { i.max(parents[pos - 2] + 1)};
-                    let success = search_trees_rec(n, pos + 1, min, parents, condition);
+                    let min = if pos < max_deg - 1 { i } else { i.max(parents[pos - max_deg + 1] + 1)};
+                    let success = search_trees_rec(n, pos + 1, min, parents, condition, max_deg);
                     if success {
                         return true;
                     }
@@ -247,7 +249,7 @@ impl Instruction {
         }
 
         let mut parents = vec![0; n-1];
-        let success = search_trees_rec(n, 0, 0, &mut parents, condition);
+        let success = search_trees_rec(n, 0, 0, &mut parents, condition, max_degree.to_usize());
         if success {
             println!("Above tree found!")
         } else {
@@ -265,7 +267,7 @@ impl Instruction {
             Controller::Repeat(constr, reps) => self.execute_reps(constr, *reps),
             Controller::Tabulate(tabulation) => self.execute_tabulate(tabulation),
             Controller::Until(constr, condition) => self.execute_until(constr, condition),
-            Controller::SearchTrees(n, condition) => self.search_trees(*n, condition),
+            Controller::SearchTrees(n, condition, max_degree) => self.search_trees(*n, condition, max_degree),
             Controller::KitchenSink(condition) => self.kitchen_sink(condition),
         }
     }

@@ -22,7 +22,6 @@
 
  == TREE CONSTRUCTOR ==
  - Allow manual entry of a specific tree
- - Hack in a max degree condition (an optional argument at the end of the controller)
 
  == BOOL OPERATIONS ==
  - Add logical connectives
