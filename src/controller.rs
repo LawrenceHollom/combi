@@ -201,13 +201,13 @@ impl Instruction {
     fn search_trees(&self, n: usize, condition: &BoolOperation, max_degree: &Degree) {
         fn construct_tree(n: usize, parents: &Vec<usize>, condition: &BoolOperation) -> bool {
             // Check all children of any node are in decreasing order of degree.
-            let mut num_children: Vec<usize> = vec![0; n-1];
+            let mut num_children: Vec<usize> = vec![0; n];
             for i in 0..(n-1) {
                 num_children[parents[i]] += 1;
             }
             let mut is_in_order = true;
             for i in 0..(n-2) {
-                if parents[i] == parents[i+1] && num_children[i] > num_children[i+1] {
+                if parents[i] == parents[i+1] && num_children[i+1] < num_children[i+2] {
                     is_in_order = false;
                 }
             }
@@ -231,6 +231,7 @@ impl Instruction {
         fn search_trees_rec(n: usize, pos: usize, min: usize, parents: &mut Vec<usize>, condition: &BoolOperation, max_deg: usize) -> bool {
             if pos == 11 {
                 println!("{:?}", parents);
+                println!("{} {} {}", pos, min, max_deg);
             }
 
             if pos == n-1 {
@@ -238,8 +239,10 @@ impl Instruction {
             } else {
                 for i in min..(pos+1) {
                     parents[pos] = i;
-                    let min = if pos < max_deg - 1 { i } else { i.max(parents[pos - max_deg + 1] + 1)};
-                    let success = search_trees_rec(n, pos + 1, min, parents, condition, max_deg);
+                    // change max deg so that 0 is the weakly highest degree node.
+                    let new_max_deg = if min == 0 && i != 0 && pos < max_deg { pos } else { max_deg };
+                    let min = if pos < max_deg - 1 { i } else { i.max(parents[(pos + 2) - max_deg] + 1)};
+                    let success = search_trees_rec(n, pos + 1, min, parents, condition, new_max_deg);
                     if success {
                         return true;
                     }
