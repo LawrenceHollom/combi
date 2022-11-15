@@ -57,6 +57,7 @@ pub enum UnitOperation {
     Print,
     RawBunkbed,
     BunkbedPosts,
+    BunkbedSimulation,
     Unit,
 }
 
@@ -249,6 +250,7 @@ impl UnitOperation {
             "print" => Some(UnitOperation::Print),
             "bunkbed" => Some(UnitOperation::RawBunkbed),
             "bunkbed_posts" | "posts" => Some(UnitOperation::BunkbedPosts),
+            "bunkbed_sim" => Some(UnitOperation::BunkbedSimulation),
             "()" => Some(UnitOperation::Unit),
             &_ => None,
         }
@@ -324,6 +326,7 @@ impl fmt::Display for UnitOperation {
             UnitOperation::Print => "Print",
             UnitOperation::RawBunkbed => "Raw bunkbed",
             UnitOperation::BunkbedPosts => "Bunkbed posts",
+            UnitOperation::BunkbedSimulation => "Bunkbed simulation",
             UnitOperation::Unit => "Do nothing",
         };
         write!(f, "{}", name)

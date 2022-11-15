@@ -1,4 +1,5 @@
 use crate::graph::*;
+use rand::{Rng, thread_rng};
 
 use std::io::*;
 use queues::*;
@@ -30,8 +31,8 @@ impl Percolator {
         }
     }
 
-    pub fn add_percolation(&mut self, num_edges: usize, adj_list: &Vec<Vec<usize>>) {
-        let mut connected = vec![false; self.order];
+    fn test_connections(order: usize, adj_list: &Vec<Vec<usize>>) -> Vec<bool> {
+        let mut connected = vec![false; order];
         let mut q: Queue<usize> = queue![];
         connected[0] = true;
         let _ = q.add(0);
@@ -44,12 +45,36 @@ impl Percolator {
                 }
             }
         }
+        connected
+    }
+
+    pub fn add_percolation(&mut self, num_edges: usize, adj_list: &Vec<Vec<usize>>) {
+        let connected = Self::test_connections(self.order, adj_list);
 
         for v in 1..self.order {
             if connected[v] {
                 self.polys[v].add_inplace(&self.probs[num_edges]);
             }
         }
+    }
+
+    pub fn empirically_percolate_once(g: &Graph, p: f64) -> Vec<bool> {
+        let n = g.n.to_usize();
+        let mut rng = thread_rng();
+
+        let mut true_adj_list: Vec<Vec<usize>> = vec![vec![0; n]; n];
+        
+        for i in 0..(n-1) {
+            for j in (i+1)..n {
+                if g.adj[i][j] {
+                    if rng.gen_bool(p) {
+                        true_adj_list[i].push(j);
+                        true_adj_list[j].push(i);
+                    }
+                }
+            }
+        }
+        Self::test_connections(n, &true_adj_list)
     }
 
     pub fn percolate(g: &Graph) -> Percolator {

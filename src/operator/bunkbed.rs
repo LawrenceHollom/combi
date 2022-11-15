@@ -21,3 +21,30 @@ pub fn print_polynomials(g: &Graph) {
         }
     }
 }
+
+pub fn simulate(g: &Graph) {
+    let n = g.n.to_usize();
+    let bunkbed = g.bunkbed();
+    let samples = 100;
+    let reps = 100000;
+    let mut probs = vec![vec![0.0; n]; samples];
+    for i in 0..samples {
+        let p = i as f64 / samples as f64;
+        for _j in 0..reps {
+            let results = Percolator::empirically_percolate_once(&bunkbed, p);
+            for v in 0..n {
+                probs[i][v] += if results[v] { 1.0 } else { 0.0 } - if results[v + n] { 1.0 } else { 0.0 };
+            }
+        }
+        print!("{:.3} ", p);
+        for prob in probs[i].iter_mut() {
+            *prob /= reps as f64;
+            if *prob < 0.0 {
+                print!("| {:.4} ", *prob);
+            } else {
+                print!("|  {:.4} ", *prob);
+            }
+        }
+        println!();
+    }
+}

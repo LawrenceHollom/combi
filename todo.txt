@@ -13,6 +13,7 @@
 
  == BUNKBEDS ==
   - The code is very (very) slow, and naive. Should be some wins to be had in terms of speed
+  - Add option to bunkbed sim to choose level of precision (maybe as a power of 2 or something)
 
  == BUGS ==
  - Awkward crash when asking for e.g. rrb(4,2); something goes oob

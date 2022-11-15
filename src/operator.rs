@@ -72,6 +72,7 @@ impl Operator {
             UnitOperation::Print => g.print(),
             UnitOperation::RawBunkbed => bunkbed::print_polynomials(g),
             UnitOperation::BunkbedPosts => bunkbed_posts::print_polynomials(g),
+            UnitOperation::BunkbedSimulation => bunkbed::simulate(g),
             UnitOperation::Unit => (),
         }
     }
