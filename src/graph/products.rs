@@ -11,8 +11,8 @@ fn generic_condition(product: &ProductConstructor, g1: &Graph, g2: &Graph, u1: u
         RevLex => g2.adj[u2][v2] || (u2 == v2 && g1.adj[u1][v1]),
         Strong => (u1 == v1 && g2.adj[u2][v2]) || (g1.adj[u1][v1] && u2 == v2) || (g1.adj[u1][v1] && g2.adj[u2][v2]),
         Conormal => g1.adj[u1][v1] || g2.adj[u2][v2],
-        Rooted => u1 == u2,
-        RevRooted => u2 == u2,
+        Rooted => (u1 == v1 && g2.adj[u2][v2]) || (u2 == 0 && v2 == 0 && g1.adj[u1][v1]),
+        RevRooted => (u2 == v2 && g1.adj[u1][v1]) || (u1 == 0 && v1 == 0 && g2.adj[u2][v2]),
     }
 }
 

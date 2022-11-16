@@ -117,6 +117,10 @@ impl Constructor {
                 Product(Conormal, Box::new(Self::of_string(args[0])), 
                     Box::new(Self::of_string(args[1])))
             },
+            "rooted" => {
+                Product(Rooted, Box::new(Self::of_string(args[0])), 
+                    Box::new(Self::of_string(args[1])))
+            },
             "rrb" | "random_regular_bipartite" => {
                 Random(RegularBipartite(Order::of_string(args[0]), 
                     Degree::of_string(args[1])))
