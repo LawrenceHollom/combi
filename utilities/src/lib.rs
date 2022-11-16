@@ -88,3 +88,31 @@ pub fn parse_function_like(text: &str) -> (&str, Vec<&str>) {
         None => (text, vec![]),
     }
 }
+
+pub fn parse_infix_like(text: &str) -> Option<(&str, &str, &str)> {
+    let infix_symbols = vec!['+', '-', '/', '*', '>', '<', '=', '&', '|', '^'];
+    let mut operator_start = 0;
+    let mut operator_end = 0;
+    let bytes = text.as_bytes();
+    let left_chop = if bytes[0] == '(' as u8 { 1 } else { 0 };
+    let mut depth = 0;
+    'parser: for (i, c) in bytes.iter().enumerate() {
+        if operator_start > 0 && !infix_symbols.contains(&(*c as char)) {
+            operator_end = i;
+            break 'parser;
+        } else if *c == '(' as u8 {
+            depth += 1;
+        } else if *c == ')' as u8 {
+            depth -= 1;
+        } else if operator_start == 0 && depth == 0 && infix_symbols.contains(&(*c as char)) {
+            operator_start = i;
+        }
+    }
+    if operator_start > 0 && operator_end > 0 {
+        let op1 = &text[left_chop..(operator_start - left_chop)];
+        let op2 = &text[(operator_end + (if bytes[operator_end] == '(' as u8 { 1 } else { 0 }))..text.len()];
+        Some((op1, &text[operator_start..operator_end], op2))
+    } else {
+        None
+    }
+}

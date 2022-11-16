@@ -2,9 +2,10 @@ use std::io;
 use std::time::*;
 
 mod controller;
-mod instruction;
 mod graph;
 mod operator;
+mod operation;
+mod constructor;
 
 use controller::*;
 

@@ -3,9 +3,13 @@ use std::time::*;
 
 use utilities::*;
 
-use crate::instruction::*;
+use crate::constructor::*;
 use crate::operator::Operator;
 use crate::graph::Graph;
+
+use crate::operation::*;
+use crate::operation::bool_operation::*;
+use crate::operation::float_operation::*;
 
 pub struct Tabulation {
     pub order: Order,
@@ -158,8 +162,8 @@ impl Instruction {
             .iter()
             .map(|x| match x {
                 Operation::Int(op) => Some(FloatOperation::OfInt(*op)),
-                Operation::Bool(op) => Some(FloatOperation::OfBool(*op)),
-                Operation::Float(op) => Some(*op),
+                Operation::Bool(op) => Some(FloatOperation::OfBool(op.to_owned())),
+                Operation::Float(op) => Some(op.to_owned()),
                 Operation::Unit(_op) => None,
             })
             .flatten()
@@ -303,7 +307,7 @@ impl Instruction {
                             // Don't construct duplicate products.
                             if factor < verts / factor || i <= j {
                                 for product in ProductConstructor::all() {
-                                    new_constructors.push(Product(product, Box::new(c1.clone()), Box::new(c2.clone())));
+                                    new_constructors.push(Product(product, Box::new((*c1).to_owned()), Box::new((*c2).to_owned())));
                                     num_new_graphs += 1;
                                 }
                             }
@@ -315,7 +319,7 @@ impl Instruction {
                 constructors.push(vec![]);
             }
             for c in new_constructors.iter() {
-                constructors[verts].push(c.clone());
+                constructors[verts].push((*c).to_owned());
             }
             println!("Added kitchen sink graphs with {} vertices. There are {} of them.", verts, constructors[verts].len());
             if num_new_graphs >= max_new_graphs {

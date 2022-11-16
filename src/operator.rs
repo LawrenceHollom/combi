@@ -11,8 +11,13 @@ mod girth;
 
 use std::collections::HashMap;
 
-use crate::instruction::*;
+use crate::operation::*;
 use crate::graph::*;
+
+use crate::operation::bool_operation::*;
+use crate::operation::float_operation::*;
+use crate::operation::int_operation::*;
+use crate::operation::unit_operation::*;
 
 pub struct Operator {
     previous_values: HashMap<IntOperation, u32>
@@ -46,18 +51,38 @@ impl Operator {
             }
         }
     }
+    
+    fn operate_int_to_bool_infix(&mut self, g: &Graph, infix: &IntToBoolInfix, op1: &IntOperation, op2: &IntOperation) -> bool {
+        use IntToBoolInfix::*;
+        let x1 = self.operate_int(g, op1);
+        let x2 = self.operate_int(g, op2);
+        match *infix {
+            Less => x1 < x2,
+            More => x1 > x2,
+            NotLess => x1 >= x2,
+            NotMore => x1 >= x2,
+            Equal => x1 == x2,
+        }
+    }
+    
+    fn operate_bool_to_bool_infix(&mut self, g: &Graph, infix: &BoolToBoolInfix, op1: &BoolOperation, op2: &BoolOperation) -> bool {
+        use BoolToBoolInfix::*;
+        let x1 = self.operate_bool(g, op1);
+        let x2 = self.operate_bool(g, op2);
+        match *infix {
+            And => x1 && x2,
+            Or => x1 || x2,
+        }
+    }
 
     pub fn operate_bool(&mut self, g: &Graph, operation: &BoolOperation) -> bool {
+        
         use BoolOperation::*;
         match operation {
-            Less(op1, op2) => 
-                self.operate_int(g, op1) < self.operate_int(g, op2),
-            More(op1, op2) => 
-                self.operate_int(g, op1) > self.operate_int(g, op2),
-            NotLess(op1, op2) => 
-                self.operate_int(g, op1) >= self.operate_int(g, op2),
-            NotMore(op1, op2) => 
-                self.operate_int(g, op1) <= self.operate_int(g, op2),
+            IntInfix(infix, op1, op2) => 
+                self.operate_int_to_bool_infix(g, infix, op1, op2),
+            BoolInfix(infix, op1, op2) => 
+                self.operate_bool_to_bool_infix(g, infix, op1, op2),
             IsConnected => components::is_connected(g),
             HasLongMonotone => monotone::has_long_monotone(g),
         }

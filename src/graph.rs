@@ -1,5 +1,5 @@
 use utilities::*;
-use crate::instruction::*;
+use crate::constructor::*;
 
 use rand::{thread_rng, Rng};
 use queues::*;
