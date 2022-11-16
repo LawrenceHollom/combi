@@ -1,8 +1,7 @@
  == INSTRUCTIONS ==
  - Add more complex random graph constructions
  - Add computation of path cover number (have java code for this?)
- - Add size of largest clique (omega) and independence number (alpha)
- - Add girth of the graph
+ - Add recursive bool operators (and, or, not, implies, xor)
 
  == THE KITCHEN SINK ==
  - Maybe add option for increasing size order
@@ -33,5 +32,5 @@
  == FLOAT OPERATIONS ==
  - Add calculations, e.g. (2/3)*n
 
- == REFACTORING ==
- - use T::*; allows you to drop all the T:: in the match statement.
+ == KEEP CLIPPY HAPPY ==
+ - You don't want to anger clippy.

@@ -6,6 +6,8 @@ mod monotone;
 mod bunkbed;
 mod percolate;
 mod bunkbed_posts;
+mod cliques;
+mod girth;
 
 use std::collections::HashMap;
 
@@ -27,6 +29,9 @@ impl Operator {
                     Size => g.size() as u32,
                     LargestComponent => components::largest_component(g),
                     NumComponents => components::num_components(g),
+                    CliqueNumber => cliques::largest_clique(g),
+                    IndependenceNumber => cliques::independence_number(g),
+                    Girth => girth::girth(g),
                     DominationNumber => domination::domination_number(g),
                     ChromaticNumber => chromatic::chromatic_number(g),
                     MaxAcyclicSubgraph => max_acyclic::max_acyclic_subgraph(g),
