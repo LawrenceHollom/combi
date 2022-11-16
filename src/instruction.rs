@@ -1,22 +1,41 @@
 use utilities::*;
 use std::fmt;
 
-pub enum Constructor {
-    BoxProduct(Box<Constructor>, Box<Constructor>),
-    TensorProduct(Box<Constructor>, Box<Constructor>),
-    LexProduct(Box<Constructor>, Box<Constructor>),
-    StrongProduct(Box<Constructor>, Box<Constructor>),
-    ConormalProduct(Box<Constructor>, Box<Constructor>),
-    RootedTree(Vec<usize>),
-    RandomRegularBipartite(Order, Degree),
+#[derive(Copy, Clone)]
+pub enum ProductConstructor {
+    Cartesian,
+    Tensor,
+    Lex,
+    RevLex,
+    Strong,
+    Conormal,
+    Rooted,
+    RevRooted,
+}
+
+#[derive(Copy, Clone)]
+pub enum RandomConstructor {
+    RegularBipartite(Order, Degree),
     ErdosRenyi(Order, f64),
+}
+
+#[derive(Copy, Clone)]
+pub enum RawConstructor {
     Grid(Order, Order),
     Complete(Order),
     Cyclic(Order),
     Path(Order),
     Star(Order),
+    Empty(Order),
     FanoPlane,
     Petersen,
+}
+
+pub enum Constructor {
+    Product(ProductConstructor, Box<Constructor>, Box<Constructor>),
+    Random(RandomConstructor),
+    Raw(RawConstructor),
+    RootedTree(Vec<usize>),
 }
 
 #[derive(Eq, Hash, PartialEq, Copy, Clone)]
@@ -72,93 +91,144 @@ impl Constructor {
     pub fn of_string(text: &str) -> Constructor {
         // must be otf func_tion(a, b, c, ...)
         let (func, args) = parse_function_like(text);
+        use Constructor::*;
+        use ProductConstructor::*;
+        use RawConstructor::*;
+        use RandomConstructor::*;
                 
         match func.to_lowercase().as_str() {
             "cartesian" | "box" => {
-                Constructor::BoxProduct(Box::new(Constructor::of_string(args[0])), 
-                    Box::new(Constructor::of_string(args[1])))
+                Product(Cartesian, Box::new(Self::of_string(args[0])), 
+                    Box::new(Self::of_string(args[1])))
             },
             "tensor" | "x" => {
-                Constructor::TensorProduct(Box::new(Constructor::of_string(args[0])), 
-                    Box::new(Constructor::of_string(args[1])))
+                Product(Tensor, Box::new(Self::of_string(args[0])), 
+                    Box::new(Self::of_string(args[1])))
             },
             "lex" | "." => {
-                Constructor::LexProduct(Box::new(Constructor::of_string(args[0])), 
-                    Box::new(Constructor::of_string(args[1])))
+                Product(Lex, Box::new(Self::of_string(args[0])), 
+                    Box::new(Self::of_string(args[1])))
             },
             "strong" | "and" => {
-                Constructor::StrongProduct(Box::new(Constructor::of_string(args[0])), 
-                    Box::new(Constructor::of_string(args[1])))
+                Product(Strong, Box::new(Self::of_string(args[0])), 
+                    Box::new(Self::of_string(args[1])))
             },
             "conormal" | "or" | "*" => {
-                Constructor::ConormalProduct(Box::new(Constructor::of_string(args[0])), 
-                    Box::new(Constructor::of_string(args[1])))
+                Product(Conormal, Box::new(Self::of_string(args[0])), 
+                    Box::new(Self::of_string(args[1])))
             },
             "rrb" | "random_regular_bipartite" => {
-                Constructor::RandomRegularBipartite(Order::of_string(args[0]), 
-                    Degree::of_string(args[1]))
+                Random(RegularBipartite(Order::of_string(args[0]), 
+                    Degree::of_string(args[1])))
             },
             "erdos_renyi" | "er" | "g" => {
-                Constructor::ErdosRenyi(Order::of_string(args[0]), args[1].parse().unwrap())
+                Random(ErdosRenyi(Order::of_string(args[0]), args[1].parse().unwrap()))
             },
             "grid" => {
-                Constructor::Grid(Order::of_string(args[0]), Order::of_string(args[1]))
+                Raw(Grid(Order::of_string(args[0]), Order::of_string(args[1])))
             },
-            "complete" | "k" => Constructor::Complete(Order::of_string(args[0])),
-            "cyclic" | "c" => Constructor::Cyclic(Order::of_string(args[0])),
-            "path" | "p" => Constructor::Path(Order::of_string(args[0])),
-            "star" | "s" => Constructor::Star(Order::of_string(args[0])),
-            "fano" => Constructor::FanoPlane,
-            "petersen" => Constructor::Petersen,
+            "complete" | "k" => Raw(Complete(Order::of_string(args[0]))),
+            "cyclic" | "c" => Raw(Cyclic(Order::of_string(args[0]))),
+            "path" | "p" => Raw(Path(Order::of_string(args[0]))),
+            "star" | "s" => Raw(Star(Order::of_string(args[0]))),
+            "empty" | "e" => Raw(Empty(Order::of_string(args[0]))),
+            "fano" => Raw(FanoPlane),
+            "petersen" => Raw(Petersen),
             &_ => panic!("Could not find graph constructor!"),
         }
+    }
+
+    pub fn clone(&self) -> Constructor {
+        use Constructor::*;
+        match self {
+            Product(constr, c1, c2) => 
+                Product(constr.clone(), Box::new((*c1).clone()), Box::new((*c2).clone())),
+            Random(constr) => Random(constr.clone()),
+            Raw(constr) => Raw(constr.clone()),
+            RootedTree(parents) => RootedTree(parents.to_owned()),
+        }
+    }
+}
+
+impl ProductConstructor {
+    pub fn all() -> Vec<ProductConstructor> {
+        use ProductConstructor::*;
+        vec![Cartesian, Tensor, Lex, RevLex, Strong, Conormal, Rooted, RevRooted]
     }
 }
 
 impl fmt::Display for Constructor {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use Constructor::*;
         match self {
-            Constructor::BoxProduct(constr1, constr2) => {
-                write!(f, "Box product of ({}) and ({})", constr1, constr2)
+            Product(product, constr1, constr2) => {
+                write!(f, "{} product of ({}) and ({})", product, constr1, constr2)
             },
-            Constructor::TensorProduct(constr1, constr2) => {
-                write!(f, "Tensor product of ({}) and ({})", constr1, constr2)
-            },
-            Constructor::LexProduct(constr1, constr2) => {
-                write!(f, "Lexicographical product of ({}) and ({})", constr1, constr2)
-            },
-            Constructor::StrongProduct(constr1, constr2) => {
-                write!(f, "Strong product of ({}) and ({})", constr1, constr2)
-            },
-            Constructor::ConormalProduct(constr1, constr2) => {
-                write!(f, "Conormal product of ({}) and ({})", constr1, constr2)
-            },
+            Random(constr) => write!(f, "Random({})", constr),
+            Raw(constr) => write!(f, "{}", constr),
             Constructor::RootedTree(parents) => {
                 write!(f, "Rooted tree with parent pattern {:?}", parents)
             },
-            Constructor::RandomRegularBipartite(order, deg) => {
-                write!(f, "Random regular bipartite or order {} and degree {}", order, deg)
+        }
+    }
+}
+
+impl fmt::Display for ProductConstructor {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use ProductConstructor::*;
+        let str = 
+            match self {
+                Cartesian => "Box",
+                Tensor => "Tensor",
+                Lex => "Lex",
+                RevLex => "Reverse Lex",
+                Strong => "Strong",
+                Conormal => "Conormal",
+                Rooted => "Rooted",
+                RevRooted => "Reverse Rooted",
+            };
+        write!(f, "{}", str)
+    }
+}
+
+impl fmt::Display for RandomConstructor {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use RandomConstructor::*;
+        match self {
+            RegularBipartite(order, deg) => {
+                write!(f, "Regular bipartite or order {} and degree {}", order, deg)
             },
-            Constructor::ErdosRenyi(order, p) => {
-                write!(f, "Erdos-Renyi random graph of order {} with probability {}", order, p)
+            ErdosRenyi(order, p) => {
+                write!(f, "Erdos-Renyi graph of order {} with probability {}", order, p)
             },
-            Constructor::Grid(height, width) => {
+        }
+    }
+}
+
+impl fmt::Display for RawConstructor {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use RawConstructor::*;
+        match self {
+            Grid(height, width) => {
                 write!(f, "Grid graph on {} x {} vertices", height, width)
             }
-            Constructor::Complete(order) => {
+            Complete(order) => {
                 write!(f, "Complete of order {}", order)
             },
-            Constructor::Cyclic(order) => {
+            Cyclic(order) => {
                 write!(f, "Cyclic of order {}", order)
             },
-            Constructor::Path(order) => {
+            Path(order) => {
                 write!(f, "Path of order {}", order)
             },
-            Constructor::Star(order) => {
+            Star(order) => {
                 write!(f, "Star of order {}", order)
             },
-            Constructor::FanoPlane => write!(f, "the Fano plane"),
-            Constructor::Petersen => write!(f, "the Petersen graph"),
+            Empty(order) => {
+                write!(f, "Empty of order {}", order)
+            },
+            FanoPlane => write!(f, "the Fano plane"),
+            Petersen => write!(f, "the Petersen graph"),
         }
     }
 }

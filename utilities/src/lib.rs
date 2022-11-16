@@ -5,6 +5,7 @@ pub mod polynomial;
 #[derive(Copy, Clone)]
 pub struct Order(usize);
 
+#[derive(Copy, Clone)]
 pub struct Degree(usize);
 
 impl Order {

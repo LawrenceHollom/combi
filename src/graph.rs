@@ -121,6 +121,20 @@ impl Graph {
         }
     }
 
+    fn new_empty(order: &Order) -> Graph {
+        let n = order.to_usize();
+        let adj = vec![vec![false; n]; n];
+        let adj_list = vec![vec![]; n];
+        let deg: Vec<Degree> = vec![0; n].iter().map(|x| Degree::of_usize(*x)).collect();
+        
+        Graph {
+            n: *order,
+            adj,
+            adj_list,
+            deg,
+        }
+    }
+
     fn new_fano_plane() -> Graph {
         let adj_list: Vec<Vec<usize>> = vec![vec![1, 5, 6], vec![0, 2, 3, 5, 6], vec![1, 3, 6], 
             vec![1, 2, 4, 5, 6], vec![3, 5, 6], vec![0, 1, 3, 4, 6], vec![0, 1, 2, 3, 4, 5]];
@@ -188,40 +202,25 @@ impl Graph {
     }
 
     pub fn new(constructor: &Constructor) -> Graph {
+        use Constructor::*;
+        use RandomConstructor::*;
+        use RawConstructor::*;
+
         match constructor {
-            Constructor::BoxProduct(constr1, constr2) => {
-                products::new_box(&Self::new(constr1), &Self::new(constr2))
-            },
-            Constructor::TensorProduct(constr1, constr2) => {
-                products::new_tensor(&Self::new(constr1), &Self::new(constr2))
-            },
-            Constructor::LexProduct(constr1, constr2) => {
-                products::new_lex(&Self::new(constr1), &Self::new(constr2))
-            },
-            Constructor::StrongProduct(constr1, constr2) => {
-                products::new_strong(&Self::new(constr1), &Self::new(constr2))
-            },
-            Constructor::ConormalProduct(constr1, constr2) => {
-                products::new_conormal(&Self::new(constr1), &Self::new(constr2))
-            },
-            Constructor::RootedTree(parents) => {
-                tree::new_rooted(parents)
+            Product(product, c1, c2) => {
+                products::new_product(product, &Self::new(c1), &Self::new(c2))
             }
-            Constructor::RandomRegularBipartite(order, degree) => {
-                random_regular_bipartite::new(order, degree)
-            },
-            Constructor::ErdosRenyi(order, p) => {
-                erdos_renyi::new(order, *p)
-            },
-            Constructor::Grid(height, width) => {
-                grid::new(height, width)
-            },
-            Constructor::Complete(order) => Graph::new_complete(order),
-            Constructor::Cyclic(order) => Graph::new_cyclic(order),
-            Constructor::Path(order) => Graph::new_path(order),
-            Constructor::Star(order) => Graph::new_star(order),
-            Constructor::FanoPlane => Graph::new_fano_plane(),
-            Constructor::Petersen => Graph::new_petersen(),
+            RootedTree(parents) => tree::new_rooted(parents),
+            Random(RegularBipartite(order, degree)) => random_regular_bipartite::new(order, degree),
+            Random(ErdosRenyi(order, p)) => erdos_renyi::new(order, *p),
+            Raw(Grid(height, width)) => grid::new(height, width),
+            Raw(Complete(order)) => Graph::new_complete(order),
+            Raw(Cyclic(order)) => Graph::new_cyclic(order),
+            Raw(Path(order)) => Graph::new_path(order),
+            Raw(Star(order)) => Graph::new_star(order),
+            Raw(Empty(order)) => Graph::new_empty(order),
+            Raw(FanoPlane) => Graph::new_fano_plane(),
+            Raw(Petersen) => Graph::new_petersen(),
         }
     }
 

@@ -105,8 +105,12 @@ impl Instruction {
         let re = regex::Regex::new(r"->|=>").unwrap();
         let pars: Vec<&str> = re.split(text).map(|par| par.trim()).collect();
         let controller = Controller::of_string(pars[0]);
-        let operations = pars[1].split(',')
-            .map(|str| Operation::of_string(str)).collect();
+        let operations = 
+            if pars.len() > 1 {
+                pars[1].split(',').map(|str| Operation::of_string(str)).collect()
+            } else {
+                vec![]
+            };
 
         Instruction {
             controller,
@@ -119,7 +123,7 @@ impl Instruction {
         operations_strs.join(", ")
     }
 
-    fn execute_single_return(&self, constr: &Constructor) -> Graph {
+    fn execute_single_return(&self, constr: &Constructor, should_print: bool) -> Graph {
         let g = Graph::new(constr);
         let rep_start = SystemTime::now();
         
@@ -128,13 +132,15 @@ impl Instruction {
                 .iter()
                 .map(|op| operator.operate(&g, op))
                 .collect();
-        println!("{}: [{}], time: {}", self.operations_string(), numbers.join(", "),
+        if should_print {
+            println!("{}: [{}], time: {}", self.operations_string(), numbers.join(", "),
                 rep_start.elapsed().unwrap().as_millis());
+        }
         g
     }
 
     fn execute_single(&self, constr: &Constructor) {
-        let _ = self.execute_single_return(constr);
+        let _ = self.execute_single_return(constr, true);
     }
 
     fn execute_reps(&self, constr: &Constructor, reps: usize) {
@@ -162,7 +168,7 @@ impl Instruction {
             let mut sums = vec![0.0; operators.len()];
             let p = tab.start + (tab.step * (i as f64));
             for _j in 0..reps {
-                let constr = Constructor::ErdosRenyi(tab.order, p);
+                let constr = Constructor::Random(RandomConstructor::ErdosRenyi(tab.order, p));
                 let g = Graph::new(&constr);
                 let mut operator = Operator::new();
                 for (op, sum) in operators.iter().zip(sums.iter_mut()) {
@@ -187,7 +193,7 @@ impl Instruction {
         while !satisfied {
             print!("{}: ", rep);
             rep += 1;
-            let g = self.execute_single_return(constr);
+            let g = self.execute_single_return(constr, false);
             let mut operator = Operator::new();
             if operator.operate_bool(&g, condition) {
                 println!("Condition satisfied! {}", condition);
@@ -260,18 +266,88 @@ impl Instruction {
         }
     }
 
-    fn kitchen_sink(&self, _condition: &BoolOperation) {
+    fn execute_kitchen_sink(&self, condition: &BoolOperation) {
+        use Constructor::*;
+        use RawConstructor::*;
+        let mut constructors: Vec<Vec<Constructor>> = vec![vec![]];
+        let max_new_graphs = 1000;
+        fn ous(n: usize) -> Order {
+            Order::of_usize(n)
+        }
+        constructors.push(vec![]);
+        constructors.push(vec![Raw(Complete(ous(2))), Raw(Empty(ous(2)))]);
+        constructors.push(vec![Raw(Complete(ous(3))), Raw(Path(ous(3))), Raw(Empty(ous(3)))]);
+        for verts in 4..20 {
+            constructors.push(vec![]);
+            let order = ous(verts);
+            constructors[verts].push(Raw(Complete(order)));
+            constructors[verts].push(Raw(Cyclic(order)));
+            constructors[verts].push(Raw(Path(order)));
+            constructors[verts].push(Raw(Star(order)));
+            constructors[verts].push(Raw(Empty(order)));
+        }
 
+        let mut verts = 4;
+        let mut num_new_graphs = 0;
+        'add_graphs: loop {
+            let mut new_constructors: Vec<Constructor> = vec![];
+            'decompose: for factor in 2..verts {
+                if factor * factor > verts {
+                    break 'decompose;
+                }
+                if verts % factor == 0 {
+                    // Add lots of new graphs
+                    for (i, c1) in constructors[factor].iter().enumerate() {
+                        for (j, c2) in constructors[verts / factor].iter().enumerate() {
+                            // Don't construct duplicate products.
+                            if factor < verts / factor || i <= j {
+                                for product in ProductConstructor::all() {
+                                    new_constructors.push(Product(product, Box::new(c1.clone()), Box::new(c2.clone())));
+                                    num_new_graphs += 1;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if verts >= constructors.len() {
+                constructors.push(vec![]);
+            }
+            for c in new_constructors.iter() {
+                constructors[verts].push(c.clone());
+            }
+            println!("Added kitchen sink graphs with {} vertices. There are {} of them.", verts, constructors[verts].len());
+            if num_new_graphs >= max_new_graphs {
+                break 'add_graphs;
+            }
+            verts += 1;
+        }
+
+        println!("Beginning actual search.");
+        'test_graphs: for row in constructors.iter() {
+            for constr in row.iter() {
+                let g = self.execute_single_return(constr, false);
+                let mut operator = Operator::new();
+                if operator.operate_bool(&g, condition) {
+                    println!("Graph satisfying condition found!");
+                    println!("Constructor: {}", constr);
+                    println!("Graph:");
+                    g.print();
+                    break 'test_graphs;
+                }
+            }
+        }
     }
 
     pub fn execute(&self) {
+        use Controller::*;
         match &self.controller {
-            Controller::Single(constr) => self.execute_single(constr),
-            Controller::Repeat(constr, reps) => self.execute_reps(constr, *reps),
-            Controller::Tabulate(tabulation) => self.execute_tabulate(tabulation),
-            Controller::Until(constr, condition) => self.execute_until(constr, condition),
-            Controller::SearchTrees(n, condition, max_degree) => self.search_trees(*n, condition, max_degree),
-            Controller::KitchenSink(condition) => self.kitchen_sink(condition),
+            Single(constr) => self.execute_single(constr),
+            Repeat(constr, reps) => self.execute_reps(constr, *reps),
+            Tabulate(tabulation) => self.execute_tabulate(tabulation),
+            Until(constr, condition) => self.execute_until(constr, condition),
+            SearchTrees(n, condition, max_degree) => self.search_trees(*n, condition, max_degree),
+            KitchenSink(condition) => self.execute_kitchen_sink(condition),
         }
     }
 }

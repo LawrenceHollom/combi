@@ -2,10 +2,12 @@
  - Add more complex random graph constructions
  - Add computation of path cover number (have java code for this?)
  - Add size of largest clique (omega) and independence number (alpha)
+ - Add girth of the graph
 
  == THE KITCHEN SINK ==
- - Add option to test hypothesis via a big list of graphs; basically just try everything in increasing order order
- -- Maybe option for increasing size order?
+ - Maybe add option for increasing size order
+ - Add condition e.g. connected
+ - Weed out isomorphic graphs of low order
 
  == ITERATOR ==
  - Detect identical nodes in graphs and iterate over subsets more efficiently
@@ -27,3 +29,9 @@
  == BOOL OPERATIONS ==
  - Add logical connectives
  - Will run into copy issues.
+
+ == FLOAT OPERATIONS ==
+ - Add calculations, e.g. (2/3)*n
+
+ == REFACTORING ==
+ - use T::*; allows you to drop all the T:: in the match statement.
