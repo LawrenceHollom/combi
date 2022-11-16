@@ -3,8 +3,10 @@ use utilities::*;
 
 use crate::operation::int_operation::*;
 
+use super::float_operation::FloatOperation;
+
 #[derive(Copy, Clone)]
-pub enum IntToBoolInfix {
+pub enum NumToBoolInfix {
     More,
     Less,
     NotMore,
@@ -15,20 +17,23 @@ pub enum IntToBoolInfix {
 #[derive(Copy, Clone)]
 pub enum BoolToBoolInfix {
     And,
-    Or
+    Or,
+    Implies,
+    Xor,
 }
 
 #[derive(Clone)]
 pub enum BoolOperation {
-    IntInfix(IntToBoolInfix, IntOperation, IntOperation),
+    IntInfix(NumToBoolInfix, IntOperation, IntOperation),
+    FloatInfix(NumToBoolInfix, FloatOperation, FloatOperation),
     BoolInfix(BoolToBoolInfix, Box<BoolOperation>, Box<BoolOperation>),
     IsConnected,
     HasLongMonotone,
 }
 
-impl IntToBoolInfix {
-    pub fn of_string_result(text: &str) -> Option<IntToBoolInfix> {
-        use IntToBoolInfix::*;
+impl NumToBoolInfix {
+    pub fn of_string_result(text: &str) -> Option<NumToBoolInfix> {
+        use NumToBoolInfix::*;
         match text {
             ">=" => Some(NotLess),
             "<=" => Some(NotMore),
@@ -46,6 +51,8 @@ impl BoolToBoolInfix {
         match text {
             "&" | "&&" => Some(And),
             "|" | "||" => Some(Or),
+            "=>" | "->" => Some(Implies),
+            "^" => Some(Xor),
             &_ => None
         }
     }
@@ -57,13 +64,20 @@ impl BoolOperation {
         match parse_infix_like(text) {
             Some((par1, op, par2)) => {
                 println!("Infix like! [{}] [{}] [{}]", par1, op, par2);
-                let int_to_bool_infix = IntToBoolInfix::of_string_result(op);
+                let num_to_bool_infix = NumToBoolInfix::of_string_result(op);
                 let bool_infix = BoolToBoolInfix::of_string_result(op);
 
-                if int_to_bool_infix.is_some() {
-                    IntOperation::of_string_result(par1).map(|op1| 
+                if num_to_bool_infix.is_some() {
+                    //writing readable code is my passion
+                    match IntOperation::of_string_result(par1).map(|op1| 
                         IntOperation::of_string_result(par2).map(|op2|
-                            IntInfix(int_to_bool_infix.unwrap(), op1, op2))).flatten()
+                            IntInfix(num_to_bool_infix.unwrap(), op1, op2))).flatten() {
+                        Some(op) => Some(op),
+                        None => FloatOperation::of_string_result(par1).map(|op1| 
+                                    FloatOperation::of_string_result(par2).map(|op2|
+                                        FloatInfix(num_to_bool_infix.unwrap(), op1, op2))).flatten()
+                    }
+                    
                 } else if bool_infix.is_some() {
                     BoolOperation::of_string_result(par1).map(|op1| 
                         BoolOperation::of_string_result(par2).map(|op2|
@@ -83,9 +97,9 @@ impl BoolOperation {
     }
 }
 
-impl fmt::Display for IntToBoolInfix {
+impl fmt::Display for NumToBoolInfix {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use IntToBoolInfix::*;
+        use NumToBoolInfix::*;
         let str = match self {
             More => ">",
             Less => "<",
@@ -104,6 +118,8 @@ impl fmt::Display for BoolToBoolInfix {
         let str = match self {
             And => "&&",
             Or => "||",
+            Implies => "=>",
+            Xor => "^",
         };
         write!(f, "{}", str)
     }
@@ -114,6 +130,8 @@ impl fmt::Display for BoolOperation {
         use BoolOperation::*;
         let name = match self {
             IntInfix(infix, op1, op2) => 
+                format!("Is ({}) {} ({})", *op1, *infix, *op2),
+            FloatInfix(infix, op1, op2) => 
                 format!("Is ({}) {} ({})", *op1, *infix, *op2),
             BoolInfix(infix, op1, op2) =>
                 format!("({}) {} ({})", *op1, *infix, *op2),

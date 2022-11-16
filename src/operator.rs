@@ -52,10 +52,23 @@ impl Operator {
         }
     }
     
-    fn operate_int_to_bool_infix(&mut self, g: &Graph, infix: &IntToBoolInfix, op1: &IntOperation, op2: &IntOperation) -> bool {
-        use IntToBoolInfix::*;
+    fn operate_int_to_bool_infix(&mut self, g: &Graph, infix: &NumToBoolInfix, op1: &IntOperation, op2: &IntOperation) -> bool {
+        use NumToBoolInfix::*;
         let x1 = self.operate_int(g, op1);
         let x2 = self.operate_int(g, op2);
+        match *infix {
+            Less => x1 < x2,
+            More => x1 > x2,
+            NotLess => x1 >= x2,
+            NotMore => x1 >= x2,
+            Equal => x1 == x2,
+        }
+    }
+
+    fn operate_float_to_bool_infix(&mut self, g: &Graph, infix: &NumToBoolInfix, op1: &FloatOperation, op2: &FloatOperation) -> bool {
+        use NumToBoolInfix::*;
+        let x1 = self.operate_float(g, op1);
+        let x2 = self.operate_float(g, op2);
         match *infix {
             Less => x1 < x2,
             More => x1 > x2,
@@ -72,6 +85,8 @@ impl Operator {
         match *infix {
             And => x1 && x2,
             Or => x1 || x2,
+            Implies => x1 && !x2,
+            Xor => x1 ^ x2,
         }
     }
 
@@ -81,6 +96,8 @@ impl Operator {
         match operation {
             IntInfix(infix, op1, op2) => 
                 self.operate_int_to_bool_infix(g, infix, op1, op2),
+            FloatInfix(infix, op1, op2) => 
+                self.operate_float_to_bool_infix(g, infix, op1, op2),
             BoolInfix(infix, op1, op2) => 
                 self.operate_bool_to_bool_infix(g, infix, op1, op2),
             IsConnected => components::is_connected(g),
@@ -95,8 +112,17 @@ impl Operator {
                 if self.operate_bool(g, operation) { 1.0 } else { 0.0 },
             OfInt(operation) =>
                 self.operate_int(g, operation) as f64,
-            Ratio(op1, op2) =>
-                (self.operate_int(g, op1) as f64) / (self.operate_int(g, op2) as f64),
+            Arithmetic(arith, op1, op2) => {
+                let par1 = self.operate_float(g, op1);
+                let par2 = self.operate_float(g, op2);
+                use ArithmeticOperation::*;
+                match arith {
+                    Sum => par1 + par2,
+                    Difference => par1 - par2,
+                    Product => par1 * par2,
+                    Ratio => par1 / par2,
+                }
+            }
         }
     }
 

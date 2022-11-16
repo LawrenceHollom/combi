@@ -162,7 +162,7 @@ impl Instruction {
             .iter()
             .map(|x| match x {
                 Operation::Int(op) => Some(FloatOperation::OfInt(*op)),
-                Operation::Bool(op) => Some(FloatOperation::OfBool(op.to_owned())),
+                Operation::Bool(op) => Some(FloatOperation::OfBool(Box::new(op.to_owned()))),
                 Operation::Float(op) => Some(op.to_owned()),
                 Operation::Unit(_op) => None,
             })
@@ -329,7 +329,8 @@ impl Instruction {
         }
 
         println!("Beginning actual search.");
-        'test_graphs: for row in constructors.iter() {
+        let mut found = false;
+        'test_graphs: for (i, row) in constructors.iter().enumerate() {
             for constr in row.iter() {
                 let g = self.execute_single_return(constr, false);
                 let mut operator = Operator::new();
@@ -338,9 +339,14 @@ impl Instruction {
                     println!("Constructor: {}", constr);
                     println!("Graph:");
                     g.print();
+                    found = true;
                     break 'test_graphs;
                 }
             }
+            println!("Completed graphs with {} vertices", i);
+        }
+        if !found {
+            println!("No graph found!");
         }
     }
 

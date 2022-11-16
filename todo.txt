@@ -1,8 +1,7 @@
  == INSTRUCTIONS ==
  - Add more complex random graph constructions
  - Add computation of path cover number (have java code for this?)
- - Add recursive bool operators (and, or, not, implies, xor)
-
+ 
  == THE KITCHEN SINK ==
  - Maybe add option for increasing size order
  - Add condition e.g. connected
@@ -24,10 +23,6 @@
 
  == TREE CONSTRUCTOR ==
  - Allow manual entry of a specific tree
-
- == BOOL OPERATIONS ==
- - Add logical connectives
- - Will run into copy issues.
 
  == FLOAT OPERATIONS ==
  - Add calculations, e.g. (2/3)*n
