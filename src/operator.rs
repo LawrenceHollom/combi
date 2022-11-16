@@ -41,9 +41,9 @@ impl Operator {
                     ChromaticNumber => chromatic::chromatic_number(g),
                     MaxAcyclicSubgraph => max_acyclic::max_acyclic_subgraph(g),
                     CliqueCoveringNumber => chromatic::chromatic_number(&g.complement()),
-                    NumOnLongMonotone => monotone::num_on_long_monotone(&g),
-                    MaxMonotonePath => monotone::max_monotone(&g),
-                    TotalDominationGameLength => domination::total_domination_game_length(&g),
+                    NumOnLongMonotone => monotone::num_on_long_monotone(g),
+                    MaxMonotonePath => monotone::max_monotone(g),
+                    TotalDominationGameLength => domination::total_domination_game_length(g),
                     Number(k) => *k,
                 };
                 self.previous_values.insert(*operation, value);

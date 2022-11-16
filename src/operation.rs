@@ -19,10 +19,10 @@ pub enum Operation {
 
 impl Operation {
     pub fn of_string(text: &str) -> Operation {
-        IntOperation::of_string_result(text).map(|x| Operation::Int(x))
-            .or(BoolOperation::of_string_result(text).map(|x| Operation::Bool(x)))
-            .or(FloatOperation::of_string_result(text).map(|x| Operation::Float(x)))
-            .or(UnitOperation::of_string_result(text).map(|x| Operation::Unit(x)))
+        IntOperation::of_string_result(text).map(Operation::Int)
+            .or_else(|| BoolOperation::of_string_result(text).map(Operation::Bool))
+            .or_else(|| FloatOperation::of_string_result(text).map(Operation::Float))
+            .or_else(|| UnitOperation::of_string_result(text).map(Operation::Unit))
             .unwrap()
     }
 }

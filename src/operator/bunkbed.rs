@@ -28,16 +28,16 @@ pub fn simulate(g: &Graph) {
     let samples = 100;
     let reps = 100000;
     let mut probs = vec![vec![0.0; n]; samples];
-    for i in 0..samples {
+    for (i, prob) in probs.iter_mut().enumerate() {
         let p = i as f64 / samples as f64;
         for _j in 0..reps {
             let results = Percolator::empirically_percolate_once(&bunkbed, p);
             for v in 0..n {
-                probs[i][v] += if results[v] { 1.0 } else { 0.0 } - if results[v + n] { 1.0 } else { 0.0 };
+                prob[v] += if results[v] { 1.0 } else { 0.0 } - if results[v + n] { 1.0 } else { 0.0 };
             }
         }
         print!("{:.3} ", p);
-        for prob in probs[i].iter_mut() {
+        for prob in prob.iter_mut() {
             *prob /= reps as f64;
             if *prob < 0.0 {
                 print!("| {:.4} ", *prob);

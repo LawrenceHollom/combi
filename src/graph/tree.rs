@@ -8,9 +8,9 @@ pub fn new_rooted(parents: &Vec<usize>) -> Graph {
     let mut deg = vec![0; n];
     let mut adj_list = vec![vec![]; n];
 
-    for i in 0..(n-1) {
+    for (i, parent) in parents.iter().enumerate() {
         let u = i+1;
-        let v = parents[i];
+        let v = *parent;
         adj[u][v] = true;
         adj[v][u] = true;
         adj_list[u].push(v);

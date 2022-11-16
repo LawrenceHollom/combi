@@ -22,10 +22,10 @@ pub enum FloatOperation {
 
 impl FloatOperation {
     fn wrap_arithmetic(op: ArithmeticOperation, par1: &str, par2: &str) -> Option<FloatOperation> {
-        Self::of_string_result(par1).map(|par1| 
+        Self::of_string_result(par1).and_then(|par1| 
             Self::of_string_result(par2).map(|par2|
                 FloatOperation::Arithmetic(op, Box::new(par1), Box::new(par2))
-        )).flatten()
+        ))
     }
 
     pub fn of_string_result(text: &str) -> Option<FloatOperation> {
@@ -39,9 +39,9 @@ impl FloatOperation {
                     "/" => Some(Ratio),
                     &_ => None,
                 };
-                arith.map(|op| Self::wrap_arithmetic(op, par1, par2)).flatten()
+                arith.and_then(|op| Self::wrap_arithmetic(op, par1, par2))
             }
-            None => IntOperation::of_string_result(text).map(|op| FloatOperation::OfInt(op)),
+            None => IntOperation::of_string_result(text).map(FloatOperation::OfInt),
         }
     }
 }

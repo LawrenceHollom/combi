@@ -38,14 +38,14 @@ pub fn largest_component(g: &Graph) -> u32 {
 
     let mut sizes: Vec<u32> = vec![0; n];
 
-    for i in 0..n {
-        sizes[comps[i]] += 1;
+    for comp in comps.iter() {
+        sizes[*comp] += 1;
     }
 
     let mut max = 0;
-    for i in 0..n {
-        if sizes[i] > max {
-            max = sizes[i];
+    for size in sizes.iter() {
+        if *size > max {
+            max = *size;
         }
     }
 

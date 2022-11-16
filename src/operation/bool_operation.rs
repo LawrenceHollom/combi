@@ -67,21 +67,21 @@ impl BoolOperation {
                 let num_to_bool_infix = NumToBoolInfix::of_string_result(op);
                 let bool_infix = BoolToBoolInfix::of_string_result(op);
 
-                if num_to_bool_infix.is_some() {
+                if let Some(infix) = num_to_bool_infix {
                     //writing readable code is my passion
-                    match IntOperation::of_string_result(par1).map(|op1| 
+                    match IntOperation::of_string_result(par1).and_then(|op1| 
                         IntOperation::of_string_result(par2).map(|op2|
-                            IntInfix(num_to_bool_infix.unwrap(), op1, op2))).flatten() {
+                            IntInfix(infix, op1, op2))) {
                         Some(op) => Some(op),
-                        None => FloatOperation::of_string_result(par1).map(|op1| 
+                        None => FloatOperation::of_string_result(par1).and_then(|op1| 
                                     FloatOperation::of_string_result(par2).map(|op2|
-                                        FloatInfix(num_to_bool_infix.unwrap(), op1, op2))).flatten()
+                                        FloatInfix(infix, op1, op2)))
                     }
                     
-                } else if bool_infix.is_some() {
-                    BoolOperation::of_string_result(par1).map(|op1| 
+                } else if let Some(infix) = bool_infix {
+                    BoolOperation::of_string_result(par1).and_then(|op1| 
                         BoolOperation::of_string_result(par2).map(|op2|
-                            BoolInfix(bool_infix.unwrap(), Box::new(op1), Box::new(op2)))).flatten()
+                            BoolInfix(infix, Box::new(op1), Box::new(op2))))
                 } else {
                     None
                 }

@@ -179,7 +179,7 @@ impl Graph {
         let mut adj_list = vec![vec![]; 2*n];
         let mut deg: Vec<Degree> = vec![];
 
-        for j in 0..2 as usize {
+        for j in 0..2_usize {
             for i in 0..n {
                 deg.push(self.deg[i].incr());
                 adj[i + j * n][i + (1 - j) * n] = true; //post

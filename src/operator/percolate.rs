@@ -31,7 +31,7 @@ impl Percolator {
         }
     }
 
-    fn test_connections(order: usize, adj_list: &Vec<Vec<usize>>) -> Vec<bool> {
+    fn test_connections(order: usize, adj_list: &[Vec<usize>]) -> Vec<bool> {
         let mut connected = vec![false; order];
         let mut q: Queue<usize> = queue![];
         connected[0] = true;
@@ -48,11 +48,11 @@ impl Percolator {
         connected
     }
 
-    pub fn add_percolation(&mut self, num_edges: usize, adj_list: &Vec<Vec<usize>>) {
+    pub fn add_percolation(&mut self, num_edges: usize, adj_list: &[Vec<usize>]) {
         let connected = Self::test_connections(self.order, adj_list);
 
-        for v in 1..self.order {
-            if connected[v] {
+        for (v, is_connected) in connected.iter().enumerate().skip(1) {
+            if *is_connected {
                 self.polys[v].add_inplace(&self.probs[num_edges]);
             }
         }
@@ -66,11 +66,9 @@ impl Percolator {
         
         for i in 0..(n-1) {
             for j in (i+1)..n {
-                if g.adj[i][j] {
-                    if rng.gen_bool(p) {
-                        true_adj_list[i].push(j);
-                        true_adj_list[j].push(i);
-                    }
+                if g.adj[i][j] && rng.gen_bool(p) {
+                    true_adj_list[i].push(j);
+                    true_adj_list[j].push(i);
                 }
             }
         }
@@ -93,9 +91,9 @@ impl Percolator {
             let mut edges = vec![false; g.size()];
             let mut num_edges = 0;
             let mut sta = subset;
-            for j in 0..g.size() {
+            for edge in edges.iter_mut() {
                 if sta % 2 == 1 {
-                    edges[j] = true;
+                    *edge = true;
                     num_edges += 1;
                 }
                 sta /= 2;

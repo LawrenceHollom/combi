@@ -3,12 +3,12 @@ use crate::graph::*;
 pub fn girth(g: &Graph) -> u32 {
     let n = g.n.to_usize();
     let mut dist = vec![vec![n; n]; n];
-    for i in 0..n {
-        dist[i][i] = 0;
+    for (i, d) in dist.iter_mut().enumerate() {
+        d[i] = 0;
     }
-    for i in 0..n {
+    for (i, d) in dist.iter_mut().enumerate() {
         for j in g.adj_list[i].iter() {
-            dist[i][*j] = 1;
+            d[*j] = 1;
         }
     }
     for k in 0..n {
@@ -23,23 +23,24 @@ pub fn girth(g: &Graph) -> u32 {
 
     let mut girth = n;
 
-    for u in 0..(n-1) {
+    for (u, d) in dist.iter().enumerate().take(n-1) {
         for v in (u+1)..n {
             // If they're far away there's no point trying
-            if dist[u][v] < (girth + 1) / 2 {
+            if d[v] < (girth + 1) / 2 {
                 let mut num_less = 0;
                 let mut num_equal = 0;
                 for w in g.adj_list[v].iter() {
-                    if dist[u][*w] < dist[u][v] {
-                        num_less += 1;
-                    } else if dist[u][*w] == dist[u][v] {
-                        num_equal += 1;
+                    use std::cmp::Ordering::*;
+                    match d[*w].cmp(&d[v]) {
+                        Less => num_less += 1,
+                        Equal => num_equal += 1,
+                        Greater => ()
                     }
                 }
                 if num_less >= 2 {
-                    girth = 2 * dist[u][v];
+                    girth = 2 * d[v];
                 } else if num_equal >= 1 {
-                    girth = 2 * dist[u][v] + 1;
+                    girth = 2 * d[v] + 1;
                 }
             }
         }

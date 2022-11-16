@@ -37,7 +37,7 @@ impl IntOperation {
             "num_on_long_monotone" | "num_monot" => Some(NumOnLongMonotone),
             "max_monot" => Some(MaxMonotonePath),
             "total_domination_game" | "gamma_tg" => Some(TotalDominationGameLength),
-            str => str.parse().ok().map(|x| Number(x)),
+            str => str.parse().ok().map(Number),
         }
     }
 }

@@ -110,14 +110,12 @@ pub fn total_domination_game_length(g: &Graph) -> u32 {
             let mut optimal = if dominators_turn[i] { n } else { 0 };
 
             for _v in 0..n {
-                if sta % 2 == 0 {
-                    if num_dominated[i + diff_to_add_v] > num_dominated[i] {
-                        // v can played
-                        let child = turns_left[i + diff_to_add_v];
-                        if child != n+1 && ((dominators_turn[i] && child < optimal) 
-                                || (!dominators_turn[i] && child > optimal)) {
-                            optimal = child;
-                        }
+                if sta % 2 == 0 && num_dominated[i + diff_to_add_v] > num_dominated[i] {
+                    // v can played
+                    let child = turns_left[i + diff_to_add_v];
+                    if child != n+1 && ((dominators_turn[i] && child < optimal) 
+                            || (!dominators_turn[i] && child > optimal)) {
+                        optimal = child;
                     }
                 }
                 diff_to_add_v *= 2;

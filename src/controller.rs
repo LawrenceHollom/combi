@@ -112,7 +112,7 @@ impl Instruction {
         let controller = Controller::of_string(pars[0]);
         let operations = 
             if pars.len() > 1 {
-                pars[1].split(',').map(|str| Operation::of_string(str)).collect()
+                pars[1].split(',').map(Operation::of_string).collect()
             } else {
                 vec![]
             };
@@ -160,13 +160,12 @@ impl Instruction {
         let propn = f64::round((tab.end - tab.start) / tab.step) as usize;
         let operators: Vec<FloatOperation> = self.operations
             .iter()
-            .map(|x| match x {
+            .filter_map(|x| match x {
                 Operation::Int(op) => Some(FloatOperation::OfInt(*op)),
                 Operation::Bool(op) => Some(FloatOperation::OfBool(Box::new(op.to_owned()))),
                 Operation::Float(op) => Some(op.to_owned()),
                 Operation::Unit(_op) => None,
             })
-            .flatten()
             .collect();
         let mut rows = vec![];
         for i in 0..=propn {
@@ -210,7 +209,7 @@ impl Instruction {
     }
 
     fn search_trees(&self, n: usize, condition: &BoolOperation, max_degree: &Degree) {
-        fn construct_tree(n: usize, parents: &Vec<usize>, condition: &BoolOperation) -> bool {
+        fn construct_tree(n: usize, parents: &[usize], condition: &BoolOperation) -> bool {
             // Check all children of any node are in decreasing order of degree.
             let mut num_children: Vec<usize> = vec![0; n];
             for i in 0..(n-1) {

@@ -13,9 +13,9 @@ pub fn print_polynomials(g: &Graph) {
         let mut up_edges = vec![false; g.size()];
         let mut num_down_edges = 0;
         let mut sta = subset;
-        for j in 0..g.size() {
+        for up_edge in up_edges.iter_mut().take(g.size()) {
             if sta % 2 == 1 {
-                up_edges[j] = true;
+                *up_edge = true;
             } else {
                 num_down_edges += 1;
             }
