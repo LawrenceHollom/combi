@@ -235,19 +235,20 @@ impl fmt::Display for RawConstructor {
 
 impl IntOperation {
     pub fn of_string_result(text: &str) -> Option<IntOperation> {
+        use IntOperation::*;
         match text.trim().to_lowercase().as_str() {
-            "order" | "n" => Some(IntOperation::Order),
-            "size" | "edges" => Some(IntOperation::Size),
-            "largest_component" | "largest" => Some(IntOperation::LargestComponent),
-            "num_components" | "comps" => Some(IntOperation::NumComponents),
-            "domination" | "dominator" | "gamma" => Some(IntOperation::DominationNumber),
-            "chromatic" | "chi" => Some(IntOperation::ChromaticNumber),
-            "max_acyclic" | "acyclic" => Some(IntOperation::MaxAcyclicSubgraph),
-            "clique_cover" | "theta" => Some(IntOperation::CliqueCoveringNumber),
-            "num_on_long_monotone" | "num_monot" => Some(IntOperation::NumOnLongMonotone),
-            "max_monot" => Some(IntOperation::MaxMonotonePath),
-            "total_domination_game" | "gamma_tg" => Some(IntOperation::TotalDominationGameLength),
-            str => str.parse().ok().map(|x| IntOperation::Number(x)),
+            "order" | "n" => Some(Order),
+            "size" | "edges" => Some(Size),
+            "largest_component" | "largest" => Some(LargestComponent),
+            "num_components" | "comps" => Some(NumComponents),
+            "domination" | "dominator" | "gamma" => Some(DominationNumber),
+            "chromatic" | "chi" => Some(ChromaticNumber),
+            "max_acyclic" | "acyclic" => Some(MaxAcyclicSubgraph),
+            "clique_cover" | "theta" => Some(CliqueCoveringNumber),
+            "num_on_long_monotone" | "num_monot" => Some(NumOnLongMonotone),
+            "max_monot" => Some(MaxMonotonePath),
+            "total_domination_game" | "gamma_tg" => Some(TotalDominationGameLength),
+            str => str.parse().ok().map(|x| Number(x)),
         }
     }
 }
@@ -316,12 +317,13 @@ impl FloatOperation {
 
 impl UnitOperation {
     pub fn of_string_result(text: &str) -> Option<UnitOperation> {
+        use UnitOperation::*;
         match text.trim().to_lowercase().as_str() {
-            "print" => Some(UnitOperation::Print),
-            "bunkbed" => Some(UnitOperation::RawBunkbed),
-            "bunkbed_posts" | "posts" => Some(UnitOperation::BunkbedPosts),
-            "bunkbed_sim" => Some(UnitOperation::BunkbedSimulation),
-            "()" => Some(UnitOperation::Unit),
+            "print" => Some(Print),
+            "bunkbed" => Some(RawBunkbed),
+            "bunkbed_posts" | "posts" => Some(BunkbedPosts),
+            "bunkbed_sim" => Some(BunkbedSimulation),
+            "()" => Some(Unit),
             &_ => None,
         }
     }
@@ -339,20 +341,21 @@ impl Operation {
 
 impl fmt::Display for IntOperation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use IntOperation::*;
         let sta;
         let name = match self {
-            IntOperation::Order => "Order",
-            IntOperation::Size => "Size",
-            IntOperation::LargestComponent => "Largest component",
-            IntOperation::NumComponents => "Number of components",
-            IntOperation::DominationNumber => "Domination number",
-            IntOperation::ChromaticNumber => "Chromatic number",
-            IntOperation::MaxAcyclicSubgraph => "Max acyclic subgraph size",
-            IntOperation::CliqueCoveringNumber => "Clique covering number",
-            IntOperation::NumOnLongMonotone => "Number of vertices on a 1->n monotone path",
-            IntOperation::MaxMonotonePath => "Length of longest monotone path",
-            IntOperation::TotalDominationGameLength => "Length of the total domination game",
-            IntOperation::Number(n) => {
+            Order => "Order",
+            Size => "Size",
+            LargestComponent => "Largest component",
+            NumComponents => "Number of components",
+            DominationNumber => "Domination number",
+            ChromaticNumber => "Chromatic number",
+            MaxAcyclicSubgraph => "Max acyclic subgraph size",
+            CliqueCoveringNumber => "Clique covering number",
+            NumOnLongMonotone => "Number of vertices on a 1->n monotone path",
+            MaxMonotonePath => "Length of longest monotone path",
+            TotalDominationGameLength => "Length of the total domination game",
+            Number(n) => {
                 sta = n.to_string();
                 sta.as_str()
             }
@@ -363,17 +366,18 @@ impl fmt::Display for IntOperation {
 
 impl fmt::Display for BoolOperation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use BoolOperation::*;
         let name = match self {
-            BoolOperation::More(op1, op2) => 
+            More(op1, op2) => 
                 format!("Is ({} > {})", *op1, *op2),
-            BoolOperation::Less(op1, op2) => 
+            Less(op1, op2) => 
                 format!("Is ({} < {})", *op1, *op2),
-            BoolOperation::NotMore(op1, op2) => 
+            NotMore(op1, op2) => 
                 format!("Is ({} <= {})", *op1, *op2),
-            BoolOperation::NotLess(op1, op2) => 
+            NotLess(op1, op2) => 
                 format!("Is ({} >= {})", *op1, *op2),
-            BoolOperation::IsConnected => "Is connected".to_owned(),
-            BoolOperation::HasLongMonotone => "Has 1->n monotone path".to_owned()
+            IsConnected => "Is connected".to_owned(),
+            HasLongMonotone => "Has 1->n monotone path".to_owned()
         };
         write!(f, "{}", name)
     }
@@ -381,10 +385,11 @@ impl fmt::Display for BoolOperation {
 
 impl fmt::Display for FloatOperation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use FloatOperation::*;
         let name = match self {
-            FloatOperation::OfBool(op) => format!("Of Bool ({})", op),
-            FloatOperation::OfInt(op) => format!("Of int ({})", op),
-            FloatOperation::Ratio(op1, op2) => format!("Ratio ({}) / ({})", op1, op2),
+            OfBool(op) => format!("Of Bool ({})", op),
+            OfInt(op) => format!("Of int ({})", op),
+            Ratio(op1, op2) => format!("Ratio ({}) / ({})", op1, op2),
         };
         write!(f, "{}", name)
     }
@@ -392,12 +397,13 @@ impl fmt::Display for FloatOperation {
 
 impl fmt::Display for UnitOperation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use UnitOperation::*;
         let name = match self {
-            UnitOperation::Print => "Print",
-            UnitOperation::RawBunkbed => "Raw bunkbed",
-            UnitOperation::BunkbedPosts => "Bunkbed posts",
-            UnitOperation::BunkbedSimulation => "Bunkbed simulation",
-            UnitOperation::Unit => "Do nothing",
+            Print => "Print",
+            RawBunkbed => "Raw bunkbed",
+            BunkbedPosts => "Bunkbed posts",
+            BunkbedSimulation => "Bunkbed simulation",
+            Unit => "Do nothing",
         };
         write!(f, "{}", name)
     }
@@ -405,11 +411,12 @@ impl fmt::Display for UnitOperation {
 
 impl fmt::Display for Operation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use Operation::*;
         match self {
-            Operation::Int(op) => write!(f, "{}", op),
-            Operation::Bool(op) => write!(f, "{}", op),
-            Operation::Float(op) => write!(f, "{}", op),
-            Operation::Unit(op) => write!(f, "{}", op),
+            Int(op) => write!(f, "{}", op),
+            Bool(op) => write!(f, "{}", op),
+            Float(op) => write!(f, "{}", op),
+            Unit(op) => write!(f, "{}", op),
         }
     }
 }

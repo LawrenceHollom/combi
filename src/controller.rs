@@ -43,33 +43,33 @@ impl fmt::Display for Tabulation {
 
 impl Controller {
     pub fn of_string(text: &str) -> Controller {
+        use Controller::*;
         let (func, args) = parse_function_like(text);
 
         match func.to_lowercase().as_str() {
             "rep" | "repeat" => {
-                Controller::Repeat(Constructor::of_string(args[0]), 
+                Repeat(Constructor::of_string(args[0]), 
                     args[1].parse().unwrap())
             },
             "tabulate" | "tab" => {
-                Controller::Tabulate(Tabulation::new(Order::of_string(args[0]),
+                Tabulate(Tabulation::new(Order::of_string(args[0]),
                     args[1].parse().unwrap(), args[2].parse().unwrap(), 
                     args[3].parse().unwrap()))
             },
             "until" => {
-                Controller::Until(Constructor::of_string(args[0]), 
+                Until(Constructor::of_string(args[0]), 
                     BoolOperation::of_string_result(args[1]).unwrap())
             },
             "search_trees" | "trees" => {
                 let n: usize = args[0].parse().unwrap();
-                Controller::SearchTrees(n, 
-                    BoolOperation::of_string_result(args[1]).unwrap(),
+                SearchTrees(n, BoolOperation::of_string_result(args[1]).unwrap(),
                     if args.len() >= 3 { Degree::of_string(args[2]) } else { Degree::of_usize(n) })
             }
             "kitchen" | "kitchen_sink" | "sink" => {
-                Controller::KitchenSink(BoolOperation::of_string_result(args[0]).unwrap())
+                KitchenSink(BoolOperation::of_string_result(args[0]).unwrap())
             }
             &_ => {
-                Controller::Single(Constructor::of_string(text))
+                Single(Constructor::of_string(text))
             }
         }
     }
@@ -77,23 +77,24 @@ impl Controller {
 
 impl fmt::Display for Controller {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use Controller::*;
         match self {
-            Controller::Repeat(constr, num) => {
+            Repeat(constr, num) => {
                 write!(f, "Repeat ({}) {} times", constr, num)
             },
-            Controller::Tabulate(tabulation) => {
+            Tabulate(tabulation) => {
                 write!(f, "{}", tabulation)
             },
-            Controller::Until(constr, condition) => {
+            Until(constr, condition) => {
                 write!(f, "Repeat ({}) until ({})", constr, condition)
             },
-            Controller::Single(constr) => {
+            Single(constr) => {
                 write!(f, "{}", constr)
             }
-            Controller::SearchTrees(n, condition, max_degree) => {
+            SearchTrees(n, condition, max_degree) => {
                 write!(f, "Search all trees of order {} and max_degree {} until ({})", n, max_degree, condition)
             }
-            Controller::KitchenSink(condition) => {
+            KitchenSink(condition) => {
                 write!(f, "Search the kitchen sink for a graph satisfying ({})", condition)
             }
         }

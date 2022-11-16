@@ -18,22 +18,23 @@ pub struct Operator {
 
 impl Operator {
     fn operate_int(&mut self, g: &Graph, operation: &IntOperation) -> u32 {
+        use IntOperation::*;
         match self.previous_values.get(operation) {
             Some(value) => *value,
             None => {
                 let value = match operation {
-                    IntOperation::Order => g.n.to_usize() as u32,
-                    IntOperation::Size => g.size() as u32,
-                    IntOperation::LargestComponent => components::largest_component(g),
-                    IntOperation::NumComponents => components::num_components(g),
-                    IntOperation::DominationNumber => domination::domination_number(g),
-                    IntOperation::ChromaticNumber => chromatic::chromatic_number(g),
-                    IntOperation::MaxAcyclicSubgraph => max_acyclic::max_acyclic_subgraph(g),
-                    IntOperation::CliqueCoveringNumber => chromatic::chromatic_number(&g.complement()),
-                    IntOperation::NumOnLongMonotone => monotone::num_on_long_monotone(&g),
-                    IntOperation::MaxMonotonePath => monotone::max_monotone(&g),
-                    IntOperation::TotalDominationGameLength => domination::total_domination_game_length(&g),
-                    IntOperation::Number(k) => *k,
+                    Order => g.n.to_usize() as u32,
+                    Size => g.size() as u32,
+                    LargestComponent => components::largest_component(g),
+                    NumComponents => components::num_components(g),
+                    DominationNumber => domination::domination_number(g),
+                    ChromaticNumber => chromatic::chromatic_number(g),
+                    MaxAcyclicSubgraph => max_acyclic::max_acyclic_subgraph(g),
+                    CliqueCoveringNumber => chromatic::chromatic_number(&g.complement()),
+                    NumOnLongMonotone => monotone::num_on_long_monotone(&g),
+                    MaxMonotonePath => monotone::max_monotone(&g),
+                    TotalDominationGameLength => domination::total_domination_game_length(&g),
+                    Number(k) => *k,
                 };
                 self.previous_values.insert(*operation, value);
                 value
@@ -42,50 +43,51 @@ impl Operator {
     }
 
     pub fn operate_bool(&mut self, g: &Graph, operation: &BoolOperation) -> bool {
+        use BoolOperation::*;
         match operation {
-            BoolOperation::Less(op1, op2) => 
+            Less(op1, op2) => 
                 self.operate_int(g, op1) < self.operate_int(g, op2),
-            BoolOperation::More(op1, op2) => 
+            More(op1, op2) => 
                 self.operate_int(g, op1) > self.operate_int(g, op2),
-            BoolOperation::NotLess(op1, op2) => 
+            NotLess(op1, op2) => 
                 self.operate_int(g, op1) >= self.operate_int(g, op2),
-            BoolOperation::NotMore(op1, op2) => 
+            NotMore(op1, op2) => 
                 self.operate_int(g, op1) <= self.operate_int(g, op2),
-            BoolOperation::IsConnected => components::is_connected(g),
-            BoolOperation::HasLongMonotone => monotone::has_long_monotone(g),
+            IsConnected => components::is_connected(g),
+            HasLongMonotone => monotone::has_long_monotone(g),
         }
     }
 
     pub fn operate_float(&mut self, g: &Graph, operation: &FloatOperation) -> f64 {
+        use FloatOperation::*;
         match operation {
-            FloatOperation::OfBool(operation) => 
+            OfBool(operation) => 
                 if self.operate_bool(g, operation) { 1.0 } else { 0.0 },
-            FloatOperation::OfInt(operation) =>
+            OfInt(operation) =>
                 self.operate_int(g, operation) as f64,
-            FloatOperation::Ratio(op1, op2) =>
+            Ratio(op1, op2) =>
                 (self.operate_int(g, op1) as f64) / (self.operate_int(g, op2) as f64),
         }
     }
 
     fn operate_unit(&mut self, g: &Graph, operation: &UnitOperation) {
+        use UnitOperation::*;
         match operation {
-            UnitOperation::Print => g.print(),
-            UnitOperation::RawBunkbed => bunkbed::print_polynomials(g),
-            UnitOperation::BunkbedPosts => bunkbed_posts::print_polynomials(g),
-            UnitOperation::BunkbedSimulation => bunkbed::simulate(g),
-            UnitOperation::Unit => (),
+            Print => g.print(),
+            RawBunkbed => bunkbed::print_polynomials(g),
+            BunkbedPosts => bunkbed_posts::print_polynomials(g),
+            BunkbedSimulation => bunkbed::simulate(g),
+            Unit => (),
         }
     }
 
     pub fn operate(&mut self, g: &Graph, operation: &Operation) -> String {
+        use Operation::*;
         match operation {
-            Operation::Int(op) => 
-                u32::to_string(&self.operate_int(g, op)),
-            Operation::Bool(op) =>
-                bool::to_string(&self.operate_bool(g, op)),
-            Operation::Float(op) =>
-                format!("{:.4}", self.operate_float(g, op)),
-            Operation::Unit(op) => {
+            Int(op) => u32::to_string(&self.operate_int(g, op)),
+            Bool(op) => bool::to_string(&self.operate_bool(g, op)),
+            Float(op) => format!("{:.4}", self.operate_float(g, op)),
+            Unit(op) => {
                 self.operate_unit(g, op);
                 "()".to_owned()
             }
