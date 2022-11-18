@@ -1,6 +1,7 @@
 use std::fmt;
 
 pub mod polynomial;
+pub mod rational;
 
 #[derive(Copy, Clone)]
 pub struct Order(usize);
@@ -96,6 +97,7 @@ pub fn parse_infix_like(text: &str) -> Option<(&str, &str, &str)> {
     let bytes = text.as_bytes();
     let left_chop = if bytes[0] == '(' as u8 { 1 } else { 0 };
     let mut depth = 0;
+    let mut ever_depth_zero = false;
     'parser: for (i, c) in bytes.iter().enumerate() {
         if operator_start > 0 && !infix_symbols.contains(&(*c as char)) {
             operator_end = i;
@@ -107,8 +109,13 @@ pub fn parse_infix_like(text: &str) -> Option<(&str, &str, &str)> {
         } else if operator_start == 0 && depth == 0 && infix_symbols.contains(&(*c as char)) {
             operator_start = i;
         }
+        if depth == 0 && i < text.len() - 1 {
+            ever_depth_zero = true;
+        }
     }
-    if operator_start > 0 && operator_end > 0 {
+    if !ever_depth_zero {
+        parse_infix_like(&text[1..text.len()-1])
+    } else if operator_start > 0 && operator_end > 0 {
         let op1 = &text[left_chop..(operator_start - left_chop)];
         let op2 = &text[(operator_end + (if bytes[operator_end] == '(' as u8 { 1 } else { 0 }))..text.len()];
         Some((op1, &text[operator_start..operator_end], op2))

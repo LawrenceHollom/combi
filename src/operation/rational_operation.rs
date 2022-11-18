@@ -14,23 +14,24 @@ pub enum ArithmeticOperation {
 }
 
 #[derive(Clone)]
-pub enum FloatOperation {
+pub enum RationalOperation {
     OfInt(IntOperation),
     OfBool(Box<BoolOperation>),
-    Arithmetic(ArithmeticOperation, Box<FloatOperation>, Box<FloatOperation>),
+    Arithmetic(ArithmeticOperation, Box<RationalOperation>, Box<RationalOperation>),
 }
 
-impl FloatOperation {
-    fn wrap_arithmetic(op: ArithmeticOperation, par1: &str, par2: &str) -> Option<FloatOperation> {
+impl RationalOperation {
+    fn wrap_arithmetic(op: ArithmeticOperation, par1: &str, par2: &str) -> Option<RationalOperation> {
         Self::of_string_result(par1).and_then(|par1| 
             Self::of_string_result(par2).map(|par2|
-                FloatOperation::Arithmetic(op, Box::new(par1), Box::new(par2))
+                RationalOperation::Arithmetic(op, Box::new(par1), Box::new(par2))
         ))
     }
 
-    pub fn of_string_result(text: &str) -> Option<FloatOperation> {
+    pub fn of_string_result(text: &str) -> Option<RationalOperation> {
         match parse_infix_like(text) {
             Some((par1, op, par2)) => {
+                println!("DEBUG: INFIX LIKE: [{}] [{}] [{}]", par1, op, par2);
                 use ArithmeticOperation::*;
                 let arith = match op {
                     "+" => Some(Sum),
@@ -41,7 +42,7 @@ impl FloatOperation {
                 };
                 arith.and_then(|op| Self::wrap_arithmetic(op, par1, par2))
             }
-            None => IntOperation::of_string_result(text).map(FloatOperation::OfInt),
+            None => IntOperation::of_string_result(text).map(RationalOperation::OfInt),
         }
     }
 }
@@ -59,12 +60,12 @@ impl fmt::Display for ArithmeticOperation {
     }
 }
 
-impl fmt::Display for FloatOperation {
+impl fmt::Display for RationalOperation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use FloatOperation::*;
+        use RationalOperation::*;
         let name = match self {
             OfBool(op) => format!("Of Bool ({})", op),
-            OfInt(op) => format!("Of int ({})", op),
+            OfInt(op) => format!("{}", op),
             Arithmetic(arith, op1, op2) => format!("({}) {} ({})", *op1, arith, *op2),
         };
         write!(f, "{}", name)

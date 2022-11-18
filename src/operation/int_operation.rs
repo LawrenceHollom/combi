@@ -22,7 +22,7 @@ pub enum IntOperation {
 impl IntOperation {
     pub fn of_string_result(text: &str) -> Option<IntOperation> {
         use IntOperation::*;
-        match text.trim().to_lowercase().as_str() {
+        match text.trim().trim_end_matches(')').to_lowercase().as_str() {
             "order" | "n" => Some(Order),
             "size" | "edges" => Some(Size),
             "largest_component" | "largest" => Some(LargestComponent),

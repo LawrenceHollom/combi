@@ -9,7 +9,7 @@ use crate::graph::Graph;
 
 use crate::operation::*;
 use crate::operation::bool_operation::*;
-use crate::operation::float_operation::*;
+use crate::operation::rational_operation::*;
 
 pub struct Tabulation {
     pub order: Order,
@@ -158,12 +158,12 @@ impl Instruction {
     fn execute_tabulate(&self, tab: &Tabulation) {
         let reps = 100;
         let propn = f64::round((tab.end - tab.start) / tab.step) as usize;
-        let operators: Vec<FloatOperation> = self.operations
+        let operators: Vec<RationalOperation> = self.operations
             .iter()
             .filter_map(|x| match x {
-                Operation::Int(op) => Some(FloatOperation::OfInt(*op)),
-                Operation::Bool(op) => Some(FloatOperation::OfBool(Box::new(op.to_owned()))),
-                Operation::Float(op) => Some(op.to_owned()),
+                Operation::Int(op) => Some(RationalOperation::OfInt(*op)),
+                Operation::Bool(op) => Some(RationalOperation::OfBool(Box::new(op.to_owned()))),
+                Operation::Rational(op) => Some(op.to_owned()),
                 Operation::Unit(_op) => None,
             })
             .collect();
@@ -176,7 +176,7 @@ impl Instruction {
                 let g = Graph::new(&constr);
                 let mut operator = Operator::new();
                 for (op, sum) in operators.iter().zip(sums.iter_mut()) {
-                    *sum += operator.operate_float(&g, op);
+                    *sum += operator.operate_rational(&g, op).to_f64();
                 }
             }
             for sum in sums.iter_mut() {

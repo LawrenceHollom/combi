@@ -11,11 +11,13 @@ mod girth;
 
 use std::collections::HashMap;
 
+use utilities::rational::*;
+
 use crate::operation::*;
 use crate::graph::*;
 
 use crate::operation::bool_operation::*;
-use crate::operation::float_operation::*;
+use crate::operation::rational_operation::*;
 use crate::operation::int_operation::*;
 use crate::operation::unit_operation::*;
 
@@ -65,10 +67,10 @@ impl Operator {
         }
     }
 
-    fn operate_float_to_bool_infix(&mut self, g: &Graph, infix: &NumToBoolInfix, op1: &FloatOperation, op2: &FloatOperation) -> bool {
+    fn operate_float_to_bool_infix(&mut self, g: &Graph, infix: &NumToBoolInfix, op1: &RationalOperation, op2: &RationalOperation) -> bool {
         use NumToBoolInfix::*;
-        let x1 = self.operate_float(g, op1);
-        let x2 = self.operate_float(g, op2);
+        let x1 = self.operate_rational(g, op1);
+        let x2 = self.operate_rational(g, op2);
         match *infix {
             Less => x1 < x2,
             More => x1 > x2,
@@ -105,16 +107,16 @@ impl Operator {
         }
     }
 
-    pub fn operate_float(&mut self, g: &Graph, operation: &FloatOperation) -> f64 {
-        use FloatOperation::*;
+    pub fn operate_rational(&mut self, g: &Graph, operation: &RationalOperation) -> Rational {
+        use RationalOperation::*;
         match operation {
             OfBool(operation) => 
-                if self.operate_bool(g, operation) { 1.0 } else { 0.0 },
+                if self.operate_bool(g, operation) { Rational::ONE } else { Rational::ZERO },
             OfInt(operation) =>
-                self.operate_int(g, operation) as f64,
+                Rational::new(self.operate_int(g, operation) as i64),
             Arithmetic(arith, op1, op2) => {
-                let par1 = self.operate_float(g, op1);
-                let par2 = self.operate_float(g, op2);
+                let par1 = self.operate_rational(g, op1);
+                let par2 = self.operate_rational(g, op2);
                 use ArithmeticOperation::*;
                 match arith {
                     Sum => par1 + par2,
@@ -142,7 +144,7 @@ impl Operator {
         match operation {
             Int(op) => u32::to_string(&self.operate_int(g, op)),
             Bool(op) => bool::to_string(&self.operate_bool(g, op)),
-            Float(op) => format!("{:.4}", self.operate_float(g, op)),
+            Rational(op) => format!("{:.4}", self.operate_rational(g, op)),
             Unit(op) => {
                 self.operate_unit(g, op);
                 "()".to_owned()

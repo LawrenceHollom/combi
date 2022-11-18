@@ -3,7 +3,7 @@ use utilities::*;
 
 use crate::operation::int_operation::*;
 
-use super::float_operation::FloatOperation;
+use super::rational_operation::RationalOperation;
 
 #[derive(Copy, Clone)]
 pub enum NumToBoolInfix {
@@ -25,7 +25,7 @@ pub enum BoolToBoolInfix {
 #[derive(Clone)]
 pub enum BoolOperation {
     IntInfix(NumToBoolInfix, IntOperation, IntOperation),
-    FloatInfix(NumToBoolInfix, FloatOperation, FloatOperation),
+    FloatInfix(NumToBoolInfix, RationalOperation, RationalOperation),
     BoolInfix(BoolToBoolInfix, Box<BoolOperation>, Box<BoolOperation>),
     IsConnected,
     HasLongMonotone,
@@ -73,8 +73,8 @@ impl BoolOperation {
                         IntOperation::of_string_result(par2).map(|op2|
                             IntInfix(infix, op1, op2))) {
                         Some(op) => Some(op),
-                        None => FloatOperation::of_string_result(par1).and_then(|op1| 
-                                    FloatOperation::of_string_result(par2).map(|op2|
+                        None => RationalOperation::of_string_result(par1).and_then(|op1| 
+                                    RationalOperation::of_string_result(par2).map(|op2|
                                         FloatInfix(infix, op1, op2)))
                     }
                     
