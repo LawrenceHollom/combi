@@ -23,7 +23,7 @@ impl Operation {
             .or_else(|| BoolOperation::of_string_result(text).map(Operation::Bool))
             .or_else(|| RationalOperation::of_string_result(text).map(Operation::Rational))
             .or_else(|| UnitOperation::of_string_result(text).map(Operation::Unit))
-            .expect(format!("Unknown operation {}", text).as_str())
+            .unwrap_or_else(|| panic!("Unknown operation {}", text))
     }
 }
 
