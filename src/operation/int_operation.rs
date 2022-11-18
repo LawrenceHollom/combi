@@ -15,6 +15,7 @@ pub enum IntOperation {
     CliqueCoveringNumber,
     NumOnLongMonotone,
     MaxMonotonePath,
+    NumOnMonotoneCycle,
     TotalDominationGameLength,
     Number(u32),
 }
@@ -36,6 +37,7 @@ impl IntOperation {
             "clique_cover" | "theta" => Some(CliqueCoveringNumber),
             "num_on_long_monotone" | "num_monot" => Some(NumOnLongMonotone),
             "max_monot" => Some(MaxMonotonePath),
+            "num_monot_cycle" => Some(NumOnMonotoneCycle),
             "total_domination_game" | "gamma_tg" => Some(TotalDominationGameLength),
             str => str.parse().ok().map(Number),
         }
@@ -60,6 +62,7 @@ impl fmt::Display for IntOperation {
             CliqueCoveringNumber => "Clique covering number",
             NumOnLongMonotone => "Number of vertices on a 1->n monotone path",
             MaxMonotonePath => "Length of longest monotone path",
+            NumOnMonotoneCycle => "Number of vertices on a monotone cycle",
             TotalDominationGameLength => "Length of the total domination game",
             Number(n) => {
                 sta = n.to_string();

@@ -45,6 +45,7 @@ impl Operator {
                     CliqueCoveringNumber => chromatic::chromatic_number(&g.complement()),
                     NumOnLongMonotone => monotone::num_on_long_monotone(g),
                     MaxMonotonePath => monotone::max_monotone(g),
+                    NumOnMonotoneCycle => monotone::num_on_monot_cycle(g),
                     TotalDominationGameLength => domination::total_domination_game_length(g),
                     Number(k) => *k,
                 };
