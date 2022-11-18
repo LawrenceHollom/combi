@@ -4,7 +4,7 @@
 
  == THE KITCHEN SINK ==
  - Maybe add option for increasing by number of edges or something
- - Add condition e.g. connected
+ - Add condition e.g. connected (to not even think about other conditions before checking this)
  - Weed out isomorphic graphs of low order
 
  == ITERATOR ==

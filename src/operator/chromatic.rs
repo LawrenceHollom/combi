@@ -1,7 +1,8 @@
 use crate::graph::*;
 
 fn can_be_coloured_rec(g: &Graph, num_colours: usize, max_colour_used: usize, colour: &mut Vec<usize>, next_vert: usize) -> bool {
-    if next_vert == g.n.to_usize() {
+    let n = g.n.to_usize();
+    if next_vert == n {
         true
     } else {
         let mut can_colour = false;
@@ -18,6 +19,8 @@ fn can_be_coloured_rec(g: &Graph, num_colours: usize, max_colour_used: usize, co
                 if can_be_coloured_rec(g, num_colours, usize::max(max_colour_used, col), colour, next_vert + 1) {
                     can_colour = true;
                     break 'test_all_colourings;
+                } else {
+                    colour[next_vert] = n;
                 }
             }
         }
