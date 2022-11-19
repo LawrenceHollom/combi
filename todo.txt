@@ -6,6 +6,8 @@
  - Maybe add option for increasing by number of edges or something
  - Add condition e.g. connected (to not even think about other conditions before checking this)
  - Weed out isomorphic graphs of low order
+ -- And do this but faster so it can actually run on larger graphs
+ -- Test the simple version actually works.
 
  == ITERATOR ==
  - Detect identical nodes in graphs and iterate over subsets more efficiently
