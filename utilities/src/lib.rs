@@ -1,4 +1,5 @@
 use std::fmt;
+use std::cmp::*;
 
 pub mod polynomial;
 pub mod rational;
@@ -29,6 +30,26 @@ impl fmt::Display for Order {
     }
 }
 
+impl PartialEq for Order {
+    fn eq(&self, other: &Order) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl Eq for Order { }
+
+impl PartialOrd for Order {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Order {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.0.cmp(&other.0)
+    }
+}
+
 impl Degree {
     pub const ZERO: Degree = Degree(0);
 
@@ -56,6 +77,26 @@ impl Degree {
 impl fmt::Display for Degree {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+impl PartialEq for Degree {
+    fn eq(&self, other: &Degree) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl Eq for Degree { }
+
+impl PartialOrd for Degree {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Degree {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.0.cmp(&other.0)
     }
 }
 

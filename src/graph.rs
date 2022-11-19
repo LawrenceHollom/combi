@@ -201,6 +201,63 @@ impl Graph {
         }
     }
 
+    fn is_map_isomorphism(&self, g: &Graph, map: &Vec<usize>) -> bool {
+        let n = g.n.to_usize();
+        let mut is_iso = true;
+        'test: for i in 0..n {
+            for j in 0..n {
+                if self.adj[i][j] != g.adj[map[i]][map[j]] {
+                    is_iso = false;
+                    break 'test;
+                }
+            }
+        }
+        is_iso
+    }
+
+    // n^n time rip.
+    fn is_isomorphic_to_slow(&self, g: &Graph, map: &mut Vec<usize>, node: usize) -> bool {
+        let n = g.n.to_usize();
+        if node == n {
+            self.is_map_isomorphism(g, map)
+        } else {
+            let mut is_any_iso = false;
+            'find_iso: for i in 0..n {
+                map[node] = i;
+                if self.is_isomorphic_to_slow(g, map, node + 1) {
+                    is_any_iso = true;
+                    break 'find_iso;
+                }
+            }
+            is_any_iso
+        }
+    }
+
+    pub fn is_isomorphic_to(&self, g: &Graph) -> bool {
+        let mut self_degs = self.deg.to_owned();
+        let mut g_degs = g.deg.to_owned();
+        self_degs.sort();
+        g_degs.sort();
+
+        if self.n != g.n {
+            return false;
+        }
+        let n = self.n.to_usize();
+
+        if !self_degs.iter().zip(g_degs.iter()).all(|(x, y)| *x == *y) {
+            return false;
+        }
+
+        // So we know the degree sequences are equal, so try to find an embedding.
+        // Slowest algorithm: try all n! maps from on to the other.
+        if n > 6 { 
+            // give up; would be too slow
+            return false;
+        }
+
+        self.is_isomorphic_to_slow(g, &mut vec![0; n], 0)
+    }
+
     pub fn new(constructor: &Constructor) -> Graph {
         use Constructor::*;
         use RandomConstructor::*;

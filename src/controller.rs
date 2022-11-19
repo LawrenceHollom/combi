@@ -295,6 +295,10 @@ impl Instruction {
         let mut num_new_graphs = 0;
         'add_graphs: loop {
             let mut new_constructors: Vec<Constructor> = vec![];
+            let mut graphs: Vec<Graph> = vec![];
+            for constr in constructors[verts].iter() {
+                graphs.push(Graph::new(&constr));
+            }
             'decompose: for factor in 2..verts {
                 if factor * factor > verts {
                     break 'decompose;
@@ -306,8 +310,19 @@ impl Instruction {
                             // Don't construct duplicate products.
                             if factor < verts / factor || i <= j {
                                 for product in ProductConstructor::all() {
-                                    new_constructors.push(Product(product, Box::new((*c1).to_owned()), Box::new((*c2).to_owned())));
-                                    num_new_graphs += 1;
+                                    let constr = Product(product, Box::new((*c1).to_owned()), Box::new((*c2).to_owned()));
+                                    let g = Graph::new(&constr);
+                                    let mut is_already_there = false;
+                                    'find_graph: for h in graphs.iter() {
+                                        if h.is_isomorphic_to(&g) {
+                                            is_already_there = true;
+                                            break 'find_graph;
+                                        }
+                                    }
+                                    if !is_already_there {
+                                        new_constructors.push(constr);
+                                        num_new_graphs += 1;
+                                    }
                                 }
                             }
                         }
