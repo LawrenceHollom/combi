@@ -1,5 +1,7 @@
 use utilities::*;
 use crate::constructor::*;
+use Constructor::*;
+use RawConstructor::*;
 
 use rand::{thread_rng, Rng};
 use queues::*;
@@ -15,6 +17,7 @@ pub struct Graph {
     pub adj: Vec<Vec<bool>>,
     pub adj_list: Vec<Vec<usize>>,
     pub deg: Vec<Degree>,
+    pub constructor: Constructor,
 }
 
 impl Graph {
@@ -45,6 +48,7 @@ impl Graph {
             adj,
             adj_list,
             deg,
+            constructor: Raw(Complete(*order))
         }
     }
 
@@ -71,6 +75,7 @@ impl Graph {
             adj,
             adj_list,
             deg,
+            constructor: Raw(Cyclic(*order))
         }
     }
 
@@ -98,6 +103,7 @@ impl Graph {
             adj,
             adj_list,
             deg,
+            constructor: Raw(Path(*order))
         }
     }
 
@@ -119,6 +125,7 @@ impl Graph {
             adj,
             adj_list,
             deg,
+            constructor: Raw(Star(*order))
         }
     }
 
@@ -133,6 +140,7 @@ impl Graph {
             adj,
             adj_list,
             deg,
+            constructor: Raw(Empty(*order))
         }
     }
 
@@ -151,7 +159,8 @@ impl Graph {
             n: Order::of_usize(n),
             adj,
             adj_list,
-            deg
+            deg,
+            constructor: Raw(FanoPlane)
         }
     }
 
@@ -170,7 +179,8 @@ impl Graph {
             n: Order::of_usize(n),
             adj,
             adj_list,
-            deg
+            deg,
+            constructor: Raw(Petersen)
         }
     }
 
@@ -198,8 +208,30 @@ impl Graph {
             n: Order::of_usize(2*n),
             adj,
             adj_list,
-            deg
+            deg,
+            constructor: Special
         }
+    }
+
+    pub fn codegree_sequence(&self) -> Vec<usize> {
+        let n = self.n.to_usize();
+        let mut codegs = vec![0; (n * (n - 1)) / 2];
+
+        fn code(u: usize, v: usize) -> usize {
+            ((v * (v - 1)) / 2) + u
+        }
+
+        for nbrs in self.adj_list.iter() {
+            for u in nbrs.iter() {
+                for v in nbrs.iter() {
+                    if *u < *v {
+                        codegs[code(*u, *v)] += 1;
+                    }
+                }
+            }
+        }
+
+        codegs
     }
 
     fn is_map_isomorphism(&self, g: &Graph, map: &[usize]) -> bool {
@@ -253,13 +285,101 @@ impl Graph {
             return false;
         }
 
+        let mut self_codegs = self.codegree_sequence();
+        let mut g_codegs = g.codegree_sequence();
+        self_codegs.sort();
+        g_codegs.sort();
+
+        if !self_codegs.iter().zip(g_codegs.iter()).all(|(x, y)| *x == *y) {
+            //println!("Gottem! {} ~ {}", self.constructor, g.constructor);
+            return false;
+        }
+
+        if self.is_connected() != g.is_connected() {
+            //println!("Connectedness catch!");
+            return false;
+        }
+
         // So we know the degree sequences are equal, so try to find an embedding.
         // Slowest algorithm: try all n! maps from on to the other.
-        if n > 9 { 
+        if n > 15 { 
             // give up; would be too slow
             return false;
         }
-        self.is_isomorphic_to_rec(g, &mut vec![0; n], &mut vec![false; n], 0)
+        let is_iso = self.is_isomorphic_to_rec(g, &mut vec![0; n], &mut vec![false; n], 0);
+        if !is_iso {
+            println!("Missed: {} !~ {}", self.constructor, g.constructor);
+        }
+        is_iso
+    }
+    
+    fn components(&self) -> Vec<usize> {
+        let n = self.n.to_usize();
+        let mut comp: Vec<usize> = vec![n; n];
+        let mut q: Queue<usize> = queue![];
+    
+        for i in 0..n {
+            if comp[i] == n {
+                comp[i] = i;
+                let _ = q.add(i);
+                'flood_fill: loop {
+                    match q.remove() {
+                        Ok(node) => {
+                            for j in self.adj_list[node].iter() {
+                                if comp[*j] == n {
+                                    comp[*j] = i;
+                                    let _ = q.add(*j);
+                                }
+                            }
+                        },
+                        Err(_err) => break 'flood_fill,
+                    }
+                }
+            }
+        }
+    
+        comp
+    }
+    
+    pub fn largest_component(&self) -> u32 {
+        let n = self.n.to_usize();
+        let comps = self.components();
+    
+        let mut sizes: Vec<u32> = vec![0; n];
+    
+        for comp in comps.iter() {
+            sizes[*comp] += 1;
+        }
+    
+        let mut max = 0;
+        for size in sizes.iter() {
+            if *size > max {
+                max = *size;
+            }
+        }
+    
+        max
+    }
+    
+    pub fn is_connected(&self) -> bool {
+        self.largest_component() == self.n.to_usize() as u32
+    }
+    
+    pub fn num_components(&self) -> u32 {
+        let n = self.n.to_usize();
+        let comps = self.components();
+    
+        let mut is_comp: Vec<bool> = vec![false; n];
+        let mut num_comps: u32 = 0;
+    
+        for comp in comps.iter() {
+            if !is_comp[*comp] {
+                num_comps += 1;
+            }
+            is_comp[*comp] = true;
+        }
+    
+        num_comps
     }
 
     pub fn new(constructor: &Constructor) -> Graph {
@@ -269,7 +389,7 @@ impl Graph {
 
         match constructor {
             Product(product, c1, c2) => {
-                products::new_product(product, &Self::new(c1), &Self::new(c2))
+                products::new_product(product, constructor, &Self::new(c1), &Self::new(c2))
             }
             RootedTree(parents) => tree::new_rooted(parents),
             Random(RegularBipartite(order, degree)) => random_regular_bipartite::new(order, degree),
@@ -282,6 +402,7 @@ impl Graph {
             Raw(Empty(order)) => Graph::new_empty(order),
             Raw(FanoPlane) => Graph::new_fano_plane(),
             Raw(Petersen) => Graph::new_petersen(),
+            Special => panic!("Cannot directly construct Special graph!"),
         }
     }
 
@@ -311,6 +432,7 @@ impl Graph {
             adj: new_adj,
             adj_list: new_adj_list,
             deg: new_deg,
+            constructor: Constructor::Special,
         }
     }
 

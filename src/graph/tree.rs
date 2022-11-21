@@ -23,6 +23,7 @@ pub fn new_rooted(parents: &Vec<usize>) -> Graph {
         n: Order::of_usize(n), 
         adj,
         adj_list,
-        deg: deg.iter().map(|d| Degree::of_usize(*d)).collect() 
+        deg: deg.iter().map(|d| Degree::of_usize(*d)).collect(),
+        constructor: Constructor::RootedTree(parents.to_owned())
     }
 }

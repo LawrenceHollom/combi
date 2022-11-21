@@ -37,6 +37,7 @@ pub enum Constructor {
     Random(RandomConstructor),
     Raw(RawConstructor),
     RootedTree(Vec<usize>),
+    Special,
 }
 
 impl Constructor {
@@ -111,9 +112,10 @@ impl fmt::Display for Constructor {
             },
             Random(constr) => write!(f, "Random({})", constr),
             Raw(constr) => write!(f, "{}", constr),
-            Constructor::RootedTree(parents) => {
+            RootedTree(parents) => {
                 write!(f, "Rooted tree with parent pattern {:?}", parents)
             },
+            Special => write!(f, "Special"),
         }
     }
 }

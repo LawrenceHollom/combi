@@ -1,7 +1,6 @@
 mod domination;
 mod chromatic;
 mod max_acyclic;
-mod components;
 mod monotone;
 mod bunkbed;
 mod percolate;
@@ -34,8 +33,8 @@ impl Operator {
                 let value = match operation {
                     Order => g.n.to_usize() as u32,
                     Size => g.size() as u32,
-                    LargestComponent => components::largest_component(g),
-                    NumComponents => components::num_components(g),
+                    LargestComponent => g.largest_component(),
+                    NumComponents => g.num_components(),
                     CliqueNumber => cliques::largest_clique(g),
                     IndependenceNumber => cliques::independence_number(g),
                     Girth => girth::girth(g),
@@ -103,7 +102,7 @@ impl Operator {
                 self.operate_float_to_bool_infix(g, infix, op1, op2),
             BoolInfix(infix, op1, op2) => 
                 self.operate_bool_to_bool_infix(g, infix, op1, op2),
-            IsConnected => components::is_connected(g),
+            IsConnected => g.is_connected(),
             HasLongMonotone => monotone::has_long_monotone(g),
         }
     }

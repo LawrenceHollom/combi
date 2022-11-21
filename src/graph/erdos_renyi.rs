@@ -26,6 +26,7 @@ pub fn new(order: &Order, p: f64) -> Graph {
         n: *order,
         adj,
         adj_list,
-        deg: deg.iter().map(|d| Degree::of_usize(*d)).collect()
+        deg: deg.iter().map(|d| Degree::of_usize(*d)).collect(),
+        constructor: Constructor::Random(crate::constructor::RandomConstructor::ErdosRenyi(*order, p))
     }
 }

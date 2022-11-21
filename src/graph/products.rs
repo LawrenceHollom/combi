@@ -16,7 +16,7 @@ fn generic_condition(product: &ProductConstructor, g1: &Graph, g2: &Graph, u1: u
     }
 }
 
-pub fn new_product(product: &ProductConstructor, g1: &Graph, g2: &Graph) -> Graph {
+pub fn new_product(product: &ProductConstructor, constructor: &Constructor, g1: &Graph, g2: &Graph) -> Graph {
     let n1 = g1.n.to_usize();
     let n = n1 * g2.n.to_usize();
 
@@ -41,6 +41,7 @@ pub fn new_product(product: &ProductConstructor, g1: &Graph, g2: &Graph) -> Grap
         n: Order::of_usize(n), 
         adj,
         adj_list,
-        deg: deg.iter().map(|d| Degree::of_usize(*d)).collect() 
+        deg: deg.iter().map(|d| Degree::of_usize(*d)).collect(),
+        constructor: constructor.to_owned()
     }
 }

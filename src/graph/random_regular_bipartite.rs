@@ -103,6 +103,7 @@ pub fn new(order: &Order, degree: &Degree) -> Graph {
         n: *order,
         adj,
         adj_list,
-        deg: deg.iter().map(|d| Degree::of_usize(*d)).collect()
+        deg: deg.iter().map(|d| Degree::of_usize(*d)).collect(),
+        constructor: Constructor::Random(crate::constructor::RandomConstructor::RegularBipartite(*order, *degree))
     }
 }

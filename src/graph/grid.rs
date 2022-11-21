@@ -40,6 +40,7 @@ pub fn new(height: &Order, width: &Order) -> Graph {
         n: Order::of_usize(n), 
         adj,
         adj_list,
-        deg: deg.iter().map(|d| Degree::of_usize(*d)).collect() 
+        deg: deg.iter().map(|d| Degree::of_usize(*d)).collect(),
+        constructor: Constructor::Raw(crate::constructor::RawConstructor::Grid(*height, *width))
     }
 }
