@@ -315,9 +315,7 @@ impl Graph {
             return false;
         }
 
-        // So we know the degree sequences are equal, so try to find an embedding.
-        // Slowest algorithm: try all n! maps from on to the other.
-        if n > 20 { 
+        if n > 15 { 
             // give up; would be too slow
             return false;
         }

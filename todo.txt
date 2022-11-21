@@ -5,6 +5,7 @@
  == THE KITCHEN SINK ==
  - Maybe add option for increasing by number of edges or something
  - Add condition e.g. connected (to not even think about other conditions before checking this)
+ - test with sink((size>0)&&(theta>=acyclic))
  
  == ISOMORPHISM CHECKS ==
  - Add more heuristic optimisations for slowest cases

@@ -287,7 +287,7 @@ impl Instruction {
         use RawConstructor::*;
 
         let mut constructors: Vec<Vec<Constructor>> = vec![vec![]];
-        let max_new_graphs = 4000;
+        let max_new_graphs = 100000;
         fn ous(n: usize) -> Order {
             Order::of_usize(n)
         }
