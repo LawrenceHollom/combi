@@ -202,7 +202,7 @@ impl Graph {
         }
     }
 
-    fn is_map_isomorphism(&self, g: &Graph, map: &Vec<usize>) -> bool {
+    fn is_map_isomorphism(&self, g: &Graph, map: &[usize]) -> bool {
         let n = g.n.to_usize();
         let mut is_iso = true;
         'test: for i in 0..n {

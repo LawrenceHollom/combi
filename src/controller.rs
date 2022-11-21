@@ -297,7 +297,7 @@ impl Instruction {
             let mut new_constructors: Vec<Constructor> = vec![];
             let mut graphs: Vec<Graph> = vec![];
             for constr in constructors[verts].iter() {
-                graphs.push(Graph::new(&constr));
+                graphs.push(Graph::new(constr));
             }
             'decompose: for factor in 2..verts {
                 if factor * factor > verts {
@@ -345,16 +345,16 @@ impl Instruction {
         }
 
         // Add some random graphs for good measure
-        for verts in 4..constructors.len() {
+        for (verts, constructors) in constructors.iter_mut().enumerate().skip(4) {
             use RandomConstructor::*;
             let n = verts as f64;
-            constructors[verts].push(Random(ErdosRenyi(ous(verts), 1.0 / n)));
+            constructors.push(Random(ErdosRenyi(ous(verts), 1.0 / n)));
             for i in (-1)..4 {
-                constructors[verts].push(Random(ErdosRenyi(ous(verts), (n.ln() + (i as f64 * n.ln().ln())) / n)));
+                constructors.push(Random(ErdosRenyi(ous(verts), (n.ln() + (i as f64 * n.ln().ln())) / n)));
             }
-            constructors[verts].push(Random(ErdosRenyi(ous(verts), 0.1)));
-            constructors[verts].push(Random(ErdosRenyi(ous(verts), 0.2)));
-            constructors[verts].push(Random(ErdosRenyi(ous(verts), 0.5)));
+            constructors.push(Random(ErdosRenyi(ous(verts), 0.1)));
+            constructors.push(Random(ErdosRenyi(ous(verts), 0.2)));
+            constructors.push(Random(ErdosRenyi(ous(verts), 0.5)));
         }
 
         println!("Beginning actual search.");
