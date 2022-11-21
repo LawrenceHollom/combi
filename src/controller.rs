@@ -273,15 +273,19 @@ impl Instruction {
     fn execute_kitchen_sink(&self, condition: &BoolOperation) {
         use Constructor::*;
         use RawConstructor::*;
+
         let mut constructors: Vec<Vec<Constructor>> = vec![vec![]];
-        let max_new_graphs = 1000;
+        let max_new_graphs = 4000;
         fn ous(n: usize) -> Order {
             Order::of_usize(n)
         }
         constructors.push(vec![]);
         constructors.push(vec![Raw(Complete(ous(2))), Raw(Empty(ous(2)))]);
         constructors.push(vec![Raw(Complete(ous(3))), Raw(Path(ous(3))), Raw(Empty(ous(3)))]);
-        for verts in 4..20 {
+
+        let mut verts = 4;
+        let mut num_new_graphs = 0;
+        'add_graphs: loop {
             constructors.push(vec![]);
             let order = ous(verts);
             constructors[verts].push(Raw(Complete(order)));
@@ -289,11 +293,7 @@ impl Instruction {
             constructors[verts].push(Raw(Path(order)));
             constructors[verts].push(Raw(Star(order)));
             constructors[verts].push(Raw(Empty(order)));
-        }
 
-        let mut verts = 4;
-        let mut num_new_graphs = 0;
-        'add_graphs: loop {
             let mut new_constructors: Vec<Constructor> = vec![];
             let mut graphs: Vec<Graph> = vec![];
             for constr in constructors[verts].iter() {
@@ -320,6 +320,7 @@ impl Instruction {
                                         }
                                     }
                                     if !is_already_there {
+                                        graphs.push(Graph::new(&constr));
                                         new_constructors.push(constr);
                                         num_new_graphs += 1;
                                     }
@@ -335,11 +336,25 @@ impl Instruction {
             for c in new_constructors.iter() {
                 constructors[verts].push((*c).to_owned());
             }
+            
             println!("Added kitchen sink graphs with {} vertices. There are {} of them.", verts, constructors[verts].len());
             if num_new_graphs >= max_new_graphs {
                 break 'add_graphs;
             }
             verts += 1;
+        }
+
+        // Add some random graphs for good measure
+        for verts in 4..constructors.len() {
+            use RandomConstructor::*;
+            let n = verts as f64;
+            constructors[verts].push(Random(ErdosRenyi(ous(verts), 1.0 / n)));
+            for i in (-1)..4 {
+                constructors[verts].push(Random(ErdosRenyi(ous(verts), (n.ln() + (i as f64 * n.ln().ln())) / n)));
+            }
+            constructors[verts].push(Random(ErdosRenyi(ous(verts), 0.1)));
+            constructors[verts].push(Random(ErdosRenyi(ous(verts), 0.2)));
+            constructors[verts].push(Random(ErdosRenyi(ous(verts), 0.5)));
         }
 
         println!("Beginning actual search.");

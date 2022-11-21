@@ -4,10 +4,10 @@ use std::cmp::*;
 pub mod polynomial;
 pub mod rational;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Order(usize);
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Degree(usize);
 
 impl Order {

@@ -78,7 +78,8 @@ impl Graph {
         let n = order.to_usize();
         let mut adj = vec![vec![false; n]; n];
         let mut adj_list = vec![vec![]; n];
-        let deg: Vec<Degree> = vec![2; n].iter().map(|x| Degree::of_usize(*x)).collect();
+        let deg: Vec<Degree> = vec![2; n].iter().enumerate().map(|(i, x)| 
+                Degree::of_usize(if i == 0 || i == n-1 { 1 } else { *x })).collect();
 
         // This could be done directly and non-mutably; possibly would be more idiomatic
         for i in 0..n {
@@ -215,18 +216,22 @@ impl Graph {
         is_iso
     }
 
-    // n^n time rip.
-    fn is_isomorphic_to_slow(&self, g: &Graph, map: &mut Vec<usize>, node: usize) -> bool {
+    fn is_isomorphic_to_rec(&self, g: &Graph, map: &mut Vec<usize>, covered: &mut Vec<bool>, node: usize) -> bool {
         let n = g.n.to_usize();
         if node == n {
             self.is_map_isomorphism(g, map)
         } else {
             let mut is_any_iso = false;
             'find_iso: for i in 0..n {
-                map[node] = i;
-                if self.is_isomorphic_to_slow(g, map, node + 1) {
-                    is_any_iso = true;
-                    break 'find_iso;
+                if self.deg[node] == g.deg[i] && !covered[i] {
+                    map[node] = i;
+                    covered[i] = true;
+                    if self.is_isomorphic_to_rec(g, map, covered, node + 1) {
+                        is_any_iso = true;
+                        break 'find_iso;
+                    }
+                    map[node] = 0;
+                    covered[i] = false;
                 }
             }
             is_any_iso
@@ -250,12 +255,11 @@ impl Graph {
 
         // So we know the degree sequences are equal, so try to find an embedding.
         // Slowest algorithm: try all n! maps from on to the other.
-        if n > 6 { 
+        if n > 9 { 
             // give up; would be too slow
             return false;
         }
-
-        self.is_isomorphic_to_slow(g, &mut vec![0; n], 0)
+        self.is_isomorphic_to_rec(g, &mut vec![0; n], &mut vec![false; n], 0)
     }
 
     pub fn new(constructor: &Constructor) -> Graph {
