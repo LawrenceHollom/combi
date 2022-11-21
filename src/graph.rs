@@ -254,16 +254,26 @@ impl Graph {
             self.is_map_isomorphism(g, map)
         } else {
             let mut is_any_iso = false;
+            // i is the target location of node
             'find_iso: for i in 0..n {
                 if self.deg[node] == g.deg[i] && !covered[i] {
-                    map[node] = i;
-                    covered[i] = true;
-                    if self.is_isomorphic_to_rec(g, map, covered, node + 1) {
-                        is_any_iso = true;
-                        break 'find_iso;
+                    let mut adj_check = true;
+                    'adj_test: for u in self.adj_list[node].iter() {
+                        if *u < node && !g.adj[map[*u]][i] {
+                            adj_check = false;
+                            break 'adj_test;
+                        }
                     }
-                    map[node] = 0;
-                    covered[i] = false;
+                    if adj_check {
+                        map[node] = i;
+                        covered[i] = true;
+                        if self.is_isomorphic_to_rec(g, map, covered, node + 1) {
+                            is_any_iso = true;
+                            break 'find_iso;
+                        }
+                        map[node] = 0;
+                        covered[i] = false;
+                    }
                 }
             }
             is_any_iso
@@ -295,14 +305,19 @@ impl Graph {
             return false;
         }
 
-        if self.is_connected() != g.is_connected() {
+        let mut self_comps = self.component_sizes();
+        let mut g_comps = g.component_sizes();
+        self_comps.sort();
+        g_comps.sort();
+
+        if !self_comps.iter().zip(g_comps.iter()).all(|(x, y)| *x == *y) {
             //println!("Connectedness catch!");
             return false;
         }
 
         // So we know the degree sequences are equal, so try to find an embedding.
         // Slowest algorithm: try all n! maps from on to the other.
-        if n > 15 { 
+        if n > 20 { 
             // give up; would be too slow
             return false;
         }
@@ -380,6 +395,24 @@ impl Graph {
         }
     
         num_comps
+    }
+
+    fn component_sizes(&self) -> Vec<usize> {
+        let n = self.n.to_usize();
+        let mut num_components = 0;
+        let mut labels = vec![n; n];
+        let mut sizes = vec![];
+        for comp in self.components() {
+            if labels[comp] == n {
+                labels[comp] = num_components;
+                num_components += 1;
+                sizes.push(1)
+            } else {
+                sizes[labels[comp]] += 1;
+            }
+        }
+
+        sizes
     }
 
     pub fn new(constructor: &Constructor) -> Graph {

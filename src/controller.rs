@@ -269,6 +269,18 @@ impl Instruction {
             println!("No tree found!")
         }
     }
+            
+    fn test_sink_graph(&self, g: &Graph, condition: &BoolOperation) -> bool {
+        let mut operator = Operator::new();
+        let result = operator.operate_bool(&g, condition);
+        if result {
+            println!("Graph satisfying condition found!");
+            println!("Constructor: {}", g.constructor);
+            println!("Graph:");
+            g.print();
+        }
+        result
+    }
 
     fn execute_kitchen_sink(&self, condition: &BoolOperation) {
         use Constructor::*;
@@ -285,7 +297,7 @@ impl Instruction {
 
         let mut verts = 4;
         let mut num_new_graphs = 0;
-        'add_graphs: loop {
+        'main: loop {
             constructors.push(vec![]);
             let order = ous(verts);
             constructors[verts].push(Raw(Complete(order)));
@@ -320,9 +332,17 @@ impl Instruction {
                                         }
                                     }
                                     if !is_already_there {
-                                        graphs.push(Graph::new(&constr));
+                                        // Actually test the graph
+                                        if self.test_sink_graph(&g, condition) {
+                                            break 'main;
+                                        }
+                                        graphs.push(g);
                                         new_constructors.push(constr);
                                         num_new_graphs += 1;
+                                        if num_new_graphs > max_new_graphs {
+                                            println!("Hit cap! Breaking!");
+                                            break 'decompose;
+                                        }
                                     }
                                 }
                             }
@@ -339,43 +359,33 @@ impl Instruction {
             
             println!("Added kitchen sink graphs with {} vertices. There are {} of them.", verts, constructors[verts].len());
             if num_new_graphs >= max_new_graphs {
-                break 'add_graphs;
+                break 'main;
             }
-            verts += 1;
-        }
 
-        // Add some random graphs for good measure
-        for (verts, constructors) in constructors.iter_mut().enumerate().skip(4) {
+            // Test some random graphs for good measure
+            let mut random_constructors: Vec<Constructor> = vec![];
+
             use RandomConstructor::*;
-            let n = verts as f64;
-            constructors.push(Random(ErdosRenyi(ous(verts), 1.0 / n)));
+            let nf = verts as f64;
+            random_constructors.push(Random(ErdosRenyi(ous(verts), 1.0 / nf)));
             for i in (-1)..4 {
-                constructors.push(Random(ErdosRenyi(ous(verts), (n.ln() + (i as f64 * n.ln().ln())) / n)));
+                random_constructors.push(Random(ErdosRenyi(ous(verts), (nf.ln() + (i as f64 * nf.ln().ln())) / nf)));
             }
-            constructors.push(Random(ErdosRenyi(ous(verts), 0.1)));
-            constructors.push(Random(ErdosRenyi(ous(verts), 0.2)));
-            constructors.push(Random(ErdosRenyi(ous(verts), 0.5)));
-        }
+            random_constructors.push(Random(ErdosRenyi(ous(verts), 0.1)));
+            random_constructors.push(Random(ErdosRenyi(ous(verts), 0.2)));
+            random_constructors.push(Random(ErdosRenyi(ous(verts), 0.5)));
 
-        println!("Beginning actual search.");
-        let mut found = false;
-        'test_graphs: for (i, row) in constructors.iter().enumerate() {
-            for constr in row.iter() {
-                let g = self.execute_single_return(constr, false);
-                let mut operator = Operator::new();
-                if operator.operate_bool(&g, condition) {
-                    println!("Graph satisfying condition found!");
-                    println!("Constructor: {}", constr);
-                    println!("Graph:");
-                    g.print();
-                    found = true;
-                    break 'test_graphs;
+            for _rep in 0..10 {
+                for constr in random_constructors.iter() {
+                    let g = Graph::new(constr);
+                    if self.test_sink_graph(&g, condition) {
+                        break 'main;
+                    }
                 }
             }
-            println!("Completed graphs with {} vertices", i);
-        }
-        if !found {
-            println!("No graph found!");
+            println!("Completed graphs with {} vertices", verts);
+
+            verts += 1;
         }
     }
 
