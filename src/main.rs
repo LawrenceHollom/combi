@@ -18,4 +18,5 @@ fn main() {
     println!("Instruction constructed! {},\nTime: {}", instruction, start_time.elapsed().unwrap().as_millis());
 
     instruction.execute();
+    println!("Finished! Time (s): {}", start_time.elapsed().unwrap().as_secs())
 }

@@ -6,10 +6,6 @@
  - Maybe add option for increasing by number of edges or something
  - Add condition e.g. connected (to not even think about other conditions before checking this)
  - test with sink((size>0)&&(theta>=acyclic))
- 
- == ISOMORPHISM CHECKS ==
- - Add more heuristic optimisations for slowest cases
- -- Slowest cases are regular non-isomorphic graphs, e.g. K_{r,r} and box(K(2),K(r))
 
  == ITERATOR ==
  - Detect identical nodes in graphs and iterate over subsets more efficiently

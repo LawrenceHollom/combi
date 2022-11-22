@@ -272,7 +272,7 @@ impl Instruction {
             
     fn test_sink_graph(&self, g: &Graph, condition: &BoolOperation) -> bool {
         let mut operator = Operator::new();
-        let result = operator.operate_bool(&g, condition);
+        let result = operator.operate_bool(g, condition);
         if result {
             println!("Graph satisfying condition found!");
             println!("Constructor: {}", g.constructor);

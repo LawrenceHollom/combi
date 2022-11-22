@@ -213,19 +213,23 @@ impl Graph {
         }
     }
 
+    fn codeg_code(u: usize, v: usize) -> usize {
+        if u < v {
+            ((v * (v - 1)) / 2) + u
+        } else {
+            ((u * (u - 1)) / 2) + v
+        }
+    }
+
     pub fn codegree_sequence(&self) -> Vec<usize> {
         let n = self.n.to_usize();
         let mut codegs = vec![0; (n * (n - 1)) / 2];
-
-        fn code(u: usize, v: usize) -> usize {
-            ((v * (v - 1)) / 2) + u
-        }
 
         for nbrs in self.adj_list.iter() {
             for u in nbrs.iter() {
                 for v in nbrs.iter() {
                     if *u < *v {
-                        codegs[code(*u, *v)] += 1;
+                        codegs[Self::codeg_code(*u, *v)] += 1;
                     }
                 }
             }
@@ -248,30 +252,33 @@ impl Graph {
         is_iso
     }
 
-    fn is_isomorphic_to_rec(&self, g: &Graph, map: &mut Vec<usize>, covered: &mut Vec<bool>, node: usize) -> bool {
+    fn is_isomorphic_to_rec(&self, g: &Graph, ordering: &Vec<usize>, map: &mut Vec<usize>, covered: &mut Vec<bool>, 
+            node: usize, self_codegs: &Vec<usize>, g_codegs: &Vec<usize>) -> bool {
         let n = g.n.to_usize();
         if node == n {
             self.is_map_isomorphism(g, map)
         } else {
             let mut is_any_iso = false;
+            let v = ordering[node];
             // i is the target location of node
             'find_iso: for i in 0..n {
-                if self.deg[node] == g.deg[i] && !covered[i] {
+                if self.deg[v] == g.deg[i] && !covered[i] {
                     let mut adj_check = true;
-                    'adj_test: for u in self.adj_list[node].iter() {
-                        if *u < node && !g.adj[map[*u]][i] {
+                    'adj_test: for u in self.adj_list[v].iter() {
+                        if map[*u] != n && (!g.adj[map[*u]][i]
+                                || self_codegs[Self::codeg_code(*u, v)] != g_codegs[Self::codeg_code(map[*u], i)]) {
                             adj_check = false;
                             break 'adj_test;
                         }
                     }
                     if adj_check {
-                        map[node] = i;
+                        map[v] = i;
                         covered[i] = true;
-                        if self.is_isomorphic_to_rec(g, map, covered, node + 1) {
+                        if self.is_isomorphic_to_rec(g, ordering, map, covered, node + 1, self_codegs, g_codegs) {
                             is_any_iso = true;
                             break 'find_iso;
                         }
-                        map[node] = 0;
+                        map[v] = n;
                         covered[i] = false;
                     }
                 }
@@ -319,7 +326,34 @@ impl Graph {
             // give up; would be too slow
             return false;
         }
-        let is_iso = self.is_isomorphic_to_rec(g, &mut vec![0; n], &mut vec![false; n], 0);
+
+        // BFS on self to find ordering.
+        let mut q: Queue<usize> = queue![];
+        let mut ordering = vec![];
+        let mut visited = vec![false; n];
+        for start in 0..n {
+            if !visited[start] {
+                visited[start] = true;
+                let _ = q.add(start);
+            }
+            'bfs: loop {
+                match q.remove() {
+                    Ok(node) => {
+                        ordering.push(node);
+                        for v in self.adj_list[node].iter() {
+                            if !visited[*v] {
+                                visited[*v] = true;
+                                let _ = q.add(*v);
+                            }
+                        }
+                    },
+                    Err(_) => break 'bfs,
+                }
+            }
+        }
+
+        let is_iso = self.is_isomorphic_to_rec(g, &ordering, &mut vec![n; n], &mut vec![false; n], 0,
+                &self.codegree_sequence(), &g.codegree_sequence());
         if !is_iso {
             println!("Missed: {} !~ {}", self.constructor, g.constructor);
         }
