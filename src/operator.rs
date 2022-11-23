@@ -135,6 +135,7 @@ impl Operator {
             RawBunkbed => bunkbed::print_polynomials(g),
             BunkbedPosts => bunkbed_posts::print_polynomials(g),
             BunkbedSimulation => bunkbed::simulate(g),
+            PercolationPolys => percolate::print_polynomials(g),
             Unit => (),
         }
     }

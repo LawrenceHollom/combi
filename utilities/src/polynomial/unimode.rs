@@ -13,6 +13,11 @@ pub fn find_zero_in_range(f: &Polynomial, start: f64, end: f64) -> f64 {
 
 pub fn find_unimode(f: &Polynomial, start: f64, end: f64) -> Result<f64, &'static str> {
     let df = f.differentiate();
+    if f.is_zero() {
+        return Err("polynomial is identically zero");
+    } else if df.is_zero() {
+        return Err("polynomial is constant");
+    }
     let mut is_positive = df.evaluate(start * 0.995 + end * 0.005) > 0.0;
     let mut num_changes = 0;
     let mut extremum_ub = 0.0;

@@ -119,3 +119,26 @@ impl Percolator {
         percolator
     }
 }
+
+pub fn print_polynomials(g: &Graph) {
+    let percolator = Percolator::percolate(g);
+    let n = g.n.to_usize();
+
+    for v in 0..n {
+        println!("P_{}: {}", v, percolator.polys[v]);
+    }
+
+    for u in 1..(n-1) {
+        for v in g.adj_list[u].iter() {
+            if *v > u {
+                let diff = percolator.polys[u].sub(&percolator.polys[*v]);
+                let unimodicity = diff.find_prob_unimode();
+                print!("P_{} - P_{} is ", u, *v);
+                match unimodicity {
+                    Ok(extremum) => println!("unimodal with extremum at {}", extremum),
+                    Err(e) => println!("not unimodal: {}", e),
+                }
+            }
+        }
+    }
+}

@@ -6,6 +6,7 @@ pub enum UnitOperation {
     RawBunkbed,
     BunkbedPosts,
     BunkbedSimulation,
+    PercolationPolys,
     Unit,
 }
 
@@ -17,6 +18,7 @@ impl UnitOperation {
             "bunkbed" => Some(RawBunkbed),
             "bunkbed_posts" | "posts" => Some(BunkbedPosts),
             "bunkbed_sim" => Some(BunkbedSimulation),
+            "percolate" => Some(PercolationPolys),
             "()" => Some(Unit),
             &_ => None,
         }
@@ -31,6 +33,7 @@ impl fmt::Display for UnitOperation {
             RawBunkbed => "Raw bunkbed",
             BunkbedPosts => "Bunkbed posts",
             BunkbedSimulation => "Bunkbed simulation",
+            PercolationPolys => "Percolate",
             Unit => "Do nothing",
         };
         write!(f, "{}", name)

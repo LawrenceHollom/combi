@@ -17,6 +17,7 @@
 
  == BUGS ==
  - Awkward crash when asking for e.g. rrb(4,2); something goes oob
+ - Maybe ->() has stopped working? Gets picked up as infix-like
 
  == TREE CONSTRUCTOR ==
  - Allow manual entry of a specific tree

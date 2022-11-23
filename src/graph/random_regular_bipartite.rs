@@ -16,28 +16,36 @@ pub fn new(order: &Order, degree: &Degree) -> Graph {
     for _ in 0..(n * degree.to_usize() / 2) {
         // add an edge, flipping an alternating path if necessary
         let start = rng.gen_range(0..part);
-        let mut u = (start + 1) % part;
-        'find_startpoint: while u != start {
+        let mut u = start;
+        'find_startpoint: loop {
             if deg[u] < d {
                 break 'find_startpoint;
             }
             u = (u + 1) % part;
+            if u == start {
+                break 'find_startpoint;
+            }
         }
         let v_start: usize = rng.gen_range(0..part);
-        let mut v = (v_start + 1) % part;
+        let mut v = v_start;
         let mut path_start = part;
-        'find_endpoint: while v != v_start {
+        let mut edge_found = false;
+        'find_endpoint: loop {
             if !adj[u][v + part] {
                 path_start = v + part;
                 if deg[v + part] < d {
+                    edge_found = true;
                     break 'find_endpoint;
                 }
             }
             v = (v + 1) % part;
+            if v == v_start {
+                break 'find_endpoint;
+            }
         }
         v += part;
 
-        if v != v_start + part {
+        if edge_found {
             // there's somewhere we can connect to directly
             adj[u][v] = true;
             adj[v][u] = true;

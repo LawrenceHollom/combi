@@ -124,6 +124,10 @@ impl Polynomial {
         Polynomial::of_vec(&coefs)
     }
 
+    pub fn is_zero(&self) -> bool {
+        self.coefs.iter().all(|x| *x == 0)
+    }
+
     pub fn find_prob_unimode(&self) -> Result<f64, &'static str> {
         unimode::find_unimode(&self, 0.0, 1.0)
     }
