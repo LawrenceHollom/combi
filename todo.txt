@@ -16,7 +16,6 @@
   - Add option to bunkbed sim to choose level of precision (maybe as a power of 2 or something)
 
  == BUGS ==
- - Awkward crash when asking for e.g. rrb(4,2); something goes oob
  - Maybe ->() has stopped working? Gets picked up as infix-like
 
  == TREE CONSTRUCTOR ==
