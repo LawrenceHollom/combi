@@ -1,6 +1,8 @@
 use crate::graph::*;
 use crate::operator::percolate::*;
 
+use utilities::polynomial::*;
+
 pub fn print_polynomials(g: &Graph) {
     let bunkbed = g.bunkbed();
     let percolator = Percolator::percolate(&bunkbed);
@@ -15,6 +17,7 @@ pub fn print_polynomials(g: &Graph) {
         let poly = percolator.polys[v].sub(&percolator.polys[v + (n/2)]);
         let unimodicity = poly.find_prob_unimode();
         println!("{}: {}", v, poly);
+        println!(" q: {}", poly.apply(&Polynomial::of_vec(&vec![1, -1])));
         match unimodicity {
             Ok(extremum) => println!("    Unimodal with extremum at {}", extremum),
             Err(e) => println!("    Not unimodal: {}", e),
