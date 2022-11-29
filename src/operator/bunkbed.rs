@@ -17,7 +17,8 @@ pub fn print_polynomials(g: &Graph) {
         let poly = percolator.polys[v].sub(&percolator.polys[v + (n/2)]);
         let unimodicity = poly.find_prob_unimode();
         println!("{}: {}", v, poly);
-        println!(" q: {}", poly.apply(&Polynomial::of_vec(&vec![1, -1])));
+        let q_poly = poly.apply(&Polynomial::of_vec(&vec![1, -1])).with_var_name("q");
+        println!(" q: {}", q_poly);
         match unimodicity {
             Ok(extremum) => println!("    Unimodal with extremum at {}", extremum),
             Err(e) => println!("    Not unimodal: {}", e),

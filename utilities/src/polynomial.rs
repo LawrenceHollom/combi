@@ -4,11 +4,12 @@ mod unimode;
 
 pub struct Polynomial {
     coefs: Vec<i64>,
+    var_name: String,
 }
 
 impl Polynomial {
     pub fn new() -> Polynomial {
-        Polynomial { coefs: vec![] }
+        Polynomial { coefs: vec![], var_name: "p".to_owned() }
     }
 
     pub fn of_vec(coefs: &Vec<i64>) -> Polynomial {
@@ -16,7 +17,7 @@ impl Polynomial {
         for x in coefs {
             new_coefs.push(*x);
         }
-        Polynomial { coefs: new_coefs }
+        Polynomial { coefs: new_coefs, var_name: "p".to_owned() }
     }
 
     fn copy(&self) -> Polynomial {
@@ -24,7 +25,7 @@ impl Polynomial {
         for x in self.coefs.iter() {
             coefs.push(*x);
         }
-        Polynomial { coefs }
+        Polynomial { coefs, var_name: self.var_name.to_owned() }
     }
 
     pub fn pow(&self, exp: usize) -> Polynomial {
@@ -131,6 +132,10 @@ impl Polynomial {
     pub fn find_prob_unimode(&self) -> Result<f64, &'static str> {
         unimode::find_unimode(&self, 0.0, 1.0)
     }
+
+    pub fn with_var_name(&self, var_name: &str) -> Polynomial {
+        Polynomial { coefs: self.coefs.to_owned(), var_name: var_name.to_owned() }
+    }
 }
 
 impl fmt::Display for Polynomial {
@@ -138,7 +143,7 @@ impl fmt::Display for Polynomial {
         let pars: Vec<String> = self.coefs
             .iter()
             .enumerate()
-            .map(|(exp, c)| format!("{}p^{}", c, exp)).collect();
+            .map(|(exp, c)| format!("{}{}^{}", c, self.var_name, exp)).collect();
         write!(f, "{}", pars.join(" + "))
     }
 }
