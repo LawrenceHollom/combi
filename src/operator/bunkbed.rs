@@ -1,7 +1,10 @@
 use crate::graph::*;
 use crate::operator::percolate::*;
 
+use utilities::*;
 use utilities::polynomial::*;
+
+use queues::*;
 
 pub fn print_polynomials(g: &Graph) {
     let bunkbed = g.bunkbed();
@@ -50,5 +53,81 @@ pub fn simulate(g: &Graph) {
             }
         }
         println!();
+    }
+}
+
+pub fn compute_problem_cuts(g: &Graph) {
+    let n = g.n.to_usize();
+    let u = 1;
+
+    fn is_one_connected(g: &Graph, one_pick: &Vec<bool>, u: usize, n: usize) -> bool {
+        // flood fill
+        let mut visited = vec![false; n];
+        let mut q = queue![0];
+        'flood: loop {
+            match q.remove() {
+                Ok(node) => {
+                    for v in g.adj_list[node].iter() {
+                        if !visited[*v] && one_pick[*v] {
+                            visited[*v] = true;
+                            let _ = q.add(*v);
+                            if *v == u {
+                                break 'flood;
+                            }
+                        }
+                    }
+                }
+                Err(_e) => break 'flood
+            }
+        }
+        visited[u]
+    }
+
+    fn cut_size(g: &Graph, picked: &Vec<bool>, n: usize) -> usize {
+        let mut size = 0;
+        for (u, adj) in g.adj_list.iter().enumerate() {
+            for v in adj.iter() {
+                if *v > u {
+                    if picked[u] != picked[*v] {
+                        size += 1;
+                    }
+                    if picked[n + u] != picked[n + *v] {
+                        size += 1;
+                    }
+                }
+            }
+            if picked[u] != picked[u+n] {
+                size += 1;
+            }
+        }
+        size
+    }
+
+    for subset in 0..pow(2, 2*n as u64) {
+        let mut picked = vec![false; 2*n];
+        let mut sta = subset;
+        let mut order = 0;
+        let mut cut = vec![];
+        for v in 0..2*n {
+            if sta % 2 == 1 {
+                picked[v] = true;
+                cut.push(v);
+                order += 1;
+            }
+            sta /= 2;
+        }
+        let mut one_pick = vec![false; n];
+        for (i, pick) in one_pick.iter_mut().enumerate() {
+            *pick = picked[i] != picked[i + n];
+        }
+        // picked is now the set of vertices in the prospective cut
+        if order <= n && one_pick[0] && one_pick[u] && picked[0] {
+            if picked[0] == picked[u] && is_one_connected(g, &one_pick, u, n) {
+                println!("FLAT:  {:?}: {}", cut, cut_size(g, &picked, n));
+            }
+            if picked[0] != picked[u] && is_one_connected(g, &one_pick, u, n) {
+                println!("CROSS: {:?}: {}", cut, cut_size(g, &picked, n));
+            }
+        }
     }
 }
