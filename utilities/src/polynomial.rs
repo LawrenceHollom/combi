@@ -20,6 +20,12 @@ impl Polynomial {
         Polynomial { coefs: new_coefs, var_name: "p".to_owned() }
     }
 
+    pub fn monomial(coef: i64, power: usize) -> Polynomial {
+        let mut coefs = vec![0; power];
+        coefs.push(coef);
+        Polynomial { coefs, var_name: "p".to_owned() }
+    }
+
     fn copy(&self) -> Polynomial {
         let mut coefs: Vec<i64> = vec![];
         for x in self.coefs.iter() {
