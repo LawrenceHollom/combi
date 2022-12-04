@@ -1,7 +1,10 @@
 use crate::graph::*;
 use crate::operator::percolate::*;
 
+use utilities::*;
 use utilities::polynomial::*;
+
+use queues::*;
 
 pub fn print_polynomials(g: &Graph) {
     let bunkbed = g.bunkbed();
@@ -51,4 +54,146 @@ pub fn simulate(g: &Graph) {
         }
         println!();
     }
+}
+
+pub fn compute_problem_cuts(g: &Graph, u: usize) {
+    let n = g.n.to_usize();
+
+    fn is_one_connected(g: &Graph, one_pick: &Vec<bool>, u: usize, n: usize) -> bool {
+        // flood fill
+        let mut visited = vec![false; n];
+        let mut q = queue![0];
+        'flood: loop {
+            match q.remove() {
+                Ok(node) => {
+                    for v in g.adj_list[node].iter() {
+                        if !visited[*v] && one_pick[*v] {
+                            visited[*v] = true;
+                            let _ = q.add(*v);
+                            if *v == u {
+                                break 'flood;
+                            }
+                        }
+                    }
+                }
+                Err(_e) => break 'flood
+            }
+        }
+        visited[u]
+    }
+
+    fn cut_size(g: &Graph, picked: &Vec<bool>, n: usize) -> usize {
+        let mut size = 0;
+        for (u, adj) in g.adj_list.iter().enumerate() {
+            for v in adj.iter() {
+                if *v > u {
+                    if picked[u] != picked[*v] {
+                        size += 1;
+                    }
+                    if picked[n + u] != picked[n + *v] {
+                        size += 1;
+                    }
+                }
+            }
+            if picked[u] != picked[u+n] {
+                size += 1;
+            }
+        }
+        size
+    }
+
+    let mut flat_poly = Polynomial::new();
+    let mut cross_poly = Polynomial::new();
+
+    for subset in 0..pow(2, 2*n as u64) {
+        let mut picked = vec![false; 2*n];
+        let mut sta = subset;
+        let mut order = 0;
+        let mut cut = vec![];
+        for v in 0..2*n {
+            if sta % 2 == 1 {
+                picked[v] = true;
+                cut.push(v);
+                order += 1;
+            }
+            sta /= 2;
+        }
+        let mut one_pick = vec![false; n];
+        for (i, pick) in one_pick.iter_mut().enumerate() {
+            *pick = picked[i] != picked[i + n];
+        }
+        // picked is now the set of vertices in the prospective cut
+        if order <= n && one_pick[0] && one_pick[u] && picked[0] {
+            if picked[0] == picked[u] && is_one_connected(g, &one_pick, u, n) {
+                let size = cut_size(g, &picked, n);
+                flat_poly.add_inplace(&Polynomial::monomial(1, size));
+                //println!("FLAT:  {:?}: {}", cut, size);
+            }
+            if picked[0] != picked[u] && is_one_connected(g, &one_pick, u, n) {
+                let size = cut_size(g, &picked, n);
+                cross_poly.add_inplace(&Polynomial::monomial(1, size));
+                //println!("CROSS: {:?}: {}", cut, size);
+            }
+        }
+    }
+
+    println!("FLAT:  {}", flat_poly.with_var_name("q"));
+    println!("CROSS: {}", cross_poly.with_var_name("q"));
+    println!("DIFF:  {}", flat_poly.sub(&cross_poly).with_var_name("q"));
+
+    /*
+    let mut second_diff = Polynomial::new();
+    //Dumb second order computation
+    for sub1 in 0..pow(2, 2*n as u64) {
+        let mut picked1 = vec![false; 2*n];
+        let mut sta = sub1;
+        let mut cut1 = vec![];
+        for v in 0..2*n {
+            if sta % 2 == 1 {
+                picked1[v] = true;
+                cut1.push(v);
+            }
+            sta /= 2;
+        }
+
+        for sub2 in (sub1+1)..pow(2, 2*n as u64) {
+            let mut picked2 = vec![false; 2*n];
+            let mut sta = sub2;
+            let mut cut2 = vec![];
+            for v in 0..2*n {
+                if sta % 2 == 1 {
+                    picked2[v] = true;
+                    cut2.push(v);
+                }
+                sta /= 2;
+            }
+
+            let mut size = 0;
+            for (w, adj) in g.adj_list.iter().enumerate() {
+                for v in adj.iter() {
+                    if *v > w {
+                        if picked1[w] != picked1[*v] || picked2[w] != picked2[*v] {
+                            size += 1;
+                        }
+                        if picked1[n + w] != picked1[n + *v] || picked2[n + w] != picked2[n + *v] {
+                            size += 1;
+                        }
+                    }
+                }
+                if picked1[w] != picked1[n + w] || picked2[w] != picked2[n + w] {
+                    size += 1;
+                }
+            }
+            if !picked1[0] && !picked2[0] && picked1[u] && picked2[u] { // cross
+                second_diff.sub_inplace(&Polynomial::monomial(1, size));
+            }
+            if !picked1[0] && !picked2[0] && picked1[n + u] && picked2[n + u] { // flat
+                second_diff.add_inplace(&Polynomial::monomial(1, size));
+            }
+        }
+    }
+
+    println!("SECOND DIFF: {}", second_diff.with_var_name("q"));
+    println!("DIFF - SECOND_DIFF: {}", flat_poly.sub(&cross_poly).sub(&second_diff).with_var_name("q"))
+    */
 }
