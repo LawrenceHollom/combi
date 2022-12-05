@@ -10,6 +10,7 @@ pub enum UnitOperation {
     BunkbedSimulation,
     PercolationPolys,
     BunkbedCuts(usize),
+    BunkbedDists,
     Unit,
 }
 
@@ -24,6 +25,7 @@ impl UnitOperation {
             "bunkbed_sim" => Some(BunkbedSimulation),
             "percolate" => Some(PercolationPolys),
             "bunkbed_cut" | "bunkbed_cuts" => Some(BunkbedCuts(args[0].parse().unwrap())),
+            "bunkbed_dists" => Some(BunkbedDists),
             "()" => Some(Unit),
             &_ => None,
         }
@@ -41,6 +43,7 @@ impl fmt::Display for UnitOperation {
             BunkbedSimulation => "Bunkbed simulation",
             PercolationPolys => "Percolate",
             BunkbedCuts(u) => { str = format!("Bunkbed cuts to {}", *u); &str }
+            BunkbedDists => "Bunkbed distance-bounded polynomials",
             Unit => "Do nothing",
         };
         write!(f, "{}", name)
