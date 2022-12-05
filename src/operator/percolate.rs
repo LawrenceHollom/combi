@@ -10,6 +10,7 @@ pub struct Percolator {
     order: usize,
     probs: Vec<Polynomial>,
     pub polys: Vec<Polynomial>,
+    pub dist_polys: Vec<Vec<Polynomial>>,
 }
 
 impl Percolator {
@@ -22,25 +23,30 @@ impl Percolator {
             probs.push(p.pow(i).mul(&one_minus_p.pow(size - i)));
         }
         let mut polys: Vec<Polynomial> = vec![(); order].iter().map(|_| Polynomial::new()).collect();
+        let mut dist_polys: Vec<Vec<Polynomial>> = vec![(); order].iter().map(|_| polys.to_owned()).collect();
         polys[0] = Polynomial::of_vec(&vec![1]);
+        for poly in dist_polys[0].iter_mut() {
+            *poly = Polynomial::of_vec(&vec![1]);
+        }
 
         Percolator {
             order,
             probs,
-            polys
+            polys,
+            dist_polys,
         }
     }
 
-    fn test_connections(order: usize, adj_list: &[Vec<usize>]) -> Vec<bool> {
-        let mut connected = vec![false; order];
+    fn test_connections(order: usize, adj_list: &[Vec<usize>]) -> Vec<i32> {
+        let mut connected = vec![-1; order];
         let mut q: Queue<usize> = queue![];
-        connected[0] = true;
+        connected[0] = 0;
         let _ = q.add(0);
         while q.size() > 0 {
             let node = q.remove().unwrap();
             for v in adj_list[node].iter() {
-                if !connected[*v] {
-                    connected[*v] = true;
+                if connected[*v] == -1 {
+                    connected[*v] = connected[node] + 1;
                     let _ = q.add(*v);
                 }
             }
@@ -48,12 +54,17 @@ impl Percolator {
         connected
     }
 
-    pub fn add_percolation(&mut self, num_edges: usize, adj_list: &[Vec<usize>]) {
+    pub fn add_percolation(&mut self, num_edges: usize, adj_list: &[Vec<usize>], compute_dists: bool) {
         let connected = Self::test_connections(self.order, adj_list);
 
-        for (v, is_connected) in connected.iter().enumerate().skip(1) {
-            if *is_connected {
+        for (v, dist) in connected.iter().enumerate().skip(1) {
+            if *dist >= 0 {
                 self.polys[v].add_inplace(&self.probs[num_edges]);
+                if compute_dists {
+                    for poly in self.dist_polys[v].iter_mut().skip((*dist) as usize) {
+                        poly.add_inplace(&self.probs[num_edges]);
+                    }
+                }
             }
         }
     }
@@ -72,10 +83,10 @@ impl Percolator {
                 }
             }
         }
-        Self::test_connections(n, &true_adj_list)
+        Self::test_connections(n, &true_adj_list).iter().map(|x| *x >= 0).collect()
     }
 
-    pub fn percolate(g: &Graph) -> Percolator {
+    pub fn percolate(g: &Graph, compute_dists: bool) -> Percolator {
         let n = g.n.to_usize();
         let mut percolator = Percolator::new(n, g.size());
 
@@ -112,7 +123,7 @@ impl Percolator {
                     }
                 }
             }
-            percolator.add_percolation(num_edges, &true_adj_list);
+            percolator.add_percolation(num_edges, &true_adj_list, compute_dists);
         }
 
         g.print();
@@ -121,7 +132,7 @@ impl Percolator {
 }
 
 pub fn print_polynomials(g: &Graph) {
-    let percolator = Percolator::percolate(g);
+    let percolator = Percolator::percolate(g, false);
     let n = g.n.to_usize();
 
     for v in 0..n {

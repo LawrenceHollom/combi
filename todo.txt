@@ -5,7 +5,7 @@
  == THE KITCHEN SINK ==
  - Maybe add option for increasing by number of edges or something
  - Add condition e.g. connected (to not even think about other conditions before checking this)
- - test with sink((size>0)&&(theta>=acyclic))
+ - test with sink((size>0)&&(theta>=acyclic)) -> halts at n=15
 
  == ITERATOR ==
  - Detect identical nodes in graphs and iterate over subsets more efficiently
@@ -14,12 +14,16 @@
  == BUNKBEDS ==
   - The code is very (very) slow, and naive. Should be some wins to be had in terms of speed
   - Add option to bunkbed sim to choose level of precision (maybe as a power of 2 or something)
+  - Test hypothesis about number of ways with paths of length bdd by given even extra dist
 
  == BUGS ==
  - Maybe ->() has stopped working? Gets picked up as infix-like
 
  == TREE CONSTRUCTOR ==
  - Allow manual entry of a specific tree
+
+ == REFACTORS ==
+ - Remove the manual copy function in Polynomial
 
  == KEEP CLIPPY HAPPY ==
  - You don't want to anger clippy.

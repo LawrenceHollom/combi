@@ -8,7 +8,7 @@ use queues::*;
 
 pub fn print_polynomials(g: &Graph) {
     let bunkbed = g.bunkbed();
-    let percolator = Percolator::percolate(&bunkbed);
+    let percolator = Percolator::percolate(&bunkbed, false);
     let n = bunkbed.n.to_usize();
 
     for v in 0..n {
@@ -25,6 +25,20 @@ pub fn print_polynomials(g: &Graph) {
         match unimodicity {
             Ok(extremum) => println!("    Unimodal with extremum at {}", extremum),
             Err(e) => println!("    Not unimodal: {}", e),
+        }
+    }
+}
+
+pub fn print_distance_polynomials(g: &Graph) {
+    let bunkbed = g.bunkbed();
+    let percolator = Percolator::percolate(&bunkbed, true);
+    let n = g.n.to_usize();
+
+    println!("vert|dist|home - away dist poly");
+    for v in 0..n {
+        for d in 0..(2*n) {
+            let poly = percolator.dist_polys[v][d].sub(&percolator.dist_polys[v+n][d]);
+            println!(" {}  | {}  | {}", v, d, poly);
         }
     }
 }

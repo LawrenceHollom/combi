@@ -138,6 +138,7 @@ impl Operator {
             BunkbedSimulation => bunkbed::simulate(g),
             PercolationPolys => percolate::print_polynomials(g),
             BunkbedCuts(u) => bunkbed::compute_problem_cuts(g, *u),
+            BunkbedDists => bunkbed::print_distance_polynomials(&g),
             Unit => (),
         }
     }

@@ -46,7 +46,7 @@ pub fn print_polynomials(g: &Graph) {
             }
         }
 
-        percolator.add_percolation(num_down_edges, &adj_list);
+        percolator.add_percolation(num_down_edges, &adj_list, false);
     }
 
     g.print();
