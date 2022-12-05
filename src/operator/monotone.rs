@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::graph::*;
 
 fn monot_predecessors(g: &Graph, forward: bool, start: usize) -> Vec<usize> {
@@ -85,4 +87,58 @@ pub fn num_on_monot_cycle(g: &Graph) -> u32 {
     }
 
     on_monot.iter().filter(|x| **x).count() as u32
+}
+
+pub fn max_rigid_component(g: &Graph) -> u32 {
+    let n = g.n.to_usize();
+    let mut components: Vec<HashSet<usize>> = vec![];
+    for start in 0..(n-2) {
+        let pred = monot_predecessors(g, true, start);
+        for i in start+1..n {
+            if pred[i] != n && pred[i] != start && g.adj[start][i] {
+                let mut j = i;
+                let mut h = HashSet::new();
+                'trace_back_path: loop {
+                    h.insert(j);
+                    if j == start {
+                        break 'trace_back_path;
+                    }
+                    j = pred[j];
+                }
+                components.push(h);
+            }
+        }
+    }
+
+    'combine: loop {
+        let mut combinations_made = 0;
+        let m = components.len();
+        if m == 0 {
+            break 'combine;
+        }
+        for i in 0..m-1 {
+            for j in (i+1)..m {
+                if components[i].intersection(&components[j]).count() >= 2 {
+                    let comp_j_copy: HashSet<usize> = components[j].iter().copied().collect();
+                    components[i].extend(&comp_j_copy);
+                    components[j].clear();
+                    combinations_made += 1;
+                }
+            }
+        }
+
+        if combinations_made == 0 {
+            break 'combine;
+        }
+    }
+
+    let mut largest_rigid = 0;
+
+    for comp in components.iter() {
+        if comp.len() > largest_rigid {
+            largest_rigid = comp.len();
+        }
+    }
+
+    largest_rigid as u32
 }

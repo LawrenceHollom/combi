@@ -16,6 +16,7 @@ pub enum IntOperation {
     NumOnLongMonotone,
     MaxMonotonePath,
     NumOnMonotoneCycle,
+    MaxFindableRigidComponent,
     TotalDominationGameLength,
     Number(u32),
 }
@@ -38,6 +39,7 @@ impl IntOperation {
             "num_on_long_monotone" | "num_monot" => Some(NumOnLongMonotone),
             "max_monot" => Some(MaxMonotonePath),
             "num_monot_cycle" => Some(NumOnMonotoneCycle),
+            "max_rigid" => Some(MaxFindableRigidComponent),
             "total_domination_game" | "gamma_tg" => Some(TotalDominationGameLength),
             str => str.parse().ok().map(Number),
         }
@@ -63,6 +65,7 @@ impl fmt::Display for IntOperation {
             NumOnLongMonotone => "Number of vertices on a 1->n monotone path",
             MaxMonotonePath => "Length of longest monotone path",
             NumOnMonotoneCycle => "Number of vertices on a monotone cycle",
+            MaxFindableRigidComponent => "Max rigid component via monot cycles",
             TotalDominationGameLength => "Length of the total domination game",
             Number(n) => {
                 sta = n.to_string();
