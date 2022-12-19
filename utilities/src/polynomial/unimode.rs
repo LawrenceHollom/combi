@@ -11,12 +11,12 @@ pub fn find_zero_in_range(f: &Polynomial, start: f64, end: f64) -> f64 {
     }
 }
 
-pub fn find_unimode(f: &Polynomial, start: f64, end: f64) -> Result<f64, &'static str> {
+pub fn find_unimode(f: &Polynomial, start: f64, end: f64) -> Modality {
     let df = f.differentiate();
     if f.is_zero() {
-        return Err("polynomial is identically zero");
+        return Modality::Zero;
     } else if df.is_zero() {
-        return Err("polynomial is constant");
+        return Modality::Constant;
     }
     let mut is_positive = df.evaluate(start * 0.995 + end * 0.005) > 0.0;
     let mut num_changes = 0;
@@ -42,10 +42,10 @@ pub fn find_unimode(f: &Polynomial, start: f64, end: f64) -> Result<f64, &'stati
         }
     }
     if num_changes == 0 {
-        Err("no local extrema found")
+        Modality::Nonmodal
     } else if num_changes >= 2 {
-        Err("Multiple local extrema found")
+        Modality::Multimodal
     } else {
-        Ok(find_zero_in_range(&df, extremum_lb, extremum_ub))
+        Modality::Unimodal(find_zero_in_range(&df, extremum_lb, extremum_ub))
     }
 }

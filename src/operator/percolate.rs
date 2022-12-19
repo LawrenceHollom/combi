@@ -146,8 +146,8 @@ pub fn print_polynomials(g: &Graph) {
                 let unimodicity = diff.find_prob_unimode();
                 print!("P_{} - P_{} is ", u, *v);
                 match unimodicity {
-                    Ok(extremum) => println!("unimodal with extremum at {}", extremum),
-                    Err(e) => println!("not unimodal: {}", e),
+                    Modality::Unimodal(mode) => println!("unimodal with extremum at {}", mode),
+                    e => println!("not unimodal: {}", e),
                 }
             }
         }

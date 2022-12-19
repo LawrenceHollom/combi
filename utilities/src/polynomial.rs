@@ -8,6 +8,14 @@ pub struct Polynomial {
     var_name: String,
 }
 
+pub enum Modality {
+    Unimodal(f64),
+    Zero,
+    Constant,
+    Nonmodal,
+    Multimodal
+}
+
 impl Polynomial {
     pub fn new() -> Polynomial {
         Polynomial { coefs: vec![], var_name: "p".to_owned() }
@@ -136,7 +144,7 @@ impl Polynomial {
         self.coefs.iter().all(|x| *x == 0)
     }
 
-    pub fn find_prob_unimode(&self) -> Result<f64, &'static str> {
+    pub fn find_prob_unimode(&self) -> Modality {
         unimode::find_unimode(&self, 0.0, 1.0)
     }
 
@@ -145,12 +153,47 @@ impl Polynomial {
     }
 }
 
+impl Modality {
+    pub fn four_letter_code(&self) -> &str {
+        use Modality::*;
+        match *self {
+            Unimodal(_mode) => " :) ",
+            Zero => "zero",
+            Constant => "cons",
+            Nonmodal => "none",
+            Multimodal => "mult",
+        }
+    }
+}
+
 impl fmt::Display for Polynomial {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let pars: Vec<String> = self.coefs
-            .iter()
-            .enumerate()
-            .map(|(exp, c)| format!("{}{}^{}", c, self.var_name, exp)).collect();
-        write!(f, "{}", pars.join(" + "))
+        if self.coefs.len() == 0 {
+            write!(f, "0")
+        } else {
+            let pars: Vec<String> = self.coefs
+                .iter()
+                .enumerate()
+                .map(|(exp, c)| format!("{}{}^{}", c, self.var_name, exp)).collect();
+            write!(f, "{}", pars.join(" + "))
+        }
+    }
+}
+
+impl fmt::Display for Modality {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use Modality::*;
+        let sta;
+        let text = match *self {
+            Unimodal(mode) => {
+                sta = format!("Unimodal({})", mode);
+                &sta
+            }
+            Zero => "Identically zero",
+            Constant => "Constant",
+            Nonmodal => "Without extrema",
+            Multimodal => "Multiple extrema",
+        };
+        write!(f, "{}", text)
     }
 }

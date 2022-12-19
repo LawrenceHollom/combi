@@ -23,8 +23,8 @@ pub fn print_polynomials(g: &Graph) {
         let q_poly = poly.apply(&Polynomial::of_vec(&vec![1, -1])).with_var_name("q");
         println!(" q: {}", q_poly);
         match unimodicity {
-            Ok(extremum) => println!("    Unimodal with extremum at {}", extremum),
-            Err(e) => println!("    Not unimodal: {}", e),
+            Modality::Unimodal(mode) => println!("    Unimodal with extremum at {}", mode),
+            e => println!("    Not unimodal: {}", e),
         }
     }
 }
@@ -34,11 +34,13 @@ pub fn print_distance_polynomials(g: &Graph) {
     let percolator = Percolator::percolate(&bunkbed, true);
     let n = g.n.to_usize();
 
-    println!("vert|dist|home - away dist poly");
+    println!("vert|dist|unim|home - away dist poly");
+    println!("----|----|----|-----------------------------");
     for v in 0..n {
         for d in 0..(2*n) {
             let poly = percolator.dist_polys[v][d].sub(&percolator.dist_polys[v+n][d]);
-            println!(" {}  | {}  | {}", v, d, poly);
+            let unimodicity = poly.find_prob_unimode();
+            println!(" {}  | {}  |{}| {}", v, d, unimodicity.four_letter_code(), poly);
         }
     }
 }
