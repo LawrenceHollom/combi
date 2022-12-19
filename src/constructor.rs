@@ -48,7 +48,7 @@ impl Constructor {
         use ProductConstructor::*;
         use RawConstructor::*;
         use RandomConstructor::*;
-                
+        
         match func.to_lowercase().as_str() {
             "cartesian" | "box" => {
                 Product(Cartesian, Box::new(Self::of_string(args[0])), 
