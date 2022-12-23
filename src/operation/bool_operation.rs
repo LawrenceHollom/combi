@@ -29,6 +29,7 @@ pub enum BoolOperation {
     BoolInfix(BoolToBoolInfix, Box<BoolOperation>, Box<BoolOperation>),
     IsConnected,
     HasLongMonotone,
+    HasIntervalColoring,
 }
 
 impl NumToBoolInfix {
@@ -90,6 +91,7 @@ impl BoolOperation {
                 match text.trim().to_lowercase().as_str() {
                     "is_connected" | "connected" => Some(IsConnected),
                     "has_long_monotone" | "has_monot" | "is_monot" => Some(HasLongMonotone),
+                    "has_interval_coloring" | "has_interval" => Some(HasIntervalColoring),
                     &_ => None,
                 }
             }
@@ -136,7 +138,8 @@ impl fmt::Display for BoolOperation {
             BoolInfix(infix, op1, op2) =>
                 format!("({}) {} ({})", *op1, *infix, *op2),
             IsConnected => "Is connected".to_owned(),
-            HasLongMonotone => "Has 1->n monotone path".to_owned()
+            HasLongMonotone => "Has 1->n monotone path".to_owned(),
+            HasIntervalColoring => "Has some interval coloring".to_owned(),
         };
         write!(f, "{}", name)
     }

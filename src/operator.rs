@@ -7,6 +7,7 @@ mod percolate;
 mod bunkbed_posts;
 mod cliques;
 mod girth;
+mod interval_coloring;
 
 use std::collections::HashMap;
 
@@ -105,6 +106,7 @@ impl Operator {
                 self.operate_bool_to_bool_infix(g, infix, op1, op2),
             IsConnected => g.is_connected(),
             HasLongMonotone => monotone::has_long_monotone(g),
+            HasIntervalColoring => interval_coloring::has_interval_coloring(g),
         }
     }
 
@@ -138,7 +140,8 @@ impl Operator {
             BunkbedSimulation => bunkbed::simulate(g),
             PercolationPolys => percolate::print_polynomials(g),
             BunkbedCuts(u) => bunkbed::compute_problem_cuts(g, *u),
-            BunkbedDists => bunkbed::print_distance_polynomials(&g),
+            BunkbedDists => bunkbed::print_distance_polynomials(g),
+            PrintIntervalColoring => interval_coloring::print_interval_coloring(g),
             Unit => (),
         }
     }
