@@ -116,6 +116,9 @@ fn find_interval_coloring_rec(g: &Graph, vert_ordering: &Vec<usize>, colored: &m
                     if coloring.is_some() {
                         return coloring;
                     }
+                    for i in 0..d {
+                        colors[edges_to_color[i]] = extreme_col;
+                    }
                     perm_code[d-1] += 1;
                 }
             }

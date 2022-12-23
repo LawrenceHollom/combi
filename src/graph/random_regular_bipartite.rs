@@ -11,6 +11,9 @@ pub fn new_biregular(left_order: &Order, left_deg: &Degree, right_deg: &Degree) 
     if (left_n * left_d) % right_d != 0 {
         panic!("Degrees don't divide order properly!");
     }
+    if left_n < right_d || right_n < left_d {
+        panic!("One side is smaller than the degree of the other side!");
+    }
     let mut adj = vec![vec![false; n]; n];
     let mut deg = vec![0; n];
     let mut rng = thread_rng();
