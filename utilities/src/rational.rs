@@ -21,7 +21,7 @@ pub struct Rational {
 
 impl Rational {
     pub const ONE: Rational = Rational { numerator: 1, denominator: 1 };
-    pub const ZERO: Rational = Rational { numerator: 0, denominator: 0 };
+    pub const ZERO: Rational = Rational { numerator: 0, denominator: 1 };
 
     pub fn new (val: i64) -> Rational {
         Rational { numerator: val, denominator: 1 }
