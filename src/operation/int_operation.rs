@@ -18,6 +18,7 @@ pub enum IntOperation {
     NumOnMonotoneCycle,
     MaxFindableRigidComponent,
     TotalDominationGameLength,
+    NumIntervalColors,
     Number(u32),
 }
 
@@ -41,6 +42,7 @@ impl IntOperation {
             "num_monot_cycle" => Some(NumOnMonotoneCycle),
             "max_rigid" => Some(MaxFindableRigidComponent),
             "total_domination_game" | "gamma_tg" => Some(TotalDominationGameLength),
+            "num_interval_colors" => Some(NumIntervalColors),
             str => str.parse().ok().map(Number),
         }
     }
@@ -67,6 +69,7 @@ impl fmt::Display for IntOperation {
             NumOnMonotoneCycle => "Number of vertices on a monotone cycle",
             MaxFindableRigidComponent => "Max rigid component via monot cycles",
             TotalDominationGameLength => "Length of the total domination game",
+            NumIntervalColors => "Number of colors in the first found interval coloring",
             Number(n) => {
                 sta = n.to_string();
                 sta.as_str()

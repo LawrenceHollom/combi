@@ -173,6 +173,33 @@ pub fn print_interval_coloring(g: &Graph) {
     }
 }
 
+pub fn num_interval_colors(g: &Graph) -> u32 {
+    let n = g.n.to_usize();
+    let vert_ordering = get_vert_ordering(g);
+
+    let extreme_col = (n * n) as i32;
+    let m = code_edge(n-1, n);
+    let mut colors = vec![extreme_col; m];
+    match find_interval_coloring_rec(g, &vert_ordering, &mut vec![false; n], &mut colors, 0) {
+        Some(coloring) => {
+            let mut min_color = extreme_col;
+            let mut max_color = -extreme_col;
+            for color in coloring.iter() {
+                if *color != extreme_col {
+                    if *color > max_color {
+                        max_color = *color;
+                    }
+                    if *color < min_color {
+                        min_color = *color;
+                    }
+                }
+            }
+            (max_color - min_color + 1) as u32
+        }
+        None => 0
+    }
+}
+
 pub fn has_interval_coloring(g: &Graph) -> bool {
     // Run a bfs to get the ordering of the vertices
     let n = g.n.to_usize();

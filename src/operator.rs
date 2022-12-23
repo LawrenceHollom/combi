@@ -48,6 +48,7 @@ impl Operator {
                     NumOnMonotoneCycle => monotone::num_on_monot_cycle(g),
                     MaxFindableRigidComponent => monotone::max_rigid_component(g),
                     TotalDominationGameLength => domination::total_domination_game_length(g),
+                    NumIntervalColors => interval_coloring::num_interval_colors(g),
                     Number(k) => *k,
                 };
                 self.previous_values.insert(*operation, value);
