@@ -15,7 +15,7 @@ pub enum ProductConstructor {
 
 #[derive(Copy, Clone)]
 pub enum RandomConstructor {
-    RegularBipartite(Order, Degree),
+    Biregular(Order, Degree, Degree),
     ErdosRenyi(Order, f64),
 }
 
@@ -75,9 +75,14 @@ impl Constructor {
                     Box::new(Self::of_string(args[1])))
             },
             "rrb" | "random_regular_bipartite" => {
-                Random(RegularBipartite(Order::of_string(args[0]), 
-                    Degree::of_string(args[1])))
+                let deg = Degree::of_string(args[1]);
+                Random(Biregular(Order::of_string(args[0]), deg, deg))
             },
+            "biregular" => {
+                Random(Biregular(Order::of_string(args[0]),
+                    Degree::of_string(args[1]),
+                    Degree::of_string(args[2])))
+            }
             "erdos_renyi" | "er" | "g" => {
                 Random(ErdosRenyi(Order::of_string(args[0]), args[1].parse().unwrap()))
             },
@@ -142,8 +147,8 @@ impl fmt::Display for RandomConstructor {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use RandomConstructor::*;
         match self {
-            RegularBipartite(order, deg) => {
-                write!(f, "Regular bipartite or order {} and degree {}", order, deg)
+            Biregular(order, left_deg, right_deg) => {
+                write!(f, "Biregular of left-order {}, left-degree {}, and right-degree {}", order, left_deg, right_deg)
             },
             ErdosRenyi(order, p) => {
                 write!(f, "Erdos-Renyi graph of order {} with probability {}", order, p)
