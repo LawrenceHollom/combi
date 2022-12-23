@@ -139,6 +139,10 @@ pub fn parse_infix_like(text: &str) -> Option<(&str, &str, &str)> {
     let left_chop = if bytes[0] == '(' as u8 { 1 } else { 0 };
     let mut depth = 0;
     let mut ever_depth_zero = false;
+    if text.len() < 3 {
+        // Can't possibly hope to be infix-like
+        return None;
+    }
     'parser: for (i, c) in bytes.iter().enumerate() {
         if operator_start > 0 && !infix_symbols.contains(&(*c as char)) {
             operator_end = i;

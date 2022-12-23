@@ -1,5 +1,6 @@
 use std::io;
 use std::time::*;
+use std::env;
 
 mod controller;
 mod graph;
@@ -10,6 +11,7 @@ mod constructor;
 use controller::*;
 
 fn main() {
+    env::set_var("RUST_BACKTRACE", "1");
     println!("Enter instruction:");
     let mut text = String::new();
     io::stdin().read_line(&mut text).expect("Failed to read line");
