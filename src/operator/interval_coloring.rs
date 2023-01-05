@@ -165,10 +165,16 @@ pub fn print_interval_coloring(g: &Graph) {
     let mut colors = vec![extreme_col; m];
     match find_interval_coloring_rec(g, &vert_ordering, &mut vec![false; n], &mut colors, 0) {
         Some(coloring) => {
+            let mut min_col = extreme_col;
+            for col in coloring.iter() {
+                if *col < min_col {
+                    min_col = *col
+                }
+            }
             for (e, color) in coloring.iter().enumerate() {
                 if *color != extreme_col {
                     let (u, v) = decode_edge(e);
-                    println!("{} ~ {} : {}", u, v, *color);
+                    println!("{} ~ {} : {}", u, v, *color - min_col);
                 }
             }
         }

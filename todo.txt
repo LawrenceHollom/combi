@@ -25,10 +25,5 @@
  == REFACTORS ==
  - Remove the manual copy function in Polynomial
 
- == INTERVAL COLOURINGS ==
- - Add random biregular bipartite (different degs on each side)
- - Add test for interval colouring for bip by only assigning intervals
- - Add full test for interval colouring if the above thing is stupid.
-
  == KEEP CLIPPY HAPPY ==
  - You don't want to anger clippy.

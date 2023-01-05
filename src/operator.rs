@@ -96,7 +96,6 @@ impl Operator {
     }
 
     pub fn operate_bool(&mut self, g: &Graph, operation: &BoolOperation) -> bool {
-        
         use BoolOperation::*;
         match operation {
             IntInfix(infix, op1, op2) => 
@@ -105,6 +104,7 @@ impl Operator {
                 self.operate_float_to_bool_infix(g, infix, op1, op2),
             BoolInfix(infix, op1, op2) => 
                 self.operate_bool_to_bool_infix(g, infix, op1, op2),
+            Not(op) => !self.operate_bool(g, op),
             IsConnected => g.is_connected(),
             HasLongMonotone => monotone::has_long_monotone(g),
             HasIntervalColoring => interval_coloring::has_interval_coloring(g),

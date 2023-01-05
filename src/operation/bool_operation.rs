@@ -27,6 +27,7 @@ pub enum BoolOperation {
     IntInfix(NumToBoolInfix, IntOperation, IntOperation),
     FloatInfix(NumToBoolInfix, RationalOperation, RationalOperation),
     BoolInfix(BoolToBoolInfix, Box<BoolOperation>, Box<BoolOperation>),
+    Not(Box<BoolOperation>),
     IsConnected,
     HasLongMonotone,
     HasIntervalColoring,
@@ -88,7 +89,12 @@ impl BoolOperation {
                 }
             }
             None => {
-                match text.trim().to_lowercase().as_str() {
+                let (func, args) = parse_function_like(text);
+                match func.trim().to_lowercase().as_str() {
+                    "not" | "!" | "¬" => {
+                        BoolOperation::of_string_result(args[0]).map(|op|
+                            Not(Box::new(op)))
+                    }
                     "is_connected" | "connected" => Some(IsConnected),
                     "has_long_monotone" | "has_monot" | "is_monot" => Some(HasLongMonotone),
                     "has_interval_coloring" | "has_interval" => Some(HasIntervalColoring),
@@ -137,6 +143,7 @@ impl fmt::Display for BoolOperation {
                 format!("Is ({}) {} ({})", *op1, *infix, *op2),
             BoolInfix(infix, op1, op2) =>
                 format!("({}) {} ({})", *op1, *infix, *op2),
+            Not(op) => format!("Not ({})", *op),
             IsConnected => "Is connected".to_owned(),
             HasLongMonotone => "Has 1->n monotone path".to_owned(),
             HasIntervalColoring => "Has some interval coloring".to_owned(),
