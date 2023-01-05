@@ -24,7 +24,7 @@ pub enum Controller {
     Tabulate(Tabulation),
     Until(Constructor, BoolOperation),
     SearchTrees(usize, BoolOperation, Degree),
-    KitchenSink(BoolOperation),
+    KitchenSink(Vec<BoolOperation>),
 }
 
 pub struct Instruction {
@@ -70,7 +70,8 @@ impl Controller {
                     if args.len() >= 3 { Degree::of_string(args[2]) } else { Degree::of_usize(n) })
             }
             "kitchen" | "kitchen_sink" | "sink" => {
-                KitchenSink(BoolOperation::of_string_result(args[0]).unwrap())
+                KitchenSink(args.iter().map(|arg| 
+                    BoolOperation::of_string_result(*arg).unwrap()).collect())
             }
             &_ => {
                 Single(Constructor::of_string(text))
@@ -98,8 +99,8 @@ impl fmt::Display for Controller {
             SearchTrees(n, condition, max_degree) => {
                 write!(f, "Search all trees of order {} and max_degree {} until ({})", n, max_degree, condition)
             }
-            KitchenSink(condition) => {
-                write!(f, "Search the kitchen sink for a graph satisfying ({})", condition)
+            KitchenSink(conditions) => {
+                write!(f, "Search the kitchen sink for a graph satisfying {:?}", *conditions)
             }
         }
     }
@@ -270,9 +271,15 @@ impl Instruction {
         }
     }
             
-    fn test_sink_graph(&self, g: &Graph, condition: &BoolOperation) -> bool {
+    fn test_sink_graph(&self, g: &Graph, conditions: &Vec<BoolOperation>) -> bool {
         let mut operator = Operator::new();
-        let result = operator.operate_bool(g, condition);
+        let mut result = true;
+        'test_conditions: for condition in conditions.iter() {
+            if !operator.operate_bool(g, condition) {
+                result = false;
+                break 'test_conditions;
+            }
+        }
         if result {
             println!("Graph satisfying condition found!");
             println!("Constructor: {}", g.constructor);
@@ -282,7 +289,7 @@ impl Instruction {
         result
     }
 
-    fn execute_kitchen_sink(&self, condition: &BoolOperation) {
+    fn execute_kitchen_sink(&self, conditions: &Vec<BoolOperation>) {
         use Constructor::*;
         use RawConstructor::*;
 
@@ -333,7 +340,7 @@ impl Instruction {
                                     }
                                     if !is_already_there {
                                         // Actually test the graph
-                                        if self.test_sink_graph(&g, condition) {
+                                        if self.test_sink_graph(&g, conditions) {
                                             break 'main;
                                         }
                                         graphs.push(g);
@@ -378,7 +385,7 @@ impl Instruction {
             for _rep in 0..10 {
                 for constr in random_constructors.iter() {
                     let g = Graph::new(constr);
-                    if self.test_sink_graph(&g, condition) {
+                    if self.test_sink_graph(&g, conditions) {
                         break 'main;
                     }
                 }
@@ -397,7 +404,7 @@ impl Instruction {
             Tabulate(tabulation) => self.execute_tabulate(tabulation),
             Until(constr, condition) => self.execute_until(constr, condition),
             SearchTrees(n, condition, max_degree) => self.search_trees(*n, condition, max_degree),
-            KitchenSink(condition) => self.execute_kitchen_sink(condition),
+            KitchenSink(conditions) => self.execute_kitchen_sink(conditions),
         }
     }
 }

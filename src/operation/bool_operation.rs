@@ -5,7 +5,7 @@ use crate::operation::int_operation::*;
 
 use super::rational_operation::RationalOperation;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum NumToBoolInfix {
     More,
     Less,
@@ -14,7 +14,7 @@ pub enum NumToBoolInfix {
     Equal
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum BoolToBoolInfix {
     And,
     Or,
@@ -22,7 +22,7 @@ pub enum BoolToBoolInfix {
     Xor,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum BoolOperation {
     IntInfix(NumToBoolInfix, IntOperation, IntOperation),
     FloatInfix(NumToBoolInfix, RationalOperation, RationalOperation),

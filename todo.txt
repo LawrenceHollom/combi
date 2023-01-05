@@ -4,7 +4,6 @@
 
  == THE KITCHEN SINK ==
  - Maybe add option for increasing by number of edges or something
- - Add condition e.g. connected (to not even think about other conditions before checking this)
  - test with sink((size>0)&&(theta>=acyclic)) -> halts at n=15
 
  == ITERATOR ==
@@ -21,6 +20,10 @@
 
  == TREE CONSTRUCTOR ==
  - Allow manual entry of a specific tree
+
+ == PLANARITY ==
+ - Find a way of testing if a graph is planar. The linear time algos are very complex.
+ - Quadratic time would still easily be good enough.
 
  == REFACTORS ==
  - Remove the manual copy function in Polynomial

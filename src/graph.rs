@@ -457,7 +457,9 @@ impl Graph {
                 products::new_product(product, constructor, &Self::new(c1), &Self::new(c2))
             }
             RootedTree(parents) => tree::new_rooted(parents),
-            Random(Biregular(order, left_deg, right_deg)) => random_regular_bipartite::new_biregular(order, left_deg, right_deg),
+            Random(Biregular(order, left_deg, right_deg)) => {
+                random_regular_bipartite::new_biregular(order, left_deg, right_deg)
+            }
             Random(ErdosRenyi(order, p)) => erdos_renyi::new(order, *p),
             Raw(Grid(height, width)) => grid::new(height, width),
             Raw(Complete(order)) => Graph::new_complete(order),
