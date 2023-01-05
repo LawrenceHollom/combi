@@ -25,5 +25,9 @@
  - Find a way of testing if a graph is planar. The linear time algos are very complex.
  - Quadratic time would still easily be good enough.
 
+ == INTERVAL COLOURINGS ==
+ - There is a bug where some bad colourings are claimed to be interval
+ -- e.g. K(5) uses colour 4 twice at vertex 0.
+
  == KEEP CLIPPY HAPPY ==
  - You don't want to anger clippy.
