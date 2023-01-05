@@ -35,21 +35,13 @@ impl Polynomial {
         Polynomial { coefs, var_name: "p".to_owned() }
     }
 
-    fn copy(&self) -> Polynomial {
-        let mut coefs: Vec<i64> = vec![];
-        for x in self.coefs.iter() {
-            coefs.push(*x);
-        }
-        Polynomial { coefs, var_name: self.var_name.to_owned() }
-    }
-
     pub fn pow(&self, exp: usize) -> Polynomial {
         if exp == 0 {
             Polynomial::of_vec(&vec![1])
         } else if exp == 1 {
-            self.copy()
+            self.to_owned()
         } else {
-            self.copy().mul(&self.pow(exp - 1))
+            self.to_owned().mul(&self.pow(exp - 1))
         }
     }
 

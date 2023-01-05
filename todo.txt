@@ -25,8 +25,5 @@
  - Find a way of testing if a graph is planar. The linear time algos are very complex.
  - Quadratic time would still easily be good enough.
 
- == REFACTORS ==
- - Remove the manual copy function in Polynomial
-
  == KEEP CLIPPY HAPPY ==
  - You don't want to anger clippy.
