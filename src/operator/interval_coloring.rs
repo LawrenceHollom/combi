@@ -98,13 +98,20 @@ fn find_interval_coloring_rec(g: &Graph, vert_ordering: &Vec<usize>, colored: &m
                     }
 
                     // Now generate the actual permutation from the perm code
-                    let mut offset = vec![0; d];
+                    let mut picked = vec![false; d];
                     let mut perm = vec![0; d];
                     for i in (0..d).rev() {
                         let next = perm_code[i];
-                        perm[i] = next + offset[next];
-                        for j in perm_code[i]..d {
-                            offset[j] += 1;
+                        let mut count = 0;
+                        'find_elt: for j in 0..d {
+                            if !picked[j] {
+                                if count == next {
+                                    perm[i] = j;
+                                    picked[j] = true;
+                                    break 'find_elt;
+                                }
+                                count += 1;
+                            }
                         }
                     }
 
@@ -159,6 +166,7 @@ fn get_vert_ordering(g: &Graph) -> Vec<usize> {
 pub fn print_interval_coloring(g: &Graph) {
     let n = g.n.to_usize();
     let vert_ordering = get_vert_ordering(g);
+    println!("Vert ordering: {:?}", vert_ordering);
 
     let extreme_col = (n * n) as i32;
     let m = code_edge(n-1, n);
@@ -166,9 +174,13 @@ pub fn print_interval_coloring(g: &Graph) {
     match find_interval_coloring_rec(g, &vert_ordering, &mut vec![false; n], &mut colors, 0) {
         Some(coloring) => {
             let mut min_col = extreme_col;
+            let mut max_col = -extreme_col;
             for col in coloring.iter() {
                 if *col < min_col {
                     min_col = *col
+                }
+                if *col > max_col {
+                    max_col = *col;
                 }
             }
             for (e, color) in coloring.iter().enumerate() {
@@ -177,6 +189,7 @@ pub fn print_interval_coloring(g: &Graph) {
                     println!("{} ~ {} : {}", u, v, *color - min_col);
                 }
             }
+            println!("Number of colours: {}", (max_col - min_col + 1));
         }
         None => println!("No interval coloring found")
     }

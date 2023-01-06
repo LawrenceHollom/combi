@@ -26,8 +26,8 @@
  - Quadratic time would still easily be good enough.
 
  == INTERVAL COLOURINGS ==
- - There is a bug where some bad colourings are claimed to be interval
- -- e.g. K(5) uses colour 4 twice at vertex 0.
+ - This is slow; can't run K(7) in about a minute (then gave up)
+ - Seems to be some threshold number of edges where it gets very slow.
 
  == KEEP CLIPPY HAPPY ==
  - You don't want to anger clippy.
