@@ -31,6 +31,7 @@ pub enum BoolOperation {
     IsConnected,
     HasLongMonotone,
     HasIntervalColoring,
+    IsPlanar,
 }
 
 impl NumToBoolInfix {
@@ -98,6 +99,7 @@ impl BoolOperation {
                     "is_connected" | "connected" => Some(IsConnected),
                     "has_long_monotone" | "has_monot" | "is_monot" => Some(HasLongMonotone),
                     "has_interval_coloring" | "has_interval" => Some(HasIntervalColoring),
+                    "is_planar" | "planar" => Some(IsPlanar),
                     &_ => None,
                 }
             }
@@ -147,6 +149,7 @@ impl fmt::Display for BoolOperation {
             IsConnected => "Is connected".to_owned(),
             HasLongMonotone => "Has 1->n monotone path".to_owned(),
             HasIntervalColoring => "Has some interval coloring".to_owned(),
+            IsPlanar => "Is planar".to_owned(),
         };
         write!(f, "{}", name)
     }

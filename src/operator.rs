@@ -8,6 +8,7 @@ mod bunkbed_posts;
 mod cliques;
 mod girth;
 mod interval_coloring;
+mod planar;
 
 use std::collections::HashMap;
 
@@ -108,6 +109,7 @@ impl Operator {
             IsConnected => g.is_connected(),
             HasLongMonotone => monotone::has_long_monotone(g),
             HasIntervalColoring => interval_coloring::has_interval_coloring(g),
+            IsPlanar => planar::is_planar(g),
         }
     }
 

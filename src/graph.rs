@@ -184,6 +184,42 @@ impl Graph {
         }
     }
 
+    pub fn of_filtered(&self, filter: &Vec<bool>) -> Graph {
+        let n = filter.iter().filter(|x| **x).count();
+        let mut adj: Vec<Vec<bool>> = vec![(); n].iter().map(|()| vec![false; n]).collect();
+        let mut adj_list: Vec<Vec<usize>> = vec![];
+        let mut deg = vec![Degree::ZERO; n];
+
+        let mut map = vec![0; n];
+        let mut target = 0;
+        for i in 0..n {
+            while !filter[target] {
+                target += 1;
+            }
+            map[i] = target;
+            target += 1;
+        }
+
+        for i in 0..n {
+            adj_list.push(vec![]);
+            for j in 0..n {
+                adj[i][j] = self.adj[map[i]][map[j]];
+                if adj[i][j] {
+                    adj_list[i].push(j);
+                    deg[i] = deg[i].incr();
+                }
+            }
+        }
+
+        Graph {
+            n: Order::of_usize(n),
+            adj,
+            adj_list,
+            deg,
+            constructor: Special,
+        }
+    }
+
     pub fn bunkbed(&self) -> Graph {
         let n = self.n.to_usize();
         let mut adj = vec![vec![false; 2*n]; 2*n];
@@ -359,21 +395,22 @@ impl Graph {
         }
         is_iso
     }
-    
-    fn components(&self) -> Vec<usize> {
+
+    // Test components, but only considering vertices in the filter.
+    pub fn filtered_components(&self, filter: &Vec<bool>) -> Vec<usize> {
         let n = self.n.to_usize();
         let mut comp: Vec<usize> = vec![n; n];
         let mut q: Queue<usize> = queue![];
     
         for i in 0..n {
-            if comp[i] == n {
+            if comp[i] == n && filter[i] {
                 comp[i] = i;
                 let _ = q.add(i);
                 'flood_fill: loop {
                     match q.remove() {
                         Ok(node) => {
                             for j in self.adj_list[node].iter() {
-                                if comp[*j] == n {
+                                if comp[*j] == n && filter[*j] {
                                     comp[*j] = i;
                                     let _ = q.add(*j);
                                 }
@@ -386,6 +423,10 @@ impl Graph {
         }
     
         comp
+    }
+    
+    pub fn components(&self) -> Vec<usize> {
+        self.filtered_components(&vec![true; self.n.to_usize()])
     }
     
     pub fn largest_component(&self) -> u32 {
@@ -412,21 +453,25 @@ impl Graph {
         self.largest_component() == self.n.to_usize() as u32
     }
     
-    pub fn num_components(&self) -> u32 {
+    pub fn num_filtered_components(&self, filter: &Vec<bool>) -> u32 {
         let n = self.n.to_usize();
-        let comps = self.components();
+        let comps = self.filtered_components(filter);
     
         let mut is_comp: Vec<bool> = vec![false; n];
         let mut num_comps: u32 = 0;
     
-        for comp in comps.iter() {
-            if !is_comp[*comp] {
+        for (i, comp) in comps.iter().enumerate() {
+            if filter[i] && !is_comp[*comp] {
                 num_comps += 1;
+                is_comp[*comp] = true;
             }
-            is_comp[*comp] = true;
         }
     
         num_comps
+    }
+
+    pub fn num_components(&self) -> u32 {
+        self.num_filtered_components(&vec![true; self.n.to_usize()])
     }
 
     fn component_sizes(&self) -> Vec<usize> {
@@ -514,7 +559,39 @@ impl Graph {
         }
     }
 
+    pub fn print_matrix(&self) {
+        let n = self.n.to_usize();
+        println!("n: {}, m: {}", n, self.size());
+        for i in 0..n {
+            for j in 0..n {
+                if self.adj[i][j] {
+                    print!("1");
+                } else {
+                    print!("0");
+                }
+            }
+            println!();
+        }
+    }
+
     pub fn size(&self) -> usize {
         self.deg.iter().fold(0, |accum, val| accum + val.to_usize()) / 2
+    }
+
+    pub fn filtered_size(&self, filter: &Vec<bool>) -> usize {
+        self.adj_list
+            .iter()
+            .enumerate()
+            .fold(0, |accum, (i, adjs)|
+                if filter[i] {
+                    accum + adjs.iter().filter(|x| filter[**x]).count()
+                } else {
+                    accum
+                }
+            ) / 2
+    }
+
+    pub fn filtered_degree(&self, v: usize, filter: &Vec<bool>) -> usize {
+        self.adj_list[v].iter().filter(|x| filter[**x]).count()
     }
 }

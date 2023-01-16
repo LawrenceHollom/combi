@@ -22,8 +22,8 @@
  - Allow manual entry of a specific tree
 
  == PLANARITY ==
- - Find a way of testing if a graph is planar. The linear time algos are very complex.
- - Quadratic time would still easily be good enough.
+ - This seems like the best lead: http://www.mathe2.uni-bayreuth.de/EWS/demoucron.pdf
+ - Consider passing an of_filter graph into is_component_planar_rec
 
  == INTERVAL COLOURINGS ==
  - This is slow; can't run K(7) in about a minute (then gave up)
