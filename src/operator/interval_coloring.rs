@@ -179,7 +179,7 @@ pub fn print_interval_coloring(g: &Graph) {
                 if *col < min_col {
                     min_col = *col
                 }
-                if *col > max_col {
+                if *col > max_col && *col != extreme_col {
                     max_col = *col;
                 }
             }
