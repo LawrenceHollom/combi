@@ -5,6 +5,7 @@
  == THE KITCHEN SINK ==
  - Maybe add option for increasing by number of edges or something
  - test with sink((size>0)&&(theta>=acyclic)) -> halts at n=15
+ - Test fewer graphs for the very big n -> if more than 1000 then filter randomly
 
  == ITERATOR ==
  - Detect identical nodes in graphs and iterate over subsets more efficiently
@@ -21,13 +22,13 @@
  == TREE CONSTRUCTOR ==
  - Allow manual entry of a specific tree
 
- == PLANARITY ==
- - This seems like the best lead: http://www.mathe2.uni-bayreuth.de/EWS/demoucron.pdf
- - Consider passing an of_filter graph into is_component_planar_rec
-
  == INTERVAL COLOURINGS ==
  - This is slow; can't run K(7) in about a minute (then gave up)
  - Seems to be some threshold number of edges where it gets very slow.
+
+ == MAX INDUCED FORESTS == 
+ - Hangs on the Petersen graph for some reason.
+ -- Probably the while loops.
 
  == KEEP CLIPPY HAPPY ==
  - You don't want to anger clippy.

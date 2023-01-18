@@ -9,6 +9,7 @@ use queues::*;
 mod products;
 mod erdos_renyi;
 mod grid;
+mod random_planar;
 mod random_regular_bipartite;
 mod tree;
 
@@ -506,6 +507,7 @@ impl Graph {
                 random_regular_bipartite::new_biregular(order, left_deg, right_deg)
             }
             Random(ErdosRenyi(order, p)) => erdos_renyi::new(order, *p),
+            Random(Triangulation(order)) => random_planar::new_triangulation(order),
             Raw(Grid(height, width)) => grid::new(height, width),
             Raw(Complete(order)) => Graph::new_complete(order),
             Raw(Cyclic(order)) => Graph::new_cyclic(order),

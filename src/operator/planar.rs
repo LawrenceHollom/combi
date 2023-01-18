@@ -146,7 +146,7 @@ fn dmp_rec(g: &Graph, coprime: &mut Vec<bool>, prime_edges: &mut Vec<Vec<bool>>,
         faces: &mut HashSet<Vec<usize>>, depth: u32) -> bool {
     if depth > 200 {
         println!("TOO DEEP!");
-        g.print();
+        g.print_matrix();
         println!("Prime edges: {:?}", prime_edges);
         println!("Faces: {:?}", faces);
         println!("Coprime: {:?}", coprime);
@@ -341,7 +341,6 @@ fn is_component_planar_rec(g: &Graph, filter: &mut Vec<bool>) -> bool {
     if verts <= 4 { 
         return true;
     } else if edges > 3 * verts - 6 {
-        g.of_filtered(filter).print_matrix();
         return false;
     } else {
         // split G into 2-connected components and run on them seperately.

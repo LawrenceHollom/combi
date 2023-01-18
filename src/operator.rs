@@ -9,6 +9,7 @@ mod cliques;
 mod girth;
 mod interval_coloring;
 mod planar;
+mod induced_forest;
 
 use std::collections::HashMap;
 
@@ -50,6 +51,7 @@ impl Operator {
                     MaxFindableRigidComponent => monotone::max_rigid_component(g),
                     TotalDominationGameLength => domination::total_domination_game_length(g),
                     NumIntervalColors => interval_coloring::num_interval_colors(g),
+                    MaxInducedForest => induced_forest::max_induced_forest(g),
                     Number(k) => *k,
                 };
                 self.previous_values.insert(*operation, value);

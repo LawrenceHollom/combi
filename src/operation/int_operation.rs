@@ -19,6 +19,7 @@ pub enum IntOperation {
     MaxFindableRigidComponent,
     TotalDominationGameLength,
     NumIntervalColors,
+    MaxInducedForest,
     Number(u32),
 }
 
@@ -43,6 +44,7 @@ impl IntOperation {
             "max_rigid" => Some(MaxFindableRigidComponent),
             "total_domination_game" | "gamma_tg" => Some(TotalDominationGameLength),
             "num_interval_colors" => Some(NumIntervalColors),
+            "max_induced_forest" | "max_forest" => Some(MaxInducedForest),
             str => str.parse().ok().map(Number),
         }
     }
@@ -70,6 +72,7 @@ impl fmt::Display for IntOperation {
             MaxFindableRigidComponent => "Max rigid component via monot cycles",
             TotalDominationGameLength => "Length of the total domination game",
             NumIntervalColors => "Number of colors in the first found interval coloring",
+            MaxInducedForest => "Order of largest induced forest",
             Number(n) => {
                 sta = n.to_string();
                 sta.as_str()

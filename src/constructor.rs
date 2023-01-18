@@ -17,6 +17,7 @@ pub enum ProductConstructor {
 pub enum RandomConstructor {
     Biregular(Order, Degree, Degree),
     ErdosRenyi(Order, f64),
+    Triangulation(Order),
 }
 
 #[derive(Copy, Clone)]
@@ -86,6 +87,9 @@ impl Constructor {
             "erdos_renyi" | "er" | "g" => {
                 Random(ErdosRenyi(Order::of_string(args[0]), args[1].parse().unwrap()))
             },
+            "triangulation" | "tri" => {
+                Random(Triangulation(Order::of_string(args[0])))
+            }
             "grid" => {
                 Raw(Grid(Order::of_string(args[0]), Order::of_string(args[1])))
             },
@@ -153,6 +157,9 @@ impl fmt::Display for RandomConstructor {
             ErdosRenyi(order, p) => {
                 write!(f, "Erdos-Renyi graph of order {} with probability {}", order, p)
             },
+            Triangulation(order) => {
+                write!(f, "Triangulation of order {}", order)
+            }
         }
     }
 }
