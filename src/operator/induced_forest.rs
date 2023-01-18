@@ -44,6 +44,7 @@ fn max_induced_forest_rec(g: &Graph, forest: &mut Vec<bool>, comp: &mut Vec<usiz
             if this_size > best_size {
                 best_size = this_size;
             }
+            forest[v] = false;
         }
     }
     best_size
