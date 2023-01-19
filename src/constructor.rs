@@ -18,6 +18,7 @@ pub enum RandomConstructor {
     Biregular(Order, Degree, Degree),
     ErdosRenyi(Order, f64),
     Triangulation(Order),
+    MaximalPlanar(Order),
 }
 
 #[derive(Copy, Clone)]
@@ -89,7 +90,10 @@ impl Constructor {
             },
             "triangulation" | "tri" => {
                 Random(Triangulation(Order::of_string(args[0])))
-            }
+            },
+            "maximal_planar" | "planar" => {
+                Random(MaximalPlanar(Order::of_string(args[0])))
+            },
             "grid" => {
                 Raw(Grid(Order::of_string(args[0]), Order::of_string(args[1])))
             },
@@ -159,6 +163,9 @@ impl fmt::Display for RandomConstructor {
             },
             Triangulation(order) => {
                 write!(f, "Triangulation of order {}", order)
+            }
+            MaximalPlanar(order) => {
+                write!(f, "Maximal planar of order {}", order)
             }
         }
     }

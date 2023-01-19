@@ -26,9 +26,5 @@
  - This is slow; can't run K(7) in about a minute (then gave up)
  - Seems to be some threshold number of edges where it gets very slow.
 
- == MAX INDUCED FORESTS == 
- - Hangs on the Petersen graph for some reason.
- -- Probably the while loops.
-
  == KEEP CLIPPY HAPPY ==
  - You don't want to anger clippy.

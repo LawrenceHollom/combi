@@ -144,7 +144,7 @@ fn dmp_embed_fragment(g: &Graph, coprime: &mut Vec<bool>, prime_edges: &mut Vec<
 // Actually run the DMP algorithm recursively
 fn dmp_rec(g: &Graph, coprime: &mut Vec<bool>, prime_edges: &mut Vec<Vec<bool>>, 
         faces: &mut HashSet<Vec<usize>>, depth: u32) -> bool {
-    if depth > 200 {
+    if depth > 10000 {
         println!("TOO DEEP!");
         g.print_matrix();
         println!("Prime edges: {:?}", prime_edges);
