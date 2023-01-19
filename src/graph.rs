@@ -12,6 +12,7 @@ mod grid;
 mod random_planar;
 mod random_regular_bipartite;
 mod tree;
+mod raw;
 
 pub struct Graph {
     pub n: Order,
@@ -142,46 +143,6 @@ impl Graph {
             adj_list,
             deg,
             constructor: Raw(Empty(*order))
-        }
-    }
-
-    fn new_fano_plane() -> Graph {
-        let adj_list: Vec<Vec<usize>> = vec![vec![1, 5, 6], vec![0, 2, 3, 5, 6], vec![1, 3, 6], 
-            vec![1, 2, 4, 5, 6], vec![3, 5, 6], vec![0, 1, 3, 4, 6], vec![0, 1, 2, 3, 4, 5]];
-        let n: usize = 7;
-        let mut adj = vec![vec![false; n]; n];
-        for i in 0..n {
-            for j in adj_list[i].iter() {
-                adj[i][*j] = true;
-            }
-        }
-        let deg = vec![3, 5, 3, 5, 3, 5, 6].iter().map(|x| Degree::of_usize(*x)).collect();
-        Graph {
-            n: Order::of_usize(n),
-            adj,
-            adj_list,
-            deg,
-            constructor: Raw(FanoPlane)
-        }
-    }
-
-    fn new_petersen() -> Graph {
-        let adj_list: Vec<Vec<usize>> = vec![vec![1, 4, 5], vec![0, 2, 6], vec![1, 3, 7], vec![2, 4, 8], vec![0, 3, 9],
-            vec![0, 7, 8], vec![1, 8, 9], vec![2, 5, 9], vec![3, 5, 6], vec![4, 6, 7]];
-        let n: usize = 10;
-        let mut adj = vec![vec![false; n]; n];
-        for i in 0..n {
-            for j in adj_list[i].iter() {
-                adj[i][*j] = true;
-            }
-        }
-        let deg = vec![3; n].iter().map(|x| Degree::of_usize(*x)).collect();
-        Graph {
-            n: Order::of_usize(n),
-            adj,
-            adj_list,
-            deg,
-            constructor: Raw(Petersen)
         }
     }
 
@@ -515,8 +476,12 @@ impl Graph {
             Raw(Path(order)) => Graph::new_path(order),
             Raw(Star(order)) => Graph::new_star(order),
             Raw(Empty(order)) => Graph::new_empty(order),
-            Raw(FanoPlane) => Graph::new_fano_plane(),
-            Raw(Petersen) => Graph::new_petersen(),
+            Raw(FanoPlane) => raw::new_fano_plane(),
+            Raw(Petersen) => raw::new_petersen(),
+            Raw(Cube) => raw::new_cube(),
+            Raw(Octahedron) => raw::new_octahedron(),
+            Raw(Icosahedron) => raw::new_icosahedron(),
+            Raw(Dodecahedron) => raw::new_dodecahedron(),
             Special => panic!("Cannot directly construct Special graph!"),
         }
     }

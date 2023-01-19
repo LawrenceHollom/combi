@@ -31,6 +31,10 @@ pub enum RawConstructor {
     Empty(Order),
     FanoPlane,
     Petersen,
+    Cube,
+    Octahedron,
+    Icosahedron,
+    Dodecahedron,
 }
 
 #[derive(Clone)]
@@ -104,6 +108,10 @@ impl Constructor {
             "empty" | "e" => Raw(Empty(Order::of_string(args[0]))),
             "fano" => Raw(FanoPlane),
             "petersen" => Raw(Petersen),
+            "cube" | "Eu8" => Raw(Cube),
+            "octahedron" | "Eu6" => Raw(Octahedron),
+            "icosahedron" | "Eu12" => Raw(Icosahedron),
+            "dodecahedron" | "Eu20" => Raw(Icosahedron),
             &_ => panic!("Could not find graph constructor!"),
         }
     }
@@ -193,8 +201,12 @@ impl fmt::Display for RawConstructor {
             Empty(order) => {
                 write!(f, "Empty of order {}", order)
             },
-            FanoPlane => write!(f, "the Fano plane"),
-            Petersen => write!(f, "the Petersen graph"),
+            FanoPlane => write!(f, "The Fano plane"),
+            Petersen => write!(f, "The Petersen graph"),
+            Cube => write!(f, "The Cube"),
+            Octahedron => write!(f, "The Octahedron"),
+            Icosahedron => write!(f, "The Icosahedron"),
+            Dodecahedron => write!(f, "The Dodecahedron"),
         }
     }
 }
