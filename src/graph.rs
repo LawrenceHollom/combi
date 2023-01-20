@@ -564,4 +564,12 @@ impl Graph {
     pub fn filtered_degree(&self, v: usize, filter: &[bool]) -> usize {
         self.adj_list[v].iter().filter(|x| filter[**x]).count()
     }
+
+    pub fn min_degree(&self) -> u32 {
+        self.deg.iter().map(|x| x.to_usize()).min().unwrap() as u32
+    }
+
+    pub fn max_degree(&self) -> u32 {
+        self.deg.iter().map(|x| x.to_usize()).max().unwrap() as u32
+    }
 }

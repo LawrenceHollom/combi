@@ -52,6 +52,8 @@ impl Operator {
                     TotalDominationGameLength => domination::total_domination_game_length(g),
                     NumIntervalColors => interval_coloring::num_interval_colors(g),
                     MaxInducedForest => induced_forest::max_induced_forest(g),
+                    MinDegree => g.min_degree(),
+                    MaxDegree => g.max_degree(),
                     Number(k) => *k,
                 };
                 self.previous_values.insert(*operation, value);
