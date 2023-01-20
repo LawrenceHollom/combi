@@ -75,7 +75,7 @@ pub fn simulate(g: &Graph) {
 pub fn compute_problem_cuts(g: &Graph, u: usize) {
     let n = g.n.to_usize();
 
-    fn is_one_connected(g: &Graph, one_pick: &Vec<bool>, u: usize, n: usize) -> bool {
+    fn is_one_connected(g: &Graph, one_pick: &[bool], u: usize, n: usize) -> bool {
         // flood fill
         let mut visited = vec![false; n];
         let mut q = queue![0];
@@ -98,7 +98,7 @@ pub fn compute_problem_cuts(g: &Graph, u: usize) {
         visited[u]
     }
 
-    fn cut_size(g: &Graph, picked: &Vec<bool>, n: usize) -> usize {
+    fn cut_size(g: &Graph, picked: &[bool], n: usize) -> usize {
         let mut size = 0;
         for (u, adj) in g.adj_list.iter().enumerate() {
             for v in adj.iter() {
@@ -126,9 +126,9 @@ pub fn compute_problem_cuts(g: &Graph, u: usize) {
         let mut sta = subset;
         let mut order = 0;
         let mut cut = vec![];
-        for v in 0..2*n {
+        for (v, is_picked) in picked.iter_mut().enumerate() {
             if sta % 2 == 1 {
-                picked[v] = true;
+                *is_picked = true;
                 cut.push(v);
                 order += 1;
             }

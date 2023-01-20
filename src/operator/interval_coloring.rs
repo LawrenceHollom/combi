@@ -31,7 +31,7 @@ fn find_interval_coloring_rec(g: &Graph, vert_ordering: &Vec<usize>, colored: &m
     let n = g.n.to_usize();
     let extreme_col = (n * n) as i32;
     if num_colored == n {
-        return Some(colors.to_owned());
+        Some(colors.to_owned())
     } else {
         let node = vert_ordering[num_colored];
         colored[node] = true;
@@ -103,11 +103,11 @@ fn find_interval_coloring_rec(g: &Graph, vert_ordering: &Vec<usize>, colored: &m
                     for i in (0..d).rev() {
                         let next = perm_code[i];
                         let mut count = 0;
-                        'find_elt: for j in 0..d {
-                            if !picked[j] {
+                        'find_elt: for (j, is_picked) in picked.iter_mut().enumerate() {
+                            if !*is_picked {
                                 if count == next {
                                     perm[i] = j;
-                                    picked[j] = true;
+                                    *is_picked = true;
                                     break 'find_elt;
                                 }
                                 count += 1;

@@ -55,8 +55,8 @@ pub fn max_induced_forest(g: &Graph) -> u32 {
     let n = g.n.to_usize();
     let mut forest = vec![false; n];
     let mut comp = vec![0; n];
-    for i in 0..n {
-        comp[i] = i;
+    for (i, i_comp) in comp.iter_mut().enumerate() {
+        *i_comp = i;
     }
 
     'test_start_vertex: for v in 0..n {

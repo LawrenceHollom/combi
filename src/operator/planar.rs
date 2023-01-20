@@ -35,7 +35,7 @@ fn dmp_embed_edge(g: &Graph, coprime: &mut Vec<bool>, prime_edges: &mut Vec<Vec<
     }
     faces.insert(face1);
     faces.insert(face2);
-    return dmp_rec(g, coprime, prime_edges, faces, depth + 1);
+    dmp_rec(g, coprime, prime_edges, faces, depth + 1)
 }
 
 fn dmp_embed_fragment(g: &Graph, coprime: &mut Vec<bool>, prime_edges: &mut Vec<Vec<bool>>,
@@ -138,7 +138,7 @@ fn dmp_embed_fragment(g: &Graph, coprime: &mut Vec<bool>, prime_edges: &mut Vec<
     faces.insert(face1);
     faces.insert(face2);
 
-    return dmp_rec(g, coprime, prime_edges, faces, depth + 1);
+    dmp_rec(g, coprime, prime_edges, faces, depth + 1)
 }
 
 // Actually run the DMP algorithm recursively
@@ -155,9 +155,9 @@ fn dmp_rec(g: &Graph, coprime: &mut Vec<bool>, prime_edges: &mut Vec<Vec<bool>>,
     let n = g.n.to_usize();
 
     let mut is_everything = true;
-    'test_if_everything: for i in 0..n {
-        for j in 0..n {
-            if g.adj[i][j] != prime_edges[i][j] {
+    'test_if_everything: for (i, i_prime_edges) in prime_edges.iter().enumerate() {
+        for (j, ij_prime_edges) in i_prime_edges.iter().enumerate() {
+            if g.adj[i][j] != *ij_prime_edges {
                 is_everything = false;
                 break 'test_if_everything;
             }
@@ -277,11 +277,11 @@ fn dmp_rec(g: &Graph, coprime: &mut Vec<bool>, prime_edges: &mut Vec<Vec<bool>>,
     // We still haven't embedded anything, so we need to just embed something and recurse
     if num_edge_frags > 0 {
         let (i, j) = edge_fragments[0];
-        return dmp_embed_edge(g, coprime, prime_edges, &mut faces.to_owned(), 
-            first_edge_admissible_face, i, j, depth);
+        dmp_embed_edge(g, coprime, prime_edges, &mut faces.to_owned(), 
+            first_edge_admissible_face, i, j, depth)
     } else {
-        return dmp_embed_fragment(g, coprime, prime_edges, &mut faces.to_owned(), 
-            first_frag_admissible_face, first_frag_contact_u, first_frag_contact_v, depth);
+        dmp_embed_fragment(g, coprime, prime_edges, &mut faces.to_owned(), 
+            first_frag_admissible_face, first_frag_contact_u, first_frag_contact_v, depth)
     }
 }
 
@@ -321,7 +321,7 @@ fn is_two_connected_planar(g: &Graph) -> bool {
 }
 
 // We may assume that g is connected. Split into 2-connected components.
-fn is_component_planar_rec(g: &Graph, filter: &mut Vec<bool>) -> bool {
+fn is_component_planar_rec(g: &Graph, filter: &mut [bool]) -> bool {
     // First trim all leaves.
     let mut leaf_trimmed = true;
     let n = g.n.to_usize();
@@ -339,9 +339,9 @@ fn is_component_planar_rec(g: &Graph, filter: &mut Vec<bool>) -> bool {
     let verts= filter.iter().filter(|x| **x).count();
     let edges = g.filtered_size(filter);
     if verts <= 4 { 
-        return true;
+        true
     } else if edges > 3 * verts - 6 {
-        return false;
+        false
     } else {
         // split G into 2-connected components and run on them seperately.
         let mut cutvertex = n;

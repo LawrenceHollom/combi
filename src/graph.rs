@@ -146,7 +146,7 @@ impl Graph {
         }
     }
 
-    pub fn of_filtered(&self, filter: &Vec<bool>) -> Graph {
+    pub fn of_filtered(&self, filter: &[bool]) -> Graph {
         let n = filter.iter().filter(|x| **x).count();
         let mut adj: Vec<Vec<bool>> = vec![(); n].iter().map(|()| vec![false; n]).collect();
         let mut adj_list: Vec<Vec<usize>> = vec![];
@@ -154,11 +154,11 @@ impl Graph {
 
         let mut map = vec![0; n];
         let mut target = 0;
-        for i in 0..n {
+        for map_par in map.iter_mut() {
             while !filter[target] {
                 target += 1;
             }
-            map[i] = target;
+            *map_par = target;
             target += 1;
         }
 
@@ -359,7 +359,7 @@ impl Graph {
     }
 
     // Test components, but only considering vertices in the filter.
-    pub fn filtered_components(&self, filter: &Vec<bool>) -> Vec<usize> {
+    pub fn filtered_components(&self, filter: &[bool]) -> Vec<usize> {
         let n = self.n.to_usize();
         let mut comp: Vec<usize> = vec![n; n];
         let mut q: Queue<usize> = queue![];
@@ -415,7 +415,7 @@ impl Graph {
         self.largest_component() == self.n.to_usize() as u32
     }
     
-    pub fn num_filtered_components(&self, filter: &Vec<bool>) -> u32 {
+    pub fn num_filtered_components(&self, filter: &[bool]) -> u32 {
         let n = self.n.to_usize();
         let comps = self.filtered_components(filter);
     
@@ -548,7 +548,7 @@ impl Graph {
         self.deg.iter().fold(0, |accum, val| accum + val.to_usize()) / 2
     }
 
-    pub fn filtered_size(&self, filter: &Vec<bool>) -> usize {
+    pub fn filtered_size(&self, filter: &[bool]) -> usize {
         self.adj_list
             .iter()
             .enumerate()
@@ -561,7 +561,7 @@ impl Graph {
             ) / 2
     }
 
-    pub fn filtered_degree(&self, v: usize, filter: &Vec<bool>) -> usize {
+    pub fn filtered_degree(&self, v: usize, filter: &[bool]) -> usize {
         self.adj_list[v].iter().filter(|x| filter[**x]).count()
     }
 }

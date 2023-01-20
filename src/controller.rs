@@ -271,7 +271,7 @@ impl Instruction {
         }
     }
             
-    fn test_sink_graph(&self, g: &Graph, conditions: &Vec<BoolOperation>) -> bool {
+    fn test_sink_graph(&self, g: &Graph, conditions: &[BoolOperation]) -> bool {
         let mut operator = Operator::new();
         let mut result = true;
         'test_conditions: for condition in conditions.iter() {
@@ -289,7 +289,7 @@ impl Instruction {
         result
     }
 
-    fn execute_kitchen_sink(&self, conditions: &Vec<BoolOperation>) {
+    fn execute_kitchen_sink(&self, conditions: &[BoolOperation]) {
         use Constructor::*;
         use RawConstructor::*;
 
