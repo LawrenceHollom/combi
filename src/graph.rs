@@ -518,6 +518,8 @@ impl Graph {
 
     pub fn print(&self) {
         let n: usize = self.n.to_usize();
+        println!("n: {}", n);
+        println!("degs: {:?}", self.deg.iter().map(|x| x.to_usize()).collect::<Vec<usize>>());
         for i in 0..(n-1) {
             for j in (i+1)..n {
                 if self.adj[i][j] {
