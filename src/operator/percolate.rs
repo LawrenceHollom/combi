@@ -86,7 +86,7 @@ impl Percolator {
         Self::test_connections(n, &true_adj_list).iter().map(|x| *x >= 0).collect()
     }
 
-    pub fn percolate(g: &Graph, compute_dists: bool) -> Percolator {
+    pub fn percolate(g: &Graph, compute_dists: bool, should_print: bool) -> Percolator {
         let n = g.n.to_usize();
         let mut percolator = Percolator::new(n, g.size());
 
@@ -125,14 +125,17 @@ impl Percolator {
             }
             percolator.add_percolation(num_edges, &true_adj_list, compute_dists);
         }
+        println!();
 
-        g.print();
+        if should_print {
+            g.print();
+        }
         percolator
     }
 }
 
 pub fn print_polynomials(g: &Graph) {
-    let percolator = Percolator::percolate(g, false);
+    let percolator = Percolator::percolate(g, false, true);
     let n = g.n.to_usize();
 
     for v in 0..n {

@@ -114,6 +114,7 @@ impl Operator {
             HasLongMonotone => monotone::has_long_monotone(g),
             HasIntervalColoring => interval_coloring::has_interval_coloring(g),
             IsPlanar => planar::is_planar(g),
+            BunkbedDiffsAllUnimodal => bunkbed::are_all_diffs_unimodal(g),
         }
     }
 

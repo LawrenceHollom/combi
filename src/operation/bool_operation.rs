@@ -32,6 +32,7 @@ pub enum BoolOperation {
     HasLongMonotone,
     HasIntervalColoring,
     IsPlanar,
+    BunkbedDiffsAllUnimodal,
 }
 
 impl NumToBoolInfix {
@@ -100,6 +101,7 @@ impl BoolOperation {
                     "has_long_monotone" | "has_monot" | "is_monot" => Some(HasLongMonotone),
                     "has_interval_coloring" | "has_interval" => Some(HasIntervalColoring),
                     "is_planar" | "planar" => Some(IsPlanar),
+                    "bunkbed_all_unimodal" => Some(BunkbedDiffsAllUnimodal),
                     &_ => None,
                 }
             }
@@ -150,6 +152,7 @@ impl fmt::Display for BoolOperation {
             HasLongMonotone => "Has 1->n monotone path".to_owned(),
             HasIntervalColoring => "Has some interval coloring".to_owned(),
             IsPlanar => "Is planar".to_owned(),
+            BunkbedDiffsAllUnimodal => "Bunkbed diff polys are all unimodal".to_owned()
         };
         write!(f, "{}", name)
     }

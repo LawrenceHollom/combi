@@ -26,5 +26,9 @@
  - This is slow; can't run K(7) in about a minute (then gave up)
  - Seems to be some threshold number of edges where it gets very slow.
 
+ == HELP COMMAND ==
+ - Print all the various operations.
+ - And write code to do this automatically so it doesn't need maintaining.
+
  == KEEP CLIPPY HAPPY ==
  - You don't want to anger clippy.
