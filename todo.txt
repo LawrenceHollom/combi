@@ -30,5 +30,8 @@
  - Print all the various operations.
  - And write code to do this automatically so it doesn't need maintaining.
 
+ == BUG ==
+ - sink(domination>10) doesn't trip on E(11)
+
  == KEEP CLIPPY HAPPY ==
  - You don't want to anger clippy.

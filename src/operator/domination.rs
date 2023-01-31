@@ -2,45 +2,131 @@ use crate::graph::*;
 
 use utilities::*;
 
-fn can_dominate_rec(g: &Graph, dominator: &mut Vec<bool>, last_pick: usize, remaining_picks: usize) -> bool {
-    let n = g.n.to_usize();
-    if remaining_picks == 0 {
-        // actually test if dominator is a dominating set
-        let mut is_dominating = true;
-        for i in 0..n {
-            if !dominator[i] {
-                is_dominating &= g.adj_list[i].iter().any(|val| dominator[*val]);
-            }
-        }
-        is_dominating
-    } else {
-        let mut can_dominate = false;
-        'test_next_element: for i in (last_pick+1)..(n-remaining_picks+1) {
-            dominator[i] = true;
-            if can_dominate_rec(g, dominator, i, remaining_picks - 1) {
-                can_dominate = true;
-                break 'test_next_element;
-            }
-            dominator[i] = false;
-        }
-        can_dominate
+fn get_nbhd_code(g: &Graph, v: usize) -> u128 {
+    let mut dominion = 1 << v;
+    for u in g.adj_list[v].iter() {
+        dominion |= 1 << *u;
     }
+    dominion
+}
+
+// use u128s to do domination considerations.
+fn min_dominator_bfs(g: &Graph, dominator: &mut Vec<bool>, num_picked: usize, last_pick: usize, best_set: usize) -> usize {
+    let n = g.n.to_usize();
+    if num_picked >= best_set {
+        return best_set;
+    }
+    let everything = (1_u128 << n) - 1;
+    let mut dominion = 0;
+    for (v, is_dom) in dominator.iter().enumerate() {
+        if *is_dom {
+            dominion |= get_nbhd_code(g, v);
+        }
+    }
+    if dominion == everything {
+        // We cover everything, so this is a dominating set.
+        return num_picked;
+    }
+
+    let mut hittable = 0;
+    // Test that it's still possible to hit everything.
+    for i in (last_pick + 1)..n {
+        hittable |= get_nbhd_code(g, i);
+    }
+    if (hittable | dominion) ^ everything != 0 {
+        // Cannot possibly dominate. Give up.
+        return best_set;
+    }
+
+    // Add another vertex.
+    // First test which vertices are worth adding; i.e. not superceded by any others.
+    // subdominia[v] is stuff covered by v not in dominion already.
+    let mut subdominia = vec![0; n];
+
+    for vert in (last_pick + 1)..n {
+        subdominia[vert] = get_nbhd_code(g, vert) & !dominion;
+    }
+
+    let mut new_best_set = best_set;
+
+    for vert in (last_pick + 1)..n {
+        let mut is_worth_adding = true;
+        'test_if_worth_it: for u in (last_pick + 1)..n {
+            if subdominia[vert] == 0 {
+                is_worth_adding = false;
+                break 'test_if_worth_it;
+            }
+            if u != vert && subdominia[vert] & !subdominia[u] == 0 && (subdominia[u] != subdominia[vert] || u < vert) {
+                // u is better than v
+                is_worth_adding = false;
+                break 'test_if_worth_it;
+            }
+        }
+        if is_worth_adding {
+            dominator[vert] = true;
+            let value = min_dominator_bfs(g, dominator, num_picked + 1, vert, new_best_set);
+            if value < new_best_set {
+                new_best_set = value;
+            }
+            dominator[vert] = false;
+        }
+    }
+
+    new_best_set
+}
+
+fn dominate_greedy(g: &Graph) -> usize {
+    let n = g.n.to_usize();
+
+    let mut dominion = 0;
+    let mut dominator = vec![false; n];
+    let mut gamma = 0;
+    let everything = (1_u128 << n) - 1;
+
+    while dominion != everything {
+        let mut max_cover = 0;
+        let mut vert = n;
+        for v in 0..n {
+            if !dominator[v] {
+                let mut cover_size = 0;
+                if (dominion >> v) % 2 == 0 {
+                    cover_size += 1;
+                }
+                for u in g.adj_list[v].iter() {
+                    if (dominion >> *u) % 2 == 0 {
+                        cover_size += 1;
+                    }
+                }
+                if cover_size > max_cover {
+                    max_cover = cover_size;
+                    vert = v;
+                }
+            }
+        }
+        // Add vertex.
+        dominator[vert] = true;
+        gamma += 1;
+        dominion |= get_nbhd_code(g, vert);
+    }
+
+    gamma
 }
 
 pub fn domination_number(g: &Graph) -> u32 {
-    let mut number = 1;
+    // Add a thing to do a greedy search first to get a starting point.
     let n = g.n.to_usize();
-    let mut dominator = vec![false; g.n.to_usize()];
-    'find_domination_number: loop {
-        for i in 0..(n-number+1) {
-            dominator[i] = true;
-            if can_dominate_rec(g, &mut dominator, i, number - 1) {
-                break 'find_domination_number;
-            }
-            dominator[i] = false;
+    let mut dominator = vec![false; n];
+    let greedy = dominate_greedy(g);
+    let mut number = greedy;
+    for i in 0..n {
+        dominator[i] = true;
+        let this_number = min_dominator_bfs(g, &mut dominator, 1, i, number);
+        if this_number < number {
+            number = this_number;
         }
-        number += 1;
+        dominator[i] = false;
     }
+
     number as u32
 }
 
