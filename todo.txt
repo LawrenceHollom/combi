@@ -31,5 +31,8 @@
 == BOOL COMMANDS ==
 - is_k_connected
 
+== UNIT COMMANDS ==
+- signature: prints out all kinds of info about the graph
+
  == KEEP CLIPPY HAPPY ==
  - You don't want to anger clippy.
