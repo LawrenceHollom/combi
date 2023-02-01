@@ -113,7 +113,6 @@ fn dominate_greedy(g: &Graph) -> usize {
 }
 
 pub fn domination_number(g: &Graph) -> u32 {
-    // Add a thing to do a greedy search first to get a starting point.
     let n = g.n.to_usize();
     let mut dominator = vec![false; n];
     let greedy = dominate_greedy(g);
@@ -128,6 +127,75 @@ pub fn domination_number(g: &Graph) -> u32 {
     }
 
     number as u32
+}
+
+fn edge_domination_bfs(g: &Graph, dominator: &mut Vec<bool>, num_picked: usize, min_pick: usize, best_set: usize) -> usize {
+    let n = g.n.to_usize();
+    if num_picked >= best_set {
+        // We've already picked too much.
+        return best_set;
+    }
+
+    // Is it dominating?
+    let mut could_ever_dominate = true;
+    let mut is_dominating = true;
+    'test_domination: for u in 0..n {
+        if !dominator[u] {
+            for v in g.adj_list[u].iter() {
+                if !dominator[*v] {
+                    is_dominating = false;
+                    if u < min_pick && *v < min_pick {
+                        could_ever_dominate = false;
+                        break 'test_domination;
+                    } else if u >= min_pick {
+                        break 'test_domination;
+                    }
+                }
+            }
+        }
+    }
+
+    if is_dominating {
+        return num_picked;
+    }
+
+    let mut vert = min_pick;
+
+    while vert < n && dominator[vert] {
+        vert += 1;
+    }
+
+    if vert == n || !could_ever_dominate {
+        // end of the road. 
+        return best_set;
+    }
+
+    // It's not dominating and we can pick more. First try not picking anything.
+    let mut number = edge_domination_bfs(g, dominator, num_picked, vert + 1, best_set);
+    // Now try picking something.
+
+    for u in g.adj_list[vert].iter() {
+        if *u > vert && !dominator[*u] {
+            dominator[*u] = true;
+            dominator[vert] = true;
+
+            let value = edge_domination_bfs(g, dominator, num_picked + 2, *u + 1, number);
+            if value < number {
+                number = value;
+            }
+
+            dominator[*u] = false;
+            dominator[vert] = false;
+        }
+    }
+
+    number
+}
+
+pub fn edge_domination_number(g: &Graph) -> u32 {
+    let n = g.n.to_usize();
+    let mut dominator = vec![false; n];
+    edge_domination_bfs(g, &mut dominator, 0, 0, n/2) as u32
 }
 
 pub fn total_domination_game_length(g: &Graph) -> u32 {

@@ -42,6 +42,7 @@ impl Operator {
                     IndependenceNumber => cliques::independence_number(g),
                     Girth => girth::girth(g),
                     DominationNumber => domination::domination_number(g),
+                    EdgeDominationNumber => domination::edge_domination_number(g),
                     ChromaticNumber => chromatic::chromatic_number(g),
                     MaxAcyclicSubgraph => max_acyclic::max_acyclic_subgraph(g),
                     CliqueCoveringNumber => chromatic::chromatic_number(&g.complement()),
