@@ -18,9 +18,7 @@
 
  == BUGS ==
  - Maybe ->() has stopped working? Gets picked up as infix-like
-
- == TREE CONSTRUCTOR ==
- - Allow manual entry of a specific tree
+ - sink(domination>10) doesn't trip on E(11)
 
  == INTERVAL COLOURINGS ==
  - This is slow; can't run K(7) in about a minute (then gave up)
@@ -30,8 +28,11 @@
  - Print all the various operations.
  - And write code to do this automatically so it doesn't need maintaining.
 
- == OPTIMISE DOMINATION ==
- - This comes up a lot, and it would be good to cope with n=40. (n=50??)
+== BOOL COMMANDS ==
+- is_k_connected
+
+== UNIT COMMANDS ==
+- signature: prints out all kinds of info about the graph
 
  == KEEP CLIPPY HAPPY ==
  - You don't want to anger clippy.

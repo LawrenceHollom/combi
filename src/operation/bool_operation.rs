@@ -28,11 +28,14 @@ pub enum BoolOperation {
     FloatInfix(NumToBoolInfix, RationalOperation, RationalOperation),
     BoolInfix(BoolToBoolInfix, Box<BoolOperation>, Box<BoolOperation>),
     Not(Box<BoolOperation>),
+    Const(bool),
     IsConnected,
     HasLongMonotone,
     HasIntervalColoring,
     IsPlanar,
+    IsRegular,
     BunkbedDiffsAllUnimodal,
+    HasRegularLosslessEdgeDominator,
 }
 
 impl NumToBoolInfix {
@@ -101,7 +104,11 @@ impl BoolOperation {
                     "has_long_monotone" | "has_monot" | "is_monot" => Some(HasLongMonotone),
                     "has_interval_coloring" | "has_interval" => Some(HasIntervalColoring),
                     "is_planar" | "planar" => Some(IsPlanar),
+                    "is_regular" | "regular" => Some(IsRegular),
                     "bunkbed_all_unimodal" => Some(BunkbedDiffsAllUnimodal),
+                    "has_regular_lossless_edge_dominator" | "has_rled" => Some(HasRegularLosslessEdgeDominator),
+                    "true" => Some(Const(true)),
+                    "false" => Some(Const(false)),
                     &_ => None,
                 }
             }
@@ -148,11 +155,14 @@ impl fmt::Display for BoolOperation {
             BoolInfix(infix, op1, op2) =>
                 format!("({}) {} ({})", *op1, *infix, *op2),
             Not(op) => format!("Not ({})", *op),
+            Const(val) => format!("Constant ({})", val),
             IsConnected => "Is connected".to_owned(),
             HasLongMonotone => "Has 1->n monotone path".to_owned(),
             HasIntervalColoring => "Has some interval coloring".to_owned(),
             IsPlanar => "Is planar".to_owned(),
-            BunkbedDiffsAllUnimodal => "Bunkbed diff polys are all unimodal".to_owned()
+            IsRegular => "Is regular".to_owned(),
+            BunkbedDiffsAllUnimodal => "Bunkbed diff polys are all unimodal".to_owned(),
+            HasRegularLosslessEdgeDominator => "Has regular lossless edge-dominating set".to_owned(),
         };
         write!(f, "{}", name)
     }

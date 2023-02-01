@@ -42,6 +42,7 @@ impl Operator {
                     IndependenceNumber => cliques::independence_number(g),
                     Girth => girth::girth(g),
                     DominationNumber => domination::domination_number(g),
+                    EdgeDominationNumber => domination::edge_domination_number(g),
                     ChromaticNumber => chromatic::chromatic_number(g),
                     MaxAcyclicSubgraph => max_acyclic::max_acyclic_subgraph(g),
                     CliqueCoveringNumber => chromatic::chromatic_number(&g.complement()),
@@ -110,11 +111,14 @@ impl Operator {
             BoolInfix(infix, op1, op2) => 
                 self.operate_bool_to_bool_infix(g, infix, op1, op2),
             Not(op) => !self.operate_bool(g, op),
+            Const(val) => *val,
             IsConnected => g.is_connected(),
             HasLongMonotone => monotone::has_long_monotone(g),
             HasIntervalColoring => interval_coloring::has_interval_coloring(g),
             IsPlanar => planar::is_planar(g),
+            IsRegular => g.is_regular(),
             BunkbedDiffsAllUnimodal => bunkbed::are_all_diffs_unimodal(g),
+            HasRegularLosslessEdgeDominator => domination::has_regular_lossless_edge_dominator(g),
         }
     }
 
