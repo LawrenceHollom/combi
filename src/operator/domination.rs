@@ -181,8 +181,8 @@ fn edge_domination_dfs(g: &Graph, dominator: &mut Vec<bool>, num_picked: usize, 
         if *u > vert && !dominator[*u] {
             dominator[*u] = true;
             dominator[vert] = true;
-
-            let value = edge_domination_dfs(g, dominator, num_picked + 1, *u + 1, number);
+            //println!("Picked {}~{}; calling.", vert, *u);
+            let value = edge_domination_dfs(g, dominator, num_picked + 1, vert + 1, number);
             if value < number {
                 number = value;
             }
