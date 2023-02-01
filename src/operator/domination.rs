@@ -25,7 +25,7 @@ fn min_dominator_bfs(g: &Graph, dominator: &mut Vec<bool>, num_picked: usize, la
     }
     if dominion == everything {
         // We cover everything, so this is a dominating set.
-        if n > 50 {
+        if n >= 50 {
             // Keep track of output when n is large
             println!("Found better! {}", num_picked);
         }
