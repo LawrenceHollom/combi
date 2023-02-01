@@ -30,5 +30,8 @@
  - Print all the various operations.
  - And write code to do this automatically so it doesn't need maintaining.
 
+ == OPTIMISE DOMINATION ==
+ - This comes up a lot, and it would be good to cope with n=40. (n=50??)
+
  == KEEP CLIPPY HAPPY ==
  - You don't want to anger clippy.
