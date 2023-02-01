@@ -19,6 +19,7 @@ pub enum RandomConstructor {
     ErdosRenyi(Order, f64),
     Triangulation(Order),
     MaximalPlanar(Order),
+    Bowties(usize),
 }
 
 #[derive(Copy, Clone)]
@@ -99,6 +100,7 @@ impl Constructor {
             "maximal_planar" | "planar" => {
                 Random(MaximalPlanar(Order::of_string(args[0])))
             },
+            "bowties" => Random(Bowties(args[0].parse().unwrap())),
             "grid" => {
                 Raw(Grid(Order::of_string(args[0]), Order::of_string(args[1])))
             },
@@ -176,6 +178,9 @@ impl fmt::Display for RandomConstructor {
             }
             MaximalPlanar(order) => {
                 write!(f, "Maximal planar of order {}", order)
+            }
+            Bowties(scale) => {
+                write!(f, "Amalgamation of {} bowties", 3 * *scale)
             }
         }
     }
