@@ -22,9 +22,10 @@ pub enum Controller {
     Single(Constructor),
     Repeat(Constructor, usize),
     Tabulate(Tabulation),
-    Until(Constructor, BoolOperation),
+    Until(Constructor, Vec<BoolOperation>),
     SearchTrees(usize, BoolOperation, Degree),
     KitchenSink(Vec<BoolOperation>),
+    Help,
 }
 
 pub struct Instruction {
@@ -62,7 +63,7 @@ impl Controller {
             },
             "until" => {
                 Until(Constructor::of_string(args[0]), 
-                    BoolOperation::of_string_result(args[1]).unwrap())
+                    args.iter().skip(1).map(|arg| BoolOperation::of_string_result(arg).unwrap()).collect())
             },
             "search_trees" | "trees" => {
                 let n: usize = args[0].parse().unwrap();
@@ -73,6 +74,7 @@ impl Controller {
                 KitchenSink(args.iter().map(|arg| 
                     BoolOperation::of_string_result(*arg).unwrap()).collect())
             }
+            "help" | "h" => Help,
             &_ => {
                 Single(Constructor::of_string(text))
             }
@@ -90,8 +92,8 @@ impl fmt::Display for Controller {
             Tabulate(tabulation) => {
                 write!(f, "{}", tabulation)
             },
-            Until(constr, condition) => {
-                write!(f, "Repeat ({}) until ({})", constr, condition)
+            Until(constr, conditions) => {
+                write!(f, "Repeat ({}) until ({:?})", constr, conditions)
             },
             Single(constr) => {
                 write!(f, "{}", constr)
@@ -102,6 +104,7 @@ impl fmt::Display for Controller {
             KitchenSink(conditions) => {
                 write!(f, "Search the kitchen sink for a graph satisfying {:?}", *conditions)
             }
+            Help => write!(f, "Print help text"),
         }
     }
 }
@@ -129,7 +132,7 @@ impl Instruction {
         operations_strs.join(", ")
     }
 
-    fn execute_single_return(&self, constr: &Constructor, should_print: bool) -> Graph {
+    fn execute_single_return(&self, constr: &Constructor, should_print: bool) -> (Graph, Operator) {
         let g = Graph::new(constr);
         let rep_start = SystemTime::now();
         
@@ -142,7 +145,7 @@ impl Instruction {
             println!("{}: [{}], time: {}", self.operations_string(), numbers.join(", "),
                 rep_start.elapsed().unwrap().as_millis());
         }
-        g
+        (g, operator)
     }
 
     fn execute_single(&self, constr: &Constructor) {
@@ -192,16 +195,24 @@ impl Instruction {
         }
     }
 
-    fn execute_until(&self, constr: &Constructor, condition: &BoolOperation) {
+    fn execute_until(&self, constr: &Constructor, conditions: &[BoolOperation]) {
         let mut satisfied = false;
         let mut rep = 0;
         while !satisfied {
             print!("{}: ", rep);
             rep += 1;
-            let g = self.execute_single_return(constr, false);
-            let mut operator = Operator::new();
-            if operator.operate_bool(&g, condition) {
-                println!("Condition satisfied! {}", condition);
+            let (g, mut operator) = self.execute_single_return(constr, true);
+            let mut all_satisfied = true;
+            'test_conditions: for (i, condition) in conditions.iter().enumerate() {
+                if operator.operate_bool(&g, condition) {
+                    print!("{} ", i);
+                } else {
+                    all_satisfied = false;
+                    break 'test_conditions;
+                }
+            }
+            if all_satisfied {
+                println!("All conditions satisfied! {:?}", conditions);
                 println!("Graph: ");
                 g.print();
                 satisfied = true;
@@ -396,15 +407,37 @@ impl Instruction {
         }
     }
 
+    fn print_help() {
+        println!("Options:");
+        println!();
+        println!("  [constructor]->[operations]");
+        println!("     Run the given operations on that graph.");
+        println!();
+        println!("  rep([constructor],[number])->[operations]");
+        println!("     Repeat running operation on (random) constructor [number] times.");
+        println!();
+        println!("  tab(order, start, stop, step)->[operations]");
+        println!();
+        println!("  until([constructor],[bool operation])->[operations]");
+        println!();
+        println!("  trees(order, [bool operation], optional max degree)->[operations]");
+        println!();
+        println!("  sink([bool operation])->[operations]");
+        println!();
+        println!("  help");
+        println!();
+    }
+
     pub fn execute(&self) {
         use Controller::*;
         match &self.controller {
             Single(constr) => self.execute_single(constr),
             Repeat(constr, reps) => self.execute_reps(constr, *reps),
             Tabulate(tabulation) => self.execute_tabulate(tabulation),
-            Until(constr, condition) => self.execute_until(constr, condition),
+            Until(constr, conditions) => self.execute_until(constr, conditions),
             SearchTrees(n, condition, max_degree) => self.search_trees(*n, condition, max_degree),
             KitchenSink(conditions) => self.execute_kitchen_sink(conditions),
+            Help => Self::print_help(),
         }
     }
 }

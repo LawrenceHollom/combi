@@ -25,6 +25,10 @@ fn min_dominator_bfs(g: &Graph, dominator: &mut Vec<bool>, num_picked: usize, la
     }
     if dominion == everything {
         // We cover everything, so this is a dominating set.
+        if n > 50 {
+            // Keep track of output when n is large
+            println!("Found better! {}", num_picked);
+        }
         return num_picked;
     }
 
@@ -129,7 +133,7 @@ pub fn domination_number(g: &Graph) -> u32 {
     number as u32
 }
 
-fn edge_domination_dfs(g: &Graph, dominator: &mut Vec<bool>, num_picked: usize, min_pick: usize, best_set: usize) -> usize {
+fn edge_domination_dfs(g: &Graph, dominator: &mut Vec<bool>, num_picked: usize, min_pick: usize, best_set: usize, lossless: bool) -> usize {
     let n = g.n.to_usize();
     if num_picked >= best_set {
         // We've already picked too much.
@@ -141,12 +145,26 @@ fn edge_domination_dfs(g: &Graph, dominator: &mut Vec<bool>, num_picked: usize, 
     // Is it dominating?
     let mut could_ever_dominate = true;
     let mut is_dominating = true;
+
+    let mut pickable = vec![true; n];
+
+    for u in 0..n {
+        if dominator[u] {
+            pickable[u] = false;
+            if lossless {
+                for v in g.adj_list[u].iter() {
+                    pickable[*v] = false;
+                }
+            }
+        }
+    }
+
     'test_domination: for u in 0..n {
         if !dominator[u] {
             for v in g.adj_list[u].iter() {
                 if !dominator[*v] {
                     is_dominating = false;
-                    if u < min_pick && *v < min_pick {
+                    if (u < min_pick && *v < min_pick) || (lossless && !pickable[u] && !pickable[*v]) {
                         could_ever_dominate = false;
                         break 'test_domination;
                     } else if u >= min_pick {
@@ -157,32 +175,51 @@ fn edge_domination_dfs(g: &Graph, dominator: &mut Vec<bool>, num_picked: usize, 
         }
     }
 
-    if is_dominating {
-        //println!("Dominating!");
-        return num_picked;
+    if lossless && could_ever_dominate {
+        'find_isolated_lossless: for u in 0..n {
+            if pickable[u] {
+                let mut bad = true;
+                'test_nbrs: for v in g.adj_list[u].iter() {
+                    if pickable[*v] || dominator[*v] {
+                        bad = false;
+                        break 'test_nbrs;
+                    }
+                }
+                if bad {
+                    could_ever_dominate = false;
+                    break 'find_isolated_lossless;
+                }
+            }
+        }
     }
 
+    if is_dominating {
+        return num_picked;
+    } else if !could_ever_dominate {
+        return best_set;
+    }
+    
     let mut vert = min_pick;
 
-    while vert < n && dominator[vert] {
+    while vert < n && !pickable[vert] {
         vert += 1;
     }
 
-    if vert == n || !could_ever_dominate {
+    if vert == n {
         // end of the road. 
         return best_set;
     }
 
     // It's not dominating and we can pick more. First try not picking anything.
-    let mut number = edge_domination_dfs(g, dominator, num_picked, vert + 1, best_set);
+    let mut number = edge_domination_dfs(g, dominator, num_picked, vert + 1, best_set, lossless);
     
     // Now try picking something.
     for u in g.adj_list[vert].iter() {
-        if *u > vert && !dominator[*u] {
+        if *u > vert && pickable[*u] {
             dominator[*u] = true;
             dominator[vert] = true;
             //println!("Picked {}~{}; calling.", vert, *u);
-            let value = edge_domination_dfs(g, dominator, num_picked + 1, vert + 1, number);
+            let value = edge_domination_dfs(g, dominator, num_picked + 1, vert + 1, number, lossless);
             if value < number {
                 number = value;
             }
@@ -198,7 +235,24 @@ fn edge_domination_dfs(g: &Graph, dominator: &mut Vec<bool>, num_picked: usize, 
 pub fn edge_domination_number(g: &Graph) -> u32 {
     let n = g.n.to_usize();
     let mut dominator = vec![false; n];
-    edge_domination_dfs(g, &mut dominator, 0, 0, n/2) as u32
+    edge_domination_dfs(g, &mut dominator, 0, 0, n/2, false) as u32
+}
+
+pub fn has_regular_lossless_edge_dominator(g: &Graph) -> bool {
+    if !g.is_regular() {
+        panic!("This function is for regular graphs only!")
+    } else {
+        let n = g.n.to_usize();
+        let mut dominator = vec![false; n];
+        let delta = g.deg[0].to_usize();
+        let denom = if delta % 2 == 0 { 2 * delta - 1} else { 2 * (2 * delta - 1) };
+        if n % denom != 0 {
+            panic!("Lossless edge domination only possible for Delta={} when n divides {}", delta, denom);
+        } else {
+            let gamma_e = edge_domination_dfs(g, &mut dominator, 0, 0, n, true);
+            gamma_e == delta * n / (2 * (2 * delta - 1))
+        }
+    }
 }
 
 pub fn total_domination_game_length(g: &Graph) -> u32 {

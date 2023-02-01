@@ -17,7 +17,7 @@ fn main() {
     io::stdin().read_line(&mut text).expect("Failed to read line");
     let start_time = SystemTime::now();
     let instruction = Instruction::of_string(&text);
-    println!("Instruction constructed! {},\nTime: {}", instruction, start_time.elapsed().unwrap().as_millis());
+    println!("Instruction constructed!\n{},\nTime: {}", instruction, start_time.elapsed().unwrap().as_millis());
 
     instruction.execute();
     println!("Finished! Time (s): {}", start_time.elapsed().unwrap().as_secs())
