@@ -8,6 +8,7 @@ use queues::*;
 
 mod products;
 mod erdos_renyi;
+mod from_file;
 mod grid;
 mod random_planar;
 mod random_regular_bipartite;
@@ -208,6 +209,26 @@ impl Graph {
             adj_list,
             deg,
             constructor: Special
+        }
+    }
+
+    fn of_adj_list(adj_list: Vec<Vec<usize>>, constructor: Constructor) -> Graph {
+        let n: usize = adj_list.len();
+        let mut adj = vec![vec![false; n]; n];
+        let mut deg = vec![0; n];
+    
+        for i in 0..n {
+            for j in adj_list[i].iter() {
+                adj[i][*j] = true;
+                deg[i] += 1;
+            }
+        }
+        Graph {
+            n: Order::of_usize(n),
+            adj,
+            adj_list,
+            deg: deg.iter().map(|x| Degree::of_usize(*x)).collect(),
+            constructor
         }
     }
 
@@ -486,6 +507,7 @@ impl Graph {
             Raw(Octahedron) => raw::new_octahedron(),
             Raw(Icosahedron) => raw::new_icosahedron(),
             Raw(Dodecahedron) => raw::new_dodecahedron(),
+            File(filename) => from_file::new_graph(filename),
             Special => panic!("Cannot directly construct Special graph!"),
         }
     }

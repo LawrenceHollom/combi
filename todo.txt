@@ -18,10 +18,7 @@
 
  == BUGS ==
  - Maybe ->() has stopped working? Gets picked up as infix-like
-
- == TREE CONSTRUCTOR ==
- - Allow manual entry of a specific tree
- - Or just allow entry of graph from file, and move manual graphs over
+ - sink(domination>10) doesn't trip on E(11)
 
  == INTERVAL COLOURINGS ==
  - This is slow; can't run K(7) in about a minute (then gave up)
@@ -30,9 +27,6 @@
  == HELP COMMAND ==
  - Print all the various operations.
  - And write code to do this automatically so it doesn't need maintaining.
-
- == BUG ==
- - sink(domination>10) doesn't trip on E(11)
 
 == BOOL COMMANDS ==
 - is_k_connected

@@ -43,6 +43,7 @@ pub enum Constructor {
     Random(RandomConstructor),
     Raw(RawConstructor),
     RootedTree(Vec<usize>),
+    File(String),
     Special,
 }
 
@@ -112,7 +113,7 @@ impl Constructor {
             "octahedron" | "Eu6" => Raw(Octahedron),
             "icosahedron" | "Eu12" => Raw(Icosahedron),
             "dodecahedron" | "Eu20" => Raw(Icosahedron),
-            &_ => panic!("Could not find graph constructor!"),
+            str => File(str.to_owned()),
         }
     }
 }
@@ -136,6 +137,7 @@ impl fmt::Display for Constructor {
             RootedTree(parents) => {
                 write!(f, "Rooted tree with parent pattern {:?}", parents)
             },
+            File(filename) => write!(f, "From file {}.gph", filename),
             Special => write!(f, "Special"),
         }
     }
