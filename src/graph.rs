@@ -414,6 +414,10 @@ impl Graph {
     pub fn is_connected(&self) -> bool {
         self.largest_component() == self.n.to_usize() as u32
     }
+
+    pub fn is_regular(&self) -> bool {
+        self.max_degree() == self.min_degree()
+    }
     
     pub fn num_filtered_components(&self, filter: &[bool]) -> u32 {
         let n = self.n.to_usize();

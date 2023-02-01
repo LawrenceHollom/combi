@@ -21,6 +21,7 @@
 
  == TREE CONSTRUCTOR ==
  - Allow manual entry of a specific tree
+ - Or just allow entry of graph from file, and move manual graphs over
 
  == INTERVAL COLOURINGS ==
  - This is slow; can't run K(7) in about a minute (then gave up)
@@ -32,6 +33,9 @@
 
  == BUG ==
  - sink(domination>10) doesn't trip on E(11)
+
+== BOOL COMMANDS ==
+- is_k_connected
 
  == KEEP CLIPPY HAPPY ==
  - You don't want to anger clippy.

@@ -116,6 +116,7 @@ impl Operator {
             HasIntervalColoring => interval_coloring::has_interval_coloring(g),
             IsPlanar => planar::is_planar(g),
             BunkbedDiffsAllUnimodal => bunkbed::are_all_diffs_unimodal(g),
+            IsRegular => g.is_regular(),
         }
     }
 
