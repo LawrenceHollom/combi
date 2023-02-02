@@ -268,7 +268,7 @@ pub fn has_regular_lossless_edge_dominator(g: &Graph) -> bool {
         let delta = g.deg[0].to_usize();
         let denom = if delta % 2 == 0 { 2 * delta - 1} else { 2 * (2 * delta - 1) };
         if n % denom != 0 {
-            panic!("Lossless edge domination only possible for Delta={} when n divides {}", delta, denom);
+            panic!("Lossless edge domination only possible for Delta={} when n divisible by {}", delta, denom);
         } else {
             let gamma_e = edge_domination_dfs(g, &mut dominator, 0, 0, n, true);
             gamma_e == delta * n / (2 * (2 * delta - 1))

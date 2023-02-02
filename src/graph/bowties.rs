@@ -1,13 +1,16 @@
 use crate::graph::*;
 use rand::prelude::SliceRandom;
 
-pub fn new_bowties(scale: usize) -> Graph {
-    let n = scale * 10;
-    let num_bowties = scale * 3;
+pub fn new_bowties(scale: usize, degree: Degree) -> Graph {
+    let d = degree.to_usize();
+    let mult = ((d % 2) + 1) * (2 * d - 1);
+    let n = scale * mult;
+    let num_bowties = scale * (d / (2 - (d % 2)));
     let mut rng = thread_rng();
+    let threads = 2 * (d - 1);
 
-    let mut vert_pars = vec![vec![0; num_bowties]; 4];
-    for i in 0..4 {
+    let mut vert_pars = vec![vec![0; num_bowties]; threads];
+    for i in 0..threads {
         vert_pars[i] = (0..num_bowties).collect();
         vert_pars[i].shuffle(&mut rng);
     }
@@ -20,18 +23,18 @@ pub fn new_bowties(scale: usize) -> Graph {
         adj_list[2 * i + 1].push(2 * i);
     }
 
-    for part in 0..4 {
+    for part in 0..threads {
         for i in 0..num_bowties {
             let bowtie = vert_pars[part][i];
             let u = 2 * bowtie + (part % 2);
             adj_list[vert].push(u);
             adj_list[u].push(vert);
             count += 1;
-            if count % 3 == 0 {
+            if count % d == 0 {
                 vert += 1;
             }
         }
     }
 
-    Graph::of_adj_list(adj_list, Random(RandomConstructor::Bowties(scale)))
+    Graph::of_adj_list(adj_list, Random(RandomConstructor::Bowties(scale, degree)))
 }
