@@ -36,6 +36,7 @@ pub enum BoolOperation {
     IsRegular,
     BunkbedDiffsAllUnimodal,
     HasRegularLosslessEdgeDominator,
+    IsDominationNumberAtLeast(usize),
 }
 
 impl NumToBoolInfix {
@@ -100,6 +101,9 @@ impl BoolOperation {
                         BoolOperation::of_string_result(args[0]).map(|op|
                             Not(Box::new(op)))
                     }
+                    "domination_number_at_least" | "gamma_at_least" => {
+                        Some(IsDominationNumberAtLeast(args[0].parse().unwrap()))
+                    }
                     "is_connected" | "connected" => Some(IsConnected),
                     "has_long_monotone" | "has_monot" | "is_monot" => Some(HasLongMonotone),
                     "has_interval_coloring" | "has_interval" => Some(HasIntervalColoring),
@@ -148,12 +152,18 @@ impl fmt::Display for BoolOperation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use BoolOperation::*;
         let name = match self {
-            IntInfix(infix, op1, op2) => 
-                format!("Is ({}) {} ({})", *op1, *infix, *op2),
-            FloatInfix(infix, op1, op2) => 
-                format!("Is ({}) {} ({})", *op1, *infix, *op2),
-            BoolInfix(infix, op1, op2) =>
-                format!("({}) {} ({})", *op1, *infix, *op2),
+            IntInfix(infix, op1, op2) => {
+                format!("Is ({}) {} ({})", *op1, *infix, *op2)
+            }
+            FloatInfix(infix, op1, op2) => {
+                format!("Is ({}) {} ({})", *op1, *infix, *op2)
+            }
+            BoolInfix(infix, op1, op2) => {
+                format!("({}) {} ({})", *op1, *infix, *op2)
+            }
+            IsDominationNumberAtLeast(lower_bound) => {
+                format!("Is the domination number at least {}", lower_bound)
+            }
             Not(op) => format!("Not ({})", *op),
             Const(val) => format!("Constant ({})", val),
             IsConnected => "Is connected".to_owned(),

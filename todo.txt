@@ -28,12 +28,6 @@
  - Print all the various operations.
  - And write code to do this automatically so it doesn't need maintaining.
 
- == EDGE DOMINATION VS DOMINATION
- - Add lossless edge domination graph; random construction from bowties
- - Then test domination numbers on these of size 40 and 50.
- -- This means 12 and 15 bowties
- - Call graph bowtie_aggregate or something.
-
 == BOOL COMMANDS ==
 - is_k_connected
 
