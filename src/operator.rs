@@ -104,13 +104,19 @@ impl Operator {
     pub fn operate_bool(&mut self, g: &Graph, operation: &BoolOperation) -> bool {
         use BoolOperation::*;
         match operation {
-            IntInfix(infix, op1, op2) => 
-                self.operate_int_to_bool_infix(g, infix, op1, op2),
-            FloatInfix(infix, op1, op2) => 
-                self.operate_float_to_bool_infix(g, infix, op1, op2),
-            BoolInfix(infix, op1, op2) => 
-                self.operate_bool_to_bool_infix(g, infix, op1, op2),
+            IntInfix(infix, op1, op2) => {
+                self.operate_int_to_bool_infix(g, infix, op1, op2)
+            }
+            FloatInfix(infix, op1, op2) => {
+                self.operate_float_to_bool_infix(g, infix, op1, op2)
+            }
+            BoolInfix(infix, op1, op2) => {
+                self.operate_bool_to_bool_infix(g, infix, op1, op2)
+            }
             Not(op) => !self.operate_bool(g, op),
+            IsDominationNumberAtLeast(lower_bound) => {
+                domination::is_domination_number_at_least(g, *lower_bound)
+            }
             Const(val) => *val,
             IsConnected => g.is_connected(),
             HasLongMonotone => monotone::has_long_monotone(g),
