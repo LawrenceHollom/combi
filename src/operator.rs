@@ -146,6 +146,7 @@ impl Operator {
                     Ratio => par1 / par2,
                 }
             }
+            DominationRedundancy => domination::domination_redundancy(g),
         }
     }
 

@@ -18,6 +18,7 @@ pub enum RationalOperation {
     OfInt(IntOperation),
     OfBool(Box<BoolOperation>),
     Arithmetic(ArithmeticOperation, Box<RationalOperation>, Box<RationalOperation>),
+    DominationRedundancy,
 }
 
 impl RationalOperation {
@@ -42,7 +43,13 @@ impl RationalOperation {
                 };
                 arith.and_then(|op| Self::wrap_arithmetic(op, par1, par2))
             }
-            None => IntOperation::of_string_result(text).map(RationalOperation::OfInt),
+            None => {
+                use RationalOperation::*;
+                match text {
+                    "domination_redundancy" | "gamma_red" => Some(DominationRedundancy),
+                    &_ => IntOperation::of_string_result(text).map(OfInt),
+                }
+            }
         }
     }
 }
@@ -67,6 +74,7 @@ impl fmt::Display for RationalOperation {
             OfBool(op) => format!("Of Bool ({})", op),
             OfInt(op) => format!("{}", op),
             Arithmetic(arith, op1, op2) => format!("({}) {} ({})", *op1, arith, *op2),
+            DominationRedundancy => "Domination redundancy ratio".to_owned(),
         };
         write!(f, "{}", name)
     }

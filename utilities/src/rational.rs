@@ -27,6 +27,10 @@ impl Rational {
         Rational { numerator: val, denominator: 1 }
     }
 
+    pub fn new_fraction(numer: usize, denom: usize) -> Rational {
+        Rational { numerator: numer as i64, denominator: denom as u64 }.normalised()
+    }
+
     fn normalised(&self) -> Rational {
         let gcd = gcd_iu(self.numerator, self.denominator);
         Rational { numerator: self.numerator / (gcd as i64), denominator: self.denominator / gcd }

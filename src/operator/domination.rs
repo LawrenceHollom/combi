@@ -1,6 +1,7 @@
 use crate::graph::*;
 
 use utilities::*;
+use utilities::rational::*;
 
 fn get_nbhd_code(g: &Graph, v: usize) -> u128 {
     let mut dominion = 1 << v;
@@ -11,7 +12,8 @@ fn get_nbhd_code(g: &Graph, v: usize) -> u128 {
 }
 
 // use u128s to do domination considerations.
-fn min_dominator_bfs(g: &Graph, dominator: &mut Vec<bool>, num_picked: usize, last_pick: usize, best_set: usize, lower_bound: Option<usize>) -> usize {
+fn min_dominator_bfs(g: &Graph, dominator: &mut Vec<bool>, best_dominator: &mut Vec<bool>, 
+        num_picked: usize, last_pick: usize, best_set: usize, lower_bound: Option<usize>) -> usize {
     let n = g.n.to_usize();
     if num_picked >= best_set {
         return best_set;
@@ -28,7 +30,11 @@ fn min_dominator_bfs(g: &Graph, dominator: &mut Vec<bool>, num_picked: usize, la
         }
     }
     if dominion == everything {
-        // We cover everything, so this is a dominating set.
+        // We cover everything, so this is a dominating set setting a new record.
+        // Store it in best_dominator
+        for (i, dom) in dominator.iter().enumerate() {
+            best_dominator[i] = *dom;
+        }
         if n >= 50 {
             // Keep track of output when n is large
             println!("Found better! {}", num_picked);
@@ -72,7 +78,7 @@ fn min_dominator_bfs(g: &Graph, dominator: &mut Vec<bool>, num_picked: usize, la
         }
         if is_worth_adding {
             dominator[vert] = true;
-            let value = min_dominator_bfs(g, dominator, num_picked + 1, vert, new_best_set, lower_bound);
+            let value = min_dominator_bfs(g, dominator, best_dominator, num_picked + 1, vert, new_best_set, lower_bound);
             if value < new_best_set {
                 new_best_set = value;
             }
@@ -123,10 +129,11 @@ fn dominate_greedy(g: &Graph) -> usize {
 pub fn domination_number(g: &Graph) -> u32 {
     let n = g.n.to_usize();
     let mut dominator = vec![false; n];
+    let mut best_dominator = vec![false; n];
     let mut number = dominate_greedy(g);
     for i in 0..n {
         dominator[i] = true;
-        let this_number = min_dominator_bfs(g, &mut dominator, 1, i, number, None);
+        let this_number = min_dominator_bfs(g, &mut dominator, &mut best_dominator, 1, i, number, None);
         if this_number < number {
             number = this_number;
         }
@@ -139,19 +146,43 @@ pub fn domination_number(g: &Graph) -> u32 {
 pub fn is_domination_number_at_least(g: &Graph, lower_bound: usize) -> bool {
     let n = g.n.to_usize();
     let mut dominator = vec![false; n];
+    let mut best_dominator = vec![false; n];
     let mut number = dominate_greedy(g);
     'test_start: for i in 0..n {
         if number < lower_bound {
             break 'test_start;
         }
         dominator[i] = true;
-        let this_number = min_dominator_bfs(g, &mut dominator, 1, i, number, Some(lower_bound));
+        let this_number = min_dominator_bfs(g, &mut dominator, &mut best_dominator, 1, i, number, Some(lower_bound));
         if this_number < number {
             number = this_number;
         }
         dominator[i] = false;
     }
     number >= lower_bound
+}
+
+pub fn domination_redundancy(g: &Graph) -> Rational {
+    let n = g.n.to_usize();
+    let mut dominator = vec![false; n];
+    let mut best_dominator = vec![false; n];
+    let mut number = dominate_greedy(g);
+    for i in 0..n {
+        dominator[i] = true;
+        let this_number = min_dominator_bfs(g, &mut dominator, &mut best_dominator, 1, i, number, None);
+        if this_number < number {
+            number = this_number;
+        }
+        dominator[i] = false;
+    }
+    // now compute the domination redundancy with the best_dominator
+    let mut dominations = 0;
+    for (i, is_dominating) in best_dominator.iter().enumerate() {
+        if *is_dominating {
+            dominations += g.deg[i].to_usize() + 1;
+        }
+    }
+    Rational::new_fraction(dominations, n)
 }
 
 fn edge_domination_dfs(g: &Graph, dominator: &mut Vec<bool>, num_picked: usize, min_pick: usize, best_set: usize, lossless: bool) -> usize {
