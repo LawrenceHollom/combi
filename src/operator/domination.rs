@@ -169,12 +169,13 @@ pub fn domination_redundancy(g: &Graph) -> Rational {
     let mut number = dominate_greedy(g);
     for i in 0..n {
         dominator[i] = true;
-        let this_number = min_dominator_bfs(g, &mut dominator, &mut best_dominator, 1, i, number, None);
+        let this_number = min_dominator_bfs(g, &mut dominator, &mut best_dominator, 1, i, number + 1, None);
         if this_number < number {
             number = this_number;
         }
         dominator[i] = false;
     }
+    println!("best_dominator: {:?}", best_dominator);
     // now compute the domination redundancy with the best_dominator
     let mut dominations = 0;
     for (i, is_dominating) in best_dominator.iter().enumerate() {
@@ -182,7 +183,7 @@ pub fn domination_redundancy(g: &Graph) -> Rational {
             dominations += g.deg[i].to_usize() + 1;
         }
     }
-    Rational::new_fraction(dominations, n)
+    Rational::new_fraction(dominations, n) - Rational::ONE
 }
 
 fn edge_domination_dfs(g: &Graph, dominator: &mut Vec<bool>, num_picked: usize, min_pick: usize, best_set: usize, lossless: bool) -> usize {
