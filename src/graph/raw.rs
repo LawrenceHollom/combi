@@ -1,5 +1,26 @@
 use crate::graph::*;
 
+pub fn new_cube(dimension: usize) -> Graph {
+    let n = 2_u32.pow(dimension as u32) as usize;
+    let mut adj_list: Vec<Vec<usize>> = vec![vec![]; n];
+
+    for i in 0..(n-1) {
+        for j in (i+1)..n {
+            let mut delta = i ^ j;
+            while delta % 2 == 0 {
+                delta /= 2;
+            }
+            if delta == 1 {
+                // They are adjacent in the cube.
+                adj_list[i].push(j);
+                adj_list[j].push(i);
+            }
+        }
+    }
+    
+    Graph::of_adj_list(adj_list, Raw(Cube(dimension)))
+}
+
 pub fn new_fano_plane() -> Graph {
     let adj_list: Vec<Vec<usize>> = vec![vec![1, 5, 6], vec![0, 2, 3, 5, 6], vec![1, 3, 6], 
         vec![1, 2, 4, 5, 6], vec![3, 5, 6], vec![0, 1, 3, 4, 6], vec![0, 1, 2, 3, 4, 5]];
@@ -10,12 +31,6 @@ pub fn new_petersen() -> Graph {
     let adj_list: Vec<Vec<usize>> = vec![vec![1, 4, 5], vec![0, 2, 6], vec![1, 3, 7], vec![2, 4, 8], vec![0, 3, 9],
         vec![0, 7, 8], vec![1, 8, 9], vec![2, 5, 9], vec![3, 5, 6], vec![4, 6, 7]];
     Graph::of_adj_list(adj_list, Raw(Petersen))
-}
-
-pub fn new_cube() -> Graph {
-    let adj_list: Vec<Vec<usize>> = vec![vec![1, 3, 4], vec![0, 2, 5], vec![1, 3, 6], 
-        vec![2, 0, 7], vec![0, 5, 7], vec![1, 4, 6], vec![2, 5, 7], vec![3, 4, 6]];
-    Graph::of_adj_list(adj_list, Raw(Cube))
 }
 
 pub fn new_octahedron() -> Graph {

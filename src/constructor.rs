@@ -30,9 +30,9 @@ pub enum RawConstructor {
     Path(Order),
     Star(Order),
     Empty(Order),
+    Cube(usize),
     FanoPlane,
     Petersen,
-    Cube,
     Octahedron,
     Icosahedron,
     Dodecahedron,
@@ -112,9 +112,9 @@ impl Constructor {
             "path" | "p" => Raw(Path(Order::of_string(args[0]))),
             "star" | "s" => Raw(Star(Order::of_string(args[0]))),
             "empty" | "e" => Raw(Empty(Order::of_string(args[0]))),
+            "cube" | "hypercube" => Raw(Cube(args[0].parse().unwrap())),
             "fano" => Raw(FanoPlane),
             "petersen" => Raw(Petersen),
-            "cube" | "Eu8" => Raw(Cube),
             "octahedron" | "Eu6" => Raw(Octahedron),
             "icosahedron" | "Eu12" => Raw(Icosahedron),
             "dodecahedron" | "Eu20" => Raw(Icosahedron),
@@ -213,9 +213,11 @@ impl fmt::Display for RawConstructor {
             Empty(order) => {
                 write!(f, "Empty of order {}", order)
             },
+            Cube(dimension) => {
+                write!(f, "The Cube of dimension {}", dimension)
+            }
             FanoPlane => write!(f, "The Fano plane"),
             Petersen => write!(f, "The Petersen graph"),
-            Cube => write!(f, "The Cube"),
             Octahedron => write!(f, "The Octahedron"),
             Icosahedron => write!(f, "The Icosahedron"),
             Dodecahedron => write!(f, "The Dodecahedron"),

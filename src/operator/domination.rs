@@ -131,6 +131,10 @@ pub fn domination_number(g: &Graph) -> u32 {
     let mut dominator = vec![false; n];
     let mut best_dominator = vec![false; n];
     let mut number = dominate_greedy(g);
+    if n >= 60 {
+        // Too big to ever realistically finish, so might as well fail verbosely
+        println!("Starting! Greedy: {}", number);
+    }
     for i in 0..n {
         dominator[i] = true;
         let this_number = min_dominator_bfs(g, &mut dominator, &mut best_dominator, 1, i, number, None);
@@ -175,7 +179,6 @@ pub fn domination_redundancy(g: &Graph) -> Rational {
         }
         dominator[i] = false;
     }
-    println!("best_dominator: {:?}", best_dominator);
     // now compute the domination redundancy with the best_dominator
     let mut dominations = 0;
     for (i, is_dominating) in best_dominator.iter().enumerate() {
