@@ -122,9 +122,6 @@ pub fn interesting_configurations(g: &Graph, u: usize, print_size: Option<usize>
     fn is_present(x: usize, y: usize, n: usize, indexer: &Vec<usize>, config: u64) -> bool {
         (config >> indexer[encode(x, y, n)]) % 2 == 1
     }
-    fn is_edge_suppd (x: usize, y: usize, g_n: usize, indexer: &Vec<usize>, config: u64) -> bool {
-        !(is_present(x, y, 2 * g_n, indexer, config) ^ is_present(x + g_n, y + g_n, 2 * g_n, indexer, config))
-    }
     let mut num_interesting = 0;
     let mut num_positive = 0;
     let mut edge_count: Vec<i32> = vec![0; m];
@@ -135,7 +132,7 @@ pub fn interesting_configurations(g: &Graph, u: usize, print_size: Option<usize>
     for i in 0..(n-1) {
         for j in (i+1)..n {
             if bunkbed.adj[i][j] {
-                print!("({} ~ {}) ", i, j);
+                print!("{} ~ {},", i, j);
             }
         }
     }
@@ -179,16 +176,6 @@ pub fn interesting_configurations(g: &Graph, u: usize, print_size: Option<usize>
                 }
                 sta /= 2;
             }
-            if m < 20 && print_size.map_or(true, |x| x == num_open_edges) {
-                for i in 0..(n-1) {
-                    for j in (i+1)..n {
-                        if bunkbed.adj[i][j] {
-                            print!("(  {}  ) ", if is_present(i, j, n, &indexer, config) { 1 } else { 0 });
-                        }
-                    }
-                }
-                println!(": {}", sign);
-            }
             edge_count[num_open_edges] += sign;
             if sign == 1 {
                 positive_edge_count[num_open_edges] += 1;
@@ -199,11 +186,13 @@ pub fn interesting_configurations(g: &Graph, u: usize, print_size: Option<usize>
             q = queue![];
             let mut g_connected = vec![false; g_n];
             g_connected[0] = true;
-            let _ = q.add(0);
+            if !is_present(0, g_n, n, &indexer, config) {
+                let _ = q.add(0);
+            }
             while q.size() > 0 {
                 let node = q.remove().unwrap();
                 for v in g.adj_list[node].iter() {
-                    if is_edge_suppd(node, *v, g_n, &indexer, config) && !g_connected[*v] {
+                    if !is_present(*v, g_n + *v, n, &indexer, config) && !g_connected[*v] {
                         g_connected[*v] = true;
                         let _ = q.add(*v);
                     }
@@ -214,6 +203,16 @@ pub fn interesting_configurations(g: &Graph, u: usize, print_size: Option<usize>
                     positive_unflippable_count[num_open_edges] += 1;
                 } else {
                     negative_unflippable_count[num_open_edges] += 1;
+                }
+                if m < 20 && print_size.map_or(true, |x| x == num_open_edges) {
+                    for i in 0..(n-1) {
+                        for j in (i+1)..n {
+                            if bunkbed.adj[i][j] {
+                                print!("{},", if is_present(i, j, n, &indexer, config) { 1 } else { 0 });
+                            }
+                        }
+                    }
+                    println!("{}", sign);
                 }
             }
         }
