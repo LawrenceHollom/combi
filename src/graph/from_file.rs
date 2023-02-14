@@ -3,8 +3,12 @@ use std::fs;
 use crate::graph::*;
 
 pub fn new_graph(filename: &String) -> Graph {
-    let path = format!("/mhome/damtp/q/lh569/Documents/rust/combi/manual/{}.gph", filename);
-    match fs::read_to_string(path) {
+    let mut pathbuf = std::env::current_exe().unwrap();
+    pathbuf.pop();
+    pathbuf.pop();
+    pathbuf.pop();
+    pathbuf.push(format!("manual/{}.gph", filename));
+    match fs::read_to_string(pathbuf) {
         Ok(contents) => {
             let lines = contents.trim().lines().collect::<Vec<&str>>();
             let n: usize = lines[0].parse().unwrap();
