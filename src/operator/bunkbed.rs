@@ -4,6 +4,7 @@ use crate::operator::percolate::*;
 use utilities::*;
 use utilities::polynomial::*;
 
+use std::io::*;
 use queues::*;
 
 pub fn print_polynomials(g: &Graph) {
@@ -96,10 +97,11 @@ pub fn simulate(g: &Graph) {
 
 // Computes which configurations have u-, u+ with different connectivities
 // and then prints about them.
-pub fn interesting_configurations(g: &Graph, u: usize) {
+pub fn interesting_configurations(g: &Graph, u: usize, print_size: Option<usize>) {
+    let g_n = g.n.to_usize();
     let bunkbed = g.bunkbed();
     let n = bunkbed.n.to_usize();
-    let m = g.size();
+    let m = bunkbed.size();
     fn encode(x: usize, y: usize, n: usize) -> usize {
         if x < y {
             x * n + y
@@ -109,17 +111,38 @@ pub fn interesting_configurations(g: &Graph, u: usize) {
     }
     let mut indexer: Vec<usize> = vec![0; n * n];
     let mut index = 0;
-    for (x, adj) in g.adj_list.iter().enumerate() {
+    for (x, adj) in bunkbed.adj_list.iter().enumerate() {
         for y in adj.iter() {
-            indexer[encode(x, *y, n)] = index;
-            index += 1;
+            if *y > x {
+                indexer[encode(x, *y, n)] = index;
+                index += 1;
+            }
         }
     }
     fn is_present(x: usize, y: usize, n: usize, indexer: &Vec<usize>, config: u64) -> bool {
-        (config >> indexer[encode(x, y, n)]) == 1
+        (config >> indexer[encode(x, y, n)]) % 2 == 1
+    }
+    fn is_edge_suppd (x: usize, y: usize, g_n: usize, indexer: &Vec<usize>, config: u64) -> bool {
+        !(is_present(x, y, 2 * g_n, indexer, config) ^ is_present(x + g_n, y + g_n, 2 * g_n, indexer, config))
     }
     let mut num_interesting = 0;
-    for config in 0..(2_u64.pow(m as u32)) {
+    let mut num_positive = 0;
+    let mut edge_count: Vec<i32> = vec![0; m];
+    let mut positive_edge_count: Vec<i32> = vec![0; m];
+    let mut negative_edge_count: Vec<i32> = vec![0; m];
+    let mut positive_unflippable_count: Vec<i32> = vec![0; m];
+    let mut negative_unflippable_count: Vec<i32> = vec![0; m];
+    for i in 0..(n-1) {
+        for j in (i+1)..n {
+            if bunkbed.adj[i][j] {
+                print!("({} ~ {}) ", i, j);
+            }
+        }
+    }
+    println!();
+    let iter_max = 2_u64.pow(m as u32);
+    let mut percentage = 0;
+    for config in 0..iter_max {
         // config encodes which of the edges are/are not present.
         let mut connected = vec![n; n];
         let mut q: Queue<usize> = queue![];
@@ -134,11 +157,75 @@ pub fn interesting_configurations(g: &Graph, u: usize) {
                 }
             }
         }
-        if (connected[u] == n) ^ (connected[u + g.n.to_usize()] == n) {
+        if m >= 20 && (100 * config) / iter_max > percentage {
+            percentage += 1;
+            print!("{}% ", percentage);
+            std::io::stdout().flush().unwrap();
+        }
+        fn flatten (x: usize, n: usize) -> i32 {
+            if x == n { 0 } else { 1 }
+        }
+        let sign = flatten(connected[u], n) - flatten(connected[u + g_n], n);
+        if sign != 0 {
             num_interesting += 1;
+            if sign == 1 {
+                num_positive += 1;
+            }
+            let mut num_open_edges = 0;
+            let mut sta = config;
+            while sta > 0 {
+                if sta % 2 == 1 {
+                    num_open_edges += 1;
+                }
+                sta /= 2;
+            }
+            if m < 20 && print_size.map_or(true, |x| x == num_open_edges) {
+                for i in 0..(n-1) {
+                    for j in (i+1)..n {
+                        if bunkbed.adj[i][j] {
+                            print!("(  {}  ) ", if is_present(i, j, n, &indexer, config) { 1 } else { 0 });
+                        }
+                    }
+                }
+                println!(": {}", sign);
+            }
+            edge_count[num_open_edges] += sign;
+            if sign == 1 {
+                positive_edge_count[num_open_edges] += 1;
+            } else {
+                negative_edge_count[num_open_edges] += 1;
+            }
+            // now test whether it is unflippable.
+            q = queue![];
+            let mut g_connected = vec![false; g_n];
+            g_connected[0] = true;
+            let _ = q.add(0);
+            while q.size() > 0 {
+                let node = q.remove().unwrap();
+                for v in g.adj_list[node].iter() {
+                    if is_edge_suppd(node, *v, g_n, &indexer, config) && !g_connected[*v] {
+                        g_connected[*v] = true;
+                        let _ = q.add(*v);
+                    }
+                }
+            }
+            if g_connected[u] {
+                if sign == 1 {
+                    positive_unflippable_count[num_open_edges] += 1;
+                } else {
+                    negative_unflippable_count[num_open_edges] += 1;
+                }
+            }
         }
     }
     println!("Bunkbed num interesting: {}", num_interesting);
+    println!("num plus: {}, num minus: {}, num total: {}", num_positive, 
+        num_interesting - num_positive, iter_max);
+    println!("Edge count vector:   {:?}", edge_count);
+    println!("Positive edge count: {:?}", positive_edge_count);
+    println!("Negative edge count: {:?}", negative_edge_count);
+    println!("Positive unflippable count: {:?}", positive_unflippable_count);
+    println!("Negative unflippable count: {:?}", negative_unflippable_count);
 }
 
 pub fn compute_problem_cuts(g: &Graph, u: usize) {

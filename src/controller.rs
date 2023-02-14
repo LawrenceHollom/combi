@@ -116,7 +116,7 @@ impl Instruction {
         let controller = Controller::of_string(pars[0]);
         let operations = 
             if pars.len() > 1 {
-                pars[1].split(',').map(Operation::of_string).collect()
+                split_list(pars[1]).iter().map(|x| Operation::of_string(x)).collect()
             } else {
                 vec![]
             };

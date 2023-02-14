@@ -160,7 +160,7 @@ impl Operator {
             PercolationPolys => percolate::print_polynomials(g),
             BunkbedCuts(u) => bunkbed::compute_problem_cuts(g, *u),
             BunkbedDists => bunkbed::print_distance_polynomials(g),
-            BunkbedDiffs(u) => bunkbed::interesting_configurations(g, *u),
+            BunkbedDiffs(u, print_size) => bunkbed::interesting_configurations(g, *u, *print_size),
             PrintIntervalColoring => interval_coloring::print_interval_coloring(g),
             Unit => (),
         }
