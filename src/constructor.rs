@@ -112,7 +112,7 @@ impl Constructor {
             "path" | "p" => Raw(Path(Order::of_string(args[0]))),
             "star" | "s" => Raw(Star(Order::of_string(args[0]))),
             "empty" | "e" => Raw(Empty(Order::of_string(args[0]))),
-            "cube" | "hypercube" => Raw(Cube(args[0].parse().unwrap())),
+            "cube" | "hypercube" | "q" => Raw(Cube(args[0].parse().unwrap())),
             "fano" => Raw(FanoPlane),
             "petersen" => Raw(Petersen),
             "octahedron" | "Eu6" => Raw(Octahedron),

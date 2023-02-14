@@ -94,6 +94,53 @@ pub fn simulate(g: &Graph) {
     }
 }
 
+// Computes which configurations have u-, u+ with different connectivities
+// and then prints about them.
+pub fn interesting_configurations(g: &Graph, u: usize) {
+    let bunkbed = g.bunkbed();
+    let n = bunkbed.n.to_usize();
+    let m = g.size();
+    fn encode(x: usize, y: usize, n: usize) -> usize {
+        if x < y {
+            x * n + y
+        } else {
+            y * n + x
+        }
+    }
+    let mut indexer: Vec<usize> = vec![0; n * n];
+    let mut index = 0;
+    for (x, adj) in g.adj_list.iter().enumerate() {
+        for y in adj.iter() {
+            indexer[encode(x, *y, n)] = index;
+            index += 1;
+        }
+    }
+    fn is_present(x: usize, y: usize, n: usize, indexer: &Vec<usize>, config: u64) -> bool {
+        (config >> indexer[encode(x, y, n)]) == 1
+    }
+    let mut num_interesting = 0;
+    for config in 0..(2_u64.pow(m as u32)) {
+        // config encodes which of the edges are/are not present.
+        let mut connected = vec![n; n];
+        let mut q: Queue<usize> = queue![];
+        connected[0] = 0;
+        let _ = q.add(0);
+        while q.size() > 0 {
+            let node = q.remove().unwrap();
+            for v in bunkbed.adj_list[node].iter() {
+                if is_present(node, *v, n, &indexer, config) && connected[*v] == n {
+                    connected[*v] = connected[node] + 1;
+                    let _ = q.add(*v);
+                }
+            }
+        }
+        if (connected[u] == n) ^ (connected[u + g.n.to_usize()] == n) {
+            num_interesting += 1;
+        }
+    }
+    println!("Bunkbed num interesting: {}", num_interesting);
+}
+
 pub fn compute_problem_cuts(g: &Graph, u: usize) {
     let n = g.n.to_usize();
 

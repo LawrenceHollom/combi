@@ -11,6 +11,7 @@ pub enum UnitOperation {
     PercolationPolys,
     BunkbedCuts(usize),
     BunkbedDists,
+    BunkbedDiffs(usize),
     PrintIntervalColoring,
     Unit,
 }
@@ -27,6 +28,7 @@ impl UnitOperation {
             "percolate" => Some(PercolationPolys),
             "bunkbed_cut" | "bunkbed_cuts" => Some(BunkbedCuts(args[0].parse().unwrap())),
             "bunkbed_dists" => Some(BunkbedDists),
+            "bunkbed_diffs" => Some(BunkbedDiffs(args[0].parse().unwrap())),
             "print_interval" | "interval" => Some(PrintIntervalColoring),
             "()" => Some(Unit),
             &_ => None,
@@ -46,6 +48,7 @@ impl fmt::Display for UnitOperation {
             PercolationPolys => "Percolate",
             BunkbedCuts(u) => { str = format!("Bunkbed cuts to {}", *u); &str }
             BunkbedDists => "Bunkbed distance-bounded polynomials",
+            BunkbedDiffs(_u) => "Print info about interesting bunkbed configs",
             PrintIntervalColoring => "Print an interval coloring (if exists)",
             Unit => "Do nothing",
         };
