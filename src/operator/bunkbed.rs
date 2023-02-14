@@ -204,7 +204,7 @@ pub fn interesting_configurations(g: &Graph, u: usize, print_size: Option<usize>
                 } else {
                     negative_unflippable_count[num_open_edges] += 1;
                 }
-                if m < 20 && print_size.map_or(true, |x| x == num_open_edges) {
+                if print_size.map_or(m < 20, |x| x == num_open_edges) {
                     for i in 0..(n-1) {
                         for j in (i+1)..n {
                             if bunkbed.adj[i][j] {

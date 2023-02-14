@@ -13,16 +13,11 @@
 
  == BUNKBEDS ==
   - The code is very (very) slow, and naive. Should be some wins to be had in terms of speed
-  - Add option to bunkbed sim to choose level of precision (maybe as a power of 2 or something)
-  - Test hypothesis about number of ways with paths of length bdd by given even extra dist
+  - Add some way to automatically assess the injectiveness of the stuff from bunkbed_diffs.
 
  == BUGS ==
  - Maybe ->() has stopped working? Gets picked up as infix-like
  - sink(domination>10) doesn't trip on E(11)
-
- == INTERVAL COLOURINGS ==
- - This is slow; can't run K(7) in about a minute (then gave up)
- - Seems to be some threshold number of edges where it gets very slow.
 
  == HELP COMMAND ==
  - Print all the various operations.
