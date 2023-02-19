@@ -23,6 +23,7 @@ pub enum IntOperation {
     MaxInducedForest,
     MinDegree,
     MaxDegree,
+    Connectedness,
     Number(u32),
 }
 
@@ -51,6 +52,7 @@ impl IntOperation {
             "max_induced_forest" | "max_forest" => Some(MaxInducedForest),
             "min_degree" | "min" => Some(MinDegree),
             "max_degree" | "max" | "delta" => Some(MaxDegree),
+            "connectedness" => Some(Connectedness),
             str => str.parse().ok().map(Number),
         }
     }
@@ -82,6 +84,7 @@ impl fmt::Display for IntOperation {
             MaxInducedForest => "Order of largest induced forest",
             MinDegree => "Min degree",
             MaxDegree => "Max degree",
+            Connectedness => "Connectedness",
             Number(n) => {
                 sta = n.to_string();
                 sta.as_str()

@@ -10,6 +10,7 @@ mod girth;
 mod interval_coloring;
 mod planar;
 mod induced_forest;
+mod connectedness;
 
 use std::collections::HashMap;
 
@@ -55,6 +56,7 @@ impl Operator {
                     MaxInducedForest => induced_forest::max_induced_forest(g),
                     MinDegree => g.min_degree(),
                     MaxDegree => g.max_degree(),
+                    Connectedness => connectedness::connectedness(g),
                     Number(k) => *k,
                 };
                 self.previous_values.insert(*operation, value);
@@ -125,6 +127,7 @@ impl Operator {
             IsRegular => g.is_regular(),
             BunkbedDiffsAllUnimodal => bunkbed::are_all_diffs_unimodal(g),
             HasRegularLosslessEdgeDominator => domination::has_regular_lossless_edge_dominator(g),
+            IsKConnected(connectivity) => connectedness::is_k_connected(g, *connectivity),
         }
     }
 
