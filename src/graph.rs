@@ -15,6 +15,7 @@ mod random_regular_bipartite;
 mod tree;
 mod raw;
 mod bowties;
+mod regular;
 
 pub struct Graph {
     pub n: Order,
@@ -497,6 +498,7 @@ impl Graph {
             Random(Triangulation(order)) => random_planar::new_triangulation(order),
             Random(MaximalPlanar(order)) => random_planar::new_maximal(order),
             Random(Bowties(scale, degree)) => bowties::new_bowties(*scale, *degree),
+            Random(Regular(order, degree)) => regular::new_regular(order, degree),
             Raw(Grid(height, width)) => grid::new(height, width),
             Raw(Complete(order)) => Graph::new_complete(order),
             Raw(Cyclic(order)) => Graph::new_cyclic(order),

@@ -20,6 +20,7 @@ pub enum RandomConstructor {
     Triangulation(Order),
     MaximalPlanar(Order),
     Bowties(usize, Degree),
+    Regular(Order, Degree),
 }
 
 #[derive(Copy, Clone)]
@@ -104,6 +105,10 @@ impl Constructor {
                 let degree = if args.len() > 1 { args[1].parse().unwrap() } else { 3 };
                 Random(Bowties(args[0].parse().unwrap(), Degree::of_usize(degree)))
             }
+            "regular" => {
+                let degree = Degree::of_string(args[1]);
+                Random(Regular(Order::of_string(args[0]), degree))
+            }
             "grid" => {
                 Raw(Grid(Order::of_string(args[0]), Order::of_string(args[1])))
             },
@@ -186,6 +191,9 @@ impl fmt::Display for RandomConstructor {
                 let d = degree.to_usize();
                 let mult = if d % 2 == 0 { d / 2 } else { d };
                 write!(f, "Amalgamation of {} bowties of degree {}", mult * *scale, degree)
+            }
+            Regular(order, degree) => {
+                write!(f, "Random regular graph of order {} and degree {}", *order, *degree)
             }
         }
     }
