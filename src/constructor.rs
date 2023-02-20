@@ -33,7 +33,7 @@ pub enum RawConstructor {
     Empty(Order),
     Cube(usize),
     FanoPlane,
-    Petersen,
+    Petersen(usize, usize),
     Octahedron,
     Icosahedron,
     Dodecahedron,
@@ -119,7 +119,15 @@ impl Constructor {
             "empty" | "e" => Raw(Empty(Order::of_string(args[0]))),
             "cube" | "hypercube" | "q" => Raw(Cube(args[0].parse().unwrap())),
             "fano" => Raw(FanoPlane),
-            "petersen" => Raw(Petersen),
+            "petersen" => {
+                if args.len() >= 2 {
+                    Raw(Petersen(args[0].parse().unwrap(), args[1].parse().unwrap()))
+                } else if args.len() >= 1 {
+                    Raw(Petersen(args[0].parse().unwrap(), 2))
+                } else {
+                    Raw(Petersen(5, 2))
+                }
+            }
             "octahedron" | "Eu6" => Raw(Octahedron),
             "icosahedron" | "Eu12" => Raw(Icosahedron),
             "dodecahedron" | "Eu20" => Raw(Dodecahedron),
@@ -225,7 +233,7 @@ impl fmt::Display for RawConstructor {
                 write!(f, "The Cube of dimension {}", dimension)
             }
             FanoPlane => write!(f, "The Fano plane"),
-            Petersen => write!(f, "The Petersen graph"),
+            Petersen(cycles, skip) => write!(f, "The Petersen graph on {}-cycles with {}-skip", cycles, skip),
             Octahedron => write!(f, "The Octahedron"),
             Icosahedron => write!(f, "The Icosahedron"),
             Dodecahedron => write!(f, "The Dodecahedron"),

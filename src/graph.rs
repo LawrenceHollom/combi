@@ -507,7 +507,7 @@ impl Graph {
             Raw(Empty(order)) => Graph::new_empty(order),
             Raw(Cube(dimension)) => raw::new_cube(*dimension),
             Raw(FanoPlane) => raw::new_fano_plane(),
-            Raw(Petersen) => raw::new_petersen(),
+            Raw(Petersen(cycles, skip)) => raw::new_petersen(*cycles, *skip),
             Raw(Octahedron) => raw::new_octahedron(),
             Raw(Icosahedron) => raw::new_icosahedron(),
             Raw(Dodecahedron) => raw::new_dodecahedron(),

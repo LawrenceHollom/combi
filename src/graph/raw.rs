@@ -27,10 +27,20 @@ pub fn new_fano_plane() -> Graph {
     Graph::of_adj_list(adj_list, Raw(FanoPlane))
 }
 
-pub fn new_petersen() -> Graph {
-    let adj_list: Vec<Vec<usize>> = vec![vec![1, 4, 5], vec![0, 2, 6], vec![1, 3, 7], vec![2, 4, 8], vec![0, 3, 9],
-        vec![0, 7, 8], vec![1, 8, 9], vec![2, 5, 9], vec![3, 5, 6], vec![4, 6, 7]];
-    Graph::of_adj_list(adj_list, Raw(Petersen))
+pub fn new_petersen(cycles: usize, skip: usize) -> Graph {
+    let mut adj_list: Vec<Vec<usize>> = vec![vec![]; 2 * cycles];
+    for i in 0..cycles {
+        let j = (i + 1) % cycles;
+        let k = (i + skip) % cycles;
+        adj_list[i].push(j);
+        adj_list[j].push(i);
+        adj_list[i].push(i + cycles);
+        adj_list[i + cycles].push(i);
+        adj_list[i + cycles].push(k + cycles);
+        adj_list[k + cycles].push(i + cycles);
+
+    }
+    Graph::of_adj_list(adj_list, Raw(Petersen(cycles, skip)))
 }
 
 pub fn new_octahedron() -> Graph {
