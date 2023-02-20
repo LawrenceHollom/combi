@@ -122,7 +122,7 @@ impl Constructor {
             "petersen" => Raw(Petersen),
             "octahedron" | "Eu6" => Raw(Octahedron),
             "icosahedron" | "Eu12" => Raw(Icosahedron),
-            "dodecahedron" | "Eu20" => Raw(Icosahedron),
+            "dodecahedron" | "Eu20" => Raw(Dodecahedron),
             str => File(str.to_owned()),
         }
     }
