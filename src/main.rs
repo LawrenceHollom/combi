@@ -12,13 +12,15 @@ use controller::*;
 
 fn main() {
     env::set_var("RUST_BACKTRACE", "1");
-    println!("Enter instruction:");
-    let mut text = String::new();
-    io::stdin().read_line(&mut text).expect("Failed to read line");
-    let start_time = SystemTime::now();
-    let instruction = Instruction::of_string(&text);
-    println!("Instruction constructed!\n{},\nTime: {}", instruction, start_time.elapsed().unwrap().as_millis());
+    loop {
+        println!("Enter instruction:");
+        let mut text = String::new();
+        io::stdin().read_line(&mut text).expect("Failed to read line");
+        let start_time = SystemTime::now();
+        let instruction = Instruction::of_string(&text);
+        println!("Instruction constructed!\n{},\nTime: {}", instruction, start_time.elapsed().unwrap().as_millis());
 
-    instruction.execute();
-    println!("Finished! Time (s): {}", start_time.elapsed().unwrap().as_secs())
+        instruction.execute();
+        println!("Finished! Time (s): {}", start_time.elapsed().unwrap().as_secs())
+    }
 }
