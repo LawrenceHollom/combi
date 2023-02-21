@@ -6,14 +6,11 @@
  - Maybe add option for increasing by number of edges or something
  - test with sink((size>0)&&(theta>=acyclic)) -> halts at n=15
  - Test fewer graphs for the very big n -> if more than 1000 then filter randomly
+ - Only run arrow commands on successful graphs (as in until)
 
  == HOUSE OF GRAPHS ==
  - Have a new kitchen sink option for smashing through houseofgraphs
  -- Work this in with the old one in some sensible way.
-
- == UNTIL ==
- - Rework so that each failed iteration prints out only the things it has computed anyway
- - Final successful graph should print out all the arrow operators.
 
  == ITERATOR ==
  - Detect identical nodes in graphs and iterate over subsets more efficiently
