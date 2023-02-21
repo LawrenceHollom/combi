@@ -5,7 +5,7 @@ use utilities::parse_infix_like;
 use crate::operation::bool_operation::*;
 use crate::operation::int_operation::*;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Eq, Hash, PartialEq, Clone, Copy, Debug)]
 pub enum ArithmeticOperation {
     Sum,
     Difference,
@@ -13,7 +13,7 @@ pub enum ArithmeticOperation {
     Ratio,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Eq, Hash, PartialEq, Clone, Debug)]
 pub enum RationalOperation {
     OfInt(IntOperation),
     OfBool(Box<BoolOperation>),

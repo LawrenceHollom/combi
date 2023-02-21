@@ -25,13 +25,14 @@ use crate::operation::int_operation::*;
 use crate::operation::unit_operation::*;
 
 pub struct Operator {
-    previous_values: HashMap<IntOperation, u32>
+    previous_int_values: HashMap<IntOperation, u32>,
+    previous_bool_values: HashMap<BoolOperation, bool>,
 }
 
 impl Operator {
     fn operate_int(&mut self, g: &Graph, operation: &IntOperation) -> u32 {
         use IntOperation::*;
-        match self.previous_values.get(operation) {
+        match self.previous_int_values.get(operation) {
             Some(value) => *value,
             None => {
                 let value = match operation {
@@ -59,7 +60,7 @@ impl Operator {
                     Connectedness => connectedness::connectedness(g),
                     Number(k) => *k,
                 };
-                self.previous_values.insert(*operation, value);
+                self.previous_int_values.insert(*operation, value);
                 value
             }
         }
@@ -105,29 +106,36 @@ impl Operator {
 
     pub fn operate_bool(&mut self, g: &Graph, operation: &BoolOperation) -> bool {
         use BoolOperation::*;
-        match operation {
-            IntInfix(infix, op1, op2) => {
-                self.operate_int_to_bool_infix(g, infix, op1, op2)
+        match self.previous_bool_values.get(operation) {
+            Some(value) => *value,
+            None => {
+                let value = match operation {
+                    IntInfix(infix, op1, op2) => {
+                        self.operate_int_to_bool_infix(g, infix, op1, op2)
+                    }
+                    FloatInfix(infix, op1, op2) => {
+                        self.operate_float_to_bool_infix(g, infix, op1, op2)
+                    }
+                    BoolInfix(infix, op1, op2) => {
+                        self.operate_bool_to_bool_infix(g, infix, op1, op2)
+                    }
+                    Not(op) => !self.operate_bool(g, op),
+                    IsDominationNumberAtLeast(lower_bound) => {
+                        domination::is_domination_number_at_least(g, *lower_bound)
+                    }
+                    Const(val) => *val,
+                    IsConnected => g.is_connected(),
+                    HasLongMonotone => monotone::has_long_monotone(g),
+                    HasIntervalColoring => interval_coloring::has_interval_coloring(g),
+                    IsPlanar => planar::is_planar(g),
+                    IsRegular => g.is_regular(),
+                    BunkbedDiffsAllUnimodal => bunkbed::are_all_diffs_unimodal(g),
+                    HasRegularLosslessEdgeDominator => domination::has_regular_lossless_edge_dominator(g),
+                    IsKConnected(connectivity) => connectedness::is_k_connected(g, *connectivity),
+                };
+                self.previous_bool_values.insert(operation.to_owned(), value);
+                value
             }
-            FloatInfix(infix, op1, op2) => {
-                self.operate_float_to_bool_infix(g, infix, op1, op2)
-            }
-            BoolInfix(infix, op1, op2) => {
-                self.operate_bool_to_bool_infix(g, infix, op1, op2)
-            }
-            Not(op) => !self.operate_bool(g, op),
-            IsDominationNumberAtLeast(lower_bound) => {
-                domination::is_domination_number_at_least(g, *lower_bound)
-            }
-            Const(val) => *val,
-            IsConnected => g.is_connected(),
-            HasLongMonotone => monotone::has_long_monotone(g),
-            HasIntervalColoring => interval_coloring::has_interval_coloring(g),
-            IsPlanar => planar::is_planar(g),
-            IsRegular => g.is_regular(),
-            BunkbedDiffsAllUnimodal => bunkbed::are_all_diffs_unimodal(g),
-            HasRegularLosslessEdgeDominator => domination::has_regular_lossless_edge_dominator(g),
-            IsKConnected(connectivity) => connectedness::is_k_connected(g, *connectivity),
         }
     }
 
@@ -182,7 +190,20 @@ impl Operator {
         }
     }
 
+    pub fn print_all(&self) {
+        for key in self.previous_bool_values.keys() {
+            print!("({}: {}) ", *key, self.previous_bool_values.get(key).unwrap());
+        }
+        for key in self.previous_int_values.keys() {
+            print!("({}: {}) ", *key, self.previous_int_values.get(key).unwrap());
+        }
+        println!();
+    }
+
     pub fn new() -> Operator {
-        Operator { previous_values: HashMap::new() }
+        Operator { 
+            previous_int_values: HashMap::new(),
+            previous_bool_values: HashMap::new(),
+        }
     }
 }

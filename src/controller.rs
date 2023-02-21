@@ -1,5 +1,6 @@
 use std::fmt;
 use std::time::*;
+use std::io::*;
 
 use utilities::*;
 
@@ -132,24 +133,25 @@ impl Instruction {
         operations_strs.join(", ")
     }
 
-    fn execute_single_return(&self, constr: &Constructor, should_print: bool) -> (Graph, Operator) {
-        let g = Graph::new(constr);
+    fn compute_and_print(&self, g: &Graph, operator: &mut Operator) {
         let rep_start = SystemTime::now();
-        
-        let mut operator = Operator::new();
         let numbers: Vec<String> = self.operations
                 .iter()
                 .map(|op| operator.operate(&g, op))
                 .collect();
-        if should_print {
-            println!("{}: [{}], time: {}", self.operations_string(), numbers.join(", "),
-                rep_start.elapsed().unwrap().as_millis());
-        }
+        println!("{}: [{}], time: {}", self.operations_string(), numbers.join(", "),
+            rep_start.elapsed().unwrap().as_millis());
+    }
+
+    fn execute_single_return(&self, constr: &Constructor) -> (Graph, Operator) {
+        let g = Graph::new(constr);
+        let mut operator = Operator::new();
+        self.compute_and_print(&g, &mut operator);
         (g, operator)
     }
 
     fn execute_single(&self, constr: &Constructor) {
-        let _ = self.execute_single_return(constr, true);
+        let _ = self.execute_single_return(constr);
     }
 
     fn execute_reps(&self, constr: &Constructor, reps: usize) {
@@ -201,20 +203,25 @@ impl Instruction {
         while !satisfied {
             print!("{}: ", rep);
             rep += 1;
-            let (g, mut operator) = self.execute_single_return(constr, true);
+            let g = Graph::new(constr);
+            let mut operator = Operator::new();
             let mut all_satisfied = true;
-            'test_conditions: for (i, condition) in conditions.iter().enumerate() {
+            'test_conditions: for condition in conditions.iter() {
                 if operator.operate_bool(&g, condition) {
-                    print!("{} ", i);
+                    print!("X ");
+                    std::io::stdout().flush().unwrap();
+                    
                 } else {
                     all_satisfied = false;
                     break 'test_conditions;
                 }
             }
+            operator.print_all();
             if all_satisfied {
                 println!("All conditions satisfied! {:?}", conditions);
                 println!("Graph: ");
                 g.print();
+                self.compute_and_print(&g, &mut operator);
                 satisfied = true;
             }
         }
