@@ -481,6 +481,61 @@ impl Graph {
         sizes
     }
 
+    // Returns an isomorphic version of self with vertices ordered by:
+    // - Take a vertex u of min unpushed degree; push.
+    // - Push all nbrs of u.
+    // - Repeat until all vertices pushed.
+    //
+    // This will be used to try and speed up some NP-hard search algos.
+    pub fn order_by_nbhd(&self) -> Graph {
+        let n = self.n.to_usize();
+        let mut placed = vec![false; n];
+        let mut ordering: Vec<usize> = vec![];
+        let mut num_placed = 0;
+        while num_placed < n {
+            let mut min_unpushed_deg = n;
+            let mut best_vert = n;
+            for u in 0..n { 
+                if !placed[u] {
+                    let mut deg = 0;
+                    for v in self.adj_list[u].iter() {
+                        if !placed[*v] {
+                            deg += 1;
+                        }
+                    }
+                    if deg < min_unpushed_deg {
+                        min_unpushed_deg = deg;
+                        best_vert = u;
+                    }
+                }
+            }
+            placed[best_vert] = true;
+            ordering.push(best_vert);
+            num_placed += 1;
+            for v in self.adj_list[best_vert].iter() {
+                if !placed[*v] {
+                    placed[*v] = true;
+                    ordering.push(*v);
+                    num_placed += 1;
+                }
+            }
+        }
+
+        let mut ordering_inv: Vec<usize> = vec![n; n];
+
+        for i in 0..n {
+            ordering_inv[ordering[i]] = i;
+        }
+
+        let mut adj_list: Vec<Vec<usize>> = vec![vec![]; n];
+        for u in 0..n {
+            for v in self.adj_list[ordering[u]].iter() {
+                adj_list[u].push(ordering_inv[*v]);
+            }
+        }
+        Graph::of_adj_list(adj_list, self.constructor.to_owned())
+    }
+
     pub fn new(constructor: &Constructor) -> Graph {
         use Constructor::*;
         use RandomConstructor::*;

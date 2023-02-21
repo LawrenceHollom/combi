@@ -13,7 +13,8 @@ fn get_nbhd_code(g: &Graph, v: usize) -> u128 {
 
 // use u128s to do domination considerations.
 fn min_dominator_bfs(g: &Graph, dominator: &mut Vec<bool>, best_dominator: &mut Vec<bool>, 
-        num_picked: usize, last_pick: usize, best_set: usize, lower_bound: Option<usize>) -> usize {
+        num_picked: usize, last_pick: usize, best_set: usize, lower_bound: Option<usize>,
+        max_nbrs: &Vec<usize>) -> usize {
     let n = g.n.to_usize();
     if num_picked >= best_set {
         return best_set;
@@ -62,11 +63,19 @@ fn min_dominator_bfs(g: &Graph, dominator: &mut Vec<bool>, best_dominator: &mut 
     }
 
     let mut new_best_set = best_set;
+    
+    let mut minimax_undominated_nbr = n - 1;
+    for u in 0..n {
+        if (dominion >> u) % 2 == 0 && max_nbrs[u] < minimax_undominated_nbr {
+            minimax_undominated_nbr = max_nbrs[u];
+        }
+    }
 
-    for vert in (last_pick + 1)..n {
+    for vert in (last_pick + 1)..=minimax_undominated_nbr {
         let mut is_worth_adding = true;
         'test_if_worth_it: for u in (last_pick + 1)..n {
             if subdominia[vert] == 0 {
+                // vert would add nothing; give up immediately
                 is_worth_adding = false;
                 break 'test_if_worth_it;
             }
@@ -78,7 +87,7 @@ fn min_dominator_bfs(g: &Graph, dominator: &mut Vec<bool>, best_dominator: &mut 
         }
         if is_worth_adding {
             dominator[vert] = true;
-            let value = min_dominator_bfs(g, dominator, best_dominator, num_picked + 1, vert, new_best_set, lower_bound);
+            let value = min_dominator_bfs(g, dominator, best_dominator, num_picked + 1, vert, new_best_set, lower_bound, max_nbrs);
             if value < new_best_set {
                 new_best_set = value;
             }
@@ -126,6 +135,22 @@ fn dominate_greedy(g: &Graph) -> usize {
     gamma
 }
 
+fn get_max_nbrs(g: &Graph) -> Vec<usize> {
+    let n = g.n.to_usize();
+    let mut max_nbrs = vec![0; n];
+    for u in 0..n {
+        for v in g.adj_list[u].iter() {
+            if *v > max_nbrs[u] {
+                max_nbrs[u] = *v;
+            }
+        }
+        if u > max_nbrs[u] { 
+            max_nbrs[u] = u;
+        }
+    }
+    max_nbrs
+}
+
 pub fn domination_number(g: &Graph) -> u32 {
     let n = g.n.to_usize();
     let mut dominator = vec![false; n];
@@ -135,9 +160,11 @@ pub fn domination_number(g: &Graph) -> u32 {
         // Too big to ever realistically finish, so might as well fail verbosely
         println!("Starting! Greedy: {}", number);
     }
-    for i in 0..n {
+    let h = g.order_by_nbhd();
+    let max_nbrs = get_max_nbrs(&h);
+    for i in 0..=max_nbrs[0] {
         dominator[i] = true;
-        let this_number = min_dominator_bfs(g, &mut dominator, &mut best_dominator, 1, i, number, None);
+        let this_number = min_dominator_bfs(&h, &mut dominator, &mut best_dominator, 1, i, number, None, &max_nbrs);
         if this_number < number {
             number = this_number;
         }
@@ -152,12 +179,15 @@ pub fn is_domination_number_at_least(g: &Graph, lower_bound: usize) -> bool {
     let mut dominator = vec![false; n];
     let mut best_dominator = vec![false; n];
     let mut number = dominate_greedy(g);
-    'test_start: for i in 0..n {
+
+    let h = g.order_by_nbhd();
+    let max_nbrs = get_max_nbrs(&h);
+    'test_start: for i in 0..=max_nbrs[0] {
         if number < lower_bound {
             break 'test_start;
         }
         dominator[i] = true;
-        let this_number = min_dominator_bfs(g, &mut dominator, &mut best_dominator, 1, i, number, Some(lower_bound));
+        let this_number = min_dominator_bfs(&h, &mut dominator, &mut best_dominator, 1, i, number, Some(lower_bound), &max_nbrs);
         if this_number < number {
             number = this_number;
         }
@@ -171,9 +201,12 @@ pub fn domination_redundancy(g: &Graph) -> Rational {
     let mut dominator = vec![false; n];
     let mut best_dominator = vec![false; n];
     let mut number = dominate_greedy(g);
-    for i in 0..n {
+
+    let h = g.order_by_nbhd();
+    let max_nbrs = get_max_nbrs(&h);
+    for i in 0..=max_nbrs[0] {
         dominator[i] = true;
-        let this_number = min_dominator_bfs(g, &mut dominator, &mut best_dominator, 1, i, number + 1, None);
+        let this_number = min_dominator_bfs(&h, &mut dominator, &mut best_dominator, 1, i, number + 1, None, &max_nbrs);
         if this_number < number {
             number = this_number;
         }
