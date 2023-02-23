@@ -4,9 +4,9 @@
  - Test fewer graphs for the very big n -> if more than 1000 then filter randomly
  - Only run arrow commands on successful graphs (as in until)
 
- == STRUCTURED RANDOM GRAPHS ==
- - Generic framework for randomly gluing together copies of a base graph.
- - Maybe good for finding counterexamples to stuff
+ == BOWTIES ==
+ - Check that struct(bowties(d),num) agrees with old bowties framework
+ - Then rip out old framework.
 
  == EDGES ==
  - Make an edge type, using encode from bunkbed.rs.
