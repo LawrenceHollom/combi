@@ -4,6 +4,11 @@
  - Test fewer graphs for the very big n -> if more than 1000 then filter randomly
  - Only run arrow commands on successful graphs (as in until)
 
+ == EDGES ==
+ - Make an edge type, using encode from bunkbed.rs.
+ - This can then be used to index stuff, and abstract away the usual boilerplate.
+ - Aim is to have a good way of indexing by edge.
+
  == HOUSE OF GRAPHS ==
  - Have a new kitchen sink option for smashing through houseofgraphs
  -- Work this in with the old one in some sensible way.

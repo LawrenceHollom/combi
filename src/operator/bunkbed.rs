@@ -4,7 +4,9 @@ use crate::operator::percolate::*;
 use utilities::*;
 use utilities::polynomial::*;
 
+use std::fmt;
 use std::io::*;
+use std::collections::HashMap;
 use queues::*;
 
 pub fn print_polynomials(g: &Graph) {
@@ -95,6 +97,93 @@ pub fn simulate(g: &Graph) {
     }
 }
 
+// encode an edge as a single number
+fn encode(x: usize, y: usize, n: usize) -> usize {
+    if x < y {
+        x * n + y
+    } else {
+        y * n + x
+    }
+}
+
+fn is_present(x: usize, y: usize, n: usize, indexer: &Vec<usize>, config: u64) -> bool {
+    (config >> indexer[encode(x, y, n)]) % 2 == 1
+}
+
+fn mask_config(x: usize, y: usize, n: usize, indexer: &Vec<usize>, config: u64, is_present: bool) -> u64 {
+    (if is_present { config } else { !config }) & (1 << indexer[encode(x, y, n)])
+}
+
+#[derive(Eq, Hash, PartialEq, Copy, Clone)]
+struct ConfSignature {
+    posts_index: u64,
+    blanks_index: u64,
+    doubles_index: u64,
+}
+
+impl ConfSignature {
+    pub fn new(g: &Graph, config: u64, indexer: &Vec<usize>) -> ConfSignature {
+        let mut posts_index = 0;
+        let mut blanks_index = 0;
+        let mut doubles_index = 0;
+        let g_n = g.n.to_usize();
+        let n = 2 * g_n;
+        for u in 0..g_n {
+            posts_index += mask_config(u, u + g_n, n, indexer, config, true);
+            for v in (u+1)..g_n {
+                if g.adj[u][v] {
+                    if is_present(u + g_n, v + g_n, n, indexer, config) {
+                        doubles_index += mask_config(u, v, n, indexer, config, true);
+                    } else {
+                        blanks_index += mask_config(u, v, n, indexer, config, false);
+                    }
+                }
+            }
+        }
+        ConfSignature { posts_index, blanks_index, doubles_index }
+    }
+}
+
+impl fmt::Display for ConfSignature {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[{}, {}, {}]", self.posts_index, self.blanks_index, self.doubles_index)
+    }
+}
+
+// We have a big list of positive and negative configs we care about.
+// This function processes them to try and learn about possible injections.
+fn process_bunkbed_configs(g: &Graph, pos_confs: &Vec<u64>, neg_confs: &Vec<u64>, indexer: &Vec<usize>) {
+    let pos_signatures: Vec<ConfSignature> = 
+        pos_confs.iter().map(|conf| ConfSignature::new(g, *conf, indexer)).collect();
+    let neg_signatures: Vec<ConfSignature> =
+        neg_confs.iter().map(|conf| ConfSignature::new(g, *conf, indexer)).collect();
+    let mut counts: HashMap<ConfSignature, (usize, usize)> = HashMap::new();
+    println!("pos_signatures:");
+    for sig in pos_signatures.iter() {
+        match counts.remove(sig) {
+            Some((x, y)) => counts.insert(*sig, (x + 1, y)),
+            None => counts.insert(*sig, (1, 0)),
+        };
+        println!("  {}", sig);
+    }
+    println!("neg signatures:");
+    for sig in neg_signatures.iter() {
+        match counts.remove(sig) {
+            Some((x, y)) => counts.insert(*sig, (x, y + 1)),
+            None => counts.insert(*sig, (0, 1)),
+        };
+        println!("  {}", sig);
+    }
+    println!("counts:");
+    for (sig, (x, y)) in counts.iter() {
+        println!("  {}: ({}, {}); {}", sig, x, y, *x - *y);
+        if *x < *y {
+            panic!("FOUND SOMETHING WHICH CANNOT BE NAIVELY INJECTED!");
+        }
+    }
+    
+}
+
 // Computes which configurations have u-, u+ with different connectivities
 // and then prints about them.
 pub fn interesting_configurations(g: &Graph, u: usize, print_size: Option<usize>) {
@@ -102,13 +191,6 @@ pub fn interesting_configurations(g: &Graph, u: usize, print_size: Option<usize>
     let bunkbed = g.bunkbed();
     let n = bunkbed.n.to_usize();
     let m = bunkbed.size();
-    fn encode(x: usize, y: usize, n: usize) -> usize {
-        if x < y {
-            x * n + y
-        } else {
-            y * n + x
-        }
-    }
     let mut indexer: Vec<usize> = vec![0; n * n];
     let mut index = 0;
     for (x, adj) in bunkbed.adj_list.iter().enumerate() {
@@ -119,9 +201,6 @@ pub fn interesting_configurations(g: &Graph, u: usize, print_size: Option<usize>
             }
         }
     }
-    fn is_present(x: usize, y: usize, n: usize, indexer: &Vec<usize>, config: u64) -> bool {
-        (config >> indexer[encode(x, y, n)]) % 2 == 1
-    }
     let mut num_interesting = 0;
     let mut num_positive = 0;
     let mut edge_count: Vec<i32> = vec![0; m];
@@ -129,6 +208,9 @@ pub fn interesting_configurations(g: &Graph, u: usize, print_size: Option<usize>
     let mut negative_edge_count: Vec<i32> = vec![0; m];
     let mut positive_unflippable_count: Vec<i32> = vec![0; m];
     let mut negative_unflippable_count: Vec<i32> = vec![0; m];
+    let mut positive_unflippable_configs: Vec<u64> = vec![];
+    let mut negative_unflippable_configs: Vec<u64> = vec![];
+    // A one-way ticket to OOM city.
     for i in 0..(n-1) {
         for j in (i+1)..n {
             if bunkbed.adj[i][j] {
@@ -204,6 +286,13 @@ pub fn interesting_configurations(g: &Graph, u: usize, print_size: Option<usize>
                 } else {
                     negative_unflippable_count[num_open_edges] += 1;
                 }
+                if print_size.map_or(true, |x| x == num_open_edges) {
+                    if sign == 1 {
+                        positive_unflippable_configs.push(config);
+                    } else {
+                        negative_unflippable_configs.push(config);
+                    }
+                }
                 if print_size.map_or(m < 20, |x| x == num_open_edges) {
                     for i in 0..(n-1) {
                         for j in (i+1)..n {
@@ -225,6 +314,7 @@ pub fn interesting_configurations(g: &Graph, u: usize, print_size: Option<usize>
     println!("Negative edge count: {:?}", negative_edge_count);
     println!("Positive unflippable count: {:?}", positive_unflippable_count);
     println!("Negative unflippable count: {:?}", negative_unflippable_count);
+    process_bunkbed_configs(g, &positive_unflippable_configs, &negative_unflippable_configs, &indexer);
 }
 
 pub fn compute_problem_cuts(g: &Graph, u: usize) {
