@@ -9,6 +9,11 @@
  - This can then be used to index stuff, and abstract away the usual boilerplate.
  - Aim is to have a good way of indexing by edge.
 
+ == FLOOD FILL ==
+ - Code up a generic flood fill algo; it comes up so much.
+ - Adding what stops the flood fill will be the difficult bit.
+ - This needs the generic edge framework for this to be feasible.
+
  == HOUSE OF GRAPHS ==
  - Have a new kitchen sink option for smashing through houseofgraphs
  -- Work this in with the old one in some sensible way.

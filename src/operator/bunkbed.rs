@@ -7,6 +7,7 @@ use utilities::polynomial::*;
 use std::fmt;
 use std::io::*;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use queues::*;
 
 pub fn print_polynomials(g: &Graph) {
@@ -110,6 +111,26 @@ fn is_present(x: usize, y: usize, n: usize, indexer: &Vec<usize>, config: u64) -
     (config >> indexer[encode(x, y, n)]) % 2 == 1
 }
 
+fn parallel_count(x: usize, y: usize, n: usize, indexer: &Vec<usize>, config: u64) -> usize {
+    let neg = is_present(x, y, n, indexer, config);
+    let pos = is_present(x + n / 2, y + n / 2, n, indexer, config);
+    (neg as usize) + (pos as usize)
+}
+
+fn flip_pair(x: usize, y: usize, n: usize, indexer: &Vec<usize>, config: u64) -> u64 {
+    let neg = is_present(x, y, n, indexer, config);
+    let pos = is_present(x + n / 2, y + n / 2, n, indexer, config);
+    if neg ^ pos {
+        if neg {
+            config - (1 << indexer[encode(x, y, n)]) + (1 << indexer[encode(x + n / 2, y + n / 2, n)])
+        } else {
+            config + (1 << indexer[encode(x, y, n)]) - (1 << indexer[encode(x + n / 2, y + n / 2, n)])
+        }
+    } else {
+        config
+    }
+}
+
 fn mask_config(x: usize, y: usize, n: usize, indexer: &Vec<usize>, config: u64, is_present: bool) -> u64 {
     (if is_present { config } else { !config }) & (1 << indexer[encode(x, y, n)])
 }
@@ -150,9 +171,117 @@ impl fmt::Display for ConfSignature {
     }
 }
 
+// This doesn't work, but does in some simple cases.
+fn flip_postless_component(g: &Graph, config: u64, u: usize, indexer: &Vec<usize>) -> u64 {
+    let g_n = g.n.to_usize();
+    let n = 2 * g_n;
+    let mut postless_component: Vec<bool> = vec![false; g_n];
+    postless_component[u] = true;
+    let mut q: Queue<usize> = queue![u];
+    while q.size() > 0 {
+        let v = q.remove().unwrap();
+        for w in g.adj_list[v].iter() {
+            if !postless_component[*w] && *w != 0 && !is_present(*w, *w + g_n, n, indexer, config)
+                    && parallel_count(v, *w, n, indexer, config) != 0 {
+                postless_component[*w] = true;
+                let _ = q.add(*w);
+            }
+        }
+    }
+    let mut new_conf = config;
+    for v in 0..g_n {
+        if postless_component[v] {
+            for w in g.adj_list[v].iter() {
+                if !postless_component[*w] || *w > v {
+                    new_conf = flip_pair(v, *w, n, indexer, new_conf);
+                }
+            }
+        }
+    }
+    new_conf
+}
+
+fn print_config(g: &Graph, config: u64, indexer: &Vec<usize>) {
+    let g_n = g.n.to_usize();
+    let n = 2 * g_n;
+    
+    for u in 0..(g_n - 1) {
+        for v in (u + 1)..g_n {
+            if g.adj[u][v] {
+                print!("({}~{})", u, v);
+            }
+        }
+    }
+    println!();
+    for u in 0..(g_n - 1) {
+        for v in (u + 1)..g_n {
+            if g.adj[u][v] {
+                print!("( {} )", is_present(u, v, n, indexer, config) as usize);
+            }
+        }
+    }
+    println!();
+    for u in 0..(g_n - 1) {
+        for v in (u + 1)..g_n {
+            if g.adj[u][v] {
+                print!("( {} )", is_present(u + g_n, v + g_n, n, indexer, config) as usize);
+            }
+        }
+    }
+    println!();
+    for u in 0..g_n {
+        print!("({})", u);
+    }
+    println!();
+    for u in 0..g_n {
+        print!("({})", is_present(u, u + g_n, n, indexer, config) as usize);
+    }
+    println!();
+}
+
+fn print_problem_configs(g: &Graph, a: u64, b: u64, indexer: &Vec<usize>) {
+    println!("PROBLEM CONFIGS: ");
+    println!("First config: ");
+    print_config(g, a, indexer);
+    println!("Second config:");
+    print_config(g, b, indexer);
+}
+
+// Actually implement some given function to turn neg_confs into pos_confs.
+fn attempt_injection(g: &Graph, u: usize, pos_confs: &Vec<u64>, neg_confs: &Vec<u64>, indexer: &Vec<usize>,
+        inj: &dyn Fn(&Graph, u64, usize, &Vec<usize>) -> u64) {
+    println!("Attempting injection!");
+    let mut flipped_confs: HashSet<u64> = HashSet::new();
+    let mut pos_confs_set: HashSet<u64> = HashSet::new();
+    for conf in pos_confs.iter() {
+        if !pos_confs_set.insert(*conf) {
+            panic!("This shouldn't go wrong. You should write better code.");
+        }
+    }
+    let mut failed = false;
+    'test_confs: for conf in neg_confs.iter() {
+        let new_conf = inj(g, *conf, u, indexer);
+        if !flipped_confs.insert(new_conf) {
+            print_problem_configs(g, *conf, new_conf, indexer);
+            failed = true;
+            println!("FAIL! Set already contained value, this is not an injection! (You should put better logging here.)");
+            break 'test_confs;
+        }
+        if !pos_confs_set.contains(&new_conf) {
+            print_problem_configs(g, *conf, new_conf, indexer);
+            println!("FAIL! Missed pos_confs_set! This is not even a function!");
+            failed = true;
+            break 'test_confs;
+        }
+    }
+    if !failed {
+        println!("SUCCESS! This is an injection.");
+    }
+}
+
 // We have a big list of positive and negative configs we care about.
 // This function processes them to try and learn about possible injections.
-fn process_bunkbed_configs(g: &Graph, pos_confs: &Vec<u64>, neg_confs: &Vec<u64>, indexer: &Vec<usize>) {
+fn process_bunkbed_configs(g: &Graph, u: usize, pos_confs: &Vec<u64>, neg_confs: &Vec<u64>, indexer: &Vec<usize>) {
     let pos_signatures: Vec<ConfSignature> = 
         pos_confs.iter().map(|conf| ConfSignature::new(g, *conf, indexer)).collect();
     let neg_signatures: Vec<ConfSignature> =
@@ -181,7 +310,7 @@ fn process_bunkbed_configs(g: &Graph, pos_confs: &Vec<u64>, neg_confs: &Vec<u64>
             panic!("FOUND SOMETHING WHICH CANNOT BE NAIVELY INJECTED!");
         }
     }
-    
+    attempt_injection(g, u, pos_confs, neg_confs, indexer, &flip_postless_component)
 }
 
 // Computes which configurations have u-, u+ with different connectivities
@@ -191,6 +320,9 @@ pub fn interesting_configurations(g: &Graph, u: usize, print_size: Option<usize>
     let bunkbed = g.bunkbed();
     let n = bunkbed.n.to_usize();
     let m = bunkbed.size();
+    if m >= 63 {
+        panic!("Too many edges; everything will go to shit!");
+    }
     let mut indexer: Vec<usize> = vec![0; n * n];
     let mut index = 0;
     for (x, adj) in bunkbed.adj_list.iter().enumerate() {
@@ -314,7 +446,7 @@ pub fn interesting_configurations(g: &Graph, u: usize, print_size: Option<usize>
     println!("Negative edge count: {:?}", negative_edge_count);
     println!("Positive unflippable count: {:?}", positive_unflippable_count);
     println!("Negative unflippable count: {:?}", negative_unflippable_count);
-    process_bunkbed_configs(g, &positive_unflippable_configs, &negative_unflippable_configs, &indexer);
+    process_bunkbed_configs(g, u, &positive_unflippable_configs, &negative_unflippable_configs, &indexer);
 }
 
 pub fn compute_problem_cuts(g: &Graph, u: usize) {
