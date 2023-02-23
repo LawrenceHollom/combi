@@ -7,6 +7,7 @@ use std::fmt;
 use rand::thread_rng;
 use rand::prelude::SliceRandom;
 
+mod bowties;
 mod triple_pentagons;
 
 #[derive(Clone, Copy)]
@@ -17,6 +18,7 @@ pub enum VertexPattern {
 pub struct GraphWithVertices {
     h: Graph,
     verts: Vec<usize>,
+    other_verts: Vec<usize>,
     num_verts: usize,
 }
 
@@ -33,7 +35,7 @@ pub struct GraphWithEdges {
 }
 
 impl VertexPattern {
-    fn num_around_point(&self) -> usize {
+    fn num_around_vertex(&self) -> usize {
         use VertexPattern::*;
         match self {
             Bowties(d) => d.to_usize(),
@@ -51,7 +53,67 @@ impl VertexPattern {
     }
 
     pub fn new_graph(&self, num: usize) -> Graph {
-        panic!("Implement this!")
+        let gwv = GraphWithVertices::new(self);
+        let nav = self.num_around_vertex();
+        if (gwv.num_verts * num) % nav != 0 {
+            panic!("Parity does not work!");
+        }
+        let h_n = gwv.h.n.to_usize();
+        let num_internal_per_h = h_n - gwv.num_verts;
+        let num_extra_verts = (gwv.num_verts * num) / nav;
+        let n = num_internal_per_h * num + num_extra_verts;
+        let mut adj_list = vec![vec![]; n];
+
+        let mut other_verts_inv = vec![0; h_n];
+        for (i, x) in gwv.other_verts.iter().enumerate() {
+            other_verts_inv[*x] = i;
+        }
+
+        // Add stuff we already know to adj_list
+        for h_index in 0..num {
+            let offset = h_index * num_internal_per_h;
+            for v in gwv.other_verts.iter() {
+                for w in gwv.h.adj_list[*v].iter() {
+                    if gwv.other_verts.contains(w) {
+                        adj_list[offset + other_verts_inv[*v]].push(offset + other_verts_inv[*w]);
+                    }
+                }
+            }
+        }
+
+        let mut ordering: Vec<usize> = (0..(num * gwv.num_verts)).map(|x| x / nav).collect();
+        let mut rng = thread_rng();
+
+        'find_good_shuffle: loop {
+            ordering.shuffle(&mut rng);
+            let mut last_part = vec![num; num_extra_verts];
+            let mut is_good = true;
+            'test_goodness: for (i, v) in ordering.iter().enumerate() {
+                let h_index = i / gwv.num_verts;
+                if last_part[*v] == h_index {
+                    is_good = false;
+                    break 'test_goodness;
+                }
+                last_part[*v] = h_index;
+            }
+            if is_good {
+                break 'find_good_shuffle;
+            }
+        }
+
+        for (i, vert) in ordering.iter().enumerate() {
+            let h_index = i / gwv.num_verts;
+            let h_u = gwv.verts[i % gwv.num_verts];
+            let v = num * num_internal_per_h + *vert;
+            for h_x in gwv.h.adj_list[h_u].iter() {
+                let x = num_internal_per_h * h_index + other_verts_inv[*h_x];
+                adj_list[x].push(v);
+                adj_list[v].push(x);
+            }
+        }
+
+        use crate::constructor::*;
+        Graph::of_adj_list(adj_list, Constructor::Random(RandomConstructor::VertexStructured(*self, num)))
     }
 }
 
@@ -59,9 +121,7 @@ impl GraphWithVertices {
     pub fn new(pattern: &VertexPattern) -> GraphWithVertices {
         use VertexPattern::*;
         match pattern {
-            Bowties(d) => {
-                panic!("Implement this!")
-            }
+            Bowties(d) => bowties::new(d),
         }
     }
 }
@@ -95,8 +155,6 @@ impl EdgePattern {
         let num_extra_edges = (gwe.num_edges * num) / nae;
         let n = num_internal_per_h * num + 2 * num_extra_edges;
         let mut adj_list = vec![vec![]; n];
-        let mut ordering: Vec<usize> = (0..(num * gwe.num_edges)).map(|x| x / nae).collect();
-        let mut rng = thread_rng();
 
         let mut gwe_verts_inv = vec![0; h_n];
         for (i, x) in gwe.verts_not_in_edge.iter().enumerate() {
@@ -105,10 +163,11 @@ impl EdgePattern {
 
         // Sort out adj_list stuff we already know.
         for h_index in 0..num {
+            let offset = h_index * num_internal_per_h;
             for v in gwe.verts_not_in_edge.iter() {
                 for w in gwe.h.adj_list[*v].iter() {
                     if gwe.verts_not_in_edge.contains(w) {
-                        adj_list[h_index * num_internal_per_h + *v].push(h_index * num_internal_per_h + *w);
+                        adj_list[offset + gwe_verts_inv[*v]].push(offset + gwe_verts_inv[*w]);
                     }
                 }
             }
@@ -118,6 +177,9 @@ impl EdgePattern {
             adj_list[offset].push(offset + 1);
             adj_list[offset + 1].push(offset);
         }
+
+        let mut ordering: Vec<usize> = (0..(num * gwe.num_edges)).map(|x| x / nae).collect();
+        let mut rng = thread_rng();
         
         'find_good_shuffle: loop {
             ordering.shuffle(&mut rng);
