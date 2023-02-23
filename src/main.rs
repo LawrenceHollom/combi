@@ -7,6 +7,7 @@ mod graph;
 mod operator;
 mod operation;
 mod constructor;
+mod pattern;
 
 use controller::*;
 

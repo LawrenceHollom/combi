@@ -1,6 +1,8 @@
 use utilities::*;
 use std::fmt;
 
+use crate::pattern::*;
+
 #[derive(Copy, Clone)]
 pub enum ProductConstructor {
     Cartesian,
@@ -21,6 +23,8 @@ pub enum RandomConstructor {
     MaximalPlanar(Order),
     Bowties(usize, Degree),
     Regular(Order, Degree),
+    VertexStructured(VertexPattern, usize),
+    EdgeStructured(EdgePattern, usize),
 }
 
 #[derive(Copy, Clone)]
@@ -108,6 +112,18 @@ impl Constructor {
             "regular" => {
                 let degree = Degree::of_string(args[1]);
                 Random(Regular(Order::of_string(args[0]), degree))
+            }
+            "struct" => {
+                let num = args[1].parse().unwrap();
+                match VertexPattern::of_string(args[0]) {
+                    Some(pattern) => Random(VertexStructured(pattern, num)),
+                    None => {
+                        match EdgePattern::of_string(args[0]) {
+                            Some(pattern) => Random(EdgeStructured(pattern, num)),
+                            None => panic!("Cannot find struct!"),
+                        }
+                    }
+                }
             }
             "grid" => {
                 Raw(Grid(Order::of_string(args[0]), Order::of_string(args[1])))
@@ -202,6 +218,12 @@ impl fmt::Display for RandomConstructor {
             }
             Regular(order, degree) => {
                 write!(f, "Random regular graph of order {} and degree {}", *order, *degree)
+            }
+            VertexStructured(pattern, num) => {
+                write!(f, "Structured vertex-gluing of {} copies of the {} pattern", num, pattern)
+            }
+            EdgeStructured(pattern, num) => {
+                write!(f, "Structured edge-gluing of {} copies of the {} pattern", num, pattern)
             }
         }
     }

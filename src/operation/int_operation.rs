@@ -52,7 +52,7 @@ impl IntOperation {
             "max_induced_forest" | "max_forest" => Some(MaxInducedForest),
             "min_degree" | "min" => Some(MinDegree),
             "max_degree" | "max" | "delta" => Some(MaxDegree),
-            "connectedness" => Some(Connectedness),
+            "connectedness" | "connectivity" => Some(Connectedness),
             str => str.parse().ok().map(Number),
         }
     }

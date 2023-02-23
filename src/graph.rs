@@ -214,7 +214,7 @@ impl Graph {
         }
     }
 
-    fn of_adj_list(adj_list: Vec<Vec<usize>>, constructor: Constructor) -> Graph {
+    pub fn of_adj_list(adj_list: Vec<Vec<usize>>, constructor: Constructor) -> Graph {
         let n: usize = adj_list.len();
         let mut adj = vec![vec![false; n]; n];
         let mut deg = vec![0; n];
@@ -554,6 +554,8 @@ impl Graph {
             Random(MaximalPlanar(order)) => random_planar::new_maximal(order),
             Random(Bowties(scale, degree)) => bowties::new_bowties(*scale, *degree),
             Random(Regular(order, degree)) => regular::new_regular(order, degree),
+            Random(VertexStructured(pattern, num)) => pattern.new_graph(*num),
+            Random(EdgeStructured(pattern, num)) => pattern.new_graph(*num),
             Raw(Grid(height, width)) => grid::new(height, width),
             Raw(Complete(order)) => Graph::new_complete(order),
             Raw(Cyclic(order)) => Graph::new_cyclic(order),
