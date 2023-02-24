@@ -21,9 +21,6 @@
    just barely 3-connected.)
  - If done correctly then can compute domination numbers for very large graphs.
 
- == CUBIC DOMINATION ==
- - Add code for some very specific cubic domination stuff for building counterexamples.
-
  == FLOOD FILL ==
  - Code up a generic flood fill algo; it comes up so much.
  - Adding what stops the flood fill will be the difficult bit.

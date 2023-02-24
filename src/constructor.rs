@@ -114,7 +114,7 @@ impl Constructor {
                 let degree = Degree::of_string(args[1]);
                 Random(Regular(Order::of_string(args[0]), degree))
             }
-            "sequence" => {
+            "sequence" | "seq" => {
                 let mut deg_seq: Vec<Degree> = vec![];
                 for (d_minus_one, count) in args.iter().enumerate() {
                     for _i in 0..count.parse().unwrap() {
