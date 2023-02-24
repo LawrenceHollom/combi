@@ -28,7 +28,7 @@ impl UnitOperation {
             "percolate" => Some(PercolationPolys),
             "bunkbed_cut" | "bunkbed_cuts" => Some(BunkbedCuts(args[0].parse().unwrap())),
             "bunkbed_dists" => Some(BunkbedDists),
-            "bunkbed_diffs" => {
+            "bunkbed_diffs" | "bb_diffs" => {
                 Some(BunkbedDiffs(args[0].parse().unwrap(),
                     args.get(1).map(|x| x.parse().unwrap())))
             }

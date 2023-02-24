@@ -201,10 +201,8 @@ fn flip_postless_component(g: &Graph, config: u64, u: usize, indexer: &Vec<usize
     new_conf
 }
 
-fn print_config(g: &Graph, config: u64, indexer: &Vec<usize>) {
+fn print_title(g: &Graph) {
     let g_n = g.n.to_usize();
-    let n = 2 * g_n;
-    
     for u in 0..(g_n - 1) {
         for v in (u + 1)..g_n {
             if g.adj[u][v] {
@@ -213,10 +211,16 @@ fn print_config(g: &Graph, config: u64, indexer: &Vec<usize>) {
         }
     }
     println!();
+}
+
+fn print_config(g: &Graph, config: u64, indexer: &Vec<usize>) {
+    let g_n = g.n.to_usize();
+    let n = 2 * g_n;
+    print_title(g);
     for u in 0..(g_n - 1) {
         for v in (u + 1)..g_n {
             if g.adj[u][v] {
-                print!("( {} )", is_present(u, v, n, indexer, config) as usize);
+                print!("( {} )", is_present(u + g_n, v + g_n, n, indexer, config) as usize);
             }
         }
     }
@@ -224,7 +228,7 @@ fn print_config(g: &Graph, config: u64, indexer: &Vec<usize>) {
     for u in 0..(g_n - 1) {
         for v in (u + 1)..g_n {
             if g.adj[u][v] {
-                print!("( {} )", is_present(u + g_n, v + g_n, n, indexer, config) as usize);
+                print!("( {} )", is_present(u, v, n, indexer, config) as usize);
             }
         }
     }
@@ -260,18 +264,21 @@ fn attempt_injection(g: &Graph, u: usize, pos_confs: &Vec<u64>, neg_confs: &Vec<
     }
     let mut failed = false;
     'test_confs: for conf in neg_confs.iter() {
-        let new_conf = inj(g, *conf, u, indexer);
-        if !flipped_confs.insert(new_conf) {
-            print_problem_configs(g, *conf, new_conf, indexer);
-            failed = true;
-            println!("FAIL! Set already contained value, this is not an injection! (You should put better logging here.)");
-            break 'test_confs;
-        }
-        if !pos_confs_set.contains(&new_conf) {
-            print_problem_configs(g, *conf, new_conf, indexer);
-            println!("FAIL! Missed pos_confs_set! This is not even a function!");
-            failed = true;
-            break 'test_confs;
+        let sig = ConfSignature::new(g, *conf, indexer);
+        if sig.blanks_index == 0 && sig.doubles_index == 0 {
+            let new_conf = inj(g, *conf, u, indexer);
+            if !flipped_confs.insert(new_conf) {
+                print_problem_configs(g, *conf, new_conf, indexer);
+                failed = true;
+                println!("FAIL! Set already contained value, this is not an injection!");
+                break 'test_confs;
+            }
+            if !pos_confs_set.contains(&new_conf) {
+                print_problem_configs(g, *conf, new_conf, indexer);
+                println!("FAIL! Missed pos_confs_set! This is not even a function!");
+                failed = true;
+                break 'test_confs;
+            }
         }
     }
     if !failed {
@@ -279,37 +286,165 @@ fn attempt_injection(g: &Graph, u: usize, pos_confs: &Vec<u64>, neg_confs: &Vec<
     }
 }
 
+// Give a domain and range with fixed signature, find possible injections
+// and print them if there aren't too many.
+// We will flip a set of edges dependent only on sig, which means that the
+// function, if valid, is automatically an injection.
+fn find_possible_injections(g: &Graph, sig: &ConfSignature, domain: &Vec<u64>, range: &Vec<u64>, indexer: &Vec<usize>) {
+    let mut injections: Vec<u64> = vec![];
+    let g_n = g.n.to_usize();
+    let n = 2 * g_n;
+    let mut range_set: HashSet<u64> = HashSet::new();
+    for x in range.iter() {
+        range_set.insert(*x);
+    }
+
+    // This is very inefficient for when sig has lots of doubles and blanks.
+    // This scores "big yuck" on code quality.
+    for inj_code_index in 0..2_u64.pow(g.size() as u32) {
+        let mut inj_code = 0;
+        let mut edge_index = 0;
+        for u in 0..(g_n - 1) {
+            for v in (u + 1)..g_n {
+                if g.adj[u][v] {
+                    if (inj_code_index >> edge_index) % 2 == 1 {
+                        inj_code += 1 << indexer[encode(u, v, n)];
+                    }
+                    edge_index += 1;
+                }
+            }
+        }
+        // Test if inj_code meshes nicely with the doubles and blanks.
+        if (inj_code & sig.doubles_index == 0) && (inj_code & sig.blanks_index == 0) {
+            let mut is_inj_good = true;
+            // Try flipping everything in domain by inj and see if it makes a subset of range.
+            'test_inj: for x in domain.iter() {
+                let mut new_conf = *x;
+                for u in 0..(g_n - 1) {
+                    for v in (u + 1)..g_n {
+                        if g.adj[u][v] && is_present(u, v, n, indexer, inj_code){
+                            // flip here.
+                            new_conf = flip_pair(u, v, n, indexer, new_conf);
+                        }
+                    }
+                }
+                if !range_set.contains(&new_conf) {
+                    is_inj_good = false;
+                    break 'test_inj;
+                }
+            }
+
+            if is_inj_good {
+                injections.push(inj_code);
+            }
+        }
+    }
+
+    if injections.len() == 0 {
+        println!("Found no valid injections!");
+        println!("DOMAIN:");
+        for config in domain.iter() {
+            print_config(g, *config, indexer);
+        }
+        println!("RANGE:");
+        for config in range.iter() {
+            print_config(g, *config, indexer);
+        }
+        panic!("This means there is no injection of the form we seek!");
+    } else if injections.len() < 5 {
+        println!("Possible injections: ");
+        print_title(g);
+        for inj in injections.iter() {
+            for u in 0..(g_n - 1) {
+                for v in (u + 1)..g_n {
+                    if g.adj[u][v] {
+                        print!("( {} )", (*inj >> indexer[encode(u, v, n)]) % 2);
+                    }
+                }
+            }
+            println!();
+        }
+        println!("Sample config in domain:");
+        print_config(g, domain[0], indexer);
+    } else {
+        println!("{} injections found; not printing them all.", injections.len());
+    }
+}
+
 // We have a big list of positive and negative configs we care about.
 // This function processes them to try and learn about possible injections.
 fn process_bunkbed_configs(g: &Graph, u: usize, pos_confs: &Vec<u64>, neg_confs: &Vec<u64>, indexer: &Vec<usize>) {
-    let pos_signatures: Vec<ConfSignature> = 
-        pos_confs.iter().map(|conf| ConfSignature::new(g, *conf, indexer)).collect();
-    let neg_signatures: Vec<ConfSignature> =
-        neg_confs.iter().map(|conf| ConfSignature::new(g, *conf, indexer)).collect();
-    let mut counts: HashMap<ConfSignature, (usize, usize)> = HashMap::new();
-    println!("pos_signatures:");
-    for sig in pos_signatures.iter() {
+    // Good coding practice is my passion.
+    let pos_signatures: Vec<(u64, ConfSignature)> = 
+        pos_confs.iter()
+            .map(|conf| (*conf, ConfSignature::new(g, *conf, indexer)))
+            .collect();
+    let neg_signatures: Vec<(u64, ConfSignature)> =
+        neg_confs.iter()
+            .map(|conf| (*conf, ConfSignature::new(g, *conf, indexer)))
+            .collect();
+    let mut counts: HashMap<ConfSignature, (Vec<u64>, Vec<u64>)> = HashMap::new();
+    
+    for (conf, sig) in pos_signatures.iter() {
         match counts.remove(sig) {
-            Some((x, y)) => counts.insert(*sig, (x + 1, y)),
-            None => counts.insert(*sig, (1, 0)),
+            Some((mut poss, negs)) => {
+                poss.push(*conf);
+                counts.insert(*sig, (poss, negs))
+            }
+            None => counts.insert(*sig, (vec![*conf], vec![])),
         };
-        println!("  {}", sig);
     }
-    println!("neg signatures:");
-    for sig in neg_signatures.iter() {
+    
+    for (conf, sig) in neg_signatures.iter() {
         match counts.remove(sig) {
-            Some((x, y)) => counts.insert(*sig, (x, y + 1)),
-            None => counts.insert(*sig, (0, 1)),
+            Some((poss, mut negs)) => {
+                negs.push(*conf);
+                counts.insert(*sig, (poss, negs))
+            }
+            None => counts.insert(*sig, (vec![], vec![*conf])),
         };
-        println!("  {}", sig);
     }
+
+    let mut mappables: Vec<(u64, u64)> = vec![];
     println!("counts:");
     for (sig, (x, y)) in counts.iter() {
-        println!("  {}: ({}, {}); {}", sig, x, y, *x - *y);
-        if *x < *y {
-            panic!("FOUND SOMETHING WHICH CANNOT BE NAIVELY INJECTED!");
+        if sig.blanks_index == 0 && sig.doubles_index == 0 {
+            println!("  {}: ({}, {}); {}", sig, x.len(), y.len(), x.len() - y.len());
+            // Want to map y into x.
+            if x.len() < y.len() {
+                panic!("FOUND SOMETHING WHICH CANNOT BE NAIVELY INJECTED!");
+            }
+            if x.len() == 1 && y.len() == 1 && flip_postless_component(g, y[0], u, indexer) != x[0] {
+                mappables.push((x[0], y[0]));
+            }
+            if y.len() > 0 {
+                find_possible_injections(g, sig, y, x, indexer);
+            }
         }
     }
+
+    println!("Mappables which flip_postless_component fails on: ");
+    let g_n = g.n.to_usize();
+    let n = g_n * 2;
+    for (x, y) in mappables.iter() {
+        println!("Pair:");    
+        for u in 0..(g_n - 1) {
+            for v in (u + 1)..g_n {
+                if g.adj[u][v] {
+                    if is_present(u, v, n, indexer, *x) ^ is_present(u, v, n, indexer, *y) {
+                        // The edge has been flipped between the configs
+                        print!("( F )");
+                    } else {
+                        print!("(   )");
+                    }
+                }
+            }
+        }
+        println!();
+        print_config(g, *y, indexer);
+        println!();
+    }
+    println!("There were {} directly mappable pairs!", mappables.len());
     attempt_injection(g, u, pos_confs, neg_confs, indexer, &flip_postless_component)
 }
 

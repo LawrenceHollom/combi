@@ -30,7 +30,11 @@ pub fn new_graph(filename: &String) -> Graph {
                 }
             }
 
-            Graph::of_adj_list(adj_list, File(filename.to_owned()))
+            let g = Graph::of_adj_list(adj_list, File(filename.to_owned()));
+            if !g.is_adj_commutative() {
+                panic!("Adjacency matrix of g is not commutative!");
+            }
+            g
         },
         Err(_e) => panic!("Cannot find graph constructor {}", filename)
     }

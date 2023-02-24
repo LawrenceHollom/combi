@@ -433,6 +433,20 @@ impl Graph {
     
         max
     }
+
+    pub fn is_adj_commutative(&self) -> bool {
+        let mut is_comm = true;
+        let n = self.n.to_usize();
+        'test_is_comm: for u in 0..(n-1) {
+            for v in (u+1)..n {
+                if self.adj[u][v] ^ self.adj[v][u] {
+                    is_comm = false;
+                    break 'test_is_comm;
+                }
+            }
+        }
+        is_comm
+    }
     
     pub fn is_connected(&self) -> bool {
         self.largest_component() == self.n.to_usize() as u32
