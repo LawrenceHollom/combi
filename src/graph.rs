@@ -568,6 +568,7 @@ impl Graph {
             Random(MaximalPlanar(order)) => random_planar::new_maximal(order),
             Random(Bowties(scale, degree)) => bowties::new_bowties(*scale, *degree),
             Random(Regular(order, degree)) => regular::new_regular(order, degree),
+            Random(DegreeSequence(deg_seq)) => regular::new_from_degree_sequence(deg_seq, false),
             Random(VertexStructured(pattern, num)) => pattern.new_graph(*num),
             Random(EdgeStructured(pattern, num)) => pattern.new_graph(*num),
             Raw(Grid(height, width)) => grid::new(height, width),

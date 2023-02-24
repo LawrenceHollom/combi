@@ -2,27 +2,35 @@ use utilities::*;
 use crate::graph::*;
 use rand::prelude::SliceRandom;
 
-pub fn new_regular(order: &Order, degree: &Degree) -> Graph {
-    let n = order.to_usize();
-    let d = degree.to_usize();
-    if d >= n {
-        panic!("Order must be larger than degree!")
-    } else if d % 2 == 1 && n % 2 == 1 {
-        panic!("Cannot have order and degree both odd!")
+pub fn new_from_degree_sequence(deg_seq: &Vec<Degree>, is_regular: bool) -> Graph {
+    let n = deg_seq.len();
+    let mut sum = 0;
+    for d in deg_seq.iter() {
+        if d.to_usize() >= n {
+            panic!("Order must be larger than max degree!");
+        }
+        sum += d.to_usize();
+    }
+    if sum % 2 == 1 {
+        panic!("Sum of degrees must be even");
     }
     let mut rng = thread_rng();
-    let mut pairings: Vec<usize> = (0..d*n).map(|x| x / d).collect();
+    let mut pairings: Vec<usize> = vec![];
+    for (i, d) in deg_seq.iter().enumerate() {
+        for _j in 0..d.to_usize() {
+            pairings.push(i);
+        }
+    }
     let mut adj_list: Vec<Vec<usize>>;
 
     'find_good_shuffle: loop {
-        pairings.shuffle(&mut rng);
         adj_list = vec![vec![]; n];
+        pairings.shuffle(&mut rng);
         let mut is_good = true;
-        'test_shuffle: for i in 0..((d * n) / 2) {
+        'test_shuffle: for i in 0..(sum / 2) {
             let u = pairings[i];
-            let v = pairings[i + ((d * n) / 2)];
+            let v = pairings[i + (sum / 2)];
             if u == v || adj_list[u].contains(&v) {
-                // Might fail due to pointer fuckery.
                 is_good = false;
                 break 'test_shuffle;
             }
@@ -34,5 +42,16 @@ pub fn new_regular(order: &Order, degree: &Degree) -> Graph {
         }
     }
 
-    Graph::of_adj_list(adj_list, Random(RandomConstructor::Regular(*order, *degree)))
+    let constructor = if is_regular {
+        Random(RandomConstructor::Regular(Order::of_usize(n), deg_seq[0]))
+    } else {
+        Random(RandomConstructor::DegreeSequence(deg_seq.to_owned()))
+    };
+    Graph::of_adj_list(adj_list, constructor)
+}
+
+pub fn new_regular(order: &Order, degree: &Degree) -> Graph {
+    let n = order.to_usize();
+    let deg_seq = vec![*degree; n];
+    self::new_from_degree_sequence(&deg_seq, true)
 }

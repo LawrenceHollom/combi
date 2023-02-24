@@ -21,10 +21,6 @@
    just barely 3-connected.)
  - If done correctly then can compute domination numbers for very large graphs.
 
- == DEGREE SEQUENCE ==
- - Generate a random graph with a given degree sequence.
- - Steal the code from generating a random regular graph; it should be the same.
-
  == CUBIC DOMINATION ==
  - Add code for some very specific cubic domination stuff for building counterexamples.
 

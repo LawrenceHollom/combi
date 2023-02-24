@@ -3,7 +3,7 @@ use std::fmt;
 
 use crate::pattern::*;
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub enum ProductConstructor {
     Cartesian,
     Tensor,
@@ -15,7 +15,7 @@ pub enum ProductConstructor {
     RevRooted,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub enum RandomConstructor {
     Biregular(Order, Degree, Degree),
     ErdosRenyi(Order, f64),
@@ -23,11 +23,12 @@ pub enum RandomConstructor {
     MaximalPlanar(Order),
     Bowties(usize, Degree),
     Regular(Order, Degree),
+    DegreeSequence(Vec<Degree>),
     VertexStructured(VertexPattern, usize),
     EdgeStructured(EdgePattern, usize),
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub enum RawConstructor {
     Grid(Order, Order),
     Complete(Order),
@@ -112,6 +113,15 @@ impl Constructor {
             "regular" => {
                 let degree = Degree::of_string(args[1]);
                 Random(Regular(Order::of_string(args[0]), degree))
+            }
+            "sequence" => {
+                let mut deg_seq: Vec<Degree> = vec![];
+                for (d_minus_one, count) in args.iter().enumerate() {
+                    for _i in 0..count.parse().unwrap() {
+                        deg_seq.push(Degree::of_usize(d_minus_one + 1));
+                    }
+                }
+                Random(DegreeSequence(deg_seq))
             }
             "struct" => {
                 let num = args[1].parse().unwrap();
@@ -218,6 +228,9 @@ impl fmt::Display for RandomConstructor {
             }
             Regular(order, degree) => {
                 write!(f, "Random regular graph of order {} and degree {}", *order, *degree)
+            }
+            DegreeSequence(seq) => {
+                write!(f, "Random graph with degree sequence {:?}", seq)
             }
             VertexStructured(pattern, num) => {
                 write!(f, "Structured vertex-gluing of {} copies of the {} pattern", num, pattern)
