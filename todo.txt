@@ -12,6 +12,21 @@
  - Make an edge type, using encode from bunkbed.rs.
  - This can then be used to index stuff, and abstract away the usual boilerplate.
  - Aim is to have a good way of indexing by edge.
+ - EdgeMap (analogy of HashMap); stores n and indexer, like in bunkbed.
+
+ == DOMINATION ==
+ - Optimistic: either through construction or otherwise, notice when a graph has
+   a small set of edges which split the graph into two parts. Then dp over these.
+ - Use case is probably cubic graphs, and sets of three edges (as graphs will be
+   just barely 3-connected.)
+ - If done correctly then can compute domination numbers for very large graphs.
+
+ == DEGREE SEQUENCE ==
+ - Generate a random graph with a given degree sequence.
+ - Steal the code from generating a random regular graph; it should be the same.
+
+ == CUBIC DOMINATION ==
+ - Add code for some very specific cubic domination stuff for building counterexamples.
 
  == FLOOD FILL ==
  - Code up a generic flood fill algo; it comes up so much.
@@ -27,8 +42,10 @@
  - e.g. there are only 3 ways to pick 2 vertices from K_{s,t}
 
  == BUNKBEDS ==
-  - The code is very (very) slow, and naive. Should be some wins to be had in terms of speed
-  - Add some way to automatically assess the injectiveness of the stuff from bunkbed_diffs.
+ - The code is very (very) slow, and naive. Should be some wins to be had in terms of speed
+ - Instead of iterating through all subsets of edges, dfs:
+ -- Then once both endpoints are in, can cut off immediately.
+ -- Should speed things up a little.
 
  == BUGS ==
  - Maybe ->() has stopped working? Gets picked up as infix-like
