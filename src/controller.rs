@@ -210,7 +210,7 @@ impl Instruction {
                 checkpoint_time = SystemTime::now();
             }
             let mut printed_number = false;
-            if required_steps == 0 || rep % 1000 == 0 {
+            if required_steps == 0 || rep % 10000 == 0 {
                 print!("{}: ", rep);
                 printed_number = true;
             }
