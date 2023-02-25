@@ -178,7 +178,7 @@ impl fmt::Display for BoolOperation {
             BunkbedDiffsAllUnimodal => "Bunkbed diff polys are all unimodal".to_owned(),
             HasRegularLosslessEdgeDominator => "Has regular lossless edge-dominating set".to_owned(),
             IsKConnected(k) => format!("Is {}-connectd", *k),
-            GoodCubicDominationBase => "ISome very specific thing for domination of cubic graphs.".to_owned(),
+            GoodCubicDominationBase => "Some very specific thing for domination of cubic graphs.".to_owned(),
         };
         write!(f, "{}", name)
     }

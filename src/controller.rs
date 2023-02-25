@@ -200,14 +200,29 @@ impl Instruction {
     fn execute_until(&self, constr: &Constructor, conditions: &[BoolOperation]) {
         let mut satisfied = false;
         let mut rep = 0;
+        let start_time = SystemTime::now();
+        let mut print_fails = true;
         while !satisfied {
-            print!("{}: ", rep);
+            if rep == 500 {
+                if start_time.elapsed().unwrap().as_secs() < 5 {
+                    print_fails = false;
+                }
+            }
+            let mut printed_number = false;
+            if print_fails || rep % 1000 == 0 {
+                print!("{}: ", rep);
+                printed_number = true;
+            }
             rep += 1;
             let g = Graph::new(constr);
             let mut operator = Operator::new();
             let mut all_satisfied = true;
             'test_conditions: for condition in conditions.iter() {
                 if operator.operate_bool(&g, condition) {
+                    if !printed_number {
+                        print!("{}: ", rep);
+                        printed_number = true;
+                    }
                     print!("X ");
                     std::io::stdout().flush().unwrap();
                     
@@ -216,7 +231,9 @@ impl Instruction {
                     break 'test_conditions;
                 }
             }
-            operator.print_all();
+            if printed_number {
+                operator.print_all();
+            }
             if all_satisfied {
                 println!("All conditions satisfied! {:?}", conditions);
                 println!("Graph: ");
