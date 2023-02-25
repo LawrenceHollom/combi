@@ -17,6 +17,9 @@ pub fn debug(g: &Graph) -> bool {
 
     let g_one_dom = domination_number_with_predominations(g, 1);
     let g_two_dom = domination_number_with_predominations(g, 2);
+    println!("H!");
+    h.print();
+    println!();
     let h_one_dom = domination_number_with_predominations(&h, 1);
     let h_two_dom = domination_number_with_predominations(&h, 2);
     println!("g_one: {}, g_two: {}", g_one_dom, g_two_dom);

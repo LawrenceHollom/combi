@@ -138,15 +138,12 @@ fn dominate_greedy(g: &Graph, predominations: u128) -> usize {
 
 fn get_max_nbrs(g: &Graph) -> Vec<usize> {
     let n = g.n.to_usize();
-    let mut max_nbrs = vec![0; n];
+    let mut max_nbrs: Vec<usize> = (0..n).collect();
     for u in 0..n {
         for v in g.adj_list[u].iter() {
             if *v > max_nbrs[u] {
                 max_nbrs[u] = *v;
             }
-        }
-        if u > max_nbrs[u] { 
-            max_nbrs[u] = u;
         }
     }
     max_nbrs
@@ -174,7 +171,11 @@ pub fn domination_number_with_predominations(g: &Graph, predominations: u128) ->
     }
 
     let max_nbrs = get_max_nbrs(&h);
-    for i in 0..=max_nbrs[0] {
+    let mut first_unpredominated = 0;
+    while (h_predominations >> first_unpredominated) % 2 == 1 {
+        first_unpredominated += 1;
+    }
+    for i in 0..=max_nbrs[first_unpredominated] {
         dominator[i] = true;
         let this_number = min_dominator_bfs(&h, &mut dominator, &mut best_dominator, 1, i, number, None, &max_nbrs, h_predominations);
         if this_number < number {
