@@ -27,7 +27,7 @@ pub fn is_good(g: &Graph) -> bool {
     }
     println!("Is well-connected!");
 
-    // Now rip out vertices of degree 2 and see what happens to gamma.
+    /*// Now rip out vertices of degree 2 and see what happens to gamma.
     new_adj_list = vec![vec![]; n-twos.len()];
     let mut map = vec![0; n];
     let mut sub = 0;
@@ -50,5 +50,22 @@ pub fn is_good(g: &Graph) -> bool {
     let gamma = domination::domination_number(g);
     let new_gamma = domination::domination_number(&k);
     println!("Old gamma: {}, new gamma: {}", gamma, new_gamma);
-    gamma == new_gamma
+    gamma == new_gamma*/
+    
+    // Now test what happens to gamma with various combinations of the 3 verts
+    // already dominated
+    let mut masked_domination = vec![0; 8];
+    for mask in 0..8 {
+        let mut predominated = vec![false; n];
+        let mut sta = mask;
+        for j in 0..3 {
+            if sta % 2 == 1 {
+                predominated[j] = true;
+            }
+            sta /= 2;
+            masked_domination[mask] = domination::domination_number_with_predominations(g, mask as u128);
+        }
+    }
+    println!("Masked domination: {:?}", masked_domination);
+    (masked_domination[3] == 6) && (masked_domination[5] == 6) && (masked_domination[6] == 6)
 }
