@@ -13,6 +13,7 @@ pub enum UnitOperation {
     BunkbedDists,
     BunkbedDiffs(usize, Option<usize>),
     PrintIntervalColoring,
+    Signature,
     Unit,
 }
 
@@ -33,7 +34,8 @@ impl UnitOperation {
                     args.get(1).map(|x| x.parse().unwrap())))
             }
             "print_interval" | "interval" => Some(PrintIntervalColoring),
-            "()" => Some(Unit),
+            "signature" | "sig" => Some(Signature),
+            "()" | "(" => Some(Unit),
             &_ => None,
         }
     }
@@ -53,6 +55,7 @@ impl fmt::Display for UnitOperation {
             BunkbedDists => "Bunkbed distance-bounded polynomials",
             BunkbedDiffs(_u, _size) => "Print info about interesting bunkbed configs",
             PrintIntervalColoring => "Print an interval coloring (if exists)",
+            Signature => "Print a bunch of graph invariants",
             Unit => "Do nothing",
         };
         write!(f, "{}", name)

@@ -13,6 +13,8 @@ mod induced_forest;
 mod connectedness;
 mod cubic_domination;
 mod subgraphs;
+mod debug;
+mod signature;
 
 use std::collections::HashMap;
 
@@ -136,6 +138,7 @@ impl Operator {
                     IsKConnected(connectivity) => connectedness::is_k_connected(g, *connectivity),
                     IsTriangleFree => subgraphs::is_triangle_free(g),
                     GoodCubicDominationBase => cubic_domination::is_good(g),
+                    Debug => debug::debug(g),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);
                 value
@@ -177,6 +180,7 @@ impl Operator {
             BunkbedDists => bunkbed::print_distance_polynomials(g),
             BunkbedDiffs(u, print_size) => bunkbed::interesting_configurations(g, *u, *print_size),
             PrintIntervalColoring => interval_coloring::print_interval_coloring(g),
+            Signature => signature::print_signature(g),
             Unit => (),
         }
     }

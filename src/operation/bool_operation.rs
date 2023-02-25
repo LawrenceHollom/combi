@@ -40,6 +40,7 @@ pub enum BoolOperation {
     IsKConnected(usize),
     IsTriangleFree,
     GoodCubicDominationBase, // This one is incredibly specific.
+    Debug,
 }
 
 impl NumToBoolInfix {
@@ -119,6 +120,7 @@ impl BoolOperation {
                     "is_k_connected" | "k_connected" | "k_conn" => Some(IsKConnected(args[0].parse().unwrap())),
                     "triangle_free" | "tri_free" | "k3_free" => Some(IsTriangleFree),
                     "gcdb" => Some(GoodCubicDominationBase),
+                    "debug" => Some(Debug),
                     &_ => None,
                 }
             }
@@ -182,6 +184,7 @@ impl fmt::Display for BoolOperation {
             IsKConnected(k) => format!("Is {}-connectd", *k),
             IsTriangleFree => "Is triangle free".to_owned(),
             GoodCubicDominationBase => "Some very specific thing for domination of cubic graphs.".to_owned(),
+            Debug => "Returns true if some debugging tests trip".to_owned(),
         };
         write!(f, "{}", name)
     }
