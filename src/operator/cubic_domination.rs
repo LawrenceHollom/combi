@@ -27,31 +27,6 @@ pub fn is_good(g: &Graph) -> bool {
     }
     println!("Is well-connected!");
 
-    /*// Now rip out vertices of degree 2 and see what happens to gamma.
-    new_adj_list = vec![vec![]; n-twos.len()];
-    let mut map = vec![0; n];
-    let mut sub = 0;
-    for i in 0..n {
-        map[i] = i - sub;
-        if twos.contains(&i) {
-            sub += 1;
-        }
-    }
-    for u in 0..n {
-        if !twos.contains(&u) {
-            for v in g.adj_list[u].iter() {
-                if !twos.contains(v) {
-                    new_adj_list[map[u]].push(map[*v]);
-                }
-            }
-        }
-    }
-    let k = Graph::of_adj_list(new_adj_list, crate::constructor::Constructor::Special);
-    let gamma = domination::domination_number(g);
-    let new_gamma = domination::domination_number(&k);
-    println!("Old gamma: {}, new gamma: {}", gamma, new_gamma);
-    gamma == new_gamma*/
-    
     // Now test what happens to gamma with various combinations of the 3 verts
     // already dominated
     let mut masked_domination = vec![0; 8];

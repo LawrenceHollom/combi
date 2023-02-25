@@ -12,6 +12,7 @@ mod planar;
 mod induced_forest;
 mod connectedness;
 mod cubic_domination;
+mod subgraphs;
 
 use std::collections::HashMap;
 
@@ -133,6 +134,7 @@ impl Operator {
                     BunkbedDiffsAllUnimodal => bunkbed::are_all_diffs_unimodal(g),
                     HasRegularLosslessEdgeDominator => domination::has_regular_lossless_edge_dominator(g),
                     IsKConnected(connectivity) => connectedness::is_k_connected(g, *connectivity),
+                    IsTriangleFree => subgraphs::is_triangle_free(g),
                     GoodCubicDominationBase => cubic_domination::is_good(g),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);
