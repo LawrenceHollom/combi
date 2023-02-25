@@ -200,13 +200,15 @@ impl Instruction {
     fn execute_until(&self, constr: &Constructor, conditions: &[BoolOperation]) {
         let mut satisfied = false;
         let mut rep = 0;
+        let mut lines_printed = 0;
         let mut checkpoint_time = SystemTime::now();
         let mut required_steps = 0;
         while !satisfied {
-            if rep % 1000 == 999 {
+            if lines_printed >= 30 {
                 if checkpoint_time.elapsed().unwrap().as_secs() < 10 {
                     required_steps += 1;
                 }
+                lines_printed = 0;
                 checkpoint_time = SystemTime::now();
             }
             let mut printed_number = false;
@@ -241,6 +243,7 @@ impl Instruction {
             }
             if printed_number {
                 operator.print_all();
+                lines_printed += 1;
             }
             if all_satisfied {
                 println!("All conditions satisfied! {:?}", conditions);
