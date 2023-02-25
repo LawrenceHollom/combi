@@ -161,11 +161,22 @@ pub fn domination_number_with_predominations(g: &Graph, predominations: u128) ->
         // Too big to ever realistically finish, so might as well fail verbosely
         println!("Starting! Greedy: {}", number);
     }
-    let h = g.order_by_nbhd();
+    let (h, ordering_inv) = g.order_by_nbhd();
+
+    // Fix predominations to look at ordering_inv.
+    let mut sta = predominations;
+    let mut h_predominations = 0;
+    for i in 0..n {
+        if sta % 2 == 1 {
+            h_predominations += 1 << ordering_inv[i];
+        }
+        sta /= 2;
+    }
+
     let max_nbrs = get_max_nbrs(&h);
     for i in 0..=max_nbrs[0] {
         dominator[i] = true;
-        let this_number = min_dominator_bfs(&h, &mut dominator, &mut best_dominator, 1, i, number, None, &max_nbrs, predominations);
+        let this_number = min_dominator_bfs(&h, &mut dominator, &mut best_dominator, 1, i, number, None, &max_nbrs, h_predominations);
         if this_number < number {
             number = this_number;
         }
@@ -185,7 +196,7 @@ pub fn is_domination_number_at_least(g: &Graph, lower_bound: usize) -> bool {
     let mut best_dominator = vec![false; n];
     let mut number = dominate_greedy(g, 0);
 
-    let h = g.order_by_nbhd();
+    let (h, _ordering_inv) = g.order_by_nbhd();
     let max_nbrs = get_max_nbrs(&h);
     'test_start: for i in 0..=max_nbrs[0] {
         if number < lower_bound {
@@ -207,7 +218,7 @@ pub fn domination_redundancy(g: &Graph) -> Rational {
     let mut best_dominator = vec![false; n];
     let mut number = dominate_greedy(g, 0);
 
-    let h = g.order_by_nbhd();
+    let (h, _ordering_inv) = g.order_by_nbhd();
     let max_nbrs = get_max_nbrs(&h);
     for i in 0..=max_nbrs[0] {
         dominator[i] = true;

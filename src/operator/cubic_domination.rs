@@ -30,17 +30,13 @@ pub fn is_good(g: &Graph) -> bool {
     // Now test what happens to gamma with various combinations of the 3 verts
     // already dominated
     let mut masked_domination = vec![0; 8];
+    let mut num_sixes = 0;
     for mask in 0..8 {
-        let mut predominated = vec![false; n];
-        let mut sta = mask;
-        for j in 0..3 {
-            if sta % 2 == 1 {
-                predominated[j] = true;
-            }
-            sta /= 2;
-            masked_domination[mask] = domination::domination_number_with_predominations(g, mask as u128);
+        masked_domination[mask] = domination::domination_number_with_predominations(g, mask as u128);
+        if masked_domination[mask] == 6 {
+            num_sixes += 1;
         }
     }
     println!("Masked domination: {:?}", masked_domination);
-    (masked_domination[3] == 6) && (masked_domination[5] == 6) && (masked_domination[6] == 6)
+    num_sixes >= 5 && masked_domination[7] >= 5
 }

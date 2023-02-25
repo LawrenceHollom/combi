@@ -501,7 +501,7 @@ impl Graph {
     // - Repeat until all vertices pushed.
     //
     // This will be used to try and speed up some NP-hard search algos.
-    pub fn order_by_nbhd(&self) -> Graph {
+    pub fn order_by_nbhd(&self) -> (Graph, Vec<usize>) {
         let n = self.n.to_usize();
         let mut placed = vec![false; n];
         let mut ordering: Vec<usize> = vec![];
@@ -547,7 +547,8 @@ impl Graph {
                 adj_list[u].push(ordering_inv[*v]);
             }
         }
-        Graph::of_adj_list(adj_list, self.constructor.to_owned())
+        let g = Graph::of_adj_list(adj_list, self.constructor.to_owned());
+        (g, ordering_inv)
     }
 
     pub fn new(constructor: &Constructor) -> Graph {
