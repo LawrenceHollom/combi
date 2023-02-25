@@ -200,16 +200,17 @@ impl Instruction {
     fn execute_until(&self, constr: &Constructor, conditions: &[BoolOperation]) {
         let mut satisfied = false;
         let mut rep = 0;
-        let start_time = SystemTime::now();
-        let mut print_fails = true;
+        let mut checkpoint_time = SystemTime::now();
+        let mut required_steps = 0;
         while !satisfied {
-            if rep == 500 {
-                if start_time.elapsed().unwrap().as_secs() < 5 {
-                    print_fails = false;
+            if rep % 1000 == 999 {
+                if checkpoint_time.elapsed().unwrap().as_secs() < 10 {
+                    required_steps += 1;
                 }
+                checkpoint_time = SystemTime::now();
             }
             let mut printed_number = false;
-            if print_fails || rep % 1000 == 0 {
+            if required_steps == 0 || rep % 1000 == 0 {
                 print!("{}: ", rep);
                 printed_number = true;
             }
@@ -217,14 +218,21 @@ impl Instruction {
             let g = Graph::new(constr);
             let mut operator = Operator::new();
             let mut all_satisfied = true;
+            let mut num_satisfied = 0;
             'test_conditions: for condition in conditions.iter() {
                 if operator.operate_bool(&g, condition) {
-                    if !printed_number {
-                        print!("{}: ", rep);
-                        printed_number = true;
+                    num_satisfied += 1;
+                    if num_satisfied >= required_steps {
+                        if !printed_number {
+                            print!("{}: ", rep);
+                            for _i in 0..(required_steps - 1) {
+                                print!("X ");
+                            }
+                            printed_number = true;
+                        }
+                        print!("X ");
+                        std::io::stdout().flush().unwrap();
                     }
-                    print!("X ");
-                    std::io::stdout().flush().unwrap();
                     
                 } else {
                     all_satisfied = false;
