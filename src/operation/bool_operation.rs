@@ -38,6 +38,7 @@ pub enum BoolOperation {
     HasRegularLosslessEdgeDominator,
     IsDominationNumberAtLeast(usize),
     IsKConnected(usize),
+    GoodCubicDominationBase, // This one is incredibly specific.
 }
 
 impl NumToBoolInfix {
@@ -115,6 +116,7 @@ impl BoolOperation {
                     "true" => Some(Const(true)),
                     "false" => Some(Const(false)),
                     "is_k_connected" | "k_connected" | "k_conn" => Some(IsKConnected(args[0].parse().unwrap())),
+                    "gcdb" => Some(GoodCubicDominationBase),
                     &_ => None,
                 }
             }
@@ -176,6 +178,7 @@ impl fmt::Display for BoolOperation {
             BunkbedDiffsAllUnimodal => "Bunkbed diff polys are all unimodal".to_owned(),
             HasRegularLosslessEdgeDominator => "Has regular lossless edge-dominating set".to_owned(),
             IsKConnected(k) => format!("Is {}-connectd", *k),
+            GoodCubicDominationBase => "ISome very specific thing for domination of cubic graphs.".to_owned(),
         };
         write!(f, "{}", name)
     }
