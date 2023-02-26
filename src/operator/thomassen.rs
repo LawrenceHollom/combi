@@ -64,7 +64,12 @@ fn minimax_set_colours_rec(g: &Graph, colours: &mut EdgeVec<u8>, next_vert: usiz
     let edges: Vec<Edge> = g.adj_list[next_vert].iter().map(|x| Edge::of_pair(next_vert, *x)).collect();
     let local_cols: Vec<u8> = edges.iter().map(|e| colours.get(*e)).collect();
     let mut value = best_len;
-    for new_cols in [[1, 1, 2], [1, 2, 1], [2, 1, 1], [1, 2, 2], [2, 1, 2], [2, 2, 1]] {
+    let possibilities = if next_vert == 0 {
+        vec![[1, 1, 2], [1, 2, 1], [2, 1, 1]]
+    } else {
+        vec![[1, 1, 2], [1, 2, 1], [2, 1, 1], [1, 2, 2], [2, 1, 2], [2, 2, 1]]
+    };
+    for new_cols in possibilities {
         if local_cols[0] != not(new_cols[0]) && local_cols[1] != not(new_cols[1]) && local_cols[2] != not(new_cols[2]) {
             // This colouring is compatible. 
             for i in 0..3 {
