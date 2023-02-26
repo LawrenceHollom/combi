@@ -3,12 +3,16 @@ use std::cmp::*;
 
 pub mod polynomial;
 pub mod rational;
+pub mod edge_set;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Order(usize);
 
 #[derive(Copy, Clone, Debug)]
 pub struct Degree(usize);
+
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
+pub struct Edge(usize, usize);
 
 impl Order {
     pub fn of_string(text: &str) -> Order {
@@ -98,6 +102,45 @@ impl Ord for Degree {
     fn cmp(&self, other: &Self) -> Ordering {
         self.0.cmp(&other.0)
     }
+}
+
+impl Edge {
+    pub fn of_string(text: &str) -> Edge {
+        let pars: Vec<&str> = text.split("~").map(|x| x.trim()).collect();
+        Edge(pars[0].parse().unwrap(), pars[1].parse().unwrap())
+    }
+
+    pub fn of_pair(x: usize, y: usize) -> Edge {
+        Edge(x, y)
+    }
+
+    pub fn to_pair(&self) -> (usize, usize) {
+        (self.0, self.1)
+    }
+
+    pub fn encode(&self, n: usize) -> usize {
+        if self.0 < self.1 {
+            self.0 * n + self.1
+        } else {
+            self.1 * n + self.0
+        }
+    }
+
+    pub fn fst(&self) -> usize {
+        self.0
+    }
+
+    pub fn snd(&self) -> usize {
+        self.1
+    }
+
+    pub fn contains(&self, v: usize) -> bool {
+        self.0 == v || self.1 == v
+    }
+
+    pub fn equals(&self, d: usize) -> bool {
+        self.0 == d
+    }    
 }
 
 pub fn pow(base: u64, exp: u64) -> u64 {

@@ -1,3 +1,11 @@
+ == THE BIG REFACTOR ==
+ - Make everything more typeful. More typeful!
+ -- Vertex type
+ -- Actually use Edge type everywhere
+ -- Come up with and use more types as appropriate.
+ -- Remove the Order type; it does nothing, and a usize genuinely works.
+ - Remove all the 2.pow type things; use << instead.
+ 
  == THE KITCHEN SINK ==
  - Maybe add option for increasing by number of edges or something
  - test with sink((size>0)&&(theta>=acyclic)) -> halts at n=15
@@ -8,11 +16,11 @@
  - Check that struct(bowties(d),num) agrees with old bowties framework
  - Then rip out old framework.
 
- == EDGES ==
- - Make an edge type, using encode from bunkbed.rs.
- - This can then be used to index stuff, and abstract away the usual boilerplate.
- - Aim is to have a good way of indexing by edge.
- - EdgeMap (analogy of HashMap); stores n and indexer, like in bunkbed.
+ == THOMASSEN CHECKER ==
+ - Every cubic graph can be two-edge-coloured as linear forests.
+ -- At least how long must the parts be?
+ -- Other than the two cubic graphs of degree 6.
+ - Need the general edge framework first.
 
  == DOMINATION ==
  - Optimistic: either through construction or otherwise, notice when a graph has
