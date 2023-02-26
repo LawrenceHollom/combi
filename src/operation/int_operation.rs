@@ -24,6 +24,7 @@ pub enum IntOperation {
     MinDegree,
     MaxDegree,
     Connectedness,
+    Thomassen,
     Number(u32),
 }
 
@@ -53,6 +54,7 @@ impl IntOperation {
             "min_degree" | "min" => Some(MinDegree),
             "max_degree" | "max" | "delta" => Some(MaxDegree),
             "connectedness" | "connectivity" => Some(Connectedness),
+            "thomassen" => Some(Thomassen),
             str => str.parse().ok().map(Number),
         }
     }
@@ -85,6 +87,7 @@ impl fmt::Display for IntOperation {
             MinDegree => "Min degree",
             MaxDegree => "Max degree",
             Connectedness => "Connectedness",
+            Thomassen => "Minimax path length in linear forest bisection of cubic graph",
             Number(n) => {
                 sta = n.to_string();
                 sta.as_str()

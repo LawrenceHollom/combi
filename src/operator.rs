@@ -15,6 +15,7 @@ mod cubic_domination;
 mod subgraphs;
 mod debug;
 mod signature;
+mod thomassen;
 
 use std::collections::HashMap;
 
@@ -62,6 +63,7 @@ impl Operator {
                     MinDegree => g.min_degree(),
                     MaxDegree => g.max_degree(),
                     Connectedness => connectedness::connectedness(g),
+                    Thomassen => thomassen::minimax_len(g),
                     Number(k) => *k,
                 };
                 self.previous_int_values.insert(*operation, value);

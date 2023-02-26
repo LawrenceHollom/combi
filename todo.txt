@@ -4,6 +4,7 @@
  -- Actually use Edge type everywhere
  -- Come up with and use more types as appropriate.
  -- Remove the Order type; it does nothing, and a usize genuinely works.
+ -- Something for int_operation return type which needs only Ord.
  - Remove all the 2.pow type things; use << instead.
  
  == THE KITCHEN SINK ==
