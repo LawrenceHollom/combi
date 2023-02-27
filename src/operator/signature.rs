@@ -24,4 +24,5 @@ pub fn print_signature(g: &Graph) {
         }
         println!("{} : {}", *s1, *s2);
     }
+    println!();
 }

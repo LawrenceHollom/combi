@@ -175,6 +175,7 @@ fn compute_domination_number_and_set(g: &Graph, predominations: u128, best_domin
 
     let max_nbrs = get_max_nbrs(&h);
     let mut first_unpredominated = 0;
+    let mut was_greedy_best = true;
     while (h_predominations >> first_unpredominated) % 2 == 1 {
         first_unpredominated += 1;
     }
@@ -182,9 +183,18 @@ fn compute_domination_number_and_set(g: &Graph, predominations: u128, best_domin
         dominator[i] = true;
         let this_number = min_dominator_bfs(&h, &mut dominator, best_dominator, 1, i, number, None, &max_nbrs, h_predominations);
         if this_number < number {
+            was_greedy_best = false;
             number = this_number;
         }
         dominator[i] = false;
+    }
+
+    if !was_greedy_best {
+        // We need to pull best_dominator back again.
+        let dom_sta = best_dominator.to_owned();
+        for i in 0..n {
+            best_dominator[i] = dom_sta[ordering_inv[i]];
+        }
     }
 
     number as u32
