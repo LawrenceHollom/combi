@@ -99,7 +99,7 @@ fn min_dominator_bfs(g: &Graph, dominator: &mut Vec<bool>, best_dominator: &mut 
     new_best_set
 }
 
-fn dominate_greedy(g: &Graph, predominations: u128) -> usize {
+fn dominate_greedy(g: &Graph, predominations: u128, best_dominator: &mut Vec<bool>) -> usize {
     let n = g.n.to_usize();
 
     let mut dominion = predominations;
@@ -133,6 +133,10 @@ fn dominate_greedy(g: &Graph, predominations: u128) -> usize {
         dominion |= get_nbhd_code(g, vert);
     }
 
+    for i in 0..n {
+        best_dominator[i] = dominator[i];
+    }
+
     gamma
 }
 
@@ -149,11 +153,10 @@ fn get_max_nbrs(g: &Graph) -> Vec<usize> {
     max_nbrs
 }
 
-pub fn domination_number_with_predominations(g: &Graph, predominations: u128) -> u32 {
+fn compute_domination_number_and_set(g: &Graph, predominations: u128, best_dominator: &mut Vec<bool>) -> u32 {
     let n = g.n.to_usize();
     let mut dominator = vec![false; n];
-    let mut best_dominator = vec![false; n];
-    let mut number = dominate_greedy(g, predominations);
+    let mut number = dominate_greedy(g, predominations, best_dominator);
     if n >= 60 {
         // Too big to ever realistically finish, so might as well fail verbosely
         println!("Starting! Greedy: {}", number);
@@ -177,7 +180,7 @@ pub fn domination_number_with_predominations(g: &Graph, predominations: u128) ->
     }
     for i in 0..=max_nbrs[first_unpredominated] {
         dominator[i] = true;
-        let this_number = min_dominator_bfs(&h, &mut dominator, &mut best_dominator, 1, i, number, None, &max_nbrs, h_predominations);
+        let this_number = min_dominator_bfs(&h, &mut dominator, best_dominator, 1, i, number, None, &max_nbrs, h_predominations);
         if this_number < number {
             number = this_number;
         }
@@ -187,15 +190,41 @@ pub fn domination_number_with_predominations(g: &Graph, predominations: u128) ->
     number as u32
 }
 
+pub fn domination_number_with_predominations(g: &Graph, predominations: u128) -> u32 {
+    let n = g.n.to_usize();
+    let mut best_dominator = vec![false; n];
+    compute_domination_number_and_set(g, predominations, &mut best_dominator)
+}
+
 pub fn domination_number(g: &Graph) -> u32 {
     domination_number_with_predominations(g, 0)
+}
+
+pub fn print_random_dominator(g: &Graph) {
+    let n = g.n.to_usize();
+    let mut best_dominator = vec![false; n];
+    let (h, ordering_inv) = g.randomly_permute_vertices();
+    
+    let mut ordering = vec![0; n];
+    for i in 0..n {
+        ordering[ordering_inv[i]] = i;
+    }
+
+    let _ = compute_domination_number_and_set(&h, 0, &mut best_dominator);
+    let mut dominator_verts: Vec<usize> = 
+            best_dominator.iter().enumerate()
+                        .filter(|(_i, x)| **x)
+                        .map(|(i, _x)| ordering[i])
+                        .collect();
+    dominator_verts.sort();
+    println!("{:?}", dominator_verts);
 }
 
 pub fn is_domination_number_at_least(g: &Graph, lower_bound: usize) -> bool {
     let n = g.n.to_usize();
     let mut dominator = vec![false; n];
     let mut best_dominator = vec![false; n];
-    let mut number = dominate_greedy(g, 0);
+    let mut number = dominate_greedy(g, 0, &mut best_dominator);
 
     let (h, _ordering_inv) = g.order_by_nbhd();
     let max_nbrs = get_max_nbrs(&h);
@@ -217,7 +246,7 @@ pub fn domination_redundancy(g: &Graph) -> Rational {
     let n = g.n.to_usize();
     let mut dominator = vec![false; n];
     let mut best_dominator = vec![false; n];
-    let mut number = dominate_greedy(g, 0);
+    let mut number = dominate_greedy(g, 0, &mut best_dominator);
 
     let (h, _ordering_inv) = g.order_by_nbhd();
     let max_nbrs = get_max_nbrs(&h);

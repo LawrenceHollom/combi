@@ -182,6 +182,7 @@ impl Operator {
             BunkbedDists => bunkbed::print_distance_polynomials(g),
             BunkbedDiffs(u, print_size) => bunkbed::interesting_configurations(g, *u, *print_size),
             PrintIntervalColoring => interval_coloring::print_interval_coloring(g),
+            PrintDominatingSet => domination::print_random_dominator(g),
             Signature => signature::print_signature(g),
             Unit => (),
         }

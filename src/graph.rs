@@ -3,7 +3,7 @@ use crate::constructor::*;
 use Constructor::*;
 use RawConstructor::*;
 
-use rand::{thread_rng, Rng};
+use rand::{thread_rng, Rng, seq::SliceRandom};
 use queues::*;
 
 mod products;
@@ -495,6 +495,24 @@ impl Graph {
         sizes
     }
 
+    fn permute_vertices(&self, ordering: &Vec<usize>) -> (Graph, Vec<usize>) {
+        let n = self.n.to_usize();
+        let mut ordering_inv: Vec<usize> = vec![n; n];
+
+        for i in 0..n {
+            ordering_inv[ordering[i]] = i;
+        }
+
+        let mut adj_list: Vec<Vec<usize>> = vec![vec![]; n];
+        for u in 0..n {
+            for v in self.adj_list[ordering[u]].iter() {
+                adj_list[u].push(ordering_inv[*v]);
+            }
+        }
+        let g = Graph::of_adj_list(adj_list, self.constructor.to_owned());
+        (g, ordering_inv)
+    }
+
     // Returns an isomorphic version of self with vertices ordered by:
     // - Take a vertex u of min unpushed degree; push.
     // - Push all nbrs of u.
@@ -534,21 +552,15 @@ impl Graph {
                 }
             }
         }
+        self.permute_vertices(&ordering)
+    }
 
-        let mut ordering_inv: Vec<usize> = vec![n; n];
-
-        for i in 0..n {
-            ordering_inv[ordering[i]] = i;
-        }
-
-        let mut adj_list: Vec<Vec<usize>> = vec![vec![]; n];
-        for u in 0..n {
-            for v in self.adj_list[ordering[u]].iter() {
-                adj_list[u].push(ordering_inv[*v]);
-            }
-        }
-        let g = Graph::of_adj_list(adj_list, self.constructor.to_owned());
-        (g, ordering_inv)
+    pub fn randomly_permute_vertices(&self) -> (Graph, Vec<usize>) {
+        let n = self.n.to_usize();
+        let mut rng = thread_rng();
+        let mut ordering: Vec<usize> = (0..n).collect();
+        ordering.shuffle(&mut rng);
+        self.permute_vertices(&ordering)
     }
 
     pub fn new(constructor: &Constructor) -> Graph {

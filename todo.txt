@@ -13,6 +13,15 @@
 - Test fewer graphs for the very big n -> if more than 1000 then filter randomly
 - Only run arrow commands on successful graphs (as in until)
 
+== UNTIL ==
+- Print out info about how many graphs made it past each step
+- This way we could see e.g. how many triangle-free graphs we needed to check.
+
+== SHUFFLE VERTICES ==
+- Add a function to allow the vertices of a graph to be shuffled randomly
+- This allows us to see how robust e.g. a minimal dominating set is:
+-- If we shuffle the vertices, do we find lots of different dominating sets?
+
 == BOWTIES ==
 - Check that struct(bowties(d),num) agrees with old bowties framework
 - Then rip out old framework.
