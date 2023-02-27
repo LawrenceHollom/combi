@@ -75,7 +75,7 @@ fn minimax_set_colours_rec(g: &Graph, colours: &mut EdgeVec<u8>, next_vert: usiz
             for i in 0..3 {
                 colours.set(edges[i], new_cols[i]);
             }
-            value = value.min(minimax_analyse_rec(g, colours, next_vert, other_end, path_len, max_len_here, best_len, &edges));
+            value = value.min(minimax_analyse_rec(g, colours, next_vert, other_end, path_len, max_len_here, value, &edges));
             // revert colours to original.
             for i in 0..3 {
                 colours.set(edges[i], local_cols[i])

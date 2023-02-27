@@ -6,14 +6,14 @@ pub struct Edge(usize, usize);
 
 #[derive(Clone)]
 pub struct EdgeSet {
-    indexer: Vec<usize>,
+    indexer: Vec<Option<usize>>,
     n: usize,
     edges: u128,
 }
 
 #[derive(Clone)]
 pub struct EdgeVec<T: Debug + Copy> {
-    indexer: Vec<usize>,
+    indexer: Vec<Option<usize>>,
     n: usize,
     vec: Vec<T>,
 }
@@ -58,14 +58,14 @@ impl Edge {
     }    
 }
 
-fn make_indexer(adj_list: &Vec<Vec<usize>>) -> (Vec<usize>, usize) {
+fn make_indexer(adj_list: &Vec<Vec<usize>>) -> (Vec<Option<usize>>, usize) {
     let n = adj_list.len();
-    let mut indexer: Vec<usize> = vec![0; (n * (n - 1)) / 2];
+    let mut indexer: Vec<Option<usize>> = vec![None; (n * (n - 1)) / 2];
     let mut i = 0;
     for (u, adj) in adj_list.iter().enumerate() {
         for v in adj.iter() {
             if *v > u {
-                indexer[Edge::of_pair(u, *v).encode(n)] = i;
+                indexer[Edge::of_pair(u, *v).encode(n)] = Some(i);
                 i += 1;
             }
         }
@@ -84,11 +84,11 @@ impl EdgeSet {
     }
 
     pub fn add_edge(&mut self, e: Edge) {
-        self.edges += 1 << self.indexer[e.encode(self.n)];
+        self.edges += 1 << self.indexer[e.encode(self.n)].unwrap();
     }
 
     pub fn has_edge(&self, e: Edge) -> bool {
-        (self.edges >> self.indexer[e.encode(self.n)]) % 2 == 1
+        (self.edges >> self.indexer[e.encode(self.n)].unwrap()) % 2 == 1
     }
 }
 
@@ -111,7 +111,7 @@ impl<T: Debug + Copy> EdgeVec<T> {
             for v in adj.iter() {
                 if *v > u {
                     let e = Edge::of_pair(u, *v); 
-                    vec[indexer[e.encode(n)]] = f(e);
+                    vec[indexer[e.encode(n)].unwrap()] = f(e);
                 }
             }
         }
@@ -120,11 +120,25 @@ impl<T: Debug + Copy> EdgeVec<T> {
     }
 
     pub fn set(&mut self, e: Edge, value: T) {
-        self.vec[self.indexer[e.encode(self.n)]] = value;
+        self.vec[self.indexer[e.encode(self.n)].unwrap()] = value;
     }
 
     pub fn get(&self, e: Edge) -> T {
-        self.vec[self.indexer[e.encode(self.n)]]
+        self.vec[self.indexer[e.encode(self.n)].unwrap()]
+    }
+
+    pub fn print(&self) {
+        for u in 0..(self.n - 1) {
+            for v in (u + 1)..self.n {
+                let e = Edge::of_pair(u, v);
+                match self.indexer[e.encode(self.n)] {
+                    Some(i) => {
+                        println!("{} ~ {}: {:?}", u, v, self.vec[i]);
+                    }
+                    None => (),
+                }
+            }
+        }
     }
 }
 
