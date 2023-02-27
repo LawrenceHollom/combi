@@ -7,7 +7,8 @@ fn not(colour: u8) -> u8 {
 }
 
 fn minimax_analyse_rec(g: &Graph, colours: &mut EdgeVec<u8>, next_vert: usize, other_end: &mut EdgeVec<Option<Edge>>,
-        path_len: &mut EdgeVec<usize>, max_len_here: usize, best_len: usize, edges: &Vec<Edge>) -> usize {
+        path_len: &mut EdgeVec<usize>, max_len_here: usize, best_len: usize, edges: &Vec<Edge>,
+        long_path_count: usize, long_path_cap: Option<usize>) -> usize {
     let local_cols: Vec<u8> = edges.iter().map(|e| colours.get(*e)).collect();
             
     // if all three edges around next_vert all have same colour, fail.
@@ -35,7 +36,9 @@ fn minimax_analyse_rec(g: &Graph, colours: &mut EdgeVec<u8>, next_vert: usize, o
                 other_end.set(i_end, Some(j_end));
                 other_end.set(j_end, Some(i_end));
                 let mut value = best_len;
-                value = value.min(minimax_set_colours_rec(g, colours, next_vert + 1, other_end, path_len, new_max_len, best_len));
+                let new_long_path = if i_len + j_len >= 4 { 1 } else { 0 };
+                value = value.min(minimax_set_colours_rec(g, colours, next_vert + 1, other_end, 
+                    path_len, new_max_len, best_len, long_path_count + new_long_path, long_path_cap));
                 // set all values back to original.
                 other_end.set(edges[i], Some(i_end));
                 other_end.set(edges[j], Some(j_end));
@@ -52,8 +55,13 @@ fn minimax_analyse_rec(g: &Graph, colours: &mut EdgeVec<u8>, next_vert: usize, o
 }
 
 fn minimax_set_colours_rec(g: &Graph, colours: &mut EdgeVec<u8>, next_vert: usize, other_end: &mut EdgeVec<Option<Edge>>,
-        path_len: &mut EdgeVec<usize>, max_len_here: usize, best_len: usize) -> usize {
+        path_len: &mut EdgeVec<usize>, max_len_here: usize, best_len: usize,
+        long_path_count: usize, long_path_cap: Option<usize>) -> usize {
     let n = g.n.to_usize();
+    if long_path_cap.map_or(false, |cap| long_path_count > cap) {
+        // There are too many long paths. Fail.
+        return best_len;
+    }
     if next_vert == n {
         return best_len.min(max_len_here);
     }
@@ -75,7 +83,7 @@ fn minimax_set_colours_rec(g: &Graph, colours: &mut EdgeVec<u8>, next_vert: usiz
             for i in 0..3 {
                 colours.set(edges[i], new_cols[i]);
             }
-            value = value.min(minimax_analyse_rec(g, colours, next_vert, other_end, path_len, max_len_here, value, &edges));
+            value = value.min(minimax_analyse_rec(g, colours, next_vert, other_end, path_len, max_len_here, value, &edges, long_path_count, long_path_cap));
             // revert colours to original.
             for i in 0..3 {
                 colours.set(edges[i], local_cols[i])
@@ -98,5 +106,6 @@ pub fn minimax_len(g: &Graph) -> u32 {
     let mut other_end = EdgeVec::new_fn(&g.adj_list, |x| Some(x));
     let mut path_len = EdgeVec::new(&g.adj_list, 1);
 
-    minimax_set_colours_rec(&g, &mut colours, 0, &mut other_end, &mut path_len, 1, n) as u32
+    minimax_set_colours_rec(&g, &mut colours, 0, &mut other_end, &mut path_len, 
+        1, n, 0, Some(2)) as u32
 }

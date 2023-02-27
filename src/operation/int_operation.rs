@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Eq, Hash, PartialEq, Copy, Clone, Debug)]
+#[derive(Eq, Hash, PartialEq, Copy, Clone, Debug, PartialOrd, Ord)]
 pub enum IntOperation {
     Order,
     Size,

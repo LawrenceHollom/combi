@@ -202,10 +202,15 @@ impl Operator {
     }
 
     pub fn print_all(&self) {
-        for key in self.previous_bool_values.keys() {
+        let mut bool_keys: Vec<&BoolOperation> = self.previous_bool_values.keys().collect();
+        bool_keys.sort();
+        for key in bool_keys.iter() {
             print!("({}: {}) ", *key, self.previous_bool_values.get(key).unwrap());
         }
-        for key in self.previous_int_values.keys() {
+
+        let mut int_keys: Vec<&IntOperation> = self.previous_int_values.keys().collect();
+        int_keys.sort();
+        for key in int_keys.iter() {
             print!("({}: {}) ", *key, self.previous_int_values.get(key).unwrap());
         }
         println!();
