@@ -1,64 +1,79 @@
- == THE BIG REFACTOR ==
- - Make everything more typeful. More typeful!
- -- Vertex type
- -- Actually use Edge type everywhere
- -- Come up with and use more types as appropriate.
- -- Remove the Order type; it does nothing, and a usize genuinely works.
- -- Something for int_operation return type which needs only Ord.
- - Remove all the 2.pow type things; use << instead.
+== THE BIG REFACTOR ==
+- Make everything more typeful. More typeful! Make a new branch.
+-- Vertex type
+-- Actually use Edge type everywhere
+-- Come up with and use more types as appropriate.
+-- Remove the Order type; it does nothing, and a usize genuinely works.
+-- Something for int_operation return type which needs only Ord.
+- Remove all the 2.pow type things; use << instead.
  
- == THE KITCHEN SINK ==
- - Maybe add option for increasing by number of edges or something
- - test with sink((size>0)&&(theta>=acyclic)) -> halts at n=15
- - Test fewer graphs for the very big n -> if more than 1000 then filter randomly
- - Only run arrow commands on successful graphs (as in until)
+== THE KITCHEN SINK ==
+- Maybe add option for increasing by number of edges or something
+- test with sink((size>0)&&(theta>=acyclic)) -> halts at n=15
+- Test fewer graphs for the very big n -> if more than 1000 then filter randomly
+- Only run arrow commands on successful graphs (as in until)
 
- == BOWTIES ==
- - Check that struct(bowties(d),num) agrees with old bowties framework
- - Then rip out old framework.
+== BOWTIES ==
+- Check that struct(bowties(d),num) agrees with old bowties framework
+- Then rip out old framework.
 
- == THOMASSEN CHECKER ==
- - Every cubic graph can be two-edge-coloured as linear forests.
- -- At least how long must the parts be?
- -- Other than the two cubic graphs of degree 6.
- - Need the general edge framework first.
+== MIXED STRUCTURED GRAPH GENERATOR ==
+- Take as input a graph with highlighted edges, each with one end of deg 1
+- Either glue these edges together top-to-tail
+- Or glue multiple deg-1 vertices together
+- Imagined use case is regular graphs, so could deduce how many to glue
+   from the degree.
 
- == DOMINATION ==
- - Optimistic: either through construction or otherwise, notice when a graph has
-   a small set of edges which split the graph into two parts. Then dp over these.
- - Use case is probably cubic graphs, and sets of three edges (as graphs will be
-   just barely 3-connected.)
- - If done correctly then can compute domination numbers for very large graphs.
+== GRAPH IDENTIFIER ==
+- Some tools to, given a graph (presumably from a file), try and identify it
+- Simplest way is to run kitchen sink to try and ID it
+- Could also identify vertex symmetric classes.
+- See graph iterators below; this probably ties in well.
 
- == FLOOD FILL ==
- - Code up a generic flood fill algo; it comes up so much.
- - Adding what stops the flood fill will be the difficult bit.
- - This needs the generic edge framework for this to be feasible.
+== DOMINATION ==
+- Optimistic: either through construction or otherwise, notice when a graph has
+  a small set of edges which split the graph into two parts. Then dp over these.
+- Use case is probably cubic graphs, and sets of three edges (as graphs will be
+  just barely 3-connected.)
+- If done correctly then can compute domination numbers for very large graphs.
 
- == HOUSE OF GRAPHS ==
- - Have a new kitchen sink option for smashing through houseofgraphs
- -- Work this in with the old one in some sensible way.
+== FLOOD FILL ==
+- Code up a generic flood fill algo; it comes up so much.
+- Adding what stops the flood fill will be the difficult bit.
+- This needs the generic edge framework for this to be feasible.
 
- == ITERATOR ==
- - Detect identical nodes in graphs and iterate over subsets more efficiently
- - e.g. there are only 3 ways to pick 2 vertices from K_{s,t}
+== HOUSE OF GRAPHS ==
+- Have a new kitchen sink option for smashing through houseofgraphs
+-- Work this in with the old one in some sensible way.
 
- == BUNKBEDS ==
- - The code is very (very) slow, and naive. Should be some wins to be had in terms of speed
- - Instead of iterating through all subsets of edges, dfs:
- -- Then once both endpoints are in, can cut off immediately.
- -- Should speed things up a little.
+== ITERATOR ==
+- Detect identical nodes in graphs and iterate over subsets more efficiently
+- e.g. there are only 3 ways to pick 2 vertices from K_{s,t}
 
- == BUGS ==
- - Maybe ->() has stopped working? Gets picked up as infix-like
- - sink(domination>10) doesn't trip on E(11)
+== BUNKBEDS ==
+- The code is very (very) slow, and naive. Should be some wins to be had in terms of speed
+- Instead of iterating through all subsets of edges, dfs:
+-- Then once both endpoints are in, can cut off immediately.
+-- Should speed things up a little.
 
- == HELP COMMAND ==
- - Print all the various operations.
- - And write code to do this automatically so it doesn't need maintaining.
+== BUGS ==
+- Maybe ->() has stopped working? Gets picked up as infix-like
+- sink(domination>10) doesn't trip on E(11)
+
+== HELP COMMAND ==
+- Print all the various operations.
+- And write code to do this automatically so it doesn't need maintaining.
 
 == UNIT COMMANDS ==
 - signature: prints out all kinds of info about the graph
 
- == KEEP CLIPPY HAPPY ==
- - You don't want to anger clippy.
+== HOPELESSLY OPTIMISTIC INTERFACE GOALS ==
+- Write up an interface in curses that allows for nicer printing of info
+- Also could allow for better editing of commands, and command entry.
+- Could have panels and all kinds of nice things
+- Would want a new crate for curses interaction and all that stuff.
+-- Is some of this already written somewhere?
+- And you would spend like a week writing this for yourself because???
+
+== KEEP CLIPPY HAPPY ==
+- You don't want to anger clippy.
