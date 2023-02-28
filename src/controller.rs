@@ -207,6 +207,7 @@ impl Instruction {
             if lines_printed >= 30 {
                 if checkpoint_time.elapsed().unwrap().as_secs() < 10 {
                     required_steps += 1;
+                    println!("Cutting verbosity!");
                 }
                 lines_printed = 0;
                 checkpoint_time = SystemTime::now();

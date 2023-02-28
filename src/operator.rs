@@ -63,7 +63,7 @@ impl Operator {
                     MinDegree => g.min_degree(),
                     MaxDegree => g.max_degree(),
                     Connectedness => connectedness::connectedness(g),
-                    Thomassen => thomassen::minimax_len(g),
+                    Thomassen(long_path_cap) => thomassen::minimax_len(g, *long_path_cap),
                     Number(k) => *k,
                 };
                 self.previous_int_values.insert(*operation, value);

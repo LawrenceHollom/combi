@@ -92,10 +92,11 @@ impl Constructor {
                 let deg = Degree::of_string(args[1]);
                 Random(Biregular(Order::of_string(args[0]), deg, deg))
             },
-            "biregular" => {
+            "biregular" | "bireg" => {
+                let right_deg = if args.len() == 2 { args[1] } else { args[2] };
                 Random(Biregular(Order::of_string(args[0]),
                     Degree::of_string(args[1]),
-                    Degree::of_string(args[2])))
+                    Degree::of_string(right_deg)))
             }
             "erdos_renyi" | "er" | "g" => {
                 Random(ErdosRenyi(Order::of_string(args[0]), args[1].parse().unwrap()))

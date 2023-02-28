@@ -1,5 +1,7 @@
 use std::fmt;
 
+use utilities::parse_function_like;
+
 #[derive(Eq, Hash, PartialEq, Copy, Clone, Debug, PartialOrd, Ord)]
 pub enum IntOperation {
     Order,
@@ -24,14 +26,15 @@ pub enum IntOperation {
     MinDegree,
     MaxDegree,
     Connectedness,
-    Thomassen,
+    Thomassen(Option<usize>),
     Number(u32),
 }
 
 impl IntOperation {
     pub fn of_string_result(text: &str) -> Option<IntOperation> {
         use IntOperation::*;
-        match text.trim().trim_end_matches(')').to_lowercase().as_str() {
+        let (func, args) = parse_function_like(text);
+        match func.trim().trim_end_matches(')').to_lowercase().as_str() {
             "order" | "n" => Some(Order),
             "size" | "edges" => Some(Size),
             "largest_component" | "largest" => Some(LargestComponent),
@@ -51,10 +54,16 @@ impl IntOperation {
             "total_domination_game" | "gamma_tg" => Some(TotalDominationGameLength),
             "num_interval_colors" => Some(NumIntervalColors),
             "max_induced_forest" | "max_forest" => Some(MaxInducedForest),
-            "min_degree" | "min" => Some(MinDegree),
-            "max_degree" | "max" | "delta" => Some(MaxDegree),
+            "min_degree" | "min_deg" => Some(MinDegree),
+            "max_degree" | "max_deg" | "delta" => Some(MaxDegree),
             "connectedness" | "connectivity" => Some(Connectedness),
-            "thomassen" => Some(Thomassen),
+            "thomassen" => {
+                if args.len() == 0 {
+                    Some(Thomassen(None))
+                } else {
+                    Some(Thomassen(Some(args[0].parse().unwrap())))
+                }
+            }
             str => str.parse().ok().map(Number),
         }
     }
@@ -87,7 +96,7 @@ impl fmt::Display for IntOperation {
             MinDegree => "Min degree",
             MaxDegree => "Max degree",
             Connectedness => "Connectedness",
-            Thomassen => "Minimax path length in linear forest bisection of cubic graph",
+            Thomassen(_) => "Minimax path length in linear forest bisection of cubic graph",
             Number(n) => {
                 sta = n.to_string();
                 sta.as_str()

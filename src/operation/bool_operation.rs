@@ -51,7 +51,7 @@ impl NumToBoolInfix {
             "<=" => Some(NotMore),
             "<" => Some(Less),
             ">" => Some(More),
-            "==" => Some(Equal),
+            "=" | "==" => Some(Equal),
             &_ => None
         }
     }

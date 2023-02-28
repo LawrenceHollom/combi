@@ -93,7 +93,7 @@ fn minimax_set_colours_rec(g: &Graph, colours: &mut EdgeVec<u8>, next_vert: usiz
     value
 }
 
-pub fn minimax_len(g: &Graph) -> u32 {
+pub fn minimax_len(g: &Graph, long_path_cap: Option<usize>) -> u32 {
     for d in g.deg.iter() {
         if !d.equals(3) {
             panic!("Thomassen only applies to cubic graphs! (If subcubic then improve code.)");
@@ -107,5 +107,5 @@ pub fn minimax_len(g: &Graph) -> u32 {
     let mut path_len = EdgeVec::new(&g.adj_list, 1);
 
     minimax_set_colours_rec(&g, &mut colours, 0, &mut other_end, &mut path_len, 
-        1, n, 0, Some(2)) as u32
+        1, n, 0, long_path_cap) as u32
 }

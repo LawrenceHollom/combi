@@ -16,6 +16,8 @@
 == UNTIL ==
 - Print out info about how many graphs made it past each step
 - This way we could see e.g. how many triangle-free graphs we needed to check.
+- Be more intelligent about cutting verbosity:
+-- If threshold barely passed, then still print regular updates.
 
 == SHUFFLE VERTICES ==
 - Add a function to allow the vertices of a graph to be shuffled randomly
