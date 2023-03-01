@@ -1,4 +1,4 @@
-use utilities::*;
+use utilities::{*, edge_tools::*};
 use crate::constructor::*;
 use Constructor::*;
 use RawConstructor::*;
@@ -579,6 +579,9 @@ impl Graph {
             Random(ErdosRenyi(order, p)) => erdos_renyi::new(order, *p),
             Random(Triangulation(order)) => random_planar::new_triangulation(order),
             Random(MaximalPlanar(order)) => random_planar::new_maximal(order),
+            Random(PlanarConditioned(order, max_deg, min_girth)) => {
+                random_planar::new_conditioned(order, *max_deg, *min_girth)
+            }
             Random(Bowties(scale, degree)) => bowties::new_bowties(*scale, *degree),
             Random(Regular(order, degree)) => regular::new_regular(order, degree),
             Random(DegreeSequence(deg_seq)) => regular::new_from_degree_sequence(deg_seq, false),
@@ -686,5 +689,142 @@ impl Graph {
 
     pub fn max_degree(&self) -> u32 {
         self.deg.iter().map(|x| x.to_usize()).max().unwrap() as u32
+    }
+
+    pub fn floyd_warshall(&self) -> Vec<Vec<usize>> {
+        let n = self.n.to_usize();
+        let mut dist = vec![vec![n; n]; n];
+        for (i, d) in dist.iter_mut().enumerate() {
+            d[i] = 0;
+        }
+        for (i, d) in dist.iter_mut().enumerate() {
+            for j in self.adj_list[i].iter() {
+                d[*j] = 1;
+            }
+        }
+        for k in 0..n {
+            for i in 0..n {
+                for j in 0..n {
+                    if dist[i][j] > dist[i][k] + dist[k][j] {
+                        dist[i][j] = dist[i][k] + dist[k][j];
+                    }
+                }
+            }
+        }
+        dist
+    }
+
+    pub fn delete_edge(&mut self, e: Edge) {
+        let x = e.fst();
+        let y = e.snd();
+        if self.adj[x][y] {
+            self.adj[x][y] = false;
+            self.adj[y][x] = false;
+            'find_y: for (i, z) in self.adj_list[x].iter().enumerate() {
+                if *z == y {
+                    self.adj_list[x].swap_remove(i);
+                    break 'find_y;
+                }
+            }
+            'find_x: for (i, z) in self.adj_list[y].iter().enumerate() {
+                if *z == x {
+                    self.adj_list[y].swap_remove(i);
+                    break 'find_x;
+                }
+            }
+            self.deg[x] = self.deg[x].decr();
+            self.deg[y] = self.deg[y].decr();
+        }
+    }
+
+    pub fn reduce_max_degree(&mut self, max_deg: Degree) {
+        'cut_edges: loop {
+            let mut are_degs_good = true;
+            'test_degs: for d in self.deg.iter() {
+                if d > &max_deg {
+                    are_degs_good = false;
+                    break 'test_degs;
+                }
+            }
+            if are_degs_good {
+                break 'cut_edges;
+            }
+
+            let mut max_edge = Edge::of_pair(0, 1);
+            let mut max_deg = Degree::ZERO;
+            for (u, adj) in self.adj_list.iter().enumerate() {
+                for v in adj.iter() {
+                    if self.deg[u] + self.deg[*v] > max_deg {
+                        max_deg = self.deg[u] + self.deg[*v];
+                        max_edge = Edge::of_pair(u, *v);
+                    }
+                }
+            }
+            self.delete_edge(max_edge);
+        }
+    }
+
+    fn list_cycles_rec(&self, dist: &Vec<Vec<usize>>, visited: &mut Vec<bool>, cycle: &mut Vec<Edge>, 
+            current_len: usize, target_len: usize, this_vert: usize, start_vert: usize, list: &mut Vec<Vec<Edge>>) {
+        if current_len == target_len - 1 {
+            if self.adj[this_vert][start_vert] {
+                cycle.push(Edge::of_pair(this_vert, start_vert));
+                list.push(cycle.to_owned());
+                let _ = cycle.pop();
+            }
+        } else {
+            // Try adding more vertices.
+            for v in self.adj_list[this_vert].iter() {
+                if !visited[*v] && dist[start_vert][*v] < target_len - current_len {
+                    visited[*v] = true;
+                    cycle.push(Edge::of_pair(this_vert, *v));
+                    self.list_cycles_rec(dist, visited, cycle, current_len + 1, target_len, *v, start_vert, list);
+                    let _ = cycle.pop();
+                    visited[*v] = false;
+                }
+            }
+        }
+    }
+
+    pub fn remove_all_k_cycles(&mut self, k: usize) {
+        let n = self.n.to_usize();
+    
+        let dist = self.floyd_warshall();
+
+        // DFS to find all cycles.
+        let mut list: Vec<Vec<Edge>> = vec![];
+        for u in 0..n {
+            let mut visited = vec![false; n];
+            visited[u] = true;
+            self.list_cycles_rec(&dist, &mut visited, &mut vec![],
+                0, k, u, u, &mut list);
+        }
+        // Now remove edges to kill the cycles.
+        let mut removed = EdgeVec::new(&self.adj_list, false);
+        for cycle in list {
+            let mut still_there = true;
+            'test_cycle: for e in cycle.iter() {
+                if removed.get(*e) {
+                    still_there = false;
+                    break 'test_cycle;
+                }
+            }
+            if still_there {
+                // Remove the edge of largest deg_sum.
+                let mut max_sum = Degree::ZERO;
+                let mut max_edge = cycle[0];
+                for e in cycle.iter() {
+                    let ds = self.deg[e.fst()] + self.deg[e.snd()];
+                    if ds > max_sum {
+                        max_sum = ds;
+                        max_edge = *e;
+                    }
+                }
+                // Remove max_edge
+                removed.set(max_edge, true);
+                self.delete_edge(max_edge);
+
+            }
+        }
     }
 }

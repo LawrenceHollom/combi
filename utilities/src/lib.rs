@@ -1,5 +1,6 @@
 use std::fmt;
 use std::cmp::*;
+use std::ops;
 
 pub mod polynomial;
 pub mod rational;
@@ -70,6 +71,10 @@ impl Degree {
         Degree(self.0 + 1)
     }
 
+    pub fn decr(&self) -> Degree {
+        Degree(self.0 - 1)
+    }
+
     pub fn equals(&self, d: usize) -> bool {
         self.0 == d
     }
@@ -114,6 +119,14 @@ impl PartialOrd for Degree {
 impl Ord for Degree {
     fn cmp(&self, other: &Self) -> Ordering {
         self.0.cmp(&other.0)
+    }
+}
+
+impl ops::Add<Degree> for Degree {
+    type Output = Degree;
+
+    fn add(self, rhs: Degree) -> Degree {
+        Degree(self.0 + rhs.0)
     }
 }
 

@@ -21,6 +21,7 @@ pub enum RandomConstructor {
     ErdosRenyi(Order, f64),
     Triangulation(Order),
     MaximalPlanar(Order),
+    PlanarConditioned(Order, Option<Degree>, Option<usize>),
     Bowties(usize, Degree),
     Regular(Order, Degree),
     DegreeSequence(Vec<Degree>),
@@ -107,6 +108,16 @@ impl Constructor {
             "maximal_planar" | "planar" => {
                 Random(MaximalPlanar(Order::of_string(args[0])))
             },
+            "planar_conditioned" | "planar_con" => {
+                Random(PlanarConditioned(Order::of_string(args[0]), 
+                    Some(Degree::of_string(args[1])), 
+                    args.get(2).map(|x| x.parse().unwrap())))
+            }
+            "planar_girth" => {
+                Random(PlanarConditioned(Order::of_string(args[0]), 
+                    None, 
+                    args.get(1).map(|x| x.parse().unwrap())))
+            }
             "bowties" => {
                 let degree = if args.len() > 1 { args[1].parse().unwrap() } else { 3 };
                 Random(Bowties(args[0].parse().unwrap(), Degree::of_usize(degree)))
@@ -221,6 +232,9 @@ impl fmt::Display for RandomConstructor {
             }
             MaximalPlanar(order) => {
                 write!(f, "Maximal planar of order {}", order)
+            }
+            PlanarConditioned(order, max_deg, min_girth) => {
+                write!(f, "Planar with order {}, max_deg {:?}, and min_girth {:?}", order, max_deg, min_girth)
             }
             Bowties(scale, degree) => {
                 let d = degree.to_usize();

@@ -2,24 +2,7 @@ use crate::graph::*;
 
 pub fn girth(g: &Graph) -> u32 {
     let n = g.n.to_usize();
-    let mut dist = vec![vec![n; n]; n];
-    for (i, d) in dist.iter_mut().enumerate() {
-        d[i] = 0;
-    }
-    for (i, d) in dist.iter_mut().enumerate() {
-        for j in g.adj_list[i].iter() {
-            d[*j] = 1;
-        }
-    }
-    for k in 0..n {
-        for i in 0..n {
-            for j in 0..n {
-                if dist[i][j] > dist[i][k] + dist[k][j] {
-                    dist[i][j] = dist[i][k] + dist[k][j];
-                }
-            }
-        }
-    }
+    let dist = g.floyd_warshall();
 
     let mut girth = n;
 

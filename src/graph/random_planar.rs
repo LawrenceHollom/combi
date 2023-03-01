@@ -102,3 +102,22 @@ pub fn new_maximal(order: &Order) -> Graph {
         constructor: Constructor::Random(crate::constructor::RandomConstructor::MaximalPlanar(*order))
     }
 }
+
+pub fn new_conditioned(order: &Order, max_deg: Option<Degree>, min_girth: Option<usize>) -> Graph {
+    let mut g = new_maximal(order);
+    match min_girth {
+        Some(girth) => {
+            for k in 3..girth {
+                g.remove_all_k_cycles(k);
+            }
+        }
+        None => (),
+    }
+    match max_deg {
+        Some(max_deg) => {
+            g.reduce_max_degree(max_deg);
+        }
+        None => ()
+    }
+    g
+}

@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::Debug;
 
@@ -7,15 +8,17 @@ pub struct Edge(usize, usize);
 #[derive(Clone)]
 pub struct EdgeSet {
     indexer: Vec<Option<usize>>,
-    n: usize,
     edges: u128,
 }
 
 #[derive(Clone)]
 pub struct EdgeVec<T: Debug + Copy> {
     indexer: Vec<Option<usize>>,
-    n: usize,
     vec: Vec<T>,
+}
+
+pub fn detriangle(x: usize) -> usize {
+    (1 + ((1 + 8 * x) as f64).sqrt() as usize) / 2
 }
 
 impl Edge {
@@ -32,13 +35,19 @@ impl Edge {
         (self.0, self.1)
     }
 
-    pub fn encode(&self, n: usize) -> usize {
+    pub fn encode(&self) -> usize {
         fn tri(x: usize) -> usize { (x * (x - 1)) / 2 }
-        if self.0 < self.1 {
-            tri(n) - tri(n - self.0) + self.1 - self.0 - 1
+        if self.0 > self.1 {
+            tri(self.0) + self.1
         } else {
-            tri(n) - tri(n - self.1) + self.0 - self.1 - 1
+            tri(self.1) + self.0
         }
+    }
+
+    pub fn decode(i: usize) -> Edge {
+        let x = detriangle(i);
+        let y = i - x;
+        Edge::of_pair(x, y)
     }
 
     pub fn fst(&self) -> usize {
@@ -65,7 +74,7 @@ fn make_indexer(adj_list: &Vec<Vec<usize>>) -> (Vec<Option<usize>>, usize) {
     for (u, adj) in adj_list.iter().enumerate() {
         for v in adj.iter() {
             if *v > u {
-                indexer[Edge::of_pair(u, *v).encode(n)] = Some(i);
+                indexer[Edge::of_pair(u, *v).encode()] = Some(i);
                 i += 1;
             }
         }
@@ -86,17 +95,16 @@ impl EdgeSet {
         let (indexer, _len) = make_indexer(adj_list);
         EdgeSet {
             indexer,
-            n: adj_list.len(),
             edges: 0,
         }
     }
 
     pub fn add_edge(&mut self, e: Edge) {
-        self.edges += 1 << self.indexer[e.encode(self.n)].unwrap();
+        self.edges += 1 << self.indexer[e.encode()].unwrap();
     }
 
     pub fn has_edge(&self, e: Edge) -> bool {
-        (self.edges >> self.indexer[e.encode(self.n)].unwrap()) % 2 == 1
+        (self.edges >> self.indexer[e.encode()].unwrap()) % 2 == 1
     }
 }
 
@@ -105,41 +113,58 @@ impl<T: Debug + Copy> EdgeVec<T> {
         let (indexer, len) = make_indexer(adj_list);
         EdgeVec {
             indexer,
-            n: adj_list.len(),
             vec: vec![value; len],
         }
     }
 
     pub fn new_fn(adj_list: &Vec<Vec<usize>>, f: fn(Edge) -> T) -> EdgeVec<T> {
         let (indexer, len) = make_indexer(adj_list);
-        let n = adj_list.len();
         let mut vec = vec![f(Edge::of_pair(0, 1)); len];
 
         for (u, adj) in adj_list.iter().enumerate() {
             for v in adj.iter() {
                 if *v > u {
                     let e = Edge::of_pair(u, *v); 
-                    vec[indexer[e.encode(n)].unwrap()] = f(e);
+                    vec[indexer[e.encode()].unwrap()] = f(e);
                 }
             }
         }
 
-        EdgeVec { indexer, n, vec }
+        EdgeVec { indexer, vec }
     }
 
     pub fn set(&mut self, e: Edge, value: T) {
-        self.vec[self.indexer[e.encode(self.n)].unwrap()] = value;
+        self.vec[self.indexer[e.encode()].unwrap()] = value;
     }
 
     pub fn get(&self, e: Edge) -> T {
-        self.vec[self.indexer[e.encode(self.n)].unwrap()]
+        self.vec[self.indexer[e.encode()].unwrap()]
+    }
+
+    pub fn find_max(&self, min: T, cmp: fn(&T, &T) -> Ordering) -> Option<Edge> {
+        let mut best_edge = None;
+        let mut max = min;
+
+        for (i, val) in self.vec.iter().enumerate() {
+            if cmp(val, &max) == Ordering::Greater {
+                max = *val;
+                best_edge = Some(Edge::decode(i));
+            }
+        }
+
+        best_edge
+    }
+
+    fn n(&self) -> usize {
+        detriangle(self.vec.len())
     }
 
     pub fn print(&self) {
-        for u in 0..(self.n - 1) {
-            for v in (u + 1)..self.n {
+        let n = self.n();
+        for u in 0..(n - 1) {
+            for v in (u + 1)..n {
                 let e = Edge::of_pair(u, v);
-                match self.indexer[e.encode(self.n)] {
+                match self.indexer[e.encode()] {
                     Some(i) => {
                         println!("{} ~ {}: {:?}", u, v, self.vec[i]);
                     }
