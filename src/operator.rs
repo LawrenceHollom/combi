@@ -15,7 +15,7 @@ mod cubic_domination;
 mod subgraphs;
 mod debug;
 mod signature;
-mod thomassen;
+mod edge_partitions;
 
 use std::collections::HashMap;
 
@@ -63,7 +63,7 @@ impl Operator {
                     MinDegree => g.min_degree(),
                     MaxDegree => g.max_degree(),
                     Connectedness => connectedness::connectedness(g),
-                    Thomassen(long_path_cap) => thomassen::minimax_len(g, *long_path_cap),
+                    Thomassen(long_path_cap) => edge_partitions::thomassen_check(g, *long_path_cap),
                     Number(k) => *k,
                 };
                 self.previous_int_values.insert(*operation, value);
@@ -139,6 +139,7 @@ impl Operator {
                     HasRegularLosslessEdgeDominator => domination::has_regular_lossless_edge_dominator(g),
                     IsKConnected(connectivity) => connectedness::is_k_connected(g, *connectivity),
                     IsTriangleFree => subgraphs::is_triangle_free(g),
+                    CanBeEdgePartitionedIntoLinearForestAndMatching => edge_partitions::edge_partition_forest_and_matching(g),
                     GoodCubicDominationBase => cubic_domination::is_good(g),
                     Debug => debug::debug(g),
                 };

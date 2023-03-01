@@ -39,6 +39,7 @@ pub enum BoolOperation {
     IsDominationNumberAtLeast(usize),
     IsKConnected(usize),
     IsTriangleFree,
+    CanBeEdgePartitionedIntoLinearForestAndMatching,
     GoodCubicDominationBase, // This one is incredibly specific.
     Debug,
 }
@@ -119,6 +120,7 @@ impl BoolOperation {
                     "false" => Some(Const(false)),
                     "is_k_connected" | "k_connected" | "k_conn" => Some(IsKConnected(args[0].parse().unwrap())),
                     "triangle_free" | "tri_free" | "k3_free" => Some(IsTriangleFree),
+                    "is_forest_and_matching" | "ifam" => Some(CanBeEdgePartitionedIntoLinearForestAndMatching),
                     "gcdb" => Some(GoodCubicDominationBase),
                     "debug" => Some(Debug),
                     &_ => None,
@@ -183,6 +185,9 @@ impl fmt::Display for BoolOperation {
             HasRegularLosslessEdgeDominator => "Has regular lossless edge-dominating set".to_owned(),
             IsKConnected(k) => format!("Is {}-connectd", *k),
             IsTriangleFree => "Is triangle free".to_owned(),
+            CanBeEdgePartitionedIntoLinearForestAndMatching => {
+                "Can G be edge-partitioned into a linear forest and a matching".to_owned()
+            }
             GoodCubicDominationBase => "Some very specific thing for domination of cubic graphs.".to_owned(),
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };

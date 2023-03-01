@@ -73,6 +73,22 @@ impl Degree {
     pub fn equals(&self, d: usize) -> bool {
         self.0 == d
     }
+
+    pub fn at_least(&self, d: usize) -> bool {
+        self.0 >= d
+    }
+
+    pub fn at_most(&self, d: usize) -> bool {
+        self.0 <= d
+    }
+
+    pub fn less_than(&self, d: usize) -> bool {
+        self.0 < d
+    }
+
+    pub fn more_than(&self, d: usize) -> bool {
+        self.0 > d
+    }
 }
 
 impl fmt::Display for Degree {

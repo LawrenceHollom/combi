@@ -1,7 +1,7 @@
 use std::fmt;
 use std::fmt::Debug;
 
-#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Hash)]
 pub struct Edge(usize, usize);
 
 #[derive(Clone)]
@@ -72,6 +72,14 @@ fn make_indexer(adj_list: &Vec<Vec<usize>>) -> (Vec<Option<usize>>, usize) {
     }
     (indexer, i)
 }
+
+impl PartialEq for Edge {
+    fn eq(&self, other: &Edge) -> bool {
+        (self.0 == other.0 && self.1 == other.1) || (self.0 == other.1 && self.1 == other.0)
+    }
+}
+
+impl Eq for Edge { }
 
 impl EdgeSet {
     pub fn new(adj_list: &Vec<Vec<usize>>) -> EdgeSet {
