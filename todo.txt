@@ -19,11 +19,6 @@
 - Be more intelligent about cutting verbosity:
 -- If threshold barely passed, then still print regular updates.
 
-== SHUFFLE VERTICES ==
-- Add a function to allow the vertices of a graph to be shuffled randomly
-- This allows us to see how robust e.g. a minimal dominating set is:
--- If we shuffle the vertices, do we find lots of different dominating sets?
-
 == BOWTIES ==
 - Check that struct(bowties(d),num) agrees with old bowties framework
 - Then rip out old framework.

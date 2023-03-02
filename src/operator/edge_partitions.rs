@@ -106,7 +106,8 @@ fn minimax_forest_set_colours_rec(g: &Graph, colours: &mut EdgeVec<u8>, next_ver
     let edges: Vec<Edge> = g.adj_list[next_vert].iter().map(|x| Edge::of_pair(next_vert, *x)).collect();
     let local_cols: Vec<u8> = edges.iter().map(|e| colours.get(*e)).collect();
     let mut value = best_len;
-    let possibilities = if next_vert == 0 {
+    // ISSUE: why does the part_two_max_len clause speed things up so much??
+    let possibilities = if next_vert == 0 || part_two_max_len == Some(1) {
         vec![[1, 1, 2], [1, 2, 1], [2, 1, 1]]
     } else {
         vec![[1, 1, 2], [1, 2, 1], [2, 1, 1], [1, 2, 2], [2, 1, 2], [2, 2, 1]]
