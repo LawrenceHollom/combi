@@ -121,3 +121,43 @@ pub fn new_conditioned(order: &Order, max_deg: Option<Degree>, min_girth: Option
     }
     g
 }
+
+pub fn k_gon_gluing(order: &Order, k: usize) -> Graph {
+    let n = order.to_usize();
+    let mut adj_list: Vec<Vec<usize>> = vec![vec![]; n];
+    let mut outer_face: Vec<usize> = (0..k).collect();
+    let mut rng = thread_rng();
+    let mut num_placed = k;
+    fn add_cycle(adj_list: &mut Vec<Vec<usize>>, verts: &Vec<usize>, k: usize) {
+        for i in 0..k {
+            let j = (i + 1) % k;
+            adj_list[verts[i]].push(verts[j])
+        }
+    }
+    add_cycle(&mut adj_list, &(0..k).collect(), k);
+    'place_verts: loop {
+        // pick a random overlap length.
+        // This will crash due to usize underflow.
+        let overlap_len = rng.gen_range(1.max(k + num_placed - n)..=k.min(outer_face.len() - 1));
+        // pick the interval to connect to
+        let interval_start = rng.gen_range(0..outer_face.len());
+        let mut new_face: Vec<usize> = vec![];
+        for i in 0..overlap_len {
+            let pos = (i + interval_start) % outer_face.len();
+            new_face.push(outer_face[pos]);
+        }
+        for _i in 1..(overlap_len - 1) {
+            // This is horribly inefficient.
+            let index = (1 + interval_start) % outer_face.len();
+            outer_face.remove(index);
+        }
+        for i in 0..(k - overlap_len) {
+            new_face.push(num_placed + i);
+        }
+        num_placed += k - overlap_len;
+        if num_placed == n && outer_face.len() < 2 * k {
+            break 'place_verts;
+        }
+    }
+    Graph::of_adj_list(adj_list, Random(RandomConstructor::PlanarGons(*order, k)))
+}

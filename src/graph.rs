@@ -582,6 +582,7 @@ impl Graph {
             Random(PlanarConditioned(order, max_deg, min_girth)) => {
                 random_planar::new_conditioned(order, *max_deg, *min_girth)
             }
+            Random(PlanarGons(order, k)) => random_planar::k_gon_gluing(order, *k),
             Random(Bowties(scale, degree)) => bowties::new_bowties(*scale, *degree),
             Random(Regular(order, degree)) => regular::new_regular(order, degree),
             Random(DegreeSequence(deg_seq)) => regular::new_from_degree_sequence(deg_seq, false),

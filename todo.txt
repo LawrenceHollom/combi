@@ -19,6 +19,11 @@
 - Be more intelligent about cutting verbosity:
 -- If threshold barely passed, then still print regular updates.
 
+== PLANAR GIRTH CONSTRUCTOR ==
+- Stick together a bunch of copies of an n-gon to make a planar graph
+- Keep track of the outer face, adding more n-gons sharing some number of edges.
+- At the edge throw in some more edges so the infinite face is n-gon or little bigger.
+
 == BOWTIES ==
 - Check that struct(bowties(d),num) agrees with old bowties framework
 - Then rip out old framework.

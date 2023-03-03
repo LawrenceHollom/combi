@@ -25,6 +25,7 @@ pub enum RandomConstructor {
     Bowties(usize, Degree),
     Regular(Order, Degree),
     DegreeSequence(Vec<Degree>),
+    PlanarGons(Order, usize),
     VertexStructured(VertexPattern, usize),
     EdgeStructured(EdgePattern, usize),
 }
@@ -117,6 +118,9 @@ impl Constructor {
                 Random(PlanarConditioned(Order::of_string(args[0]), 
                     None, 
                     args.get(1).map(|x| x.parse().unwrap())))
+            }
+            "planar_gons" | "k_gons" => {
+                Random(PlanarGons(Order::of_string(args[0]), args[1].parse().unwrap()))
             }
             "bowties" => {
                 let degree = if args.len() > 1 { args[1].parse().unwrap() } else { 3 };
@@ -235,6 +239,9 @@ impl fmt::Display for RandomConstructor {
             }
             PlanarConditioned(order, max_deg, min_girth) => {
                 write!(f, "Planar with order {}, max_deg {:?}, and min_girth {:?}", order, max_deg, min_girth)
+            }
+            PlanarGons(order, k) => {
+                write!(f, "Random gluing of {}-gons for order {}", *k, *order)
             }
             Bowties(scale, degree) => {
                 let d = degree.to_usize();
