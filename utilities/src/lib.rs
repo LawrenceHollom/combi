@@ -2,9 +2,13 @@ use std::fmt;
 use std::cmp::*;
 use std::ops;
 
+use vertex_tools::Vertex;
+use vertex_tools::VertexPair;
+
 pub mod polynomial;
 pub mod rational;
 pub mod edge_tools;
+pub mod vertex_tools;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Order(usize);
@@ -21,8 +25,20 @@ impl Order {
         Order(n)
     }
 
+    pub fn iter_verts(&self) -> impl Iterator<Item = Vertex> {
+        (0..self.0).map(|x| vertex_tools::Vertex::of_usize(x))
+    }
+
+    pub fn iter_pairs(&self) -> impl Iterator<Item = (Vertex, Vertex)> {
+        VertexPair::new(*self)
+    }
+
     pub fn to_usize(&self) -> usize {
         self.0 as usize
+    }
+
+    pub fn triangle(&self) -> usize {
+        (self.0 * (self.0 - 1)) / 2
     }
 }
 
@@ -52,6 +68,14 @@ impl Ord for Order {
     }
 }
 
+impl ops::Add<Order> for Order {
+    type Output = Order;
+
+    fn add(self, rhs: Order) -> Order {
+        Order(self.0 + rhs.0)
+    }
+}
+
 impl Degree {
     pub const ZERO: Degree = Degree(0);
 
@@ -69,6 +93,10 @@ impl Degree {
 
     pub fn incr(&self) -> Degree {
         Degree(self.0 + 1)
+    }
+
+    pub fn incr_inplace(&mut self) {
+        self.0 += 1;
     }
 
     pub fn decr(&self) -> Degree {

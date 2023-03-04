@@ -2,8 +2,10 @@ use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::Debug;
 
+use crate::{vertex_tools::*, Order};
+
 #[derive(Copy, Clone, Debug, Hash)]
-pub struct Edge(usize, usize);
+pub struct Edge(Vertex, Vertex);
 
 #[derive(Clone)]
 pub struct EdgeSet {
@@ -22,56 +24,53 @@ pub fn detriangle(x: usize) -> usize {
 }
 
 impl Edge {
+    pub const FILLER: Edge = Edge(Vertex::ZERO, Vertex::ZERO);
+
     pub fn of_string(text: &str) -> Edge {
         let pars: Vec<&str> = text.split("~").map(|x| x.trim()).collect();
-        Edge(pars[0].parse().unwrap(), pars[1].parse().unwrap())
+        Edge(Vertex::of_string(pars[0]), Vertex::of_string(pars[1]))
     }
 
-    pub fn of_pair(x: usize, y: usize) -> Edge {
+    pub fn of_pair(x: Vertex, y: Vertex) -> Edge {
         Edge(x, y)
     }
 
-    pub fn to_pair(&self) -> (usize, usize) {
+    pub fn to_pair(&self) -> (Vertex, Vertex) {
         (self.0, self.1)
     }
 
     pub fn encode(&self) -> usize {
-        fn tri(x: usize) -> usize { (x * (x - 1)) / 2 }
-        if self.0 > self.1 {
-            tri(self.0) + self.1
-        } else {
-            tri(self.1) + self.0
-        }
+        self.0.encode_with(self.1)
     }
 
     pub fn decode(i: usize) -> Edge {
         let x = detriangle(i);
         let y = i - x;
-        Edge::of_pair(x, y)
+        Edge::of_pair(Vertex::of_usize(x), Vertex::of_usize(y))
     }
 
-    pub fn fst(&self) -> usize {
+    pub fn fst(&self) -> Vertex {
         self.0
     }
 
-    pub fn snd(&self) -> usize {
+    pub fn snd(&self) -> Vertex {
         self.1
     }
 
-    pub fn contains(&self, v: usize) -> bool {
+    pub fn contains(&self, v: Vertex) -> bool {
         self.0 == v || self.1 == v
     }
 
-    pub fn equals(&self, d: usize) -> bool {
+    pub fn incidents(&self, d: Vertex) -> bool {
         self.0 == d
     }    
 }
 
-fn make_indexer(adj_list: &Vec<Vec<usize>>) -> (Vec<Option<usize>>, usize) {
+fn make_indexer(adj_list: &VertexVec<Vec<Vertex>>) -> (Vec<Option<usize>>, usize) {
     let n = adj_list.len();
-    let mut indexer: Vec<Option<usize>> = vec![None; (n * (n - 1)) / 2];
+    let mut indexer: Vec<Option<usize>> = vec![None; n.triangle()];
     let mut i = 0;
-    for (u, adj) in adj_list.iter().enumerate() {
+    for (u, adj) in adj_list.iter_enum() {
         for v in adj.iter() {
             if *v > u {
                 indexer[Edge::of_pair(u, *v).encode()] = Some(i);
@@ -91,7 +90,7 @@ impl PartialEq for Edge {
 impl Eq for Edge { }
 
 impl EdgeSet {
-    pub fn new(adj_list: &Vec<Vec<usize>>) -> EdgeSet {
+    pub fn new(adj_list: &VertexVec<Vec<Vertex>>) -> EdgeSet {
         let (indexer, _len) = make_indexer(adj_list);
         EdgeSet {
             indexer,
@@ -109,7 +108,7 @@ impl EdgeSet {
 }
 
 impl<T: Debug + Copy> EdgeVec<T> {
-    pub fn new(adj_list: &Vec<Vec<usize>>, value: T) -> EdgeVec<T> {
+    pub fn new(adj_list: &VertexVec<Vec<Vertex>>, value: T) -> EdgeVec<T> {
         let (indexer, len) = make_indexer(adj_list);
         EdgeVec {
             indexer,
@@ -117,11 +116,11 @@ impl<T: Debug + Copy> EdgeVec<T> {
         }
     }
 
-    pub fn new_fn(adj_list: &Vec<Vec<usize>>, f: fn(Edge) -> T) -> EdgeVec<T> {
+    pub fn new_fn(adj_list: &VertexVec<Vec<Vertex>>, f: fn(Edge) -> T) -> EdgeVec<T> {
         let (indexer, len) = make_indexer(adj_list);
-        let mut vec = vec![f(Edge::of_pair(0, 1)); len];
+        let mut vec = vec![f(Edge::FILLER); len];
 
-        for (u, adj) in adj_list.iter().enumerate() {
+        for (u, adj) in adj_list.iter_enum() {
             for v in adj.iter() {
                 if *v > u {
                     let e = Edge::of_pair(u, *v); 
@@ -160,16 +159,14 @@ impl<T: Debug + Copy> EdgeVec<T> {
     }
 
     pub fn print(&self) {
-        let n = self.n();
-        for u in 0..(n - 1) {
-            for v in (u + 1)..n {
-                let e = Edge::of_pair(u, v);
-                match self.indexer[e.encode()] {
-                    Some(i) => {
-                        println!("{} ~ {}: {:?}", u, v, self.vec[i]);
-                    }
-                    None => (),
+        let n = Order::of_usize(self.n());
+        for (u, v) in n.iter_pairs() {
+            let e = Edge::of_pair(u, v);
+            match self.indexer[e.encode()] {
+                Some(i) => {
+                    println!("{} ~ {}: {:?}", u, v, self.vec[i]);
                 }
+                None => (),
             }
         }
     }

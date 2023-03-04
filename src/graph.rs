@@ -1,4 +1,6 @@
-use utilities::{*, edge_tools::*};
+use std::slice::Iter;
+
+use utilities::{*, edge_tools::*, vertex_tools::*};
 use crate::constructor::*;
 use Constructor::*;
 use RawConstructor::*;
@@ -19,134 +21,89 @@ mod regular;
 
 pub struct Graph {
     pub n: Order,
-    pub adj: Vec<Vec<bool>>,
-    pub adj_list: Vec<Vec<usize>>,
-    pub deg: Vec<Degree>,
+    pub adj: VertexVec<VertexVec<bool>>,
+    pub adj_list: VertexVec<Vec<Vertex>>,
+    pub deg: VertexVec<Degree>,
     pub constructor: Constructor,
 }
 
 impl Graph {
-    fn new_complete(order: &Order) -> Graph {
-        let n = order.to_usize();
-        let mut adj = vec![vec![false; n]; n];
-        let mut adj_list = vec![vec![]; n];
-        let deg: Vec<Degree> = vec![n-1; n].iter().map(|x| Degree::of_usize(*x)).collect();
-
-        // This could be done directly and non-mutably; possibly would be more idiomatic
-        for i in 0..(n-1) {
-            for j in (i+1)..n {
-                adj[i][j] = true;
-                adj[j][i] = true;
+    pub fn of_adj_list(adj_list: VertexVec<Vec<Vertex>>, constructor: Constructor) -> Graph {
+        let n = adj_list.len();
+        let mut adj = VertexVec::new(n, &VertexVec::new(n, &false));
+        let mut deg = VertexVec::new_fn(n, |_| Degree::ZERO);
+        let mut new_adj_list = VertexVec::new_fn(n, |_| vec![]);
+    
+        for i in n.iter_verts() {
+            for j in adj_list[i].iter() {
+                adj[i][*j] = true;
+                new_adj_list[i].push(*j);
+                deg[i].incr_inplace();
             }
         }
+        Graph {
+            n,
+            adj,
+            adj_list: new_adj_list,
+            deg,
+            constructor
+        }
+    }
 
-        for (i, nbrs) in adj_list.iter_mut().enumerate() {
-            for j in 0..n {
+    fn new_complete(n: Order) -> Graph {
+        let mut adj_list = VertexVec::new_fn(n, |_| vec![]);
+
+        for i in n.iter_verts() {
+            for j in n.iter_verts() {
                 if i != j {
-                    nbrs.push(j);
+                    adj_list[i].push(j);
                 }
             }
         }
 
-        Graph {
-            n: *order,
-            adj,
-            adj_list,
-            deg,
-            constructor: Raw(Complete(*order))
-        }
+        Graph::of_adj_list(adj_list, Raw(Complete(n)))
     }
 
-    fn new_cyclic(order: &Order) -> Graph {
-        let n = order.to_usize();
-        let mut adj = vec![vec![false; n]; n];
-        let mut adj_list = vec![vec![]; n];
-        let deg: Vec<Degree> = {
-            if n == 1 { vec![0; n] }
-            else if n == 2 { vec![1; n] }
-            else { vec![2; n]}
-        }.iter().map(|x| Degree::of_usize(*x)).collect();
+    fn new_cyclic(n: Order) -> Graph {
+        let mut adj_list = VertexVec::new_fn(n, |_| vec![]);
 
-        // This could be done directly and non-mutably; possibly would be more idiomatic
-        for i in 0..n {
-            adj[i][(i + 1) % n] = true;
-            adj[i][(i + n - 1) % n] = true;
-            adj_list[i].push((i + 1) % n);
-            adj_list[i].push((i + n - 1) % n);
+        for i in n.iter_verts() {
+            adj_list[i].push(i.incr(n));
+            adj_list[i].push(i.decr(n));
         }
 
-        Graph {
-            n: *order,
-            adj,
-            adj_list,
-            deg,
-            constructor: Raw(Cyclic(*order))
-        }
+        Graph::of_adj_list(adj_list, Raw(Cyclic(n)))
     }
 
-    fn new_path(order: &Order) -> Graph {
-        let n = order.to_usize();
-        let mut adj = vec![vec![false; n]; n];
-        let mut adj_list = vec![vec![]; n];
-        let deg: Vec<Degree> = vec![2; n].iter().enumerate().map(|(i, x)| 
-                Degree::of_usize(if i == 0 || i == n-1 { 1 } else { *x })).collect();
+    fn new_path(n: Order) -> Graph {
+        let mut adj_list = VertexVec::new_fn(n, |_| vec![]);
 
-        // This could be done directly and non-mutably; possibly would be more idiomatic
-        for i in 0..n {
-            if i + 1 < n {
-                adj[i][i + 1] = true;
-                adj_list[i].push(i + 1);
-            }
-            if i >= 1 {
-                adj[i][i - 1] = true;
-                adj_list[i].push(i - 1);
-            }
+        for i in n.iter_verts().take(n.to_usize() - 1) {
+            adj_list[i].push(i.incr(n));
+        }
+        for i in n.iter_verts().skip(1) {
+            adj_list[i].push(i.decr(n));
         }
 
-        Graph {
-            n: *order,
-            adj,
-            adj_list,
-            deg,
-            constructor: Raw(Path(*order))
-        }
+        Graph::of_adj_list(adj_list, Raw(Path(n)))
     }
 
-    fn new_star(order: &Order) -> Graph {
-        let n = order.to_usize();
-        let mut adj = vec![vec![false; n]; n];
-        let mut adj_list = vec![vec![]; n];
-        let deg: Vec<Degree> = (0..n).map(|x| Degree::of_usize(if x == 0 { n - 1 } else { 1 })).collect();
+    fn new_star(n: Order) -> Graph {
+        let mut adj_list = VertexVec::new_fn(n, |_| vec![]);
+        let zero = Vertex::of_usize(0);
 
-        for i in 1..n {
-            adj[0][i] = true;
-            adj[i][0] = true;
-            adj_list[0].push(i);
-            adj_list[i].push(0);
+        for i in n.iter_verts().skip(1) {
+            adj_list[zero].push(i);
+            adj_list[i].push(zero);
         }
 
-        Graph {
-            n: *order,
-            adj,
-            adj_list,
-            deg,
-            constructor: Raw(Star(*order))
-        }
+        Graph::of_adj_list(adj_list, Raw(Star(n)))
     }
 
-    fn new_empty(order: &Order) -> Graph {
-        let n = order.to_usize();
-        let adj = vec![vec![false; n]; n];
-        let adj_list = vec![vec![]; n];
-        let deg: Vec<Degree> = vec![0; n].iter().map(|x| Degree::of_usize(*x)).collect();
+    fn new_empty(n: Order) -> Graph {
+        let mut adj_list = VertexVec::new_fn(n, |_| vec![]);
         
-        Graph {
-            n: *order,
-            adj,
-            adj_list,
-            deg,
-            constructor: Raw(Empty(*order))
-        }
+        Graph::of_adj_list(adj_list, Raw(Empty(n)))
     }
 
     pub fn of_filtered(&self, filter: &[bool]) -> Graph {
@@ -186,60 +143,26 @@ impl Graph {
     }
 
     pub fn bunkbed(&self) -> Graph {
-        let n = self.n.to_usize();
-        let mut adj = vec![vec![false; 2*n]; 2*n];
-        let mut adj_list = vec![vec![]; 2*n];
-        let mut deg: Vec<Degree> = vec![];
+        let new_n = self.n + self.n;
+        let mut adj_list = VertexVec::new_fn(&new_n, |_| vec![]);
+        let nu = self.n.to_usize();
 
         for j in 0..2_usize {
-            for i in 0..n {
-                deg.push(self.deg[i].incr());
-                adj[i + j * n][i + (1 - j) * n] = true; //post
-                adj_list[i + j * n].push(i + (1 - j) * n);
-                for k in 0..n {
-                    if self.adj[i][k] {
-                        adj[i + j * n][k + j * n] = true;
-                        adj_list[i + j * n].push(k + j * n);
+            for i in 0..nu {
+                adj_list[Vertex::of_usize(i + j * nu)].push(Vertex::of_usize(i + (1 - j) * nu)); //post
+                for k in 0..nu {
+                    if self.adj[Vertex::of_usize(i)][Vertex::of_usize(k)] {
+                        adj_list[Vertex::of_usize(i + j * nu)].push(Vertex::of_usize(k + j * nu));
                     }
                 }
             }
         }
 
-        Graph {
-            n: Order::of_usize(2*n),
-            adj,
-            adj_list,
-            deg,
-            constructor: Special
-        }
+        Graph::of_adj_list(adj_list, Special)
     }
 
-    pub fn of_adj_list(adj_list: Vec<Vec<usize>>, constructor: Constructor) -> Graph {
-        let n: usize = adj_list.len();
-        let mut adj = vec![vec![false; n]; n];
-        let mut deg = vec![0; n];
-    
-        for i in 0..n {
-            for j in adj_list[i].iter() {
-                adj[i][*j] = true;
-                deg[i] += 1;
-            }
-        }
-        Graph {
-            n: Order::of_usize(n),
-            adj,
-            adj_list,
-            deg: deg.iter().map(|x| Degree::of_usize(*x)).collect(),
-            constructor
-        }
-    }
-
-    fn codeg_code(u: usize, v: usize) -> usize {
-        if u < v {
-            ((v * (v - 1)) / 2) + u
-        } else {
-            ((u * (u - 1)) / 2) + v
-        }
+    fn codeg_code(u: Vertex, v: Vertex) -> usize {
+        Edge::of_pair(u, v).encode()
     }
 
     pub fn codegree_sequence(&self) -> Vec<usize> {
@@ -257,6 +180,10 @@ impl Graph {
         }
 
         codegs
+    }
+
+    pub fn iter_verts(&self) -> impl Iterator<Item = Vertex> {
+        (0..self.n.to_usize()).map(|x| Vertex::of_usize(x))
     }
 
     fn is_map_isomorphism(&self, g: &Graph, map: &[usize]) -> bool {
@@ -436,13 +363,10 @@ impl Graph {
 
     pub fn is_adj_commutative(&self) -> bool {
         let mut is_comm = true;
-        let n = self.n.to_usize();
-        'test_is_comm: for u in 0..(n-1) {
-            for v in (u+1)..n {
-                if self.adj[u][v] ^ self.adj[v][u] {
-                    is_comm = false;
-                    break 'test_is_comm;
-                }
+        'test_is_comm: for (u, v) in self.n.iter_pairs() {
+            if self.adj[u][v] ^ self.adj[v][u] {
+                is_comm = false;
+                break 'test_is_comm;
             }
         }
         is_comm
@@ -495,16 +419,15 @@ impl Graph {
         sizes
     }
 
-    fn permute_vertices(&self, ordering: &Vec<usize>) -> (Graph, Vec<usize>) {
-        let n = self.n.to_usize();
-        let mut ordering_inv: Vec<usize> = vec![n; n];
+    fn permute_vertices(&self, ordering: &VertexVec<Vertex>) -> (Graph, VertexVec<Vertex>) {
+        let mut ordering_inv: VertexVec<Vertex> = VertexVec::new(self.n, &Vertex::ZERO);
 
-        for i in 0..n {
+        for i in self.iter_verts() {
             ordering_inv[ordering[i]] = i;
         }
 
-        let mut adj_list: Vec<Vec<usize>> = vec![vec![]; n];
-        for u in 0..n {
+        let mut adj_list: VertexVec<Vec<Vertex>> = VertexVec::new(self.n, &vec![]);
+        for u in self.iter_verts() {
             for v in self.adj_list[ordering[u]].iter() {
                 adj_list[u].push(ordering_inv[*v]);
             }
@@ -555,10 +478,9 @@ impl Graph {
         self.permute_vertices(&ordering)
     }
 
-    pub fn randomly_permute_vertices(&self) -> (Graph, Vec<usize>) {
-        let n = self.n.to_usize();
+    pub fn randomly_permute_vertices(&self) -> (Graph, VertexVec<Vertex>) {
         let mut rng = thread_rng();
-        let mut ordering: Vec<usize> = (0..n).collect();
+        let mut ordering: VertexVec<Vertex> = self.n.iter_verts().collect();
         ordering.shuffle(&mut rng);
         self.permute_vertices(&ordering)
     }
@@ -589,11 +511,11 @@ impl Graph {
             Random(VertexStructured(pattern, num)) => pattern.new_graph(*num),
             Random(EdgeStructured(pattern, num)) => pattern.new_graph(*num),
             Raw(Grid(height, width)) => grid::new(height, width),
-            Raw(Complete(order)) => Graph::new_complete(order),
-            Raw(Cyclic(order)) => Graph::new_cyclic(order),
-            Raw(Path(order)) => Graph::new_path(order),
-            Raw(Star(order)) => Graph::new_star(order),
-            Raw(Empty(order)) => Graph::new_empty(order),
+            Raw(Complete(order)) => Graph::new_complete(*order),
+            Raw(Cyclic(order)) => Graph::new_cyclic(*order),
+            Raw(Path(order)) => Graph::new_path(*order),
+            Raw(Star(order)) => Graph::new_star(*order),
+            Raw(Empty(order)) => Graph::new_empty(*order),
             Raw(Cube(dimension)) => raw::new_cube(*dimension),
             Raw(FanoPlane) => raw::new_fano_plane(),
             Raw(Petersen(cycles, skip)) => raw::new_petersen(*cycles, *skip),
