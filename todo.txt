@@ -20,9 +20,8 @@
 -- If threshold barely passed, then still print regular updates.
 
 == PLANAR GIRTH CONSTRUCTOR ==
-- Stick together a bunch of copies of an n-gon to make a planar graph
-- Keep track of the outer face, adding more n-gons sharing some number of edges.
-- At the edge throw in some more edges so the infinite face is n-gon or little bigger.
+- k_gons is broken at the moment?
+- Also need a way to plug this into a cubic-ifyer.
 
 == BOWTIES ==
 - Check that struct(bowties(d),num) agrees with old bowties framework
