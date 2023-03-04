@@ -131,33 +131,43 @@ pub fn k_gon_gluing(order: &Order, k: usize) -> Graph {
     fn add_cycle(adj_list: &mut Vec<Vec<usize>>, verts: &Vec<usize>, k: usize) {
         for i in 0..k {
             let j = (i + 1) % k;
-            adj_list[verts[i]].push(verts[j])
+            adj_list[verts[i]].push(verts[j]);
+            adj_list[verts[j]].push(verts[i]);
         }
     }
     add_cycle(&mut adj_list, &(0..k).collect(), k);
     'place_verts: loop {
-        // pick a random overlap length.
-        // This will crash due to usize underflow.
-        let overlap_len = rng.gen_range(1.max(k + num_placed - n)..=k.min(outer_face.len() - 1));
-        // pick the interval to connect to
-        let interval_start = rng.gen_range(0..outer_face.len());
-        let mut new_face: Vec<usize> = vec![];
-        for i in 0..overlap_len {
-            let pos = (i + interval_start) % outer_face.len();
-            new_face.push(outer_face[pos]);
-        }
-        for _i in 1..(overlap_len - 1) {
-            // This is horribly inefficient.
-            let index = (1 + interval_start) % outer_face.len();
-            outer_face.remove(index);
-        }
-        for i in 0..(k - overlap_len) {
-            new_face.push(num_placed + i);
-        }
-        num_placed += k - overlap_len;
         if num_placed == n && outer_face.len() < 2 * k {
             break 'place_verts;
         }
+        // pick a random overlap length.
+        // This will crash due to usize underflow.
+        let min = if k + num_placed > n + 1 { k + num_placed - n } else { 2 };
+        let overlap_len = rng.gen_range(min..=k.min(outer_face.len() - 1));
+        // pick the interval to connect to
+        let outer_len = outer_face.len();
+        let interval_start = rng.gen_range(0..outer_len);
+        let mut new_face: Vec<usize> = vec![];
+        let mut new_outer_face: Vec<usize> = vec![];
+        for i in 0..overlap_len {
+            let pos = (i + interval_start) % outer_len;
+            new_face.push(outer_face[pos]);
+        }
+        for i in 0..(outer_len - overlap_len + 2) {
+            new_outer_face.push(outer_face[(outer_len + interval_start + overlap_len + i - 1) % outer_len]);
+        }
+        for i in 0..(k - overlap_len) {
+            new_face.push(num_placed + i);
+            new_outer_face.push(num_placed + i);
+        }
+        //println!("Adding cycle {:?}; overlap_len: {}, interval_start: {}; outer_face: {:?}, new_outer_face: {:?}", new_face, overlap_len, interval_start, outer_face, new_outer_face);
+        add_cycle(&mut adj_list, &new_face, k);
+        num_placed += k - overlap_len;
+        outer_face = new_outer_face;
     }
-    Graph::of_adj_list(adj_list, Random(RandomConstructor::PlanarGons(*order, k)))
+    let g = Graph::of_adj_list(adj_list, Random(RandomConstructor::PlanarGons(*order, k)));
+    if !g.is_adj_commutative() {
+        panic!("Not commutative!");
+    }
+    g
 }
