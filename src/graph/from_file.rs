@@ -12,20 +12,21 @@ pub fn new_graph(filename: &String) -> Graph {
         Ok(contents) => {
             let lines = contents.trim().lines().collect::<Vec<&str>>();
             let n: usize = lines[0].parse().unwrap();
-            let mut adj_list: Vec<Vec<usize>> = vec![vec![]; n];
+            let order = Order::of_usize(n);
+            let mut adj_list: VertexVec<Vec<Vertex>> = VertexVec::new(order, &vec![]);
 
             if lines[1].contains("~") {
                 for line in lines.iter().skip(1) {
                     let pars: Vec<&str> = line.split("~").collect();
-                    let u: usize = pars[0].trim().parse().unwrap();
-                    let v: usize = pars[1].trim().parse().unwrap();
+                    let u: Vertex = Vertex::of_string(pars[0]);
+                    let v: Vertex = Vertex::of_string(pars[1]);
                     adj_list[u].push(v);
                     adj_list[v].push(u);
                 }
             } else {
                 for (i, line) in lines.iter().skip(1).enumerate() {
                     for par in line.split(",") {
-                        adj_list[i].push(par.parse().unwrap());
+                        adj_list[Vertex::of_usize(i)].push(Vertex::of_string(par));
                     }
                 }
             }

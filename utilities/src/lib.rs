@@ -10,11 +10,14 @@ pub mod rational;
 pub mod edge_tools;
 pub mod vertex_tools;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Order(usize);
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Degree(usize);
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Component(Vertex);
 
 impl Order {
     pub fn of_string(text: &str) -> Order {
@@ -47,27 +50,6 @@ impl fmt::Display for Order {
         write!(f, "{}", self.0)
     }
 }
-
-impl PartialEq for Order {
-    fn eq(&self, other: &Order) -> bool {
-        self.0 == other.0
-    }
-}
-
-impl Eq for Order { }
-
-impl PartialOrd for Order {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for Order {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.0.cmp(&other.0)
-    }
-}
-
 impl ops::Add<Order> for Order {
     type Output = Order;
 
@@ -78,6 +60,7 @@ impl ops::Add<Order> for Order {
 
 impl Degree {
     pub const ZERO: Degree = Degree(0);
+    pub const INF: Degree = Degree(usize::MAX);
 
     pub fn of_string(text: &str) -> Degree {
         Degree(text.parse().unwrap())
@@ -130,31 +113,21 @@ impl fmt::Display for Degree {
     }
 }
 
-impl PartialEq for Degree {
-    fn eq(&self, other: &Degree) -> bool {
-        self.0 == other.0
-    }
-}
-
-impl Eq for Degree { }
-
-impl PartialOrd for Degree {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for Degree {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.0.cmp(&other.0)
-    }
-}
-
 impl ops::Add<Degree> for Degree {
     type Output = Degree;
 
     fn add(self, rhs: Degree) -> Degree {
         Degree(self.0 + rhs.0)
+    }
+}
+
+impl Component {
+    pub fn of_vertex(v: Vertex) -> Component {
+        Component(v)
+    }
+
+    pub fn to_vertex(&self) -> Vertex {
+        self.0
     }
 }
 

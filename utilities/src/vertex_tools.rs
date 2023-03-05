@@ -23,7 +23,7 @@ impl Vertex {
     pub const ZERO: Vertex = Vertex(0);
 
     pub fn of_string(text: &str) -> Vertex {
-        Vertex(text.parse().unwrap())
+        Vertex(text.trim().parse().unwrap())
     }
 
     pub fn of_usize(x: usize) -> Vertex {
@@ -34,8 +34,28 @@ impl Vertex {
         Vertex((self.0 + 1) % n.to_usize())
     }
 
+    pub fn incr_inplace(&mut self, n: Order) {
+        self.0 = (self.0 + 1) % n.to_usize();
+    }
+
     pub fn decr(&self, n: Order) -> Vertex {
         Vertex((self.0 + n.to_usize() - 1) % n.to_usize())
+    }
+
+    pub fn div(&self, denom: usize) -> Vertex {
+        Vertex(self.0 / denom)
+    }
+
+    pub fn div_inplace(&mut self, denom: usize) {
+        self.0 /= denom
+    }
+
+    pub fn rem(&self, denom: usize) -> Vertex {
+        Vertex(self.0 % denom)
+    }
+
+    pub fn xor(&self, other: Vertex) -> Vertex {
+        Vertex(self.0 ^ other.0)
     }
 
     pub fn encode_with(&self, other: Vertex) -> usize {
@@ -47,8 +67,12 @@ impl Vertex {
         }
     }
 
-    pub fn is_max(&self, n: Order) -> bool {
+    pub fn is_n(&self, n: Order) -> bool {
         n.to_usize() == self.0
+    }
+
+    pub fn is_zero(&self) -> bool {
+        self.0 == 0
     }
 
     pub fn is_max_less_one(&self, n: Order) -> bool {
@@ -69,8 +93,8 @@ impl Iterator for VertexPair {
         let i = self.curr.0;
         let j = self.curr.1;
 
-        if j.is_max(self.n) {
-            if i.is_max(self.n) {
+        if j.is_n(self.n) {
+            if i.is_n(self.n) {
                 None
             } else {
                 let k = i.incr(self.n);
@@ -105,7 +129,7 @@ impl <T: Debug + Clone> VertexVec<T> {
         &self.vec[v.0]
     }
 
-    pub fn find_max(&self, min: &T, cmp: fn(&T, &T) -> Ordering) -> Option<Vertex> {
+    pub fn arg_max(&self, min: &T, cmp: fn(&T, &T) -> Ordering) -> Option<Vertex> {
         let mut best_vert = None;
         let mut max = min;
 
@@ -119,6 +143,10 @@ impl <T: Debug + Clone> VertexVec<T> {
         best_vert
     }
 
+    pub fn max(&self, min: &T, cmp: fn(&T, &T) -> Ordering) -> Option<&T> {
+        self.arg_max(min, cmp).map(|x| &self[x])
+    }
+
     pub fn iter(&self) -> Iter<T> {
         self.vec.iter()
     }
@@ -129,6 +157,10 @@ impl <T: Debug + Clone> VertexVec<T> {
 
     pub fn iter_mut(&mut self) -> IterMut<T> {
         self.vec.iter_mut()
+    }
+
+    pub fn iter_mut_enum(&mut self) -> impl Iterator<Item = (Vertex, &mut T)>{
+        self.vec.iter_mut().enumerate().map(|(i, t)| (Vertex::of_usize(i), t))
     }
 
     pub fn println(&self) {

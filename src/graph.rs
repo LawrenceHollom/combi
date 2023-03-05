@@ -106,45 +106,33 @@ impl Graph {
         Graph::of_adj_list(adj_list, Raw(Empty(n)))
     }
 
-    pub fn of_filtered(&self, filter: &[bool]) -> Graph {
-        let n = filter.iter().filter(|x| **x).count();
-        let mut adj: Vec<Vec<bool>> = vec![(); n].iter().map(|()| vec![false; n]).collect();
-        let mut adj_list: Vec<Vec<usize>> = vec![];
-        let mut deg = vec![Degree::ZERO; n];
+    pub fn of_filtered(&self, filter: &VertexVec<bool>) -> Graph {
+        let n = Order::of_usize(filter.iter().filter(|x| **x).count());
+        let mut adj_list: VertexVec<Vec<Vertex>> = VertexVec::new(n, &vec![]);
 
-        let mut map = vec![0; n];
-        let mut target = 0;
+        let mut map = VertexVec::new(n, &Vertex::ZERO);
+        let mut target = Vertex::ZERO;
         for map_par in map.iter_mut() {
             while !filter[target] {
-                target += 1;
+                target.incr_inplace(n);
             }
             *map_par = target;
-            target += 1;
+            target.incr_inplace(n);
         }
 
-        for i in 0..n {
-            adj_list.push(vec![]);
-            for j in 0..n {
-                adj[i][j] = self.adj[map[i]][map[j]];
-                if adj[i][j] {
-                    adj_list[i].push(j);
-                    deg[i] = deg[i].incr();
-                }
+        for (i, j) in n.iter_pairs() {
+            if self.adj[map[i]][map[j]] {
+                adj_list[i].push(j);
+                adj_list[j].push(i);
             }
         }
 
-        Graph {
-            n: Order::of_usize(n),
-            adj,
-            adj_list,
-            deg,
-            constructor: Special,
-        }
+        Graph::of_adj_list(adj_list, Special)
     }
 
     pub fn bunkbed(&self) -> Graph {
         let new_n = self.n + self.n;
-        let mut adj_list = VertexVec::new_fn(&new_n, |_| vec![]);
+        let mut adj_list = VertexVec::new_fn(new_n, |_| vec![]);
         let nu = self.n.to_usize();
 
         for j in 0..2_usize {
@@ -186,47 +174,48 @@ impl Graph {
         (0..self.n.to_usize()).map(|x| Vertex::of_usize(x))
     }
 
-    fn is_map_isomorphism(&self, g: &Graph, map: &[usize]) -> bool {
-        let n = g.n.to_usize();
-        let mut is_iso = true;
-        'test: for i in 0..n {
-            for j in 0..n {
-                if self.adj[i][j] != g.adj[map[i]][map[j]] {
-                    is_iso = false;
-                    break 'test;
+    fn is_map_isomorphism(&self, g: &Graph, map: &VertexVec<Option<Vertex>>) -> bool {
+        for (i, j) in self.n.iter_pairs() {
+            match (map[i], map[j]) {
+                (Some(x), Some(y)) => {
+                    if self.adj[i][j] != g.adj[x][y] {
+                        return false;
+                    }
                 }
+                (Some(x), None) | (None, Some(x)) => return false,
+                (None, None) => return false,
+
             }
         }
-        is_iso
+        true
     }
 
-    fn is_isomorphic_to_rec(&self, g: &Graph, ordering: &Vec<usize>, map: &mut Vec<usize>, covered: &mut Vec<bool>, 
-            node: usize, self_codegs: &Vec<usize>, g_codegs: &Vec<usize>) -> bool {
-        let n = g.n.to_usize();
-        if node == n {
+    fn is_isomorphic_to_rec(&self, g: &Graph, ordering: &VertexVec<Vertex>, map: &mut VertexVec<Option<Vertex>>, 
+            covered: &mut VertexVec<bool>, node: Vertex, self_codegs: &Vec<usize>, g_codegs: &Vec<usize>) -> bool {
+        if node.is_n(self.n) {
             self.is_map_isomorphism(g, map)
         } else {
             let mut is_any_iso = false;
             let v = ordering[node];
             // i is the target location of node
-            'find_iso: for i in 0..n {
+            'find_iso: for i in self.n.iter_verts() {
                 if self.deg[v] == g.deg[i] && !covered[i] {
                     let mut adj_check = true;
                     'adj_test: for u in self.adj_list[v].iter() {
-                        if map[*u] != n && (!g.adj[map[*u]][i]
-                                || self_codegs[Self::codeg_code(*u, v)] != g_codegs[Self::codeg_code(map[*u], i)]) {
+                        if map[*u].map_or(false, |x| !g.adj[x][i]
+                                || self_codegs[Self::codeg_code(*u, v)] != g_codegs[Self::codeg_code(x, i)]) {
                             adj_check = false;
                             break 'adj_test;
                         }
                     }
                     if adj_check {
-                        map[v] = i;
+                        map[v] = Some(i);
                         covered[i] = true;
-                        if self.is_isomorphic_to_rec(g, ordering, map, covered, node + 1, self_codegs, g_codegs) {
+                        if self.is_isomorphic_to_rec(g, ordering, map, covered, node.incr(self.n), self_codegs, g_codegs) {
                             is_any_iso = true;
                             break 'find_iso;
                         }
-                        map[v] = n;
+                        map[v] = None;
                         covered[i] = false;
                     }
                 }
@@ -276,10 +265,11 @@ impl Graph {
         }
 
         // BFS on self to find ordering.
-        let mut q: Queue<usize> = queue![];
-        let mut ordering = vec![];
-        let mut visited = vec![false; n];
-        for start in 0..n {
+        let mut q: Queue<Vertex> = queue![];
+        let mut ordering = VertexVec::new(self.n, &Vertex::ZERO);
+        let mut visited = VertexVec::new(self.n, &false);
+        let mut next_preimage = Vertex::ZERO;
+        for start in self.n.iter_verts() {
             if !visited[start] {
                 visited[start] = true;
                 let _ = q.add(start);
@@ -287,7 +277,8 @@ impl Graph {
             'bfs: loop {
                 match q.remove() {
                     Ok(node) => {
-                        ordering.push(node);
+                        ordering[next_preimage] = node;
+                        next_preimage.incr_inplace(self.n);
                         for v in self.adj_list[node].iter() {
                             if !visited[*v] {
                                 visited[*v] = true;
@@ -300,7 +291,7 @@ impl Graph {
             }
         }
 
-        let is_iso = self.is_isomorphic_to_rec(g, &ordering, &mut vec![n; n], &mut vec![false; n], 0,
+        let is_iso = self.is_isomorphic_to_rec(g, &ordering, &mut VertexVec::new(self.n, &None), &mut VertexVec::new(self.n, &false), Vertex::ZERO,
                 &self.codegree_sequence(), &g.codegree_sequence());
         if !is_iso {
             println!("Missed: {} !~ {}", self.constructor, g.constructor);
@@ -309,21 +300,20 @@ impl Graph {
     }
 
     // Test components, but only considering vertices in the filter.
-    pub fn filtered_components(&self, filter: &[bool]) -> Vec<usize> {
-        let n = self.n.to_usize();
-        let mut comp: Vec<usize> = vec![n; n];
-        let mut q: Queue<usize> = queue![];
+    pub fn filtered_components(&self, filter: Option<&VertexVec<bool>>) -> VertexVec<Component> {
+        let mut comp: VertexVec<Option<Vertex>> = VertexVec::new(self.n, &None);
+        let mut q: Queue<Vertex> = queue![];
     
-        for i in 0..n {
-            if comp[i] == n && filter[i] {
-                comp[i] = i;
+        for i in self.n.iter_verts() {
+            if comp[i].is_none() && filter.map_or(true, |f| f[i]) {
+                comp[i] = Some(i);
                 let _ = q.add(i);
                 'flood_fill: loop {
                     match q.remove() {
                         Ok(node) => {
                             for j in self.adj_list[node].iter() {
-                                if comp[*j] == n && filter[*j] {
-                                    comp[*j] = i;
+                                if comp[*j].is_none() && filter.map_or(true, |f| f[*j]) {
+                                    comp[*j] = Some(i);
                                     let _ = q.add(*j);
                                 }
                             }
@@ -334,31 +324,23 @@ impl Graph {
             }
         }
     
-        comp
+        comp.iter().map(|x| Component::of_vertex(x.unwrap())).collect::<VertexVec<Component>>()
     }
     
-    pub fn components(&self) -> Vec<usize> {
-        self.filtered_components(&vec![true; self.n.to_usize()])
+    pub fn components(&self) -> VertexVec<Component> {
+        self.filtered_components(None)
     }
     
     pub fn largest_component(&self) -> u32 {
-        let n = self.n.to_usize();
         let comps = self.components();
     
-        let mut sizes: Vec<u32> = vec![0; n];
+        let mut sizes: VertexVec<u32> = VertexVec::new(self.n, &0);
     
         for comp in comps.iter() {
-            sizes[*comp] += 1;
+            sizes[comp.to_vertex()] += 1;
         }
     
-        let mut max = 0;
-        for size in sizes.iter() {
-            if *size > max {
-                max = *size;
-            }
-        }
-    
-        max
+        *sizes.max(&0, u32::cmp).unwrap()
     }
 
     pub fn is_adj_commutative(&self) -> bool {
@@ -380,17 +362,16 @@ impl Graph {
         self.max_degree() == self.min_degree()
     }
     
-    pub fn num_filtered_components(&self, filter: &[bool]) -> u32 {
-        let n = self.n.to_usize();
+    pub fn num_filtered_components(&self, filter: Option<&VertexVec<bool>>) -> u32 {
         let comps = self.filtered_components(filter);
     
-        let mut is_comp: Vec<bool> = vec![false; n];
+        let mut is_comp: VertexVec<bool> = VertexVec::new(self.n, &false);
         let mut num_comps: u32 = 0;
     
-        for (i, comp) in comps.iter().enumerate() {
-            if filter[i] && !is_comp[*comp] {
+        for (i, comp) in comps.iter_enum() {
+            if filter.map_or(true, |f| f[i]) && !is_comp[comp.to_vertex()] {
                 num_comps += 1;
-                is_comp[*comp] = true;
+                is_comp[comp.to_vertex()] = true;
             }
         }
     
@@ -398,21 +379,23 @@ impl Graph {
     }
 
     pub fn num_components(&self) -> u32 {
-        self.num_filtered_components(&vec![true; self.n.to_usize()])
+        self.num_filtered_components(None)
     }
 
     fn component_sizes(&self) -> Vec<usize> {
-        let n = self.n.to_usize();
         let mut num_components = 0;
-        let mut labels = vec![n; n];
+        let mut labels = VertexVec::new(self.n, &None);
         let mut sizes = vec![];
-        for comp in self.components() {
-            if labels[comp] == n {
-                labels[comp] = num_components;
-                num_components += 1;
-                sizes.push(1)
-            } else {
-                sizes[labels[comp]] += 1;
+        for comp in self.components().iter() {
+            match labels[comp.to_vertex()] {
+                Some(label) => {
+                    sizes[label] += 1;
+                }
+                None => {
+                    labels[comp.to_vertex()] = Some(num_components);
+                    num_components += 1;
+                    sizes.push(1)
+                }
             }
         }
 
@@ -442,20 +425,19 @@ impl Graph {
     // - Repeat until all vertices pushed.
     //
     // This will be used to try and speed up some NP-hard search algos.
-    pub fn order_by_nbhd(&self) -> (Graph, Vec<usize>) {
-        let n = self.n.to_usize();
-        let mut placed = vec![false; n];
-        let mut ordering: Vec<usize> = vec![];
+    pub fn order_by_nbhd(&self) -> (Graph, VertexVec<Vertex>) {
+        let mut placed = VertexVec::new(self.n, &false);
+        let mut ordering: VertexVec<Vertex> = VertexVec::new(self.n, &Vertex::ZERO);
         let mut num_placed = 0;
-        while num_placed < n {
-            let mut min_unpushed_deg = n;
-            let mut best_vert = n;
-            for u in 0..n { 
+        while num_placed < self.n.to_usize() {
+            let mut min_unpushed_deg = Degree::INF;
+            let mut best_vert = Vertex::ZERO;
+            for u in self.n.iter_verts() { 
                 if !placed[u] {
-                    let mut deg = 0;
+                    let mut deg = Degree::ZERO;
                     for v in self.adj_list[u].iter() {
                         if !placed[*v] {
-                            deg += 1;
+                            deg.incr_inplace();
                         }
                     }
                     if deg < min_unpushed_deg {
@@ -465,12 +447,12 @@ impl Graph {
                 }
             }
             placed[best_vert] = true;
-            ordering.push(best_vert);
+            ordering[Vertex::of_usize(num_placed)] = best_vert;
             num_placed += 1;
             for v in self.adj_list[best_vert].iter() {
                 if !placed[*v] {
                     placed[*v] = true;
-                    ordering.push(*v);
+                    ordering[Vertex::of_usize(num_placed)] = *v;
                     num_placed += 1;
                 }
             }
@@ -528,53 +510,32 @@ impl Graph {
     }
 
     pub fn complement(&self) -> Graph {
-        let n = self.n.to_usize();
-        let mut new_adj = vec![vec![false; n]; n];
-        let mut new_adj_list = vec![vec![n-1]; n];
-        let new_deg: Vec<Degree> = self.deg.iter().map(|x| Degree::of_usize(n - x.to_usize() - 1)).collect();
+        let mut new_adj_list = VertexVec::new(self.n, &vec![]);
 
-        for i in 0..(n-1) {
-            for j in (i+1)..n {
-                new_adj[i][j] = !self.adj[i][j];
-                new_adj[j][i] = !self.adj[j][i];
-            }
-        }
-        
-        for i in 0..n {
-            for j in 0..n {
-                if new_adj[i][j] {
-                    new_adj_list[i].push(j);
-                }
+        for (i, j) in self.n.iter_pairs() {
+            if !self.adj[i][j] {
+                new_adj_list[j].push(i);
+                new_adj_list[i].push(j);
             }
         }
 
-        Graph {
-            n: self.n,
-            adj: new_adj,
-            adj_list: new_adj_list,
-            deg: new_deg,
-            constructor: Constructor::Special,
-        }
+        Graph::of_adj_list(new_adj_list, Special)
     }
 
     pub fn print(&self) {
-        let n: usize = self.n.to_usize();
-        println!("n: {}", n);
+        println!("n: {}", self.n);
         println!("degs: {:?}", self.deg.iter().map(|x| x.to_usize()).collect::<Vec<usize>>());
-        for i in 0..(n-1) {
-            for j in (i+1)..n {
-                if self.adj[i][j] {
-                    println!("{} ~ {}", i, j);
-                }
+        for (i, j) in self.n.iter_pairs() {
+            if self.adj[i][j] {
+                println!("{} ~ {}", i, j);
             }
         }
     }
 
     pub fn print_matrix(&self) {
-        let n = self.n.to_usize();
-        println!("n: {}, m: {}", n, self.size());
-        for i in 0..n {
-            for j in 0..n {
+        println!("n: {}, m: {}", self.n, self.size());
+        for i in self.n.iter_verts() {
+            for j in self.n.iter_verts() {
                 if self.adj[i][j] {
                     print!("1");
                 } else {
@@ -589,10 +550,9 @@ impl Graph {
         self.deg.iter().fold(0, |accum, val| accum + val.to_usize()) / 2
     }
 
-    pub fn filtered_size(&self, filter: &[bool]) -> usize {
+    pub fn filtered_size(&self, filter: &VertexVec<bool>) -> usize {
         self.adj_list
-            .iter()
-            .enumerate()
+            .iter_enum()
             .fold(0, |accum, (i, adjs)|
                 if filter[i] {
                     accum + adjs.iter().filter(|x| filter[**x]).count()
@@ -602,7 +562,7 @@ impl Graph {
             ) / 2
     }
 
-    pub fn filtered_degree(&self, v: usize, filter: &[bool]) -> usize {
+    pub fn filtered_degree(&self, v: Vertex, filter: VertexVec<bool>) -> usize {
         self.adj_list[v].iter().filter(|x| filter[**x]).count()
     }
 
@@ -614,20 +574,19 @@ impl Graph {
         self.deg.iter().map(|x| x.to_usize()).max().unwrap() as u32
     }
 
-    pub fn floyd_warshall(&self) -> Vec<Vec<usize>> {
-        let n = self.n.to_usize();
-        let mut dist = vec![vec![n; n]; n];
-        for (i, d) in dist.iter_mut().enumerate() {
+    pub fn floyd_warshall(&self) -> VertexVec<VertexVec<usize>> {
+        let mut dist = VertexVec::new(self.n, &VertexVec::new(self.n, &usize::MAX));
+        for (i, d) in dist.iter_mut_enum() {
             d[i] = 0;
         }
-        for (i, d) in dist.iter_mut().enumerate() {
+        for (i, d) in dist.iter_mut_enum() {
             for j in self.adj_list[i].iter() {
                 d[*j] = 1;
             }
         }
-        for k in 0..n {
-            for i in 0..n {
-                for j in 0..n {
+        for k in self.n.iter_verts() {
+            for i in self.n.iter_verts() {
+                for j in self.n.iter_verts() {
                     if dist[i][j] > dist[i][k] + dist[k][j] {
                         dist[i][j] = dist[i][k] + dist[k][j];
                     }
@@ -673,9 +632,9 @@ impl Graph {
                 break 'cut_edges;
             }
 
-            let mut max_edge = Edge::of_pair(0, 1);
+            let mut max_edge = Edge::FILLER;
             let mut max_deg = Degree::ZERO;
-            for (u, adj) in self.adj_list.iter().enumerate() {
+            for (u, adj) in self.adj_list.iter_enum() {
                 for v in adj.iter() {
                     if self.deg[u] + self.deg[*v] > max_deg {
                         max_deg = self.deg[u] + self.deg[*v];
@@ -687,8 +646,8 @@ impl Graph {
         }
     }
 
-    fn list_cycles_rec(&self, dist: &Vec<Vec<usize>>, visited: &mut Vec<bool>, cycle: &mut Vec<Edge>, 
-            current_len: usize, target_len: usize, this_vert: usize, start_vert: usize, list: &mut Vec<Vec<Edge>>) {
+    fn list_cycles_rec(&self, dist: &VertexVec<VertexVec<usize>>, visited: &mut VertexVec<bool>, cycle: &mut Vec<Edge>, 
+            current_len: usize, target_len: usize, this_vert: Vertex, start_vert: Vertex, list: &mut Vec<Vec<Edge>>) {
         if current_len == target_len - 1 {
             if self.adj[this_vert][start_vert] {
                 cycle.push(Edge::of_pair(this_vert, start_vert));
@@ -709,15 +668,13 @@ impl Graph {
         }
     }
 
-    pub fn remove_all_k_cycles(&mut self, k: usize) {
-        let n = self.n.to_usize();
-    
+    pub fn remove_all_k_cycles(&mut self, k: usize) {    
         let dist = self.floyd_warshall();
 
         // DFS to find all cycles.
         let mut list: Vec<Vec<Edge>> = vec![];
-        for u in 0..n {
-            let mut visited = vec![false; n];
+        for u in self.n.iter_verts() {
+            let mut visited = VertexVec::new(self.n, &false);
             visited[u] = true;
             self.list_cycles_rec(&dist, &mut visited, &mut vec![],
                 0, k, u, u, &mut list);
