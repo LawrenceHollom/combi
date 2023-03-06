@@ -4,17 +4,19 @@ use rand::{Rng, thread_rng};
 use std::io::*;
 use queues::*;
 
+use utilities::*;
 use utilities::polynomial::*;
+use utilities::vertex_tools::*;
 
 pub struct Percolator {
     order: usize,
     probs: Vec<Polynomial>,
-    pub polys: Vec<Polynomial>,
+    pub polys: VertexVec<Polynomial>,
     pub dist_polys: Vec<Vec<Polynomial>>,
 }
 
 impl Percolator {
-    pub fn new(order: usize, size: usize) -> Percolator {
+    pub fn new(order: Order, size: usize) -> Percolator {
         let mut probs: Vec<Polynomial> = vec![];
 
         let p = Polynomial::of_vec(&vec![0, 1]);
@@ -22,8 +24,8 @@ impl Percolator {
         for i in 0..(size+1) {
             probs.push(p.pow(i).mul(&one_minus_p.pow(size - i)));
         }
-        let mut polys: Vec<Polynomial> = vec![(); order].iter().map(|_| Polynomial::new()).collect();
-        let mut dist_polys: Vec<Vec<Polynomial>> = vec![(); order].iter().map(|_| polys.to_owned()).collect();
+        let mut polys: VertexVec<Polynomial> = VertexVec::new(order, &Polynomial::new());
+        let mut dist_polys: Vec<Vec<Polynomial>> = VertexVec::new(order, &polys);
         polys[0] = Polynomial::of_vec(&vec![1]);
         for poly in dist_polys[0].iter_mut() {
             *poly = Polynomial::of_vec(&vec![1]);
@@ -54,7 +56,7 @@ impl Percolator {
         connected
     }
 
-    pub fn add_percolation(&mut self, num_edges: usize, adj_list: &[Vec<usize>], compute_dists: bool) {
+    pub fn add_percolation(&mut self, num_edges: usize, adj_list: &VertexVec<Vec<Vertex>>, compute_dists: bool) {
         let connected = Self::test_connections(self.order, adj_list);
 
         for (v, dist) in connected.iter().enumerate().skip(1) {

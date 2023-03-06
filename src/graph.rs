@@ -1,11 +1,9 @@
-use std::slice::Iter;
-
 use utilities::{*, edge_tools::*, vertex_tools::*};
 use crate::constructor::*;
 use Constructor::*;
 use RawConstructor::*;
 
-use rand::{thread_rng, Rng, seq::SliceRandom};
+use rand::{thread_rng, Rng};
 use queues::*;
 
 mod products;
@@ -68,8 +66,8 @@ impl Graph {
         let mut adj_list = VertexVec::new_fn(n, |_| vec![]);
 
         for i in n.iter_verts() {
-            adj_list[i].push(i.incr(n));
-            adj_list[i].push(i.decr(n));
+            adj_list[i].push(i.incr_wrap(n));
+            adj_list[i].push(i.decr_wrap(n));
         }
 
         Graph::of_adj_list(adj_list, Raw(Cyclic(n)))
@@ -79,10 +77,10 @@ impl Graph {
         let mut adj_list = VertexVec::new_fn(n, |_| vec![]);
 
         for i in n.iter_verts().take(n.to_usize() - 1) {
-            adj_list[i].push(i.incr(n));
+            adj_list[i].push(i.incr());
         }
         for i in n.iter_verts().skip(1) {
-            adj_list[i].push(i.decr(n));
+            adj_list[i].push(i.decr());
         }
 
         Graph::of_adj_list(adj_list, Raw(Path(n)))
@@ -114,10 +112,10 @@ impl Graph {
         let mut target = Vertex::ZERO;
         for map_par in map.iter_mut() {
             while !filter[target] {
-                target.incr_inplace(n);
+                target.incr_inplace();
             }
             *map_par = target;
-            target.incr_inplace(n);
+            target.incr_inplace();
         }
 
         for (i, j) in n.iter_pairs() {
@@ -211,7 +209,7 @@ impl Graph {
                     if adj_check {
                         map[v] = Some(i);
                         covered[i] = true;
-                        if self.is_isomorphic_to_rec(g, ordering, map, covered, node.incr(self.n), self_codegs, g_codegs) {
+                        if self.is_isomorphic_to_rec(g, ordering, map, covered, node.incr(), self_codegs, g_codegs) {
                             is_any_iso = true;
                             break 'find_iso;
                         }
@@ -227,8 +225,8 @@ impl Graph {
     pub fn is_isomorphic_to(&self, g: &Graph) -> bool {
         let mut self_degs = self.deg.to_owned();
         let mut g_degs = g.deg.to_owned();
-        self_degs.sort();
-        g_degs.sort();
+        self_degs.sort(Degree::cmp);
+        g_degs.sort(Degree::cmp);
 
         if self.n != g.n {
             return false;
@@ -278,7 +276,7 @@ impl Graph {
                 match q.remove() {
                     Ok(node) => {
                         ordering[next_preimage] = node;
-                        next_preimage.incr_inplace(self.n);
+                        next_preimage.incr_inplace();
                         for v in self.adj_list[node].iter() {
                             if !visited[*v] {
                                 visited[*v] = true;
@@ -478,15 +476,15 @@ impl Graph {
             }
             RootedTree(parents) => tree::new_rooted(parents),
             Random(Biregular(order, left_deg, right_deg)) => {
-                random_regular_bipartite::new_biregular(order, left_deg, right_deg)
+                random_regular_bipartite::new_biregular(*order, *left_deg, *right_deg)
             }
-            Random(ErdosRenyi(order, p)) => erdos_renyi::new(order, *p),
-            Random(Triangulation(order)) => random_planar::new_triangulation(order),
-            Random(MaximalPlanar(order)) => random_planar::new_maximal(order),
+            Random(ErdosRenyi(order, p)) => erdos_renyi::new(*order, *p),
+            Random(Triangulation(order)) => random_planar::new_triangulation(*order),
+            Random(MaximalPlanar(order)) => random_planar::new_maximal(*order),
             Random(PlanarConditioned(order, max_deg, min_girth)) => {
-                random_planar::new_conditioned(order, *max_deg, *min_girth)
+                random_planar::new_conditioned(*order, *max_deg, *min_girth)
             }
-            Random(PlanarGons(order, k)) => random_planar::k_gon_gluing(order, *k),
+            Random(PlanarGons(order, k)) => random_planar::k_gon_gluing(*order, *k),
             Random(Bowties(scale, degree)) => bowties::new_bowties(*scale, *degree),
             Random(Regular(order, degree)) => regular::new_regular(order, degree),
             Random(DegreeSequence(deg_seq)) => regular::new_from_degree_sequence(deg_seq, false),
@@ -707,4 +705,12 @@ impl Graph {
             }
         }
     }
+}
+
+pub fn adj_list_of_manual(adj_list: Vec<Vec<usize>>) -> VertexVec<Vec<Vertex>> {
+    adj_list.iter()
+        .map(|l| l.iter()
+            .map(|x| Vertex::of_usize(*x))
+            .collect())
+        .collect()
 }

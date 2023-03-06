@@ -4,6 +4,9 @@ use std::fmt::Debug;
 use std::ops::*;
 use std::slice::*;
 
+use rand::rngs::ThreadRng;
+use rand::seq::SliceRandom;
+
 use crate::Order;
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -12,6 +15,11 @@ pub struct Vertex(usize);
 #[derive(Clone, Debug)]
 pub struct VertexVec<T: Debug + Clone> {
     vec: Vec<T>
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct VertexSet {
+    verts: u128
 }
 
 pub struct VertexPair {
@@ -30,15 +38,35 @@ impl Vertex {
         Vertex(x)
     }
 
-    pub fn incr(&self, n: Order) -> Vertex {
+    pub fn incr(&self) -> Vertex {
+        Vertex(self.0 + 1)
+    }
+
+    pub fn incr_inplace(&mut self) {
+        self.0 += 1;
+    }
+
+    pub fn incr_wrap(&self, n: Order) -> Vertex {
         Vertex((self.0 + 1) % n.to_usize())
     }
 
-    pub fn incr_inplace(&mut self, n: Order) {
+    pub fn incr_wrap_inplace(&mut self, n: Order) {
         self.0 = (self.0 + 1) % n.to_usize();
     }
 
-    pub fn decr(&self, n: Order) -> Vertex {
+    pub fn incr_by(&self, x: usize) -> Vertex {
+        Vertex(self.0 + x)
+    }
+
+    pub fn incr_by_order(&self, n: Order) -> Vertex {
+        Vertex(self.0 + n.to_usize())
+    }
+
+    pub fn decr(&self) -> Vertex {
+        Vertex(self.0 - 1)
+    }
+
+    pub fn decr_wrap(&self, n: Order) -> Vertex {
         Vertex((self.0 + n.to_usize() - 1) % n.to_usize())
     }
 
@@ -71,12 +99,32 @@ impl Vertex {
         n.to_usize() == self.0
     }
 
+    pub fn less_than(&self, n: Order) -> bool {
+        self.0 < n.to_usize()
+    }
+
     pub fn is_zero(&self) -> bool {
         self.0 == 0
     }
 
     pub fn is_max_less_one(&self, n: Order) -> bool {
         n.to_usize() == self.0 + 1
+    }
+
+    pub fn iter_from(&self, n: Order) -> impl Iterator<Item = Vertex> {
+        n.iter_verts().skip(self.0)
+    }
+
+    pub fn iter_from_to(&self, other: Vertex) -> impl Iterator<Item = Vertex> {
+        (self.0..other.0).map(|x| Vertex::of_usize(x))
+    }
+
+    pub fn iter_from_to_incl(&self, other: Vertex) -> impl Iterator<Item = Vertex> {
+        (self.0..=other.0).map(|x| Vertex::of_usize(x))
+    }
+
+    pub fn num_verts_after(&self, n: Order) -> usize {
+        n.to_usize() - self.0 - 1
     }
 }
 
@@ -97,12 +145,12 @@ impl Iterator for VertexPair {
             if i.is_n(self.n) {
                 None
             } else {
-                let k = i.incr(self.n);
-                self.curr = (k, k.incr(self.n));
+                let k = i.incr();
+                self.curr = (k, k.incr());
                 Some((i, j))
             }
         } else {
-            self.curr = (i, j.incr(self.n));
+            self.curr = (i, j.incr());
             Some((i, j))
         }
     }
@@ -163,8 +211,87 @@ impl <T: Debug + Clone> VertexVec<T> {
         self.vec.iter_mut().enumerate().map(|(i, t)| (Vertex::of_usize(i), t))
     }
 
+    pub fn shuffle(&mut self, rng: &mut ThreadRng) {
+        self.vec.shuffle(rng)
+    }
+
+    pub fn sort(&mut self, compare: fn(&T, &T) -> Ordering) {
+        self.vec.sort_by(compare);
+    }
+
+    pub fn contains(&self, other: &T, eq: fn(&T, &T) -> bool) -> bool {
+        for t in self.vec.iter() {
+            if eq(t, other) {
+                return true;
+            }
+        }
+        false
+    }
+
     pub fn println(&self) {
         println!("{:?}", self.vec);
+    }
+}
+
+impl <T: Debug + Clone> FromIterator<T> for VertexVec<T> {
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        let mut vec = vec![];
+
+        for i in iter {
+            vec.push(i);
+        }
+
+        VertexVec { vec }
+    }
+}
+
+impl VertexSet {
+    pub fn new() -> VertexSet {
+        VertexSet{ verts: 0 }
+    }
+
+    pub fn everything(n: Order) -> VertexSet {
+        VertexSet{ verts: (1 << n.to_usize()) - 1 }
+    }
+
+    pub fn of_usize(set: usize) -> VertexSet {
+        VertexSet{ verts: set as u128 }
+    }
+
+    pub fn add_vert(&mut self, v: Vertex) {
+        self.verts |= 1 << v.0;
+    }
+
+    pub fn add_all(&mut self, vs: VertexSet) {
+        self.verts |= vs.verts;
+    }
+
+    pub fn union(&self, other: &VertexSet) -> VertexSet {
+        VertexSet{ verts: self.verts | other.verts }
+    }
+
+    pub fn inter(&self, other: &VertexSet) -> VertexSet {
+        VertexSet{ verts: self.verts & other.verts }
+    }
+
+    pub fn xor(&self, other: &VertexSet) -> VertexSet {
+        VertexSet { verts: self.verts ^ other.verts }
+    }
+
+    pub fn not(&self) -> VertexSet {
+        VertexSet { verts: !self.verts }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.verts == 0
+    }
+
+    pub fn is_nonempty(&self) -> bool {
+        self.verts != 0
+    }
+
+    pub fn has_vert(&self, v: Vertex) -> bool {
+        (self.verts >> v.0) % 2 == 1
     }
 }
 

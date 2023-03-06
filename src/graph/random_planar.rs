@@ -135,7 +135,7 @@ pub fn k_gon_gluing(order: Order, k: usize) -> Graph {
         for _i in 0..(k - overlap_len) {
             new_face.push(next_vert);
             new_outer_face.push(next_vert);
-            next_vert.incr_inplace(order);
+            next_vert.incr_inplace();
         }
         //println!("Adding cycle {:?}; overlap_len: {}, interval_start: {}; outer_face: {:?}, new_outer_face: {:?}", new_face, overlap_len, interval_start, outer_face, new_outer_face);
         add_cycle(&mut adj_list, &new_face, k);

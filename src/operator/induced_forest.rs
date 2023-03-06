@@ -1,16 +1,17 @@
 use crate::graph::*;
 
-fn max_induced_forest_rec(g: &Graph, forest: &mut Vec<bool>, comp: &mut Vec<usize>, 
-        prev_vert: usize, size: u32, max_size: u32) -> u32 {
-    let n = g.n.to_usize();
-    let max_vert = (size + (n as u32) - max_size - 1) as usize;
+use utilities::vertex_tools::*;
+
+fn max_induced_forest_rec(g: &Graph, forest: &mut VertexVec<bool>, comp: &mut VertexVec<Vertex>, 
+        prev_vert: Vertex, size: u32, max_size: u32) -> u32 {
+    let max_vert = Vertex::of_usize((size + (g.n.to_usize() as u32) - max_size - 1) as usize).min(g.n.to_max_vertex());
     if max_vert <= prev_vert {
         return 0;
     }
     let mut best_size = size;
-    for v in (prev_vert + 1)..n.min(max_vert + 1) {
+    for v in prev_vert.incr().iter_from_to_incl(max_vert) {
         // Try adding vertex v. Only bad if it creates a cycle.
-        let mut comp_found = vec![false; n];
+        let mut comp_found = VertexVec::new(g.n, &false);
         let mut is_vertex_good = true;
         'test_nbrs: for w in g.adj_list[v].iter() {
             let mut x = comp[*w];
@@ -52,15 +53,11 @@ fn max_induced_forest_rec(g: &Graph, forest: &mut Vec<bool>, comp: &mut Vec<usiz
 
 pub fn max_induced_forest(g: &Graph) -> u32 {
     let mut size = 0;
-    let n = g.n.to_usize();
-    let mut forest = vec![false; n];
-    let mut comp = vec![0; n];
-    for (i, i_comp) in comp.iter_mut().enumerate() {
-        *i_comp = i;
-    }
+    let mut forest = VertexVec::new(g.n, &false);
+    let mut comp = VertexVec::new_fn(g.n, |v| v);
 
-    'test_start_vertex: for v in 0..n {
-        if (n - v) < size as usize {
+    'test_start_vertex: for v in g.n.iter_verts() {
+        if v.num_verts_after(g.n) <= size as usize {
             break 'test_start_vertex;
         }
         forest[v] = true;

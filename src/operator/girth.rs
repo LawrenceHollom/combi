@@ -1,13 +1,11 @@
 use crate::graph::*;
 
 pub fn girth(g: &Graph) -> u32 {
-    let n = g.n.to_usize();
     let dist = g.floyd_warshall();
+    let mut girth = g.n.to_usize();
 
-    let mut girth = n;
-
-    for (u, d) in dist.iter().enumerate().take(n-1) {
-        for v in (u+1)..n {
+    for (u, d) in dist.iter_enum() {
+        for v in u.incr().iter_from(g.n) {
             // If they're far away there's no point trying
             if d[v] < (girth + 1) / 2 {
                 let mut num_less = 0;

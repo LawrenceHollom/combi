@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::Debug;
+use std::ops::*;
 
 use crate::{vertex_tools::*, Order};
 
@@ -16,6 +17,7 @@ pub struct EdgeSet {
 #[derive(Clone)]
 pub struct EdgeVec<T: Debug + Copy> {
     indexer: Vec<Option<usize>>,
+    indexer_inv: Vec<Edge>,
     vec: Vec<T>,
 }
 
@@ -66,19 +68,22 @@ impl Edge {
     }    
 }
 
-fn make_indexer(adj_list: &VertexVec<Vec<Vertex>>) -> (Vec<Option<usize>>, usize) {
+fn make_indexer(adj_list: &VertexVec<Vec<Vertex>>) -> (Vec<Option<usize>>, Vec<Edge>, usize) {
     let n = adj_list.len();
     let mut indexer: Vec<Option<usize>> = vec![None; n.triangle()];
+    let mut indexer_inv: Vec<Edge> = vec![];
     let mut i = 0;
     for (u, adj) in adj_list.iter_enum() {
         for v in adj.iter() {
             if *v > u {
-                indexer[Edge::of_pair(u, *v).encode()] = Some(i);
+                let e = Edge::of_pair(u, *v);
+                indexer[e.encode()] = Some(i);
+                indexer_inv.push(e);
                 i += 1;
             }
         }
     }
-    (indexer, i)
+    (indexer, indexer_inv, i)
 }
 
 impl PartialEq for Edge {
@@ -91,7 +96,7 @@ impl Eq for Edge { }
 
 impl EdgeSet {
     pub fn new(adj_list: &VertexVec<Vec<Vertex>>) -> EdgeSet {
-        let (indexer, _len) = make_indexer(adj_list);
+        let (indexer, _indexer_inv, _len) = make_indexer(adj_list);
         EdgeSet {
             indexer,
             edges: 0,
@@ -109,15 +114,16 @@ impl EdgeSet {
 
 impl<T: Debug + Copy> EdgeVec<T> {
     pub fn new(adj_list: &VertexVec<Vec<Vertex>>, value: T) -> EdgeVec<T> {
-        let (indexer, len) = make_indexer(adj_list);
+        let (indexer, indexer_inv, len) = make_indexer(adj_list);
         EdgeVec {
             indexer,
+            indexer_inv,
             vec: vec![value; len],
         }
     }
 
     pub fn new_fn(adj_list: &VertexVec<Vec<Vertex>>, f: fn(Edge) -> T) -> EdgeVec<T> {
-        let (indexer, len) = make_indexer(adj_list);
+        let (indexer, indexer_inv, len) = make_indexer(adj_list);
         let mut vec = vec![f(Edge::FILLER); len];
 
         for (u, adj) in adj_list.iter_enum() {
@@ -129,7 +135,7 @@ impl<T: Debug + Copy> EdgeVec<T> {
             }
         }
 
-        EdgeVec { indexer, vec }
+        EdgeVec { indexer, indexer_inv, vec }
     }
 
     pub fn set(&mut self, e: Edge, value: T) {
@@ -147,11 +153,19 @@ impl<T: Debug + Copy> EdgeVec<T> {
         for (i, val) in self.vec.iter().enumerate() {
             if cmp(val, &max) == Ordering::Greater {
                 max = *val;
-                best_edge = Some(Edge::decode(i));
+                best_edge = Some(self.indexer_inv[i]);
             }
         }
 
         best_edge
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &T> {
+        self.vec.iter()
+    }
+
+    pub fn iter_enum(&self) -> impl Iterator<Item = (Edge, &T)> {
+        self.vec.iter().enumerate().map(|(i, t)| (self.indexer_inv[i], t))
     }
 
     fn n(&self) -> usize {
@@ -172,6 +186,12 @@ impl<T: Debug + Copy> EdgeVec<T> {
     }
 }
 
+impl fmt::Display for Edge {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} ~ {}", self.0, self.1)
+    }
+}
+
 impl fmt::Display for EdgeSet {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:b}", self.edges)
@@ -184,3 +204,16 @@ impl<T: Debug + Copy> fmt::Display for EdgeVec<T> {
     }
 }
 
+impl<T: Debug + Copy> Index<Edge> for EdgeVec<T> {
+    type Output = T;
+
+    fn index(&self, index: Edge) -> &Self::Output {
+        &self.vec[self.indexer[index.encode()].unwrap()]
+    }
+}
+
+impl<T: Debug + Copy> IndexMut<Edge> for EdgeVec<T> {
+    fn index_mut(&mut self, index: Edge) -> &mut Self::Output {
+        &mut self.vec[self.indexer[index.encode()].unwrap()]
+    }
+}

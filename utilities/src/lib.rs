@@ -29,15 +29,43 @@ impl Order {
     }
 
     pub fn iter_verts(&self) -> impl Iterator<Item = Vertex> {
-        (0..self.0).map(|x| vertex_tools::Vertex::of_usize(x))
+        (0..self.0).map(|x| Vertex::of_usize(x))
     }
 
     pub fn iter_pairs(&self) -> impl Iterator<Item = (Vertex, Vertex)> {
         VertexPair::new(*self)
     }
 
+    pub fn at_least(&self, d: usize) -> bool {
+        self.0 >= d
+    }
+
+    pub fn at_most(&self, d: usize) -> bool {
+        self.0 <= d
+    }
+
+    pub fn less_than(&self, d: usize) -> bool {
+        self.0 < d
+    }
+
+    pub fn more_than(&self, d: usize) -> bool {
+        self.0 > d
+    }
+
     pub fn to_usize(&self) -> usize {
         self.0 as usize
+    }
+
+    pub fn incr(&self) -> Order {
+        Order(self.0 + 1)
+    }
+
+    pub fn to_max_vertex(&self) -> Vertex {
+        Vertex::of_usize(self.0 - 1)
+    }
+
+    pub fn times(&self, x: usize) -> Order {
+        Order(self.0 * x)
     }
 
     pub fn triangle(&self) -> usize {

@@ -477,7 +477,7 @@ pub fn interesting_configurations(g: &Graph, u: usize, print_size: Option<usize>
     let mut negative_unflippable_count: Vec<i32> = vec![0; m];
     let mut positive_unflippable_configs: Vec<u64> = vec![];
     let mut negative_unflippable_configs: Vec<u64> = vec![];
-    // A one-way ticket to OOM city.
+    
     for i in 0..(n-1) {
         for j in (i+1)..n {
             if bunkbed.adj[i][j] {
