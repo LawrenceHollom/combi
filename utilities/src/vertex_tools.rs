@@ -254,8 +254,8 @@ impl VertexSet {
         VertexSet{ verts: (1 << n.to_usize()) - 1 }
     }
 
-    pub fn of_usize(set: usize) -> VertexSet {
-        VertexSet{ verts: set as u128 }
+    pub fn of_int(set: u128) -> VertexSet {
+        VertexSet{ verts: set }
     }
 
     pub fn add_vert(&mut self, v: Vertex) {
@@ -292,6 +292,16 @@ impl VertexSet {
 
     pub fn has_vert(&self, v: Vertex) -> bool {
         (self.verts >> v.0) % 2 == 1
+    }
+
+    pub fn size(&self) -> usize {
+        let mut sta = self.verts;
+        let mut size = 0;
+        while sta > 0 {
+            size += sta % 2;
+            sta /= 2;
+        }
+        size as usize
     }
 }
 

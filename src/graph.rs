@@ -1,4 +1,4 @@
-use utilities::{*, edge_tools::*, vertex_tools::*};
+use utilities::{*, edge_tools::*, vertex_tools::*, component_tools::*};
 use crate::constructor::*;
 use Constructor::*;
 use RawConstructor::*;
@@ -465,6 +465,51 @@ impl Graph {
         self.permute_vertices(&ordering)
     }
 
+    pub fn flood_fill(&self, start: Vertex, end: Option<Vertex>, filter: Option<&VertexVec<bool>>) -> VertexVec<Option<Vertex>> {
+        let mut prev = VertexVec::new(self.n, &None);
+        let mut q: Queue<Vertex> = queue![];
+        prev[start] = Some(start);
+        let _ = q.add(start);
+        'flood_fill: loop {
+            match q.remove() {
+                Ok(node) => {
+                    for next in self.adj_list[node].iter() {
+                        if node != start && end.map_or(false, |x| *next == x) {
+                            prev[end.unwrap()] = Some(node);
+                            break 'flood_fill;
+                        } else if prev[*next].is_none() && filter.map_or(true, |f| f[*next]) {
+                            prev[*next] = Some(node);
+                            let _ = q.add(*next);
+                        }
+                    }
+                }
+                Err(e) => {
+                    // This has caused a crash.
+                    self.print();
+                    panic!("AAAAAAAAAA {}", e)
+                }
+            }
+        }
+        prev
+    }
+
+    pub fn flood_fill_dist(&self, start: Vertex) -> VertexVec<Option<u32>> {
+        let mut connected = VertexVec::new(self.n, &None);
+        let mut q: Queue<Vertex> = queue![];
+        connected[start] = Some(0);
+        let _ = q.add(start);
+        while q.size() > 0 {
+            let node = q.remove().unwrap();
+            for v in self.adj_list[node].iter() {
+                if connected[*v].is_none() {
+                    connected[*v] = connected[node].map(|x| x + 1);
+                    let _ = q.add(*v);
+                }
+            }
+        }
+        connected
+    }
+
     pub fn new(constructor: &Constructor) -> Graph {
         use Constructor::*;
         use RandomConstructor::*;
@@ -560,7 +605,7 @@ impl Graph {
             ) / 2
     }
 
-    pub fn filtered_degree(&self, v: Vertex, filter: VertexVec<bool>) -> usize {
+    pub fn filtered_degree(&self, v: Vertex, filter: &VertexVec<bool>) -> usize {
         self.adj_list[v].iter().filter(|x| filter[**x]).count()
     }
 

@@ -9,15 +9,13 @@ pub mod polynomial;
 pub mod rational;
 pub mod edge_tools;
 pub mod vertex_tools;
+pub mod component_tools;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Order(usize);
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Degree(usize);
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Component(Vertex);
 
 impl Order {
     pub fn of_string(text: &str) -> Order {
@@ -30,6 +28,10 @@ impl Order {
 
     pub fn iter_verts(&self) -> impl Iterator<Item = Vertex> {
         (0..self.0).map(|x| Vertex::of_usize(x))
+    }
+
+    pub fn iter_verts_rev(&self) -> impl Iterator<Item = Vertex> {
+        (0..self.0).rev().map(|x| Vertex::of_usize(x))
     }
 
     pub fn iter_pairs(&self) -> impl Iterator<Item = (Vertex, Vertex)> {
@@ -146,16 +148,6 @@ impl ops::Add<Degree> for Degree {
 
     fn add(self, rhs: Degree) -> Degree {
         Degree(self.0 + rhs.0)
-    }
-}
-
-impl Component {
-    pub fn of_vertex(v: Vertex) -> Component {
-        Component(v)
-    }
-
-    pub fn to_vertex(&self) -> Vertex {
-        self.0
     }
 }
 

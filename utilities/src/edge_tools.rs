@@ -8,7 +8,7 @@ use crate::{vertex_tools::*, Order};
 #[derive(Copy, Clone, Debug, Hash)]
 pub struct Edge(Vertex, Vertex);
 
-#[derive(Clone)]
+#[derive(Hash, Clone)]
 pub struct EdgeSet {
     indexer: Vec<Option<usize>>,
     edges: u128,
@@ -57,6 +57,10 @@ impl Edge {
 
     pub fn snd(&self) -> Vertex {
         self.1
+    }
+
+    pub fn incr_by_order(&self, n: Order) -> Edge {
+        Edge::of_pair(self.0.incr_by_order(n), self.1.incr_by_order(n))
     }
 
     pub fn contains(&self, v: Vertex) -> bool {
@@ -201,6 +205,15 @@ impl fmt::Display for EdgeSet {
 impl<T: Debug + Copy> fmt::Display for EdgeVec<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self.vec)
+    }
+}
+
+impl Index<Edge> for EdgeSet {
+    type Output = bool;
+
+    fn index(&self, index: Edge) -> &Self::Output {
+        // Something tells me this isn't the intended solution.
+        if self.has_edge(index) { &true } else { &false }
     }
 }
 

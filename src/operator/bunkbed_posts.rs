@@ -44,7 +44,8 @@ pub fn print_polynomials(g: &Graph) {
             }
         }
 
-        percolator.add_percolation(num_down_edges, &adj_list, false);
+        let reduced_g = Graph::of_adj_list(adj_list, crate::constructor::Constructor::Special);
+        percolator.add_percolation(num_down_edges, &reduced_g, false);
     }
 
     g.print();

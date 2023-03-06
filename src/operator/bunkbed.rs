@@ -3,6 +3,8 @@ use crate::operator::percolate::*;
 
 use utilities::*;
 use utilities::polynomial::*;
+use utilities::vertex_tools::*;
+use utilities::edge_tools::*;
 
 use std::fmt;
 use std::io::*;
@@ -13,15 +15,14 @@ use queues::*;
 pub fn print_polynomials(g: &Graph) {
     let bunkbed = g.bunkbed();
     let percolator = Percolator::percolate(&bunkbed, false, true);
-    let n = bunkbed.n.to_usize();
 
-    for v in 0..n {
+    for v in bunkbed.n.iter_verts() {
         println!("{}: {}", v, percolator.polys[v]);
     }
 
     println!("Differences (home - away):");
-    for v in 0..(n/2) {
-        let poly = percolator.polys[v].sub(&percolator.polys[v + (n/2)]);
+    for v in g.n.iter_verts() {
+        let poly = percolator.polys[v].sub(&percolator.polys[v.incr_by_order(g.n)]);
         let unimodicity = poly.find_prob_unimode();
         println!("{}: {}", v, poly);
         let q_poly = poly.apply(&Polynomial::of_vec(&vec![1, -1])).with_var_name("q");
@@ -39,8 +40,8 @@ pub fn are_all_diffs_unimodal(g: &Graph) -> bool {
     let n = bunkbed.n.to_usize();
     let mut is_good = true;
 
-    'test_verts: for v in 0..(n/2) {
-        let poly = percolator.polys[v].sub(&percolator.polys[v + (n/2)]);
+    'test_verts: for v in g.n.iter_verts() {
+        let poly = percolator.polys[v].sub(&percolator.polys[v.incr_by_order(g.n)]);
         let unimodicity = poly.find_prob_unimode();
         use Modality::*;
         match unimodicity {
@@ -62,9 +63,9 @@ pub fn print_distance_polynomials(g: &Graph) {
 
     println!("vert|dist|unim|home - away dist poly");
     println!("----|----|----|-----------------------------");
-    for v in 0..n {
-        for d in 0..(2*n) {
-            let poly = percolator.dist_polys[v][d].sub(&percolator.dist_polys[v+n][d]);
+    for v in g.n.iter_verts() {
+        for d in 0..(2*g.n.to_usize()) {
+            let poly = percolator.dist_polys[v][d].sub(&percolator.dist_polys[v.incr_by_order(g.n)][d]);
             let unimodicity = poly.find_prob_unimode();
             println!(" {}  | {}  |{}| {}", v, d, unimodicity.four_letter_code(), poly);
         }
@@ -107,19 +108,15 @@ fn encode(x: usize, y: usize, n: usize) -> usize {
     }
 }
 
-fn is_present(x: usize, y: usize, n: usize, indexer: &Vec<usize>, config: u64) -> bool {
-    (config >> indexer[encode(x, y, n)]) % 2 == 1
-}
-
-fn parallel_count(x: usize, y: usize, n: usize, indexer: &Vec<usize>, config: u64) -> usize {
-    let neg = is_present(x, y, n, indexer, config);
-    let pos = is_present(x + n / 2, y + n / 2, n, indexer, config);
+fn parallel_count(e: Edge, n: Order, config: EdgeSet) -> usize {
+    let neg = config.has_edge(e);
+    let pos = config.has_edge(e.incr_by_order(n));
     (neg as usize) + (pos as usize)
 }
 
-fn flip_pair(x: usize, y: usize, n: usize, indexer: &Vec<usize>, config: u64) -> u64 {
-    let neg = is_present(x, y, n, indexer, config);
-    let pos = is_present(x + n / 2, y + n / 2, n, indexer, config);
+fn flip_pair(e: Edge, n: Order, config: EdgeSet) -> EdgeSet {
+    let neg = config.has_edge(e);
+    let pos = config.has_edge(e.incr_by_order(n));
     if neg ^ pos {
         if neg {
             config - (1 << indexer[encode(x, y, n)]) + (1 << indexer[encode(x + n / 2, y + n / 2, n)])
@@ -135,28 +132,36 @@ fn mask_config(x: usize, y: usize, n: usize, indexer: &Vec<usize>, config: u64, 
     (if is_present { config } else { !config }) & (1 << indexer[encode(x, y, n)])
 }
 
-#[derive(Eq, Hash, PartialEq, Copy, Clone)]
+fn post(v: Vertex, n: Order) -> Edge {
+    Edge::of_pair(v, v.incr_by_order(n))
+}
+
+#[derive(Eq, Hash, PartialEq, Clone, Copy)]
 struct ConfSignature {
-    posts_index: u64,
-    blanks_index: u64,
-    doubles_index: u64,
+    posts_index: VertexSet,
+    blanks_index: EdgeSet,
+    doubles_index: EdgeSet,
 }
 
 impl ConfSignature {
-    pub fn new(g: &Graph, config: u64, indexer: &Vec<usize>) -> ConfSignature {
-        let mut posts_index = 0;
-        let mut blanks_index = 0;
-        let mut doubles_index = 0;
-        let g_n = g.n.to_usize();
-        let n = 2 * g_n;
-        for u in 0..g_n {
-            posts_index += mask_config(u, u + g_n, n, indexer, config, true);
-            for v in (u+1)..g_n {
+    pub fn new(g: &Graph, config: EdgeSet) -> ConfSignature {
+        let mut posts_index = VertexSet::new();
+        let mut blanks_index = EdgeSet::new(&g.adj_list);;
+        let mut doubles_index = EdgeSet::new(&g.adj_list);;
+        for u in g.n.iter_verts() {
+            let u_plus = u.incr_by_order(g.n);
+            if config[post(u, g.n)] {
+                posts_index.add_vert(u);
+            }
+            for v in u.incr().iter_from(g.n) {
                 if g.adj[u][v] {
-                    if is_present(u + g_n, v + g_n, n, indexer, config) {
-                        doubles_index += mask_config(u, v, n, indexer, config, true);
-                    } else {
-                        blanks_index += mask_config(u, v, n, indexer, config, false);
+                    let e = Edge::of_pair(u, v);
+                    let e_plus = Edge::of_pair(u_plus, v.incr_by_order(g.n));
+                    let v_plus = v.incr_by_order(g.n);
+                    if config[e] && config[e_plus] {
+                        doubles_index.add_edge(e);
+                    } else if !config[e] && !config[e_plus] {
+                        blanks_index.add_edge(e);
                     }
                 }
             }
@@ -172,28 +177,28 @@ impl fmt::Display for ConfSignature {
 }
 
 // This doesn't work, but does in some simple cases.
-fn flip_postless_component(g: &Graph, config: u64, u: usize, indexer: &Vec<usize>) -> u64 {
-    let g_n = g.n.to_usize();
-    let n = 2 * g_n;
-    let mut postless_component: Vec<bool> = vec![false; g_n];
+fn flip_postless_component(g: &Graph, config: EdgeSet, u: Vertex) -> EdgeSet {
+    let mut postless_component: VertexVec<bool> = VertexVec::new(g.n, &false);
     postless_component[u] = true;
-    let mut q: Queue<usize> = queue![u];
+    let mut q: Queue<Vertex> = queue![u];
     while q.size() > 0 {
         let v = q.remove().unwrap();
         for w in g.adj_list[v].iter() {
-            if !postless_component[*w] && *w != 0 && !is_present(*w, *w + g_n, n, indexer, config)
-                    && parallel_count(v, *w, n, indexer, config) != 0 {
+            let e = Edge::of_pair(v, *w);
+            if !postless_component[*w] && *w != Vertex::ZERO && !config.has_edge(post(*w, g.n))
+                    && parallel_count(e, g.n, config) != 0 {
                 postless_component[*w] = true;
                 let _ = q.add(*w);
             }
         }
     }
     let mut new_conf = config;
-    for v in 0..g_n {
+    for v in g.n.iter_verts() {
         if postless_component[v] {
             for w in g.adj_list[v].iter() {
                 if !postless_component[*w] || *w > v {
-                    new_conf = flip_pair(v, *w, n, indexer, new_conf);
+                    let e = Edge::of_pair(v, *w);
+                    new_conf = flip_pair(e, g.n, new_conf);
                 }
             }
         }
@@ -202,61 +207,54 @@ fn flip_postless_component(g: &Graph, config: u64, u: usize, indexer: &Vec<usize
 }
 
 fn print_title(g: &Graph) {
-    let g_n = g.n.to_usize();
-    for u in 0..(g_n - 1) {
-        for v in (u + 1)..g_n {
-            if g.adj[u][v] {
-                print!("({}~{})", u, v);
-            }
+    for (u, v) in g.n.iter_pairs() {
+        if g.adj[u][v] {
+            print!("({}~{})", u, v);
         }
     }
     println!();
 }
 
-fn print_config(g: &Graph, config: u64, indexer: &Vec<usize>) {
+fn print_config(g: &Graph, config: EdgeSet) {
     let g_n = g.n.to_usize();
     let n = 2 * g_n;
     print_title(g);
-    for u in 0..(g_n - 1) {
-        for v in (u + 1)..g_n {
-            if g.adj[u][v] {
-                print!("( {} )", is_present(u + g_n, v + g_n, n, indexer, config) as usize);
-            }
+    for (u, v) in g.n.iter_pairs() {
+        if g.adj[u][v] {
+            print!("( {} )", config[Edge::of_pair(u, v).incr_by_order(g.n)] as usize);
         }
     }
     println!();
-    for u in 0..(g_n - 1) {
-        for v in (u + 1)..g_n {
-            if g.adj[u][v] {
-                print!("( {} )", is_present(u, v, n, indexer, config) as usize);
-            }
+    for (u, v) in g.n.iter_pairs() {
+        if g.adj[u][v] {
+            print!("( {} )", config[Edge::of_pair(u, v)] as usize);
         }
     }
     println!();
-    for u in 0..g_n {
+    for u in g.n.iter_verts() {
         print!("({})", u);
     }
     println!();
-    for u in 0..g_n {
-        print!("({})", is_present(u, u + g_n, n, indexer, config) as usize);
+    for u in g.n.iter_verts() {
+        print!("({})", config[post(u, g.n)] as usize);
     }
     println!();
 }
 
-fn print_problem_configs(g: &Graph, a: u64, b: u64, indexer: &Vec<usize>) {
+fn print_problem_configs(g: &Graph, a: EdgeSet, b: EdgeSet) {
     println!("PROBLEM CONFIGS: ");
     println!("First config: ");
-    print_config(g, a, indexer);
+    print_config(g, a);
     println!("Second config:");
-    print_config(g, b, indexer);
+    print_config(g, b);
 }
 
 // Actually implement some given function to turn neg_confs into pos_confs.
-fn attempt_injection(g: &Graph, u: usize, pos_confs: &Vec<u64>, neg_confs: &Vec<u64>, indexer: &Vec<usize>,
-        inj: &dyn Fn(&Graph, u64, usize, &Vec<usize>) -> u64) {
+fn attempt_injection(g: &Graph, u: Vertex, pos_confs: &Vec<EdgeSet>, neg_confs: &Vec<EdgeSet>,
+        inj: &dyn Fn(&Graph, Vertex, EdgeSet) -> EdgeSet) {
     println!("Attempting injection!");
-    let mut flipped_confs: HashSet<u64> = HashSet::new();
-    let mut pos_confs_set: HashSet<u64> = HashSet::new();
+    let mut flipped_confs: HashSet<EdgeSet> = HashSet::new();
+    let mut pos_confs_set: HashSet<EdgeSet> = HashSet::new();
     for conf in pos_confs.iter() {
         if !pos_confs_set.insert(*conf) {
             panic!("This shouldn't go wrong. You should write better code.");
@@ -264,17 +262,17 @@ fn attempt_injection(g: &Graph, u: usize, pos_confs: &Vec<u64>, neg_confs: &Vec<
     }
     let mut failed = false;
     'test_confs: for conf in neg_confs.iter() {
-        let sig = ConfSignature::new(g, *conf, indexer);
+        let sig = ConfSignature::new(g, *conf);
         if sig.blanks_index == 0 && sig.doubles_index == 0 {
             let new_conf = inj(g, *conf, u, indexer);
             if !flipped_confs.insert(new_conf) {
-                print_problem_configs(g, *conf, new_conf, indexer);
+                print_problem_configs(g, *conf, new_conf);
                 failed = true;
                 println!("FAIL! Set already contained value, this is not an injection!");
                 break 'test_confs;
             }
             if !pos_confs_set.contains(&new_conf) {
-                print_problem_configs(g, *conf, new_conf, indexer);
+                print_problem_configs(g, *conf, new_conf);
                 println!("FAIL! Missed pos_confs_set! This is not even a function!");
                 failed = true;
                 break 'test_confs;
@@ -290,10 +288,8 @@ fn attempt_injection(g: &Graph, u: usize, pos_confs: &Vec<u64>, neg_confs: &Vec<
 // and print them if there aren't too many.
 // We will flip a set of edges dependent only on sig, which means that the
 // function, if valid, is automatically an injection.
-fn find_possible_injections(g: &Graph, sig: &ConfSignature, domain: &Vec<u64>, range: &Vec<u64>, indexer: &Vec<usize>) {
+fn find_possible_injections(g: &Graph, sig: &ConfSignature, domain: &Vec<EdgeSet>, range: &Vec<EdgeSet>) {
     let mut injections: Vec<u64> = vec![];
-    let g_n = g.n.to_usize();
-    let n = 2 * g_n;
     let mut range_set: HashSet<u64> = HashSet::new();
     for x in range.iter() {
         range_set.insert(*x);
@@ -304,14 +300,12 @@ fn find_possible_injections(g: &Graph, sig: &ConfSignature, domain: &Vec<u64>, r
     for inj_code_index in 0..2_u64.pow(g.size() as u32) {
         let mut inj_code = 0;
         let mut edge_index = 0;
-        for u in 0..(g_n - 1) {
-            for v in (u + 1)..g_n {
-                if g.adj[u][v] {
-                    if (inj_code_index >> edge_index) % 2 == 1 {
-                        inj_code += 1 << indexer[encode(u, v, n)];
-                    }
-                    edge_index += 1;
+        for (u, v) in g.n.iter_pairs() {
+            if g.adj[u][v] {
+                if (inj_code_index >> edge_index) % 2 == 1 {
+                    inj_code += 1 << indexer[encode(u, v, n)];
                 }
+                edge_index += 1;
             }
         }
         // Test if inj_code meshes nicely with the doubles and blanks.

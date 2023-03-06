@@ -1,11 +1,10 @@
 == THE BIG REFACTOR ==
 - Make everything more typeful. More typeful! Make a new branch.
--- Vertex type
--- Actually use Edge type everywhere
--- Come up with and use more types as appropriate.
--- Remove the Order type; it does nothing, and a usize genuinely works.
+-- Colour type?
 -- Something for int_operation return type which needs only Ord.
 - Remove all the 2.pow type things; use << instead.
+- Move all flood fill to use Graph::flood_fill.
+- Bunkbed optimise making the billions of EdgeSets so they can share indexers.
  
 == THE KITCHEN SINK ==
 - Maybe add option for increasing by number of edges or something

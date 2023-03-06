@@ -1,27 +1,28 @@
 use std::collections::HashSet;
 
+use utilities::vertex_tools::*;
+
 use crate::graph::*;
 
-fn monot_predecessors(g: &Graph, forward: bool, start: usize) -> Vec<usize> {
-    let n = g.n.to_usize();
-    let mut pred: Vec<usize> = vec![n; n];
-    pred[start] = start;
+fn monot_predecessors(g: &Graph, forward: bool, start: Vertex) -> VertexVec<Option<Vertex>> {
+    let mut pred = VertexVec::new(g.n, &None);
+    pred[start] = Some(start);
     if forward {
-        for i in 0..n {
-            if pred[i] != n {
+        for i in g.n.iter_verts() {
+            if pred[i].is_some() {
                 for j in g.adj_list[i].iter() {
-                    if *j > i /*&& pred[*j] == n*/ {
-                        pred[*j] = i;
+                    if *j > i {
+                        pred[*j] = Some(i);
                     }
                 }
             }
         }
     } else {
-        for i in (0..n).rev() {
-            if pred[i] != n {
+        for i in g.n.iter_verts_rev() {
+            if pred[i].is_some() {
                 for j in g.adj_list[i].iter() {
-                    if *j < i && pred[*j] == n {
-                        pred[*j] = i;
+                    if *j < i && pred[*j].is_none() {
+                        pred[*j] = Some(i);
                     }
                 }
             }
@@ -32,18 +33,16 @@ fn monot_predecessors(g: &Graph, forward: bool, start: usize) -> Vec<usize> {
 }
 
 pub fn has_long_monotone(g: &Graph) -> bool {
-    let pred = monot_predecessors(g, true, 0);
-    let n = g.n.to_usize();
-    pred[n-1] != n
+    let pred = monot_predecessors(g, true, Vertex::ZERO);
+    pred[g.n.to_max_vertex()].is_some()
 }
 
 pub fn num_on_long_monotone(g: &Graph) -> u32 {
-    let n = g.n.to_usize();
-    let pred = monot_predecessors(g, true, 0);
-    let succ = monot_predecessors(g, false, n-1);
+    let pred = monot_predecessors(g, true, Vertex::ZERO);
+    let succ = monot_predecessors(g, false, g.n.to_max_vertex());
     let mut num_monotted = 0;
-    for i in 0..n {
-        if pred[i] != n && succ[i] != n {
+    for i in g.n.iter_verts() {
+        if pred[i].is_some() && succ[i].is_some() {
             num_monotted += 1;
         }
     }
@@ -51,10 +50,9 @@ pub fn num_on_long_monotone(g: &Graph) -> u32 {
 }
 
 pub fn max_monotone(g: &Graph) -> u32 {
-    let n = g.n.to_usize();
-    let mut dp: Vec<u32> = vec![1; n];
+    let mut dp: VertexVec<u32> = VertexVec::new(g.n, &1);
     let mut max: u32 = 1;
-    for i in 0..n {
+    for i in g.n.iter_verts() {
         for j in g.adj_list[i].iter() {
             if *j < i && dp[*j] >= dp[i] {
                 dp[i] = dp[*j] + 1;
@@ -68,19 +66,18 @@ pub fn max_monotone(g: &Graph) -> u32 {
 }
 
 pub fn num_on_monot_cycle(g: &Graph) -> u32 {
-    let n = g.n.to_usize();
-    let mut on_monot = vec![false; n];
-    for start in 0..(n-2) {
+    let mut on_monot = VertexVec::new(g.n, &false);
+    for start in g.n.iter_verts() {
         let pred = monot_predecessors(g, true, start);
-        for i in start+1..n {
-            if pred[i] != n && pred[i] != start && g.adj[start][i] {
+        for i in start.incr().iter_from(g.n) {
+            if pred[i].is_some() && pred[i] != Some(start) && g.adj[start][i] {
                 let mut j = i;
                 'trace_back_path: loop {
                     on_monot[j] = true;
                     if j == start {
                         break 'trace_back_path;
                     }
-                    j = pred[j];
+                    j = pred[j].unwrap();
                 }
             }
         }
@@ -90,12 +87,11 @@ pub fn num_on_monot_cycle(g: &Graph) -> u32 {
 }
 
 pub fn max_rigid_component(g: &Graph) -> u32 {
-    let n = g.n.to_usize();
-    let mut components: Vec<HashSet<usize>> = vec![];
-    for start in 0..(n-2) {
+    let mut components: Vec<HashSet<Vertex>> = vec![];
+    for start in g.n.iter_verts() {
         let pred = monot_predecessors(g, true, start);
-        for i in start+1..n {
-            if pred[i] != n && pred[i] != start && g.adj[start][i] {
+        for i in start.incr().iter_from(g.n) {
+            if pred[i].is_some() && pred[i] != Some(start) && g.adj[start][i] {
                 let mut j = i;
                 let mut h = HashSet::new();
                 'trace_back_path: loop {
@@ -103,7 +99,7 @@ pub fn max_rigid_component(g: &Graph) -> u32 {
                     if j == start {
                         break 'trace_back_path;
                     }
-                    j = pred[j];
+                    j = pred[j].unwrap();
                 }
                 components.push(h);
             }
@@ -119,7 +115,7 @@ pub fn max_rigid_component(g: &Graph) -> u32 {
         for i in 0..m-1 {
             for j in (i+1)..m {
                 if components[i].intersection(&components[j]).count() >= 2 {
-                    let comp_j_copy: HashSet<usize> = components[j].iter().copied().collect();
+                    let comp_j_copy: HashSet<Vertex> = components[j].iter().copied().collect();
                     components[i].extend(&comp_j_copy);
                     components[j].clear();
                     combinations_made += 1;

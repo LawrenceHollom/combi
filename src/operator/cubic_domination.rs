@@ -37,7 +37,7 @@ pub fn is_good(g: &Graph) -> bool {
     let mut num_good = 0;
     let target_gamma = (g.n.to_usize() / 3) + 1;
     for mask in 0..cap {
-        masked_domination[mask] = domination::domination_number_with_predominations(g, VertexSet::of_usize(cap));
+        masked_domination[mask] = domination::domination_number_with_predominations(g, VertexSet::of_int(cap as u128));
         if masked_domination[mask] == target_gamma as u32 {
             num_good += 1;
         }
