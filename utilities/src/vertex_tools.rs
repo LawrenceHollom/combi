@@ -17,12 +17,12 @@ pub struct VertexVec<T: Debug + Clone> {
     vec: Vec<T>
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct VertexSet {
     verts: u128
 }
 
-pub struct VertexPair {
+pub struct VertexPairIterator {
     curr: (Vertex, Vertex),
     n: Order,
 }
@@ -128,21 +128,21 @@ impl Vertex {
     }
 }
 
-impl VertexPair {
-    pub fn new(n: Order) -> VertexPair {
-        VertexPair { curr: (Vertex(0), Vertex(1)), n }
+impl VertexPairIterator {
+    pub fn new(n: Order) -> VertexPairIterator {
+        VertexPairIterator { curr: (Vertex(0), Vertex(1)), n }
     }
 }
 
-impl Iterator for VertexPair {
+impl Iterator for VertexPairIterator {
     type Item = (Vertex, Vertex);
 
     fn next(&mut self) -> Option<Self::Item> {
         let i = self.curr.0;
         let j = self.curr.1;
 
-        if j.is_n(self.n) {
-            if i.is_n(self.n) {
+        if j == self.n.to_max_vertex() {
+            if i == self.n.to_max_vertex().decr() {
                 None
             } else {
                 let k = i.incr();
@@ -163,6 +163,10 @@ impl <T: Debug + Clone> VertexVec<T> {
 
     pub fn new(n: Order, t: &T) -> VertexVec<T> {
         VertexVec { vec: vec![t.to_owned(); n.to_usize()] }
+    }
+
+    pub fn of_vec(vec: Vec<T>) -> VertexVec<T> {
+        VertexVec { vec }
     }
 
     pub fn len(&self) -> Order {
@@ -322,5 +326,11 @@ impl<T: Debug + Clone> Index<Vertex> for VertexVec<T> {
 impl<T: Debug + Clone> IndexMut<Vertex> for VertexVec<T> {
     fn index_mut(&mut self, index: Vertex) -> &mut Self::Output {
         &mut self.vec[index.0]
+    }
+}
+
+impl fmt::Display for VertexSet {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.verts)
     }
 }

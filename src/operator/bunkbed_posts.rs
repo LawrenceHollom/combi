@@ -7,7 +7,7 @@ use utilities::vertex_tools::*;
 pub fn print_polynomials(g: &Graph) {
     let mut percolator = Percolator::new(g.n.times(2), g.size());
 
-    let posts: VertexVec<&bool> = vec![false, true, false, false].iter().collect();
+    let posts: VertexVec<bool> = VertexVec::of_vec(vec![false, true, false, false]);
 
     for subset in 0..utilities::pow(2, g.size() as u64) {
         let mut up_edges = vec![false; g.size()];
@@ -38,7 +38,7 @@ pub fn print_polynomials(g: &Graph) {
         }
 
         for i in g.n.iter_verts() {
-            if *posts[i] {
+            if posts[i] {
                 adj_list[i].push(i.incr_by_order(g.n));
                 adj_list[i.incr_by_order(g.n)].push(i);
             }

@@ -1,9 +1,7 @@
 use utilities::*;
 use crate::graph::*;
 
-pub fn new(order: Order, p: f64) -> Graph {
-    let n = order.to_usize();
-    
+pub fn new(order: Order, p: f64) -> Graph {    
     let mut adj_list = VertexVec::new(order, &vec![]);
     let mut rng = thread_rng();
 

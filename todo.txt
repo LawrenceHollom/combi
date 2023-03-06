@@ -1,3 +1,7 @@
+== FIXING EVERYTHING BROKEN IN THE BIG REFACTOR ==
+- Maybe now is the ideal time to put those tests in?
+- sink((size>0)&&(theta>=acyclic)) -> halts at n=15 fails (as a start)
+
 == THE BIG REFACTOR ==
 - Make everything more typeful. More typeful! Make a new branch.
 -- Colour type?
@@ -5,6 +9,11 @@
 - Remove all the 2.pow type things; use << instead.
 - Move all flood fill to use Graph::flood_fill.
 - Bunkbed optimise making the billions of EdgeSets so they can share indexers.
+-- Change EdgeSet to take a reference to an indexer instead of an indexer?
+
+== AUTOMATED TESTING ==
+- Work out how to do it, and do it.
+- Will be good for black-box testing when writing new stuff.
  
 == THE KITCHEN SINK ==
 - Maybe add option for increasing by number of edges or something

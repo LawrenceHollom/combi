@@ -278,7 +278,6 @@ pub fn domination_redundancy(g: &Graph) -> Rational {
 }
 
 fn edge_domination_dfs(g: &Graph, dominator: &mut VertexVec<bool>, num_picked: usize, min_pick: Vertex, best_set: usize, lossless: bool) -> usize {
-    let n = g.n.to_usize();
     if num_picked >= best_set {
         // We've already picked too much.
         return best_set;

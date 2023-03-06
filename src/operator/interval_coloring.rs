@@ -121,7 +121,7 @@ fn find_interval_coloring_rec(g: &Graph, vert_ordering: &Vec<Vertex>, colored: &
     }
 }
 
-fn get_min_and_max_col(coloring: EdgeVec<Option<i32>>) -> (i32, i32) {
+fn get_min_and_max_col(coloring: &EdgeVec<Option<i32>>) -> (i32, i32) {
     let mut min_col = i32::MAX;
     let mut max_col = i32::MIN;
     for col in coloring.iter() {
@@ -175,7 +175,7 @@ pub fn print_interval_coloring(g: &Graph) {
     let mut colors = EdgeVec::new(&g.adj_list, None);
     match find_interval_coloring_rec(g, &vert_ordering, &mut VertexVec::new(g.n, &false), &mut colors, 0) {
         Some(coloring) => {
-            let (min_col, max_col) = get_min_and_max_col(coloring);
+            let (min_col, max_col) = get_min_and_max_col(&coloring);
             for (e, color) in coloring.iter_enum() {
                 match *color {
                     Some(col) => println!("{} : {}", e, col - min_col),
@@ -194,7 +194,7 @@ pub fn num_interval_colors(g: &Graph) -> u32 {
     let mut colors = EdgeVec::new(&g.adj_list, None);
     match find_interval_coloring_rec(g, &vert_ordering, &mut VertexVec::new(g.n, &false), &mut colors, 0) {
         Some(coloring) => {
-            let (min_col, max_col) = get_min_and_max_col(coloring);
+            let (min_col, max_col) = get_min_and_max_col(&coloring);
             (max_col - min_col + 1) as u32
         }
         None => 0
@@ -204,8 +204,6 @@ pub fn num_interval_colors(g: &Graph) -> u32 {
 pub fn has_interval_coloring(g: &Graph) -> bool {
     // Run a bfs to get the ordering of the vertices
     let vert_ordering = get_vert_ordering(g);
-
-    let extreme_col = (g.n.to_usize() * g.n.to_usize()) as i32;
     let mut colors = EdgeVec::new(&g.adj_list, None);
     find_interval_coloring_rec(g, &vert_ordering, &mut VertexVec::new(g.n, &false), &mut colors, 0).is_some()
 }

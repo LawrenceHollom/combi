@@ -131,7 +131,6 @@ fn dmp_rec(g: &Graph, coprime: &mut VertexVec<bool>, prime_edges: &mut VertexVec
         println!("Coprime: {:?}", coprime);
         panic!("Too deep!");
     }
-    let n = g.n.to_usize();
 
     let mut is_everything = true;
     'test_if_everything: for (i, i_prime_edges) in prime_edges.iter_enum() {
@@ -364,7 +363,6 @@ fn is_component_planar_rec(g: &Graph, filter: &mut VertexVec<bool>) -> bool {
 
 pub fn is_planar(g: &Graph) -> bool {
     let comps = g.components();
-    let n = g.n.to_usize();
     let mut comp_processed = ComponentVec::new(g.n, &false);
     let mut is_planar = true;
     'component_search: for i in g.n.iter_verts() {

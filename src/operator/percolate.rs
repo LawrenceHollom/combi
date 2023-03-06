@@ -8,7 +8,6 @@ use utilities::polynomial::*;
 use utilities::vertex_tools::*;
 
 pub struct Percolator {
-    order: Order,
     probs: Vec<Polynomial>,
     pub polys: VertexVec<Polynomial>,
     pub dist_polys: VertexVec<Vec<Polynomial>>,
@@ -31,7 +30,6 @@ impl Percolator {
         }
 
         Percolator {
-            order,
             probs,
             polys,
             dist_polys,
@@ -44,12 +42,10 @@ impl Percolator {
         for (v, dist) in connected.iter_enum().skip(1) {
             match *dist {
                 Some(dist) => {
-                    if dist >= 0 {
-                        self.polys[v].add_inplace(&self.probs[num_edges]);
-                        if compute_dists {
-                            for poly in self.dist_polys[v].iter_mut().skip(dist as usize) {
-                                poly.add_inplace(&self.probs[num_edges]);
-                            }
+                    self.polys[v].add_inplace(&self.probs[num_edges]);
+                    if compute_dists {
+                        for poly in self.dist_polys[v].iter_mut().skip(dist as usize) {
+                            poly.add_inplace(&self.probs[num_edges]);
                         }
                     }
                 }

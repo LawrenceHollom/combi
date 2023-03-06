@@ -8,7 +8,7 @@ use crate::{vertex_tools::*, Order};
 #[derive(Copy, Clone, Debug, Hash)]
 pub struct Edge(Vertex, Vertex);
 
-#[derive(Hash, Clone)]
+#[derive(Hash, Clone, PartialEq, Eq)]
 pub struct EdgeSet {
     indexer: Vec<Option<usize>>,
     edges: u128,
@@ -107,12 +107,49 @@ impl EdgeSet {
         }
     }
 
+    pub fn of_int(adj_list: &VertexVec<Vec<Vertex>>, code: u128) -> EdgeSet {
+        let (indexer, _indexer_inv, _len) = make_indexer(adj_list);
+        EdgeSet {
+            indexer,
+            edges: code,
+        }
+    }
+
     pub fn add_edge(&mut self, e: Edge) {
-        self.edges += 1 << self.indexer[e.encode()].unwrap();
+        self.edges &= 1 << self.indexer[e.encode()].unwrap();
+    }
+
+    pub fn remove_edge(&mut self, e: Edge) {
+        self.edges &= !(1 << self.indexer[e.encode()].unwrap());
+    }
+
+    pub fn flip_edge(&mut self, e: Edge) {
+        self.edges ^= 1 << self.indexer[e.encode()].unwrap();
     }
 
     pub fn has_edge(&self, e: Edge) -> bool {
         (self.edges >> self.indexer[e.encode()].unwrap()) % 2 == 1
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.edges == 0
+    }
+
+    pub fn size(&self) -> usize {
+        let mut size = 0;
+        let mut sta = self.edges;
+        while sta > 0 {
+            size += sta % 2;
+            sta /= 2;
+        }
+        size as usize
+    }
+
+    pub fn inter(&self, other: &EdgeSet) -> EdgeSet {
+        EdgeSet {
+            indexer: self.indexer.to_owned(),   // Yuck. Also, doesn't check if they agree.
+            edges: self.edges & other.edges
+        }
     }
 }
 

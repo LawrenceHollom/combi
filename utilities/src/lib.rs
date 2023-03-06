@@ -3,7 +3,7 @@ use std::cmp::*;
 use std::ops;
 
 use vertex_tools::Vertex;
-use vertex_tools::VertexPair;
+use vertex_tools::VertexPairIterator;
 
 pub mod polynomial;
 pub mod rational;
@@ -35,7 +35,7 @@ impl Order {
     }
 
     pub fn iter_pairs(&self) -> impl Iterator<Item = (Vertex, Vertex)> {
-        VertexPair::new(*self)
+        VertexPairIterator::new(*self)
     }
 
     pub fn at_least(&self, d: usize) -> bool {

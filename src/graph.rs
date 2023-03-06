@@ -99,7 +99,7 @@ impl Graph {
     }
 
     fn new_empty(n: Order) -> Graph {
-        let mut adj_list = VertexVec::new_fn(n, |_| vec![]);
+        let adj_list = VertexVec::new_fn(n, |_| vec![]);
         
         Graph::of_adj_list(adj_list, Raw(Empty(n)))
     }
@@ -180,7 +180,7 @@ impl Graph {
                         return false;
                     }
                 }
-                (Some(x), None) | (None, Some(x)) => return false,
+                (Some(_), None) | (None, Some(_)) => return false,
                 (None, None) => return false,
 
             }
