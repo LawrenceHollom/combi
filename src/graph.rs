@@ -512,7 +512,7 @@ impl Graph {
         connected
     }
 
-    pub fn flood_fill_two_colourable(&self, edge_filter: &EdgeSet) -> bool {
+    pub fn flood_fill_two_colourable(&self, edge_filter: &EdgeSet, indexer: &EdgeSetIndexer) -> bool {
         let mut colour = VertexVec::new(self.n, &None);
         let mut q: Queue<Vertex> = queue![];
         let mut is_two_colourable = true;
@@ -523,7 +523,7 @@ impl Graph {
                 while q.size() > 0 {
                     let u = q.remove().unwrap();
                     for w in self.adj_list[u].iter() {
-                        if edge_filter[Edge::of_pair(u, *w)] {
+                        if edge_filter.has_edge(Edge::of_pair(u, *w), indexer) {
                             if colour[u] == colour[*w] {
                                 is_two_colourable = false;
                                 break 'test_verts;

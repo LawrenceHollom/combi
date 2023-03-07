@@ -97,17 +97,17 @@ pub fn simulate(g: &Graph) {
     }
 }
 
-fn parallel_count(e: Edge, n: Order, config: &EdgeSet) -> usize {
-    let neg = config.has_edge(e);
-    let pos = config.has_edge(e.incr_by_order(n));
+fn parallel_count(e: Edge, n: Order, config: &EdgeSet, indexer: &EdgeSetIndexer) -> usize {
+    let neg = config.has_edge(e, indexer);
+    let pos = config.has_edge(e.incr_by_order(n), indexer);
     (neg as usize) + (pos as usize)
 }
 
-fn flip_pair(e: Edge, n: Order, config: EdgeSet) -> EdgeSet {
+fn flip_pair(e: Edge, n: Order, config: EdgeSet, indexer: &EdgeSetIndexer) -> EdgeSet {
     let e_plus = e.incr_by_order(n);
     let mut new_config = config.to_owned();
-    new_config.flip_edge(e);
-    new_config.flip_edge(e_plus);
+    new_config.flip_edge(e, indexer);
+    new_config.flip_edge(e_plus, indexer);
     new_config
 }
 
@@ -123,23 +123,23 @@ struct ConfSignature {
 }
 
 impl ConfSignature {
-    pub fn new(g: &Graph, config: &EdgeSet) -> ConfSignature {
+    pub fn new(g: &Graph, config: &EdgeSet, indexer: &EdgeSetIndexer) -> ConfSignature {
         let mut posts_index = VertexSet::new();
-        let mut blanks_index = EdgeSet::new(&g.adj_list);
-        let mut doubles_index = EdgeSet::new(&g.adj_list);
+        let mut blanks_index = EdgeSet::new(indexer);
+        let mut doubles_index = EdgeSet::new(indexer);
         for u in g.n.iter_verts() {
             let u_plus = u.incr_by_order(g.n);
-            if config[post(u, g.n)] {
+            if config.has_edge(post(u, g.n), indexer) {
                 posts_index.add_vert(u);
             }
             for v in u.incr().iter_from(g.n) {
                 if g.adj[u][v] {
                     let e = Edge::of_pair(u, v);
                     let e_plus = Edge::of_pair(u_plus, v.incr_by_order(g.n));
-                    if config[e] && config[e_plus] {
-                        doubles_index.add_edge(e);
-                    } else if !config[e] && !config[e_plus] {
-                        blanks_index.add_edge(e);
+                    if config.has_edge(e, indexer) && config.has_edge(e_plus, indexer) {
+                        doubles_index.add_edge(e, indexer);
+                    } else if !config.has_edge(e, indexer) && !config.has_edge(e_plus, indexer) {
+                        blanks_index.add_edge(e, indexer);
                     }
                 }
             }
@@ -155,7 +155,7 @@ impl fmt::Display for ConfSignature {
 }
 
 // This doesn't work, but does in some simple cases.
-fn flip_postless_component(g: &Graph, config: &EdgeSet, u: Vertex) -> EdgeSet {
+fn flip_postless_component(g: &Graph, config: &EdgeSet, u: Vertex, indexer: &EdgeSetIndexer) -> EdgeSet {
     let mut postless_component: VertexVec<bool> = VertexVec::new(g.n, &false);
     postless_component[u] = true;
     let mut q: Queue<Vertex> = queue![u];
@@ -163,8 +163,8 @@ fn flip_postless_component(g: &Graph, config: &EdgeSet, u: Vertex) -> EdgeSet {
         let v = q.remove().unwrap();
         for w in g.adj_list[v].iter() {
             let e = Edge::of_pair(v, *w);
-            if !postless_component[*w] && *w != Vertex::ZERO && !config.has_edge(post(*w, g.n))
-                    && parallel_count(e, g.n, config) != 0 {
+            if !postless_component[*w] && *w != Vertex::ZERO && !config.has_edge(post(*w, g.n), indexer)
+                    && parallel_count(e, g.n, config, indexer) != 0 {
                 postless_component[*w] = true;
                 let _ = q.add(*w);
             }
@@ -176,7 +176,7 @@ fn flip_postless_component(g: &Graph, config: &EdgeSet, u: Vertex) -> EdgeSet {
             for w in g.adj_list[v].iter() {
                 if !postless_component[*w] || *w > v {
                     let e = Edge::of_pair(v, *w);
-                    new_conf = flip_pair(e, g.n, new_conf);
+                    new_conf = flip_pair(e, g.n, new_conf, indexer);
                 }
             }
         }
@@ -193,17 +193,17 @@ fn print_title(g: &Graph) {
     println!();
 }
 
-fn print_config(g: &Graph, config: &EdgeSet) {
+fn print_config(g: &Graph, config: &EdgeSet, indexer: &EdgeSetIndexer) {
     print_title(g);
     for (u, v) in g.n.iter_pairs() {
         if g.adj[u][v] {
-            print!("( {} )", config[Edge::of_pair(u, v).incr_by_order(g.n)] as usize);
+            print!("( {} )", config.has_edge(Edge::of_pair(u, v).incr_by_order(g.n), indexer) as usize);
         }
     }
     println!();
     for (u, v) in g.n.iter_pairs() {
         if g.adj[u][v] {
-            print!("( {} )", config[Edge::of_pair(u, v)] as usize);
+            print!("( {} )", config.has_edge(Edge::of_pair(u, v), indexer) as usize);
         }
     }
     println!();
@@ -212,22 +212,22 @@ fn print_config(g: &Graph, config: &EdgeSet) {
     }
     println!();
     for u in g.n.iter_verts() {
-        print!("({})", config[post(u, g.n)] as usize);
+        print!("({})", config.has_edge(post(u, g.n), indexer) as usize);
     }
     println!();
 }
 
-fn print_problem_configs(g: &Graph, a: &EdgeSet, b: &EdgeSet) {
+fn print_problem_configs(g: &Graph, a: &EdgeSet, b: &EdgeSet, indexer: &EdgeSetIndexer) {
     println!("PROBLEM CONFIGS: ");
     println!("First config: ");
-    print_config(g, a);
+    print_config(g, a, indexer);
     println!("Second config:");
-    print_config(g, b);
+    print_config(g, b, indexer);
 }
 
 // Actually implement some given function to turn neg_confs into pos_confs.
-fn attempt_injection(g: &Graph, u: Vertex, pos_confs: &Vec<EdgeSet>, neg_confs: &Vec<EdgeSet>,
-        inj: &dyn Fn(&Graph, &EdgeSet, Vertex) -> EdgeSet) {
+fn attempt_injection(g: &Graph, u: Vertex, pos_confs: &Vec<EdgeSet>, neg_confs: &Vec<EdgeSet>, indexer: &EdgeSetIndexer,
+        inj: &dyn Fn(&Graph, &EdgeSet, Vertex, &EdgeSetIndexer) -> EdgeSet) {
     println!("Attempting injection!");
     let mut flipped_confs: HashSet<EdgeSet> = HashSet::new();
     let mut pos_confs_set: HashSet<EdgeSet> = HashSet::new();
@@ -238,17 +238,17 @@ fn attempt_injection(g: &Graph, u: Vertex, pos_confs: &Vec<EdgeSet>, neg_confs: 
     }
     let mut failed = false;
     'test_confs: for conf in neg_confs.iter() {
-        let sig = ConfSignature::new(g, conf);
+        let sig = ConfSignature::new(g, conf, indexer);
         if sig.blanks_index.is_empty() && sig.doubles_index.is_empty() {
-            let new_conf = inj(g, conf, u);
+            let new_conf = inj(g, conf, u, indexer);
             if !flipped_confs.insert(new_conf.to_owned()) {
-                print_problem_configs(g, conf, &new_conf);
+                print_problem_configs(g, conf, &new_conf, indexer);
                 failed = true;
                 println!("FAIL! Set already contained value, this is not an injection!");
                 break 'test_confs;
             }
             if !pos_confs_set.contains(&new_conf) {
-                print_problem_configs(g, conf, &new_conf);
+                print_problem_configs(g, conf, &new_conf, indexer);
                 println!("FAIL! Missed pos_confs_set! This is not even a function!");
                 failed = true;
                 break 'test_confs;
@@ -264,7 +264,7 @@ fn attempt_injection(g: &Graph, u: Vertex, pos_confs: &Vec<EdgeSet>, neg_confs: 
 // and print them if there aren't too many.
 // We will flip a set of edges dependent only on sig, which means that the
 // function, if valid, is automatically an injection.
-fn find_possible_injections(g: &Graph, sig: &ConfSignature, domain: &Vec<EdgeSet>, range: &Vec<EdgeSet>) {
+fn find_possible_injections(g: &Graph, sig: &ConfSignature, domain: &Vec<EdgeSet>, range: &Vec<EdgeSet>, indexer: &EdgeSetIndexer) {
     let mut injections: Vec<EdgeSet> = vec![];
     let mut range_set: HashSet<EdgeSet> = HashSet::new();
     for x in range.iter() {
@@ -274,7 +274,7 @@ fn find_possible_injections(g: &Graph, sig: &ConfSignature, domain: &Vec<EdgeSet
     // This is very inefficient for when sig has lots of doubles and blanks.
     // This scores "big yuck" on code quality.
     for inj_code_index in 0..2_u128.pow(g.size() as u32) {
-        let inj_code = EdgeSet::of_int(&g.adj_list, inj_code_index);
+        let inj_code = EdgeSet::of_int(inj_code_index, indexer);
 
         // Test if inj_code meshes nicely with the doubles and blanks.
         if inj_code.inter(&sig.doubles_index).is_empty() && inj_code.inter(&sig.blanks_index).is_empty() {
@@ -284,9 +284,9 @@ fn find_possible_injections(g: &Graph, sig: &ConfSignature, domain: &Vec<EdgeSet
                 let mut new_conf = x.to_owned();
                 for (u, v) in g.n.iter_pairs() {
                     let e = Edge::of_pair(u, v);
-                    if g.adj[u][v] && inj_code[e] {
+                    if g.adj[u][v] && inj_code.has_edge(e, indexer) {
                         // flip here.
-                        new_conf = flip_pair(e, g.n, new_conf);
+                        new_conf = flip_pair(e, g.n, new_conf, indexer);
                     }
                 }
                 if !range_set.contains(&new_conf) {
@@ -305,11 +305,11 @@ fn find_possible_injections(g: &Graph, sig: &ConfSignature, domain: &Vec<EdgeSet
         println!("Found no valid injections!");
         println!("DOMAIN:");
         for config in domain.iter() {
-            print_config(g, config);
+            print_config(g, config, indexer);
         }
         println!("RANGE:");
         for config in range.iter() {
-            print_config(g, config);
+            print_config(g, config, indexer);
         }
         panic!("This means there is no injection of the form we seek!");
     } else if injections.len() < 5 {
@@ -318,13 +318,13 @@ fn find_possible_injections(g: &Graph, sig: &ConfSignature, domain: &Vec<EdgeSet
         for inj in injections.iter() {
             for (u, v) in g.n.iter_pairs() {
                 if g.adj[u][v] {
-                    print!("( {} )", inj[Edge::of_pair(u, v)]);
+                    print!("( {} )", inj.has_edge(Edge::of_pair(u, v), indexer));
                 }
             }
             println!();
         }
         println!("Sample config in domain:");
-        print_config(g, &domain[0]);
+        print_config(g, &domain[0], indexer);
     } else {
         println!("{} injections found; not printing them all.", injections.len());
     }
@@ -332,14 +332,14 @@ fn find_possible_injections(g: &Graph, sig: &ConfSignature, domain: &Vec<EdgeSet
 
 // We have a big list of positive and negative configs we care about.
 // This function processes them to try and learn about possible injections.
-fn process_bunkbed_configs(g: &Graph, u: Vertex, pos_confs: &Vec<EdgeSet>, neg_confs: &Vec<EdgeSet>) {
+fn process_bunkbed_configs(g: &Graph, u: Vertex, pos_confs: &Vec<EdgeSet>, neg_confs: &Vec<EdgeSet>, indexer: &EdgeSetIndexer) {
     let pos_signatures: Vec<(EdgeSet, ConfSignature)> = 
         pos_confs.iter()
-            .map(|conf| (conf.to_owned(), ConfSignature::new(g, conf)))
+            .map(|conf| (conf.to_owned(), ConfSignature::new(g, conf, indexer)))
             .collect();
     let neg_signatures: Vec<(EdgeSet, ConfSignature)> =
         neg_confs.iter()
-            .map(|conf| (conf.to_owned(), ConfSignature::new(g, conf)))
+            .map(|conf| (conf.to_owned(), ConfSignature::new(g, conf, indexer)))
             .collect();
     let mut counts: HashMap<ConfSignature, (Vec<EdgeSet>, Vec<EdgeSet>)> = HashMap::new();
     
@@ -372,11 +372,11 @@ fn process_bunkbed_configs(g: &Graph, u: Vertex, pos_confs: &Vec<EdgeSet>, neg_c
             if x.len() < y.len() {
                 panic!("FOUND SOMETHING WHICH CANNOT BE NAIVELY INJECTED!");
             }
-            if x.len() == 1 && y.len() == 1 && flip_postless_component(g, &y[0], u) != x[0] {
+            if x.len() == 1 && y.len() == 1 && flip_postless_component(g, &y[0], u, indexer) != x[0] {
                 mappables.push((x[0].to_owned(), y[0].to_owned()));
             }
             if y.len() > 0 {
-                find_possible_injections(g, sig, y, x);
+                find_possible_injections(g, sig, y, x, indexer);
             }
         }
     }
@@ -387,7 +387,7 @@ fn process_bunkbed_configs(g: &Graph, u: Vertex, pos_confs: &Vec<EdgeSet>, neg_c
         for (u, v) in g.n.iter_pairs() {
             if g.adj[u][v] {
                 let e = Edge::of_pair(u, v);
-                if x[e] ^ y[e] {
+                if x.has_edge(e, indexer) ^ y.has_edge(e, indexer) {
                     // The edge has been flipped between the configs
                     print!("( F )");
                 } else {
@@ -396,17 +396,19 @@ fn process_bunkbed_configs(g: &Graph, u: Vertex, pos_confs: &Vec<EdgeSet>, neg_c
             }
         }
         println!();
-        print_config(g, y);
+        print_config(g, y, indexer);
         println!();
     }
     println!("There were {} directly mappable pairs!", mappables.len());
-    attempt_injection(g, u, pos_confs, neg_confs, &flip_postless_component)
+    attempt_injection(g, u, pos_confs, neg_confs, indexer, &flip_postless_component)
 }
 
 // Computes which configurations have u-, u+ with different connectivities
 // and then prints about them.
 pub fn interesting_configurations(g: &Graph, u: Vertex, print_size: Option<usize>) {
+    let g_indexer = EdgeSetIndexer::new(&g.adj_list);
     let bunkbed = g.bunkbed();
+    let bunkbed_indexer = EdgeSetIndexer::new(&bunkbed.adj_list);
     let m = bunkbed.size();
     if m >= 63 {
         panic!("Too many edges; everything will go to shit!");
@@ -431,7 +433,7 @@ pub fn interesting_configurations(g: &Graph, u: Vertex, print_size: Option<usize
     let mut percentage = 0;
     for config_index in 0..iter_max {
         // config encodes which of the edges are/are not present.
-        let config = EdgeSet::of_int(&bunkbed.adj_list, config_index);
+        let config = EdgeSet::of_int(config_index, &bunkbed_indexer);
         let connected = bunkbed.flood_fill_dist(Vertex::ZERO);
         if m >= 20 && (100 * config_index) / iter_max > percentage {
             percentage += 1;
@@ -456,8 +458,8 @@ pub fn interesting_configurations(g: &Graph, u: Vertex, print_size: Option<usize
             }
             // now test whether it is unflippable.
             let mut flood = VertexVec::new(g.n, &None);
-            if !config[post(Vertex::ZERO, g.n)] {
-                let filter = g.n.iter_verts().map(|v| config[post(v, g.n)]).collect();
+            if !config.has_edge(post(Vertex::ZERO, g.n), &bunkbed_indexer) {
+                let filter = g.n.iter_verts().map(|v| config.has_edge(post(v, g.n), &bunkbed_indexer)).collect();
                 flood = g.flood_fill(Vertex::ZERO, None, Some(&filter));
             }
             if u == Vertex::ZERO || flood[u].is_some() {
@@ -476,7 +478,7 @@ pub fn interesting_configurations(g: &Graph, u: Vertex, print_size: Option<usize
                 if print_size.map_or(m < 20, |x| x == num_open_edges) {
                     for (i, j) in bunkbed.n.iter_pairs() {
                         if bunkbed.adj[i][j] {
-                            print!("{},", if config[Edge::of_pair(i, j)] { 1 } else { 0 });
+                            print!("{},", if config.has_edge(Edge::of_pair(i, j), &bunkbed_indexer) { 1 } else { 0 });
                         }
                     }
                     println!("{}", sign);
@@ -492,7 +494,7 @@ pub fn interesting_configurations(g: &Graph, u: Vertex, print_size: Option<usize
     println!("Negative edge count: {:?}", negative_edge_count);
     println!("Positive unflippable count: {:?}", positive_unflippable_count);
     println!("Negative unflippable count: {:?}", negative_unflippable_count);
-    process_bunkbed_configs(g, u, &positive_unflippable_configs, &negative_unflippable_configs);
+    process_bunkbed_configs(g, u, &positive_unflippable_configs, &negative_unflippable_configs, &g_indexer);
 }
 
 pub fn compute_problem_cuts(g: &Graph, u: Vertex) {

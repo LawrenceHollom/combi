@@ -163,6 +163,7 @@ pub fn edge_partition_forest_and_matching(g: &Graph) -> bool {
 
 pub fn count_bipartite_edge_bisections(g: &Graph) -> u32 {
     let mut num_good = 0;
+    let indexer = EdgeSetIndexer::new(&g.adj_list);
     'test_edgeset: for blue_edges in g.iter_edge_sets() {
         // Check if this is bipartite and strictly subcubic.
         for v in g.n.iter_verts() {
@@ -172,7 +173,7 @@ pub fn count_bipartite_edge_bisections(g: &Graph) -> u32 {
             let mut num_red = 0;
             let mut num_blue = 0;
             for u in g.adj_list[v].iter() {
-                if blue_edges[Edge::of_pair(v, *u)] {
+                if blue_edges.has_edge(Edge::of_pair(v, *u), &indexer) {
                     num_blue += 1;
                 } else {
                     num_red += 1;
@@ -184,12 +185,12 @@ pub fn count_bipartite_edge_bisections(g: &Graph) -> u32 {
         }
 
         // Blue-edge vertex-2-colourable
-        if !g.flood_fill_two_colourable(&blue_edges) {
+        if !g.flood_fill_two_colourable(&blue_edges, &indexer) {
             continue 'test_edgeset;
         }
 
         // Red-edge vertex-2-colourable
-        if !g.flood_fill_two_colourable(&blue_edges.inverse()) {
+        if !g.flood_fill_two_colourable(&blue_edges.inverse(&indexer), &indexer) {
             continue 'test_edgeset;
         }
 

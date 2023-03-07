@@ -6,12 +6,9 @@
 - Make everything more typeful. More typeful! Make a new branch.
 -- Colour type?
 -- Something for int_operation return type which needs only Ord.
+-- Type for number of edges
 - Remove all the 2.pow type things; use << instead.
 - Move all flood fill to use Graph::flood_fill.
-- Bunkbed optimise making the billions of EdgeSets so they can share indexers.
--- Change EdgeSet to take a reference to an indexer instead of an indexer?
--- Started this with EdgeSetIndexer; drop this from EdgeSet and take as a param instead
-- Type for number of edges
 - Split up graph into more files. Maybe have a constructions folder
 -- Want a file for all the flood-fill stuff.
 
