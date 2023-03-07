@@ -512,6 +512,33 @@ impl Graph {
         connected
     }
 
+    pub fn flood_fill_two_colourable(&self, edge_filter: &EdgeSet) -> bool {
+        let mut colour = VertexVec::new(self.n, &None);
+        let mut q: Queue<Vertex> = queue![];
+        let mut is_two_colourable = true;
+        'test_verts: for v in self.n.iter_verts() {
+            if colour[v].is_none() {
+                colour[v] = Some(0);
+                let _ = q.add(v);
+                while q.size() > 0 {
+                    let u = q.remove().unwrap();
+                    for w in self.adj_list[u].iter() {
+                        if edge_filter[Edge::of_pair(u, *w)] {
+                            if colour[u] == colour[*w] {
+                                is_two_colourable = false;
+                                break 'test_verts;
+                            } else if colour[*w].is_none() {
+                                colour[*w] = Some(!colour[u].unwrap());
+                                let _ = q.add(*w);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        is_two_colourable
+    }
+
     pub fn new(constructor: &Constructor) -> Graph {
         use Constructor::*;
         use RandomConstructor::*;
@@ -751,6 +778,10 @@ impl Graph {
 
             }
         }
+    }
+
+    pub fn iter_edge_sets(&self) -> EdgeSetIterator {
+        EdgeSetIterator::new(&self.adj_list)
     }
 }
 

@@ -160,3 +160,40 @@ pub fn thomassen_check(g: &Graph, long_path_cap: Option<usize>) -> u32 {
 pub fn edge_partition_forest_and_matching(g: &Graph) -> bool {
     minimax_forest_len(g, Some(1), None).is_some()
 }
+
+pub fn count_bipartite_edge_bisections(g: &Graph) -> u32 {
+    let mut num_good = 0;
+    'test_edgeset: for blue_edges in g.iter_edge_sets() {
+        // Check if this is bipartite and strictly subcubic.
+        for v in g.n.iter_verts() {
+            if g.deg[v].at_least(4) {
+                panic!("Graph must be subsubic!")
+            }
+            let mut num_red = 0;
+            let mut num_blue = 0;
+            for u in g.adj_list[v].iter() {
+                if blue_edges[Edge::of_pair(v, *u)] {
+                    num_blue += 1;
+                } else {
+                    num_red += 1;
+                }
+            }
+            if num_red > 2 || num_blue > 2 {
+                continue 'test_edgeset;
+            }
+        }
+
+        // Blue-edge vertex-2-colourable
+        if !g.flood_fill_two_colourable(&blue_edges) {
+            continue 'test_edgeset;
+        }
+
+        // Red-edge vertex-2-colourable
+        if !g.flood_fill_two_colourable(&blue_edges.inverse()) {
+            continue 'test_edgeset;
+        }
+
+        num_good += 1;
+    }
+    num_good
+}

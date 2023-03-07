@@ -14,6 +14,19 @@ pub struct EdgeSet {
     edges: u128,
 }
 
+#[derive(Clone, PartialEq, Eq)]
+pub struct EdgeSetIndexer {
+    indexer: Vec<Option<usize>>,
+    num_edges: usize,
+}
+
+#[derive(Clone, PartialEq, Eq)]
+pub struct EdgeSetIterator {
+    indexer: EdgeSetIndexer,
+    edges: u128,
+}
+
+
 #[derive(Clone)]
 pub struct EdgeVec<T: Debug + Copy> {
     indexer: Vec<Option<usize>>,
@@ -72,6 +85,14 @@ impl Edge {
     }    
 }
 
+impl PartialEq for Edge {
+    fn eq(&self, other: &Edge) -> bool {
+        (self.0 == other.0 && self.1 == other.1) || (self.0 == other.1 && self.1 == other.0)
+    }
+}
+
+impl Eq for Edge { }
+
 fn make_indexer(adj_list: &VertexVec<Vec<Vertex>>) -> (Vec<Option<usize>>, Vec<Edge>, usize) {
     let n = adj_list.len();
     let mut indexer: Vec<Option<usize>> = vec![None; n.triangle()];
@@ -90,13 +111,21 @@ fn make_indexer(adj_list: &VertexVec<Vec<Vertex>>) -> (Vec<Option<usize>>, Vec<E
     (indexer, indexer_inv, i)
 }
 
-impl PartialEq for Edge {
-    fn eq(&self, other: &Edge) -> bool {
-        (self.0 == other.0 && self.1 == other.1) || (self.0 == other.1 && self.1 == other.0)
+impl EdgeSetIndexer {
+    pub fn new(adj_list: &VertexVec<Vec<Vertex>>) -> EdgeSetIndexer {
+        let (indexer, _indexer_inv, num_edges) = make_indexer(adj_list);
+        EdgeSetIndexer { indexer, num_edges }
     }
 }
 
-impl Eq for Edge { }
+impl EdgeSetIterator {
+    pub fn new(adj_list: &VertexVec<Vec<Vertex>>) -> EdgeSetIterator {
+        EdgeSetIterator {
+            indexer: EdgeSetIndexer::new(adj_list),
+            edges: 0,
+        }
+    }
+}
 
 impl EdgeSet {
     pub fn new(adj_list: &VertexVec<Vec<Vertex>>) -> EdgeSet {
@@ -115,6 +144,10 @@ impl EdgeSet {
         }
     }
 
+    pub fn of_hack_PLEASEDELETEMESOON(indexer: &Vec<Option<usize>>, code: u128) -> EdgeSet {
+        EdgeSet { indexer: indexer.to_owned(), edges: code }
+    }
+
     pub fn add_edge(&mut self, e: Edge) {
         self.edges &= 1 << self.indexer[e.encode()].unwrap();
     }
@@ -125,6 +158,12 @@ impl EdgeSet {
 
     pub fn flip_edge(&mut self, e: Edge) {
         self.edges ^= 1 << self.indexer[e.encode()].unwrap();
+    }
+
+    pub fn inverse(&self) -> EdgeSet {
+        let mut set = self.to_owned();
+        set.edges ^= 1 << self.indexer.len();
+        set
     }
 
     pub fn has_edge(&self, e: Edge) -> bool {
@@ -265,5 +304,20 @@ impl<T: Debug + Copy> Index<Edge> for EdgeVec<T> {
 impl<T: Debug + Copy> IndexMut<Edge> for EdgeVec<T> {
     fn index_mut(&mut self, index: Edge) -> &mut Self::Output {
         &mut self.vec[self.indexer[index.encode()].unwrap()]
+    }
+}
+
+impl Iterator for EdgeSetIterator {
+    type Item = EdgeSet;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let edges = self.edges;
+
+        if edges == 2_u128.pow(self.indexer.num_edges as u32) {
+            None
+        } else {
+            self.edges += 1;
+            Some(EdgeSet::of_hack_PLEASEDELETEMESOON(&self.indexer.indexer, edges))
+        }
     }
 }

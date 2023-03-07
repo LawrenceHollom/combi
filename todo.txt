@@ -10,6 +10,13 @@
 - Move all flood fill to use Graph::flood_fill.
 - Bunkbed optimise making the billions of EdgeSets so they can share indexers.
 -- Change EdgeSet to take a reference to an indexer instead of an indexer?
+-- Started this with EdgeSetIndexer; drop this from EdgeSet and take as a param instead
+- Type for number of edges
+- Split up graph into more files. Maybe have a constructions folder
+-- Want a file for all the flood-fill stuff.
+
+== COMPLETE BIPARTITE ==
+- Add a K(a,b) constructor. It would be convenient.
 
 == AUTOMATED TESTING ==
 - Work out how to do it, and do it.

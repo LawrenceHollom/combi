@@ -64,6 +64,7 @@ impl Operator {
                     MaxDegree => g.max_degree(),
                     Connectedness => connectedness::connectedness(g),
                     Thomassen(long_path_cap) => edge_partitions::thomassen_check(g, *long_path_cap),
+                    NumBipartiteEdgeBisections => edge_partitions::count_bipartite_edge_bisections(g),
                     Number(k) => *k,
                 };
                 self.previous_int_values.insert(*operation, value);
