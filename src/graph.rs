@@ -303,20 +303,22 @@ impl Graph {
         let mut q: Queue<Vertex> = queue![];
     
         for i in self.n.iter_verts() {
-            if comp[i].is_none() && filter.map_or(true, |f| f[i]) {
+            if comp[i].is_none() {
                 comp[i] = Some(i);
-                let _ = q.add(i);
-                'flood_fill: loop {
-                    match q.remove() {
-                        Ok(node) => {
-                            for j in self.adj_list[node].iter() {
-                                if comp[*j].is_none() && filter.map_or(true, |f| f[*j]) {
-                                    comp[*j] = Some(i);
-                                    let _ = q.add(*j);
+                if filter.map_or(true, |f| f[i]) {
+                    let _ = q.add(i);
+                    'flood_fill: loop {
+                        match q.remove() {
+                            Ok(node) => {
+                                for j in self.adj_list[node].iter() {
+                                    if comp[*j].is_none() && filter.map_or(true, |f| f[*j]) {
+                                        comp[*j] = Some(i);
+                                        let _ = q.add(*j);
+                                    }
                                 }
-                            }
-                        },
-                        Err(_err) => break 'flood_fill,
+                            },
+                            Err(_err) => break 'flood_fill,
+                        }
                     }
                 }
             }
@@ -630,7 +632,7 @@ impl Graph {
         for k in self.n.iter_verts() {
             for i in self.n.iter_verts() {
                 for j in self.n.iter_verts() {
-                    if dist[i][j] > dist[i][k] + dist[k][j] {
+                    if dist[i][k] < usize::MAX && dist[k][j] < usize::MAX && dist[i][j] > dist[i][k] + dist[k][j] {
                         dist[i][j] = dist[i][k] + dist[k][j];
                     }
                 }

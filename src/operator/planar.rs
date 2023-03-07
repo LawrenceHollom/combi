@@ -246,7 +246,7 @@ fn dmp_rec(g: &Graph, coprime: &mut VertexVec<bool>, prime_edges: &mut VertexVec
         if num_found == 1 {
             // We need to embed a path from this fragment.
             return dmp_embed_fragment(g, coprime, prime_edges, &mut faces.to_owned(), 
-                admissible_face, Edge::of_pair(contact_verts[0], contact_verts[1]), depth);
+                admissible_face, first_frag_contact_edge.unwrap(), depth);
         }
     }
     
