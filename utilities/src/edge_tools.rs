@@ -17,15 +17,16 @@ pub struct EdgeSet {
 }
 
 #[derive(Clone, PartialEq, Eq, Hash)]
-pub struct EdgeSetIndexer {
+pub struct EdgeIndexer {
     indexer: Vec<Option<usize>>,
+    indexer_inv: Vec<Edge>,
     num_edges: usize,
     pub hash: u64,
 }
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct EdgeSetIterator {
-    indexer: EdgeSetIndexer,
+    indexer: EdgeIndexer,
     edges: u128,
 }
 
@@ -114,11 +115,11 @@ fn make_indexer(adj_list: &VertexVec<Vec<Vertex>>) -> (Vec<Option<usize>>, Vec<E
     (indexer, indexer_inv, i)
 }
 
-impl EdgeSetIndexer {
-    pub fn new(adj_list: &VertexVec<Vec<Vertex>>) -> EdgeSetIndexer {
-        let (indexer, _indexer_inv, num_edges) = make_indexer(adj_list);
+impl EdgeIndexer {
+    pub fn new(adj_list: &VertexVec<Vec<Vertex>>) -> EdgeIndexer {
+        let (indexer, indexer_inv, num_edges) = make_indexer(adj_list);
         let hash = Self::default_hash(&indexer);
-        EdgeSetIndexer { indexer, num_edges, hash }
+        EdgeIndexer { indexer, indexer_inv, num_edges, hash }
     }
 
     fn default_hash(indexer: &Vec<Option<usize>>) -> u64 {
@@ -126,61 +127,65 @@ impl EdgeSetIndexer {
         indexer.hash(&mut s);
         s.finish()
     }
+
+    pub fn iter_edges(&self) -> impl Iterator<Item = &Edge> {
+        self.indexer_inv.iter()
+    }
 }
 
 impl EdgeSetIterator {
     pub fn new(adj_list: &VertexVec<Vec<Vertex>>) -> EdgeSetIterator {
         EdgeSetIterator {
-            indexer: EdgeSetIndexer::new(adj_list),
+            indexer: EdgeIndexer::new(adj_list),
             edges: 0,
         }
     }
 }
 
 impl EdgeSet {
-    pub fn new(indexer: &EdgeSetIndexer) -> EdgeSet {
+    pub fn new(indexer: &EdgeIndexer) -> EdgeSet {
         EdgeSet { 
             edges: 0,
             indexer_hash: indexer.hash,
         }
     }
 
-    pub fn of_int(code: u128, indexer: &EdgeSetIndexer) -> EdgeSet {
+    pub fn of_int(code: u128, indexer: &EdgeIndexer) -> EdgeSet {
         EdgeSet { 
             edges: code,
             indexer_hash: indexer.hash,
         }
     }
 
-    fn check_indexer(&self, indexer: &EdgeSetIndexer) {
+    fn check_indexer(&self, indexer: &EdgeIndexer) {
         if self.indexer_hash != indexer.hash {
             panic!("Indexer and EdgeSet hash values do not agree!")
         }
     }
 
-    pub fn add_edge(&mut self, e: Edge, indexer: &EdgeSetIndexer) {
+    pub fn add_edge(&mut self, e: Edge, indexer: &EdgeIndexer) {
         self.check_indexer(indexer);
         self.edges &= 1 << indexer[e].unwrap();
     }
 
-    pub fn remove_edge(&mut self, e: Edge, indexer: &EdgeSetIndexer) {
+    pub fn remove_edge(&mut self, e: Edge, indexer: &EdgeIndexer) {
         self.check_indexer(indexer);
         self.edges &= !(1 << indexer[e].unwrap());
     }
 
-    pub fn flip_edge(&mut self, e: Edge, indexer: &EdgeSetIndexer) {
+    pub fn flip_edge(&mut self, e: Edge, indexer: &EdgeIndexer) {
         self.check_indexer(indexer);
         self.edges ^= 1 << indexer[e].unwrap();
     }
 
-    pub fn inverse(&self, indexer: &EdgeSetIndexer) -> EdgeSet {
+    pub fn inverse(&self, indexer: &EdgeIndexer) -> EdgeSet {
         self.check_indexer(indexer);
         let mut set = self.to_owned();
-        set.edges ^= 1 << indexer.num_edges;
+        set.edges ^= (1 << indexer.num_edges) - 1;
         set
     }
 
-    pub fn has_edge(&self, e: Edge, indexer: &EdgeSetIndexer) -> bool {
+    pub fn has_edge(&self, e: Edge, indexer: &EdgeIndexer) -> bool {
         self.check_indexer(indexer);
         (self.edges >> indexer[e].unwrap()) % 2 == 1
     }
@@ -304,7 +309,7 @@ impl<T: Debug + Copy> fmt::Display for EdgeVec<T> {
     }
 }
 
-impl Index<Edge> for EdgeSetIndexer {
+impl Index<Edge> for EdgeIndexer {
     type Output = Option<usize>;
 
     fn index(&self, index: Edge) -> &Self::Output {

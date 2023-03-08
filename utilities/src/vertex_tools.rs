@@ -141,14 +141,12 @@ impl Iterator for VertexPairIterator {
         let i = self.curr.0;
         let j = self.curr.1;
 
-        if j == self.n.to_max_vertex() {
-            if i == self.n.to_max_vertex().decr() {
-                None
-            } else {
-                let k = i.incr();
-                self.curr = (k, k.incr());
-                Some((i, j))
-            }
+        if j > self.n.to_max_vertex() {
+            None
+        } else if j == self.n.to_max_vertex() {
+            let k = i.incr();
+            self.curr = (k, k.incr());
+            Some((i, j))
         } else {
             self.curr = (i, j.incr());
             Some((i, j))

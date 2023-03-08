@@ -1,5 +1,6 @@
 use crate::graph::*;
 
+use utilities::component_tools::ComponentVec;
 use utilities::edge_tools::*;
 use utilities::vertex_tools::*;
 
@@ -163,7 +164,8 @@ pub fn edge_partition_forest_and_matching(g: &Graph) -> bool {
 
 pub fn count_bipartite_edge_bisections(g: &Graph) -> u32 {
     let mut num_good = 0;
-    let indexer = EdgeSetIndexer::new(&g.adj_list);
+    let mut num_good_by_size = vec![vec![0; g.n.to_usize()]; g.n.to_usize()];
+    let indexer = EdgeIndexer::new(&g.adj_list);
     'test_edgeset: for blue_edges in g.iter_edge_sets() {
         // Check if this is bipartite and strictly subcubic.
         for v in g.n.iter_verts() {
@@ -189,12 +191,51 @@ pub fn count_bipartite_edge_bisections(g: &Graph) -> u32 {
             continue 'test_edgeset;
         }
 
+        let red_edges = blue_edges.inverse(&indexer);
         // Red-edge vertex-2-colourable
-        if !g.flood_fill_two_colourable(&blue_edges.inverse(&indexer), &indexer) {
+        if !g.flood_fill_two_colourable(&red_edges, &indexer) {
             continue 'test_edgeset;
         }
 
         num_good += 1;
+
+        // Now test how big the biggest red and blue comps are and store that.
+        let blue_comps = g.flood_fill_edge_components(&blue_edges, &indexer);
+        let red_comps = g.flood_fill_edge_components(&red_edges, &indexer);
+        let mut blue_sizes = ComponentVec::new(g.n, &0);
+        let mut red_sizes = ComponentVec::new(g.n, &0);
+        for e in indexer.iter_edges() {
+            if blue_edges.has_edge(*e, &indexer) {
+                match blue_comps[*e] {
+                    Some(comp) => blue_sizes[comp] += 1,
+                    None => (),
+                }
+            } else {
+                match red_comps[*e] {
+                    Some(comp) => red_sizes[comp] += 1,
+                    None => ()
+                }
+            }
+        }
+        match (blue_sizes.max(&0, usize::cmp), red_sizes.max(&0, usize::cmp)) {
+            (Some(max_blue_size), Some(max_red_size)) => {
+                if max_blue_size < max_red_size {
+                    num_good_by_size[*max_red_size - 1][*max_blue_size - 1] += 1;
+                } else {
+                    num_good_by_size[*max_blue_size - 1][*max_red_size - 1] += 1;
+                }
+            }
+            _ => (),
+        }
     }
+
+    for (i, num_good) in num_good_by_size.iter().enumerate() {
+        for (j, num) in num_good.iter().enumerate() {
+            if *num > 0 {
+                println!("Num good ({}, {}): {}", i + 1, j + 1, *num);
+            }
+        }
+    }
+
     num_good
 }

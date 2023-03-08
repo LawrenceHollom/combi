@@ -413,11 +413,11 @@ mod tests {
 
     #[test]
     fn test_planar_e1() {
-        assert!(!is_planar(&Graph::new(&Constructor::Raw(RawConstructor::Empty(Order::of_usize(1))))))
+        assert!(is_planar(&Graph::new(&Constructor::Raw(RawConstructor::Empty(Order::of_usize(1))))))
     }
 
     #[test]
     fn test_planar_e10() {
-        assert!(!is_planar(&Graph::new(&Constructor::Raw(RawConstructor::Empty(Order::of_usize(10))))))
+        assert!(is_planar(&Graph::new(&Constructor::Raw(RawConstructor::Empty(Order::of_usize(10))))))
     }
 }

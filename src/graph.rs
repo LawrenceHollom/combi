@@ -523,7 +523,7 @@ impl Graph {
         connected
     }
 
-    pub fn flood_fill_two_colourable(&self, edge_filter: &EdgeSet, indexer: &EdgeSetIndexer) -> bool {
+    pub fn flood_fill_two_colourable(&self, edge_filter: &EdgeSet, indexer: &EdgeIndexer) -> bool {
         let mut colour = VertexVec::new(self.n, &None);
         let mut q: Queue<Vertex> = queue![];
         let mut is_two_colourable = true;
@@ -548,6 +548,33 @@ impl Graph {
             }
         }
         is_two_colourable
+    }
+
+    pub fn flood_fill_edge_components(&self, edge_filter: &EdgeSet, indexer: &EdgeIndexer) -> EdgeVec<Option<Component>> {
+        let mut components = EdgeVec::new(&self.adj_list, None);
+        let mut q: Queue<Vertex> = queue![];
+        let mut visited: VertexVec<bool> = VertexVec::new(self.n, &false);
+        for v in self.n.iter_verts() {
+            if !visited[v] {
+                visited[v] = true;
+                let _ = q.add(v);
+                let comp = Component::of_vertex(v);
+                while q.size() > 0 {
+                    let u = q.remove().unwrap();
+                    for w in self.adj_list[u].iter() {
+                        let e = Edge::of_pair(u, *w);
+                        if edge_filter.has_edge(e, indexer) {
+                            components[e] = Some(comp);
+                            if !visited[*w] {
+                                let _ = q.add(*w);
+                                visited[*w] = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        components
     }
 
     pub fn new(constructor: &Constructor) -> Graph {

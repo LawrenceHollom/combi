@@ -97,13 +97,13 @@ pub fn simulate(g: &Graph) {
     }
 }
 
-fn parallel_count(e: Edge, n: Order, config: &EdgeSet, indexer: &EdgeSetIndexer) -> usize {
+fn parallel_count(e: Edge, n: Order, config: &EdgeSet, indexer: &EdgeIndexer) -> usize {
     let neg = config.has_edge(e, indexer);
     let pos = config.has_edge(e.incr_by_order(n), indexer);
     (neg as usize) + (pos as usize)
 }
 
-fn flip_pair(e: Edge, n: Order, config: EdgeSet, indexer: &EdgeSetIndexer) -> EdgeSet {
+fn flip_pair(e: Edge, n: Order, config: EdgeSet, indexer: &EdgeIndexer) -> EdgeSet {
     let e_plus = e.incr_by_order(n);
     let mut new_config = config.to_owned();
     new_config.flip_edge(e, indexer);
@@ -123,7 +123,7 @@ struct ConfSignature {
 }
 
 impl ConfSignature {
-    pub fn new(g: &Graph, config: &EdgeSet, indexer: &EdgeSetIndexer) -> ConfSignature {
+    pub fn new(g: &Graph, config: &EdgeSet, indexer: &EdgeIndexer) -> ConfSignature {
         let mut posts_index = VertexSet::new();
         let mut blanks_index = EdgeSet::new(indexer);
         let mut doubles_index = EdgeSet::new(indexer);
@@ -155,7 +155,7 @@ impl fmt::Display for ConfSignature {
 }
 
 // This doesn't work, but does in some simple cases.
-fn flip_postless_component(g: &Graph, config: &EdgeSet, u: Vertex, indexer: &EdgeSetIndexer) -> EdgeSet {
+fn flip_postless_component(g: &Graph, config: &EdgeSet, u: Vertex, indexer: &EdgeIndexer) -> EdgeSet {
     let mut postless_component: VertexVec<bool> = VertexVec::new(g.n, &false);
     postless_component[u] = true;
     let mut q: Queue<Vertex> = queue![u];
@@ -193,7 +193,7 @@ fn print_title(g: &Graph) {
     println!();
 }
 
-fn print_config(g: &Graph, config: &EdgeSet, indexer: &EdgeSetIndexer) {
+fn print_config(g: &Graph, config: &EdgeSet, indexer: &EdgeIndexer) {
     print_title(g);
     for (u, v) in g.n.iter_pairs() {
         if g.adj[u][v] {
@@ -217,7 +217,7 @@ fn print_config(g: &Graph, config: &EdgeSet, indexer: &EdgeSetIndexer) {
     println!();
 }
 
-fn print_problem_configs(g: &Graph, a: &EdgeSet, b: &EdgeSet, indexer: &EdgeSetIndexer) {
+fn print_problem_configs(g: &Graph, a: &EdgeSet, b: &EdgeSet, indexer: &EdgeIndexer) {
     println!("PROBLEM CONFIGS: ");
     println!("First config: ");
     print_config(g, a, indexer);
@@ -226,8 +226,8 @@ fn print_problem_configs(g: &Graph, a: &EdgeSet, b: &EdgeSet, indexer: &EdgeSetI
 }
 
 // Actually implement some given function to turn neg_confs into pos_confs.
-fn attempt_injection(g: &Graph, u: Vertex, pos_confs: &Vec<EdgeSet>, neg_confs: &Vec<EdgeSet>, indexer: &EdgeSetIndexer,
-        inj: &dyn Fn(&Graph, &EdgeSet, Vertex, &EdgeSetIndexer) -> EdgeSet) {
+fn attempt_injection(g: &Graph, u: Vertex, pos_confs: &Vec<EdgeSet>, neg_confs: &Vec<EdgeSet>, indexer: &EdgeIndexer,
+        inj: &dyn Fn(&Graph, &EdgeSet, Vertex, &EdgeIndexer) -> EdgeSet) {
     println!("Attempting injection!");
     let mut flipped_confs: HashSet<EdgeSet> = HashSet::new();
     let mut pos_confs_set: HashSet<EdgeSet> = HashSet::new();
@@ -264,7 +264,7 @@ fn attempt_injection(g: &Graph, u: Vertex, pos_confs: &Vec<EdgeSet>, neg_confs: 
 // and print them if there aren't too many.
 // We will flip a set of edges dependent only on sig, which means that the
 // function, if valid, is automatically an injection.
-fn find_possible_injections(g: &Graph, sig: &ConfSignature, domain: &Vec<EdgeSet>, range: &Vec<EdgeSet>, indexer: &EdgeSetIndexer) {
+fn find_possible_injections(g: &Graph, sig: &ConfSignature, domain: &Vec<EdgeSet>, range: &Vec<EdgeSet>, indexer: &EdgeIndexer) {
     let mut injections: Vec<EdgeSet> = vec![];
     let mut range_set: HashSet<EdgeSet> = HashSet::new();
     for x in range.iter() {
@@ -332,7 +332,7 @@ fn find_possible_injections(g: &Graph, sig: &ConfSignature, domain: &Vec<EdgeSet
 
 // We have a big list of positive and negative configs we care about.
 // This function processes them to try and learn about possible injections.
-fn process_bunkbed_configs(g: &Graph, u: Vertex, pos_confs: &Vec<EdgeSet>, neg_confs: &Vec<EdgeSet>, indexer: &EdgeSetIndexer) {
+fn process_bunkbed_configs(g: &Graph, u: Vertex, pos_confs: &Vec<EdgeSet>, neg_confs: &Vec<EdgeSet>, indexer: &EdgeIndexer) {
     let pos_signatures: Vec<(EdgeSet, ConfSignature)> = 
         pos_confs.iter()
             .map(|conf| (conf.to_owned(), ConfSignature::new(g, conf, indexer)))
@@ -406,9 +406,9 @@ fn process_bunkbed_configs(g: &Graph, u: Vertex, pos_confs: &Vec<EdgeSet>, neg_c
 // Computes which configurations have u-, u+ with different connectivities
 // and then prints about them.
 pub fn interesting_configurations(g: &Graph, u: Vertex, print_size: Option<usize>) {
-    let g_indexer = EdgeSetIndexer::new(&g.adj_list);
+    let g_indexer = EdgeIndexer::new(&g.adj_list);
     let bunkbed = g.bunkbed();
-    let bunkbed_indexer = EdgeSetIndexer::new(&bunkbed.adj_list);
+    let bunkbed_indexer = EdgeIndexer::new(&bunkbed.adj_list);
     let m = bunkbed.size();
     if m >= 63 {
         panic!("Too many edges; everything will go to shit!");
