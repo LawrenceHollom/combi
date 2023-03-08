@@ -5,8 +5,9 @@ use crate::graph::*;
 pub fn new_graph(filename: &String) -> Graph {
     let mut pathbuf = std::env::current_exe().unwrap();
     pathbuf.pop();
-    pathbuf.pop();
-    pathbuf.pop();
+    while !pathbuf.ends_with("combi/") {
+        pathbuf.pop();
+    }
     pathbuf.push(format!("manual/{}.gph", filename));
     match fs::read_to_string(pathbuf) {
         Ok(contents) => {

@@ -34,6 +34,7 @@ pub enum RandomConstructor {
 pub enum RawConstructor {
     Grid(Order, Order),
     Complete(Order),
+    CompleteBipartite(Order, Order),
     Cyclic(Order),
     Path(Order),
     Star(Order),
@@ -154,7 +155,14 @@ impl Constructor {
             "grid" => {
                 Raw(Grid(Order::of_string(args[0]), Order::of_string(args[1])))
             },
-            "complete" | "k" => Raw(Complete(Order::of_string(args[0]))),
+            "complete" | "k" => {
+                let n = Order::of_string(args[0]);
+                if args.len() == 1 {
+                    Raw(Complete(n))
+                } else {
+                    Raw(CompleteBipartite(n, Order::of_string(args[1])))
+                }
+            }
             "cyclic" | "c" => Raw(Cyclic(Order::of_string(args[0]))),
             "path" | "p" => Raw(Path(Order::of_string(args[0]))),
             "star" | "s" => Raw(Star(Order::of_string(args[0]))),
@@ -273,6 +281,9 @@ impl fmt::Display for RawConstructor {
             }
             Complete(order) => {
                 write!(f, "Complete of order {}", order)
+            },
+            CompleteBipartite(left, right) => {
+                write!(f, "Complete bipartite of order ({}, {})", left, right)
             },
             Cyclic(order) => {
                 write!(f, "Cyclic of order {}", order)

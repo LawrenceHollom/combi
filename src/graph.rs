@@ -51,15 +51,26 @@ impl Graph {
     fn new_complete(n: Order) -> Graph {
         let mut adj_list = VertexVec::new_fn(n, |_| vec![]);
 
-        for i in n.iter_verts() {
-            for j in n.iter_verts() {
-                if i != j {
-                    adj_list[i].push(j);
-                }
-            }
+        for (i, j) in n.iter_pairs() {
+            adj_list[i].push(j);
+            adj_list[j].push(i);
         }
 
         Graph::of_adj_list(adj_list, Raw(Complete(n)))
+    }
+
+    fn new_complete_bipartite(left: Order, right: Order) -> Graph {
+        let mut adj_list = VertexVec::new_fn(left + right, |_| vec![]);
+
+        for j in right.iter_verts() {
+            let k = j.incr_by_order(left);
+            for i in left.iter_verts() {
+                adj_list[i].push(k);
+                adj_list[k].push(i);
+            }
+        }
+
+        Graph::of_adj_list(adj_list, Raw(CompleteBipartite(left, right)))
     }
 
     fn new_cyclic(n: Order) -> Graph {
@@ -566,6 +577,7 @@ impl Graph {
             Random(EdgeStructured(pattern, num)) => pattern.new_graph(*num),
             Raw(Grid(height, width)) => grid::new(height, width),
             Raw(Complete(order)) => Graph::new_complete(*order),
+            Raw(CompleteBipartite(left, right)) => Graph::new_complete_bipartite(*left, *right),
             Raw(Cyclic(order)) => Graph::new_cyclic(*order),
             Raw(Path(order)) => Graph::new_path(*order),
             Raw(Star(order)) => Graph::new_star(*order),
@@ -782,6 +794,11 @@ impl Graph {
 
     pub fn iter_edge_sets(&self) -> EdgeSetIterator {
         EdgeSetIterator::new(&self.adj_list)
+    }
+
+    #[allow(dead_code)]
+    pub fn test_graph(index: usize) -> Graph {
+        from_file::new_graph(&format!("test_{}", index))
     }
 }
 

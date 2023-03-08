@@ -481,3 +481,24 @@ pub fn total_domination_game_length(g: &Graph) -> u32 {
 
     turns_left[0] as u32
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::graph::*;
+    use super::*;
+
+    #[test]
+    fn test_domination_1() {
+        assert_eq!(domination_number(&Graph::test_graph(1)), 2);
+    }
+
+    #[test]
+    fn test_domination_2() {
+        assert_eq!(domination_number(&Graph::test_graph(2)), 5);
+    }
+
+    #[test]
+    fn test_domination_3() {
+        assert_eq!(domination_number(&Graph::test_graph(3)), 3);
+    }
+}

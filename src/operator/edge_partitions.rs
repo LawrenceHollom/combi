@@ -168,7 +168,7 @@ pub fn count_bipartite_edge_bisections(g: &Graph) -> u32 {
         // Check if this is bipartite and strictly subcubic.
         for v in g.n.iter_verts() {
             if g.deg[v].at_least(4) {
-                panic!("Graph must be subsubic!")
+                panic!("Graph must be subcubic!")
             }
             let mut num_red = 0;
             let mut num_blue = 0;
