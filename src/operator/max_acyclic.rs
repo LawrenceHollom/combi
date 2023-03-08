@@ -7,6 +7,8 @@ use crate::graph::*;
 
 use queues::*;
 
+// n.b. same as max_induced_forest but much slower.
+
 pub fn max_acyclic_subgraph(g: &Graph) -> u32 {
     let mut max_acyclic = 2;
     for i in 0..pow(2, g.n.to_usize() as u64) {

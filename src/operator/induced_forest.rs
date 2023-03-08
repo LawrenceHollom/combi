@@ -2,6 +2,8 @@ use crate::graph::*;
 
 use utilities::vertex_tools::*;
 
+// n.b. Same as max_acyclic
+
 fn max_induced_forest_rec(g: &Graph, forest: &mut VertexVec<bool>, comp: &mut VertexVec<Vertex>, 
         prev_vert: Vertex, size: u32, max_size: u32) -> u32 {
     let max_vert = Vertex::of_usize((size + (g.n.to_usize() as u32) - max_size - 1) as usize).min(g.n.to_max_vertex());

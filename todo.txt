@@ -1,6 +1,3 @@
-== AUTOMATED TESTING ==
-- More tests for all the important operations
-
 == THE BIG REFACTOR ==
 - Make everything more typeful. More typeful! Make a new branch.
 -- Colour type?
@@ -14,9 +11,6 @@
 --- Would need a lot of code moving.
 - Think about whether we want to merge indexers on EdgeSet and EdgeVec
 - Replace EdgeSet::of_int with the g,iter_edge_sets, and sim for VertexSet.
- 
-== MAX ACYCLIC AND MAX INDUCED FOREST ARE THE SAME ==
-- How did this happen?
 
 == THE KITCHEN SINK ==
 - Maybe add option for increasing by number of edges or something
