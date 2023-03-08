@@ -83,6 +83,7 @@ impl Operator {
             NotLess => x1 >= x2,
             NotMore => x1 <= x2,
             Equal => x1 == x2,
+            NotEqual => x1 != x2,
         }
     }
 
@@ -96,6 +97,7 @@ impl Operator {
             NotLess => x1 >= x2,
             NotMore => x1 <= x2,
             Equal => x1 == x2,
+            NotEqual => x1 != x2,
         }
     }
     

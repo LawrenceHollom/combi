@@ -1,6 +1,5 @@
-== FIXING EVERYTHING BROKEN IN THE BIG REFACTOR ==
-- Maybe now is the ideal time to put those tests in?
-- sink((size>0)&&(theta>=acyclic)) -> halts at n=15 fails (as a start)
+== AUTOMATED TESTING ==
+- More tests for all the important operations
 
 == THE BIG REFACTOR ==
 - Make everything more typeful. More typeful! Make a new branch.
@@ -14,10 +13,11 @@
 -- Maybe move all the constructors to some constructors folder?
 --- Would need a lot of code moving.
 - Think about whether we want to merge indexers on EdgeSet and EdgeVec
-
-== AUTOMATED TESTING ==
-- More tests for all the important operations
+- Replace EdgeSet::of_int with the g,iter_edge_sets, and sim for VertexSet.
  
+== MAX ACYCLIC AND MAX INDUCED FOREST ARE THE SAME ==
+- How did this happen?
+
 == THE KITCHEN SINK ==
 - Maybe add option for increasing by number of edges or something
 - test with sink((size>0)&&(theta>=acyclic)) -> halts at n=15

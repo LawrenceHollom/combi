@@ -55,3 +55,34 @@ pub fn largest_clique(g: &Graph) -> u32 {
 pub fn independence_number(g: &Graph) -> u32 {
     largest(g, false)
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::graph::*;
+    use super::*;
+    use utilities::*;
+
+    #[test]
+    fn test_cliques_1() {
+        assert_eq!(largest_clique(&Graph::test_graph(1)), 4);
+        assert_eq!(independence_number(&Graph::test_graph(1)), 5);
+    }
+
+    #[test]
+    fn test_cliques_2() {
+        assert_eq!(largest_clique(&Graph::test_graph(2)), 3);
+        assert_eq!(independence_number(&Graph::test_graph(2)), 5);
+    }
+
+    #[test]
+    fn test_cliques_3() {
+        assert_eq!(largest_clique(&Graph::test_graph(3)), 2);
+        assert_eq!(independence_number(&Graph::test_graph(3)), 5);
+    }
+
+    #[test]
+    fn test_cliques_e10() {
+        assert_eq!(largest_clique(&Graph::new_empty(Order::of_usize(10))), 1);
+        assert_eq!(independence_number(&Graph::new_empty(Order::of_usize(10))), 10);
+    }
+}

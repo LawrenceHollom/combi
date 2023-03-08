@@ -382,7 +382,6 @@ pub fn is_planar(g: &Graph) -> bool {
 mod tests {
     use crate::graph::*;
     use super::*;
-    use crate::constructor::*;
     use utilities::*;
 
     #[test]
@@ -402,22 +401,22 @@ mod tests {
 
     #[test]
     fn test_planar_k5() {
-        assert!(!is_planar(&Graph::new(&Constructor::Raw(RawConstructor::Complete(Order::of_usize(5))))))
+        assert!(!is_planar(&Graph::new_complete(Order::of_usize(5))))
     }
 
     #[test]
     fn test_planar_k33() {
         let three = Order::of_usize(3);
-        assert!(!is_planar(&Graph::new(&Constructor::Raw(RawConstructor::CompleteBipartite(three, three)))))
+        assert!(!is_planar(&Graph::new_complete_bipartite(three, three)))
     }
 
     #[test]
     fn test_planar_e1() {
-        assert!(is_planar(&Graph::new(&Constructor::Raw(RawConstructor::Empty(Order::of_usize(1))))))
+        assert!(is_planar(&Graph::new_empty(Order::of_usize(1))))
     }
 
     #[test]
     fn test_planar_e10() {
-        assert!(is_planar(&Graph::new(&Constructor::Raw(RawConstructor::Empty(Order::of_usize(10))))))
+        assert!(is_planar(&Graph::new_empty(Order::of_usize(10))))
     }
 }

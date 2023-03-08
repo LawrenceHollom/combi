@@ -48,7 +48,7 @@ impl Graph {
         }
     }
 
-    fn new_complete(n: Order) -> Graph {
+    pub fn new_complete(n: Order) -> Graph {
         let mut adj_list = VertexVec::new_fn(n, |_| vec![]);
 
         for (i, j) in n.iter_pairs() {
@@ -59,7 +59,7 @@ impl Graph {
         Graph::of_adj_list(adj_list, Raw(Complete(n)))
     }
 
-    fn new_complete_bipartite(left: Order, right: Order) -> Graph {
+    pub fn new_complete_bipartite(left: Order, right: Order) -> Graph {
         let mut adj_list = VertexVec::new_fn(left + right, |_| vec![]);
 
         for j in right.iter_verts() {
@@ -73,7 +73,7 @@ impl Graph {
         Graph::of_adj_list(adj_list, Raw(CompleteBipartite(left, right)))
     }
 
-    fn new_cyclic(n: Order) -> Graph {
+    pub fn new_cyclic(n: Order) -> Graph {
         let mut adj_list = VertexVec::new_fn(n, |_| vec![]);
 
         for i in n.iter_verts() {
@@ -84,7 +84,7 @@ impl Graph {
         Graph::of_adj_list(adj_list, Raw(Cyclic(n)))
     }
 
-    fn new_path(n: Order) -> Graph {
+    pub fn new_path(n: Order) -> Graph {
         let mut adj_list = VertexVec::new_fn(n, |_| vec![]);
 
         for i in n.iter_verts().take(n.to_usize() - 1) {
@@ -109,7 +109,7 @@ impl Graph {
         Graph::of_adj_list(adj_list, Raw(Star(n)))
     }
 
-    fn new_empty(n: Order) -> Graph {
+    pub fn new_empty(n: Order) -> Graph {
         let adj_list = VertexVec::new_fn(n, |_| vec![]);
         
         Graph::of_adj_list(adj_list, Raw(Empty(n)))

@@ -46,3 +46,30 @@ pub fn chromatic_number(g: &Graph) -> u32 {
     }
     num_colours as u32
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::graph::*;
+    use super::*;
+    use utilities::*;
+
+    #[test]
+    fn test_chi_1() {
+        assert_eq!(chromatic_number(&Graph::test_graph(1)), 4);
+    }
+
+    #[test]
+    fn test_chi_2() {
+        assert_eq!(chromatic_number(&Graph::test_graph(2)), 3);
+    }
+
+    #[test]
+    fn test_chi_3() {
+        assert_eq!(chromatic_number(&Graph::test_graph(3)), 2);
+    }
+
+    #[test]
+    fn test_chi_e10() {
+        assert_eq!(chromatic_number(&Graph::new_empty(Order::of_usize(10))), 1);
+    }
+}

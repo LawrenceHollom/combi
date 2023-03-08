@@ -64,3 +64,34 @@ pub fn max_acyclic_subgraph(g: &Graph) -> u32 {
     }
     max_acyclic as u32
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::graph::*;
+    use super::*;
+
+    #[test]
+    fn test_max_acyclic_subgraph_1() {
+        assert_eq!(max_acyclic_subgraph(&Graph::test_graph(1)), 5);
+    }
+
+    #[test]
+    fn test_max_acyclic_subgraph_2() {
+        assert_eq!(max_acyclic_subgraph(&Graph::test_graph(2)), 9);
+    }
+
+    #[test]
+    fn test_max_acyclic_subgraph_3() {
+        assert_eq!(max_acyclic_subgraph(&Graph::test_graph(3)), 7);
+    }
+
+    #[test]
+    fn test_max_acyclic_subgraph_k10() {
+        assert_eq!(max_acyclic_subgraph(&Graph::new_empty(Order::of_usize(10))), 2);
+    }
+
+    #[test]
+    fn test_max_acyclic_subgraph_p5() {
+        assert_eq!(max_acyclic_subgraph(&Graph::new_path(Order::of_usize(5))), 5);
+    }
+}

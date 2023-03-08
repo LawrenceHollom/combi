@@ -69,3 +69,35 @@ pub fn max_induced_forest(g: &Graph) -> u32 {
     }
     size
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::graph::*;
+    use super::*;
+    use utilities::*;
+
+    #[test]
+    fn test_max_induced_forest_1() {
+        assert_eq!(max_induced_forest(&Graph::test_graph(1)), 5);
+    }
+
+    #[test]
+    fn test_max_induced_forest_2() {
+        assert_eq!(max_induced_forest(&Graph::test_graph(2)), 9);
+    }
+
+    #[test]
+    fn test_max_induced_forest_3() {
+        assert_eq!(max_induced_forest(&Graph::test_graph(3)), 7);
+    }
+
+    #[test]
+    fn test_max_induced_forest_k10() {
+        assert_eq!(max_induced_forest(&Graph::new_empty(Order::of_usize(10))), 2);
+    }
+
+    #[test]
+    fn test_max_induced_forest_p5() {
+        assert_eq!(max_induced_forest(&Graph::new_path(Order::of_usize(5))), 5);
+    }
+}

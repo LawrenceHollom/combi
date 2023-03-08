@@ -67,3 +67,29 @@ pub fn connectedness(g: &Graph) -> u32 {
     }
     (k - 1) as u32
 }
+#[cfg(test)]
+mod tests {
+    use crate::graph::*;
+    use super::*;
+    use utilities::*;
+
+    #[test]
+    fn test_connectedness_1() {
+        assert_eq!(connectedness(&Graph::test_graph(1)), 1);
+    }
+
+    #[test]
+    fn test_connectedness_2() {
+        assert_eq!(connectedness(&Graph::test_graph(2)), 0);
+    }
+
+    #[test]
+    fn test_connectedness_3() {
+        assert_eq!(connectedness(&Graph::test_graph(3)), 2);
+    }
+
+    #[test]
+    fn test_connectedness_k10() {
+        assert_eq!(connectedness(&Graph::new_empty(Order::of_usize(10))), 9);
+    }
+}

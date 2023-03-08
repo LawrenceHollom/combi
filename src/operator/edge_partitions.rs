@@ -224,6 +224,9 @@ pub fn count_bipartite_edge_bisections(g: &Graph) -> u32 {
                 } else {
                     num_good_by_size[*max_blue_size - 1][*max_red_size - 1] += 1;
                 }
+                if num_good_by_size[3][2] > 0 {
+                    return 0;
+                }
             }
             _ => (),
         }

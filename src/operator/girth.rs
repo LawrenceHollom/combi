@@ -29,3 +29,30 @@ pub fn girth(g: &Graph) -> u32 {
 
     girth as u32
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::graph::*;
+    use super::*;
+    use utilities::*;
+
+    #[test]
+    fn test_girth_1() {
+        assert_eq!(girth(&Graph::test_graph(1)), 3);
+    }
+
+    #[test]
+    fn test_girth_2() {
+        assert_eq!(girth(&Graph::test_graph(2)), 4);
+    }
+
+    #[test]
+    fn test_girth_3() {
+        assert_eq!(girth(&Graph::test_graph(3)), 4);
+    }
+
+    #[test]
+    fn test_girth_c10() {
+        assert_eq!(girth(&Graph::new_cyclic(Order::of_usize(10))), 10);
+    }
+}
