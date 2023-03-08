@@ -83,7 +83,7 @@ mod tests {
 
     #[test]
     fn test_max_induced_forest_2() {
-        assert_eq!(max_induced_forest(&Graph::test_graph(2)), 9);
+        assert_eq!(max_induced_forest(&Graph::test_graph(2)), 10);
     }
 
     #[test]
@@ -93,7 +93,7 @@ mod tests {
 
     #[test]
     fn test_max_induced_forest_k10() {
-        assert_eq!(max_induced_forest(&Graph::new_empty(Order::of_usize(10))), 2);
+        assert_eq!(max_induced_forest(&Graph::new_complete(Order::of_usize(10))), 2);
     }
 
     #[test]

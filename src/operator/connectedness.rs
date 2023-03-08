@@ -90,6 +90,6 @@ mod tests {
 
     #[test]
     fn test_connectedness_k10() {
-        assert_eq!(connectedness(&Graph::new_empty(Order::of_usize(10))), 9);
+        assert_eq!(connectedness(&Graph::new_complete(Order::of_usize(10))), 9);
     }
 }

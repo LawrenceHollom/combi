@@ -65,12 +65,12 @@ mod tests {
     #[test]
     fn test_cliques_1() {
         assert_eq!(largest_clique(&Graph::test_graph(1)), 4);
-        assert_eq!(independence_number(&Graph::test_graph(1)), 5);
+        assert_eq!(independence_number(&Graph::test_graph(1)), 3);
     }
 
     #[test]
     fn test_cliques_2() {
-        assert_eq!(largest_clique(&Graph::test_graph(2)), 3);
+        assert_eq!(largest_clique(&Graph::test_graph(2)), 2);
         assert_eq!(independence_number(&Graph::test_graph(2)), 5);
     }
 
