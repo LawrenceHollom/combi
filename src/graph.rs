@@ -6,6 +6,10 @@ use RawConstructor::*;
 use rand::{thread_rng};
 use queues::*;
 
+mod flood_fill;
+mod isomorphisms;
+mod cycles;
+
 pub struct Graph {
     pub n: Order,
     pub adj: VertexVec<VertexVec<bool>>,
@@ -147,184 +151,16 @@ impl Graph {
         Graph::of_adj_list(adj_list, Special)
     }
 
-    fn codeg_code(u: Vertex, v: Vertex) -> usize {
-        Edge::of_pair(u, v).encode()
-    }
-
-    pub fn codegree_sequence(&self) -> Vec<usize> {
-        let n = self.n.to_usize();
-        let mut codegs = vec![0; (n * (n - 1)) / 2];
-
-        for nbrs in self.adj_list.iter() {
-            for u in nbrs.iter() {
-                for v in nbrs.iter() {
-                    if *u < *v {
-                        codegs[Self::codeg_code(*u, *v)] += 1;
-                    }
-                }
-            }
-        }
-
-        codegs
-    }
-
     pub fn iter_verts(&self) -> impl Iterator<Item = Vertex> {
         (0..self.n.to_usize()).map(|x| Vertex::of_usize(x))
     }
 
-    fn is_map_isomorphism(&self, g: &Graph, map: &VertexVec<Option<Vertex>>) -> bool {
-        for (i, j) in self.n.iter_pairs() {
-            match (map[i], map[j]) {
-                (Some(x), Some(y)) => {
-                    if self.adj[i][j] != g.adj[x][y] {
-                        return false;
-                    }
-                }
-                (Some(_), None) | (None, Some(_)) => return false,
-                (None, None) => return false,
-
-            }
-        }
-        true
-    }
-
-    fn is_isomorphic_to_rec(&self, g: &Graph, ordering: &VertexVec<Vertex>, map: &mut VertexVec<Option<Vertex>>, 
-            covered: &mut VertexVec<bool>, node: Vertex, self_codegs: &Vec<usize>, g_codegs: &Vec<usize>) -> bool {
-        if node.is_n(self.n) {
-            self.is_map_isomorphism(g, map)
-        } else {
-            let mut is_any_iso = false;
-            let v = ordering[node];
-            // i is the target location of node
-            'find_iso: for i in self.n.iter_verts() {
-                if self.deg[v] == g.deg[i] && !covered[i] {
-                    let mut adj_check = true;
-                    'adj_test: for u in self.adj_list[v].iter() {
-                        if map[*u].map_or(false, |x| !g.adj[x][i]
-                                || self_codegs[Self::codeg_code(*u, v)] != g_codegs[Self::codeg_code(x, i)]) {
-                            adj_check = false;
-                            break 'adj_test;
-                        }
-                    }
-                    if adj_check {
-                        map[v] = Some(i);
-                        covered[i] = true;
-                        if self.is_isomorphic_to_rec(g, ordering, map, covered, node.incr(), self_codegs, g_codegs) {
-                            is_any_iso = true;
-                            break 'find_iso;
-                        }
-                        map[v] = None;
-                        covered[i] = false;
-                    }
-                }
-            }
-            is_any_iso
-        }
-    }
-
     pub fn is_isomorphic_to(&self, g: &Graph) -> bool {
-        let mut self_degs = self.deg.to_owned();
-        let mut g_degs = g.deg.to_owned();
-        self_degs.sort(Degree::cmp);
-        g_degs.sort(Degree::cmp);
-
-        if self.n != g.n {
-            return false;
-        }
-        let n = self.n.to_usize();
-
-        if !self_degs.iter().zip(g_degs.iter()).all(|(x, y)| *x == *y) {
-            return false;
-        }
-
-        let mut self_codegs = self.codegree_sequence();
-        let mut g_codegs = g.codegree_sequence();
-        self_codegs.sort();
-        g_codegs.sort();
-
-        if !self_codegs.iter().zip(g_codegs.iter()).all(|(x, y)| *x == *y) {
-            //println!("Gottem! {} ~ {}", self.constructor, g.constructor);
-            return false;
-        }
-
-        let mut self_comps = self.component_sizes();
-        let mut g_comps = g.component_sizes();
-        self_comps.sort();
-        g_comps.sort();
-
-        if !self_comps.iter().zip(g_comps.iter()).all(|(x, y)| *x == *y) {
-            //println!("Connectedness catch!");
-            return false;
-        }
-
-        if n > 15 { 
-            // give up; would be too slow
-            return false;
-        }
-
-        // BFS on self to find ordering.
-        let mut q: Queue<Vertex> = queue![];
-        let mut ordering = VertexVec::new(self.n, &Vertex::ZERO);
-        let mut visited = VertexVec::new(self.n, &false);
-        let mut next_preimage = Vertex::ZERO;
-        for start in self.n.iter_verts() {
-            if !visited[start] {
-                visited[start] = true;
-                let _ = q.add(start);
-            }
-            'bfs: loop {
-                match q.remove() {
-                    Ok(node) => {
-                        ordering[next_preimage] = node;
-                        next_preimage.incr_inplace();
-                        for v in self.adj_list[node].iter() {
-                            if !visited[*v] {
-                                visited[*v] = true;
-                                let _ = q.add(*v);
-                            }
-                        }
-                    },
-                    Err(_) => break 'bfs,
-                }
-            }
-        }
-
-        let is_iso = self.is_isomorphic_to_rec(g, &ordering, &mut VertexVec::new(self.n, &None), &mut VertexVec::new(self.n, &false), Vertex::ZERO,
-                &self.codegree_sequence(), &g.codegree_sequence());
-        if !is_iso {
-            println!("Missed: {} !~ {}", self.constructor, g.constructor);
-        }
-        is_iso
+        isomorphisms::is_isomorphic_to(self, g)
     }
 
-    // Test components, but only considering vertices in the filter.
     pub fn filtered_components(&self, filter: Option<&VertexVec<bool>>) -> VertexVec<Component> {
-        let mut comp: VertexVec<Option<Vertex>> = VertexVec::new(self.n, &None);
-        let mut q: Queue<Vertex> = queue![];
-    
-        for i in self.n.iter_verts() {
-            if comp[i].is_none() {
-                comp[i] = Some(i);
-                if filter.map_or(true, |f| f[i]) {
-                    let _ = q.add(i);
-                    'flood_fill: loop {
-                        match q.remove() {
-                            Ok(node) => {
-                                for j in self.adj_list[node].iter() {
-                                    if comp[*j].is_none() && filter.map_or(true, |f| f[*j]) {
-                                        comp[*j] = Some(i);
-                                        let _ = q.add(*j);
-                                    }
-                                }
-                            },
-                            Err(_err) => break 'flood_fill,
-                        }
-                    }
-                }
-            }
-        }
-    
-        comp.iter().map(|x| Component::of_vertex(x.unwrap())).collect::<VertexVec<Component>>()
+        flood_fill::filtered_components(&self, filter)
     }
     
     pub fn components(&self) -> VertexVec<Component> {
@@ -468,102 +304,19 @@ impl Graph {
     }
 
     pub fn flood_fill(&self, start: Vertex, end: Option<Vertex>, filter: Option<&VertexVec<bool>>) -> VertexVec<Option<Vertex>> {
-        let mut prev = VertexVec::new(self.n, &None);
-        let mut q: Queue<Vertex> = queue![];
-        prev[start] = Some(start);
-        let _ = q.add(start);
-        'flood_fill: loop {
-            match q.remove() {
-                Ok(node) => {
-                    for next in self.adj_list[node].iter() {
-                        if node != start && end.map_or(false, |x| *next == x) {
-                            prev[end.unwrap()] = Some(node);
-                            break 'flood_fill;
-                        } else if prev[*next].is_none() && filter.map_or(true, |f| f[*next]) {
-                            prev[*next] = Some(node);
-                            let _ = q.add(*next);
-                        }
-                    }
-                }
-                Err(e) => {
-                    // This has caused a crash.
-                    self.print();
-                    panic!("AAAAAAAAAA {}", e)
-                }
-            }
-        }
-        prev
+        flood_fill::flood_fill(self, start, end, filter)
     }
-
+    
     pub fn flood_fill_dist(&self, start: Vertex) -> VertexVec<Option<u32>> {
-        let mut connected = VertexVec::new(self.n, &None);
-        let mut q: Queue<Vertex> = queue![];
-        connected[start] = Some(0);
-        let _ = q.add(start);
-        while q.size() > 0 {
-            let node = q.remove().unwrap();
-            for v in self.adj_list[node].iter() {
-                if connected[*v].is_none() {
-                    connected[*v] = connected[node].map(|x| x + 1);
-                    let _ = q.add(*v);
-                }
-            }
-        }
-        connected
+        flood_fill::flood_fill_dist(self, start)
     }
-
+    
     pub fn flood_fill_two_colourable(&self, edge_filter: &EdgeSet, indexer: &EdgeIndexer) -> bool {
-        let mut colour = VertexVec::new(self.n, &None);
-        let mut q: Queue<Vertex> = queue![];
-        let mut is_two_colourable = true;
-        'test_verts: for v in self.n.iter_verts() {
-            if colour[v].is_none() {
-                colour[v] = Some(0);
-                let _ = q.add(v);
-                while q.size() > 0 {
-                    let u = q.remove().unwrap();
-                    for w in self.adj_list[u].iter() {
-                        if edge_filter.has_edge(Edge::of_pair(u, *w), indexer) {
-                            if colour[u] == colour[*w] {
-                                is_two_colourable = false;
-                                break 'test_verts;
-                            } else if colour[*w].is_none() {
-                                colour[*w] = Some(!colour[u].unwrap());
-                                let _ = q.add(*w);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        is_two_colourable
+        flood_fill::flood_fill_two_colourable(self, edge_filter, indexer)
     }
-
+    
     pub fn flood_fill_edge_components(&self, edge_filter: &EdgeSet, indexer: &EdgeIndexer) -> EdgeVec<Option<Component>> {
-        let mut components = EdgeVec::new(&self.adj_list, None);
-        let mut q: Queue<Vertex> = queue![];
-        let mut visited: VertexVec<bool> = VertexVec::new(self.n, &false);
-        for v in self.n.iter_verts() {
-            if !visited[v] {
-                visited[v] = true;
-                let _ = q.add(v);
-                let comp = Component::of_vertex(v);
-                while q.size() > 0 {
-                    let u = q.remove().unwrap();
-                    for w in self.adj_list[u].iter() {
-                        let e = Edge::of_pair(u, *w);
-                        if edge_filter.has_edge(e, indexer) {
-                            components[e] = Some(comp);
-                            if !visited[*w] {
-                                let _ = q.add(*w);
-                                visited[*w] = true;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        components
+        flood_fill::flood_fill_edge_components(self, edge_filter, indexer)
     }
 
     pub fn complement(&self) -> Graph {
@@ -703,66 +456,8 @@ impl Graph {
         }
     }
 
-    fn list_cycles_rec(&self, dist: &VertexVec<VertexVec<usize>>, visited: &mut VertexVec<bool>, cycle: &mut Vec<Edge>, 
-            current_len: usize, target_len: usize, this_vert: Vertex, start_vert: Vertex, list: &mut Vec<Vec<Edge>>) {
-        if current_len == target_len - 1 {
-            if self.adj[this_vert][start_vert] {
-                cycle.push(Edge::of_pair(this_vert, start_vert));
-                list.push(cycle.to_owned());
-                let _ = cycle.pop();
-            }
-        } else {
-            // Try adding more vertices.
-            for v in self.adj_list[this_vert].iter() {
-                if !visited[*v] && dist[start_vert][*v] < target_len - current_len {
-                    visited[*v] = true;
-                    cycle.push(Edge::of_pair(this_vert, *v));
-                    self.list_cycles_rec(dist, visited, cycle, current_len + 1, target_len, *v, start_vert, list);
-                    let _ = cycle.pop();
-                    visited[*v] = false;
-                }
-            }
-        }
-    }
-
     pub fn remove_all_k_cycles(&mut self, k: usize) {    
-        let dist = self.floyd_warshall();
-
-        // DFS to find all cycles.
-        let mut list: Vec<Vec<Edge>> = vec![];
-        for u in self.n.iter_verts() {
-            let mut visited = VertexVec::new(self.n, &false);
-            visited[u] = true;
-            self.list_cycles_rec(&dist, &mut visited, &mut vec![],
-                0, k, u, u, &mut list);
-        }
-        // Now remove edges to kill the cycles.
-        let mut removed = EdgeVec::new(&self.adj_list, false);
-        for cycle in list {
-            let mut still_there = true;
-            'test_cycle: for e in cycle.iter() {
-                if removed.get(*e) {
-                    still_there = false;
-                    break 'test_cycle;
-                }
-            }
-            if still_there {
-                // Remove the edge of largest deg_sum.
-                let mut max_sum = Degree::ZERO;
-                let mut max_edge = cycle[0];
-                for e in cycle.iter() {
-                    let ds = self.deg[e.fst()] + self.deg[e.snd()];
-                    if ds > max_sum {
-                        max_sum = ds;
-                        max_edge = *e;
-                    }
-                }
-                // Remove max_edge
-                removed.set(max_edge, true);
-                self.delete_edge(max_edge);
-
-            }
-        }
+        cycles::remove_all_k_cycles(self, k)
     }
 
     pub fn iter_edge_sets(&self) -> EdgeSetIterator {
