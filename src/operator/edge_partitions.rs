@@ -1,6 +1,8 @@
 use crate::graph::*;
 
+use utilities::component_tools::ComponentVec;
 use utilities::edge_tools::*;
+use utilities::vertex_tools::*;
 
 fn not(colour: u8) -> u8 {
     if colour == 1 { 2 } else { 1 }
@@ -14,7 +16,7 @@ fn opn_min(a: Option<usize>, b: Option<usize>) -> Option<usize> {
     }
 }
 
-fn minimax_forest_analyse_rec(g: &Graph, colours: &mut EdgeVec<u8>, next_vert: usize, other_end: &mut EdgeVec<Option<Edge>>,
+fn minimax_forest_analyse_rec(g: &Graph, colours: &mut EdgeVec<u8>, next_vert: Vertex, other_end: &mut EdgeVec<Option<Edge>>,
         path_len: &mut EdgeVec<usize>, max_len_here: usize, best_len: Option<usize>, edges: &Vec<Edge>,
         part_two_max_len: Option<usize>, long_path_count: usize, long_path_cap: Option<usize>) -> Option<usize> {
     let local_cols: Vec<u8> = edges.iter().map(|e| colours.get(*e)).collect();
@@ -69,7 +71,7 @@ fn minimax_forest_analyse_rec(g: &Graph, colours: &mut EdgeVec<u8>, next_vert: u
         let new_max_len = max_len_here.max(i_len + j_len);
         let new_long_path = if i_len + j_len >= 4 { 1 } else { 0 };
         
-        value = opn_min(value, minimax_forest_set_colours_rec(g, colours, next_vert + 1, other_end, 
+        value = opn_min(value, minimax_forest_set_colours_rec(g, colours, next_vert.incr(), other_end, 
             path_len, new_max_len, best_len, part_two_max_len,
             long_path_count + new_long_path, long_path_cap));
 
@@ -82,21 +84,20 @@ fn minimax_forest_analyse_rec(g: &Graph, colours: &mut EdgeVec<u8>, next_vert: u
         path_len.set(j_end, j_len);
     } else {
         // Don't need to change or test anything. Just recurse.
-        value = opn_min(value, minimax_forest_set_colours_rec(g, colours, next_vert + 1, other_end, 
+        value = opn_min(value, minimax_forest_set_colours_rec(g, colours, next_vert.incr(), other_end, 
             path_len, max_len_here, best_len, part_two_max_len, long_path_count, long_path_cap));
     }
     return value;
 }
 
-fn minimax_forest_set_colours_rec(g: &Graph, colours: &mut EdgeVec<u8>, next_vert: usize, other_end: &mut EdgeVec<Option<Edge>>,
+fn minimax_forest_set_colours_rec(g: &Graph, colours: &mut EdgeVec<u8>, next_vert: Vertex, other_end: &mut EdgeVec<Option<Edge>>,
         path_len: &mut EdgeVec<usize>, max_len_here: usize, best_len: Option<usize>,
         part_two_max_len: Option<usize>, long_path_count: usize, long_path_cap: Option<usize>) -> Option<usize> {
-    let n = g.n.to_usize();
     if long_path_cap.map_or(false, |cap| long_path_count > cap) {
         // There are too many long paths. Fail.
         return best_len;
     }
-    if next_vert == n {
+    if next_vert.is_n(g.n) {
         return Some(best_len.map_or(max_len_here, |x| x.min(max_len_here)));
     }
     if best_len.map_or(false, |x| max_len_here >= x) {
@@ -107,7 +108,7 @@ fn minimax_forest_set_colours_rec(g: &Graph, colours: &mut EdgeVec<u8>, next_ver
     let local_cols: Vec<u8> = edges.iter().map(|e| colours.get(*e)).collect();
     let mut value = best_len;
     // ISSUE: why does the part_two_max_len clause speed things up so much??
-    let possibilities = if next_vert == 0 || part_two_max_len == Some(1) {
+    let possibilities = if next_vert.is_zero() || part_two_max_len == Some(1) {
         vec![[1, 1, 2], [1, 2, 1], [2, 1, 1]]
     } else {
         vec![[1, 1, 2], [1, 2, 1], [2, 1, 1], [1, 2, 2], [2, 1, 2], [2, 2, 1]]
@@ -148,7 +149,7 @@ fn minimax_forest_len(g: &Graph, part_two_max_len: Option<usize>, long_path_cap:
     let mut other_end = EdgeVec::new_fn(&g.adj_list, |x| Some(x));
     let mut path_len = EdgeVec::new(&g.adj_list, 1);
 
-    minimax_forest_set_colours_rec(&g, &mut colours, 0, &mut other_end, &mut path_len, 
+    minimax_forest_set_colours_rec(&g, &mut colours, Vertex::ZERO, &mut other_end, &mut path_len, 
         1, None, part_two_max_len, 0, long_path_cap)
 }
 
@@ -159,4 +160,85 @@ pub fn thomassen_check(g: &Graph, long_path_cap: Option<usize>) -> u32 {
 
 pub fn edge_partition_forest_and_matching(g: &Graph) -> bool {
     minimax_forest_len(g, Some(1), None).is_some()
+}
+
+pub fn count_bipartite_edge_bisections(g: &Graph) -> u32 {
+    let mut num_good = 0;
+    let mut num_good_by_size = vec![vec![0; g.n.to_usize()]; g.n.to_usize()];
+    let indexer = EdgeIndexer::new(&g.adj_list);
+    'test_edgeset: for blue_edges in g.iter_edge_sets() {
+        // Check if this is bipartite and strictly subcubic.
+        for v in g.n.iter_verts() {
+            if g.deg[v].at_least(4) {
+                panic!("Graph must be subcubic!")
+            }
+            let mut num_red = 0;
+            let mut num_blue = 0;
+            for u in g.adj_list[v].iter() {
+                if blue_edges.has_edge(Edge::of_pair(v, *u), &indexer) {
+                    num_blue += 1;
+                } else {
+                    num_red += 1;
+                }
+            }
+            if num_red > 2 || num_blue > 2 {
+                continue 'test_edgeset;
+            }
+        }
+
+        // Blue-edge vertex-2-colourable
+        if !g.flood_fill_two_colourable(&blue_edges, &indexer) {
+            continue 'test_edgeset;
+        }
+
+        let red_edges = blue_edges.inverse(&indexer);
+        // Red-edge vertex-2-colourable
+        if !g.flood_fill_two_colourable(&red_edges, &indexer) {
+            continue 'test_edgeset;
+        }
+
+        num_good += 1;
+
+        // Now test how big the biggest red and blue comps are and store that.
+        let blue_comps = g.flood_fill_edge_components(&blue_edges, &indexer);
+        let red_comps = g.flood_fill_edge_components(&red_edges, &indexer);
+        let mut blue_sizes = ComponentVec::new(g.n, &0);
+        let mut red_sizes = ComponentVec::new(g.n, &0);
+        for e in indexer.iter_edges() {
+            if blue_edges.has_edge(*e, &indexer) {
+                match blue_comps[*e] {
+                    Some(comp) => blue_sizes[comp] += 1,
+                    None => (),
+                }
+            } else {
+                match red_comps[*e] {
+                    Some(comp) => red_sizes[comp] += 1,
+                    None => ()
+                }
+            }
+        }
+        match (blue_sizes.max(&0, usize::cmp), red_sizes.max(&0, usize::cmp)) {
+            (Some(max_blue_size), Some(max_red_size)) => {
+                if max_blue_size < max_red_size {
+                    num_good_by_size[*max_red_size - 1][*max_blue_size - 1] += 1;
+                } else {
+                    num_good_by_size[*max_blue_size - 1][*max_red_size - 1] += 1;
+                }
+                if num_good_by_size[3][2] > 0 {
+                    return 0;
+                }
+            }
+            _ => (),
+        }
+    }
+
+    for (i, num_good) in num_good_by_size.iter().enumerate() {
+        for (j, num) in num_good.iter().enumerate() {
+            if *num > 0 {
+                println!("Num good ({}, {}): {}", i + 1, j + 1, *num);
+            }
+        }
+    }
+
+    num_good
 }

@@ -11,7 +11,8 @@ pub enum NumToBoolInfix {
     Less,
     NotMore,
     NotLess,
-    Equal
+    Equal,
+    NotEqual,
 }
 
 #[derive(Eq, Hash, PartialEq, Copy, Clone, Debug, PartialOrd, Ord)]
@@ -53,6 +54,7 @@ impl NumToBoolInfix {
             "<" => Some(Less),
             ">" => Some(More),
             "=" | "==" => Some(Equal),
+            "<>" | "!=" => Some(NotEqual),
             &_ => None
         }
     }
@@ -139,6 +141,7 @@ impl fmt::Display for NumToBoolInfix {
             NotMore => "<=",
             NotLess => ">=",
             Equal => "==",
+            NotEqual => "<>",
         };
         write!(f, "{}", str)
     }

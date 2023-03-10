@@ -1,12 +1,17 @@
 == THE BIG REFACTOR ==
 - Make everything more typeful. More typeful! Make a new branch.
--- Vertex type
--- Actually use Edge type everywhere
--- Come up with and use more types as appropriate.
--- Remove the Order type; it does nothing, and a usize genuinely works.
+-- Colour type?
 -- Something for int_operation return type which needs only Ord.
+-- Type for number of edges
 - Remove all the 2.pow type things; use << instead.
- 
+- Move all flood fill to use Graph::flood_fill.
+- Split up graph into more files. Maybe have a constructions folder
+-- Want a file for all the flood-fill stuff.
+-- Maybe move all the constructors to some constructors folder?
+--- Would need a lot of code moving.
+- Think about whether we want to merge indexers on EdgeSet and EdgeVec
+- Replace EdgeSet::of_int with the g,iter_edge_sets, and sim for VertexSet.
+
 == THE KITCHEN SINK ==
 - Maybe add option for increasing by number of edges or something
 - test with sink((size>0)&&(theta>=acyclic)) -> halts at n=15
@@ -18,11 +23,12 @@
 - This way we could see e.g. how many triangle-free graphs we needed to check.
 - Be more intelligent about cutting verbosity:
 -- If threshold barely passed, then still print regular updates.
+-- Have a vec of thresholds and store a vec of how many have succeeded to each point.
+-- Multiply or divide verbosity by 2 according to how close we are to target (of one message every few seconds?)
 
 == PLANAR GIRTH CONSTRUCTOR ==
-- Stick together a bunch of copies of an n-gon to make a planar graph
-- Keep track of the outer face, adding more n-gons sharing some number of edges.
-- At the edge throw in some more edges so the infinite face is n-gon or little bigger.
+- k_gons is broken at the moment?
+- Also need a way to plug this into a cubic-ifyer.
 
 == BOWTIES ==
 - Check that struct(bowties(d),num) agrees with old bowties framework
@@ -48,11 +54,6 @@
   just barely 3-connected.)
 - If done correctly then can compute domination numbers for very large graphs.
 
-== FLOOD FILL ==
-- Code up a generic flood fill algo; it comes up so much.
-- Adding what stops the flood fill will be the difficult bit.
-- This needs the generic edge framework for this to be feasible.
-
 == HOUSE OF GRAPHS ==
 - Have a new kitchen sink option for smashing through houseofgraphs
 -- Work this in with the old one in some sensible way.
@@ -74,9 +75,6 @@
 == HELP COMMAND ==
 - Print all the various operations.
 - And write code to do this automatically so it doesn't need maintaining.
-
-== UNIT COMMANDS ==
-- signature: prints out all kinds of info about the graph
 
 == HOPELESSLY OPTIMISTIC INTERFACE GOALS ==
 - Write up an interface in curses that allows for nicer printing of info

@@ -2,7 +2,7 @@ use std::fmt;
 
 mod unimode;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Polynomial {
     coefs: Vec<i64>,
     var_name: String,

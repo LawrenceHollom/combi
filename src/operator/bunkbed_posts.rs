@@ -2,12 +2,12 @@ use crate::graph::*;
 use crate::operator::percolate::*;
 
 use utilities::polynomial::*;
+use utilities::vertex_tools::*;
 
 pub fn print_polynomials(g: &Graph) {
-    let n = g.n.to_usize();
-    let mut percolator = Percolator::new(2*n, g.size());
+    let mut percolator = Percolator::new(g.n.times(2), g.size());
 
-    let posts = vec![false, true, false, false];
+    let posts: VertexVec<bool> = VertexVec::of_vec(vec![false, true, false, false]);
 
     for subset in 0..utilities::pow(2, g.size() as u64) {
         let mut up_edges = vec![false; g.size()];
@@ -22,42 +22,41 @@ pub fn print_polynomials(g: &Graph) {
             sta /= 2;
         }
 
-        let mut adj_list: Vec<Vec<usize>> = vec![vec![0; 2*n]; 2*n];
+        let mut adj_list: VertexVec<Vec<Vertex>> = VertexVec::new(g.n.times(2), &vec![]);
         let mut edge_index = 0;
-        for i in 0..(n-1) {
-            for j in (i+1)..n {
-                if g.adj[i][j] {
-                    if up_edges[edge_index] {
-                        adj_list[n + i].push(n + j);
-                        adj_list[n + j].push(n + i);
-                    } else {
-                        adj_list[i].push(j);
-                        adj_list[j].push(i);
-                    }
-                    edge_index += 1;
+        for (i, j) in g.n.iter_pairs() {
+            if g.adj[i][j] {
+                if up_edges[edge_index] {
+                    adj_list[i.incr_by_order(g.n)].push(j.incr_by_order(g.n));
+                    adj_list[j.incr_by_order(g.n)].push(i.incr_by_order(g.n));
+                } else {
+                    adj_list[i].push(j);
+                    adj_list[j].push(i);
                 }
+                edge_index += 1;
             }
         }
 
-        for i in 0..n {
+        for i in g.n.iter_verts() {
             if posts[i] {
-                adj_list[i].push(n + i);
-                adj_list[n + i].push(i);
+                adj_list[i].push(i.incr_by_order(g.n));
+                adj_list[i.incr_by_order(g.n)].push(i);
             }
         }
 
-        percolator.add_percolation(num_down_edges, &adj_list, false);
+        let reduced_g = Graph::of_adj_list(adj_list, crate::constructor::Constructor::Special);
+        percolator.add_percolation(num_down_edges, &reduced_g, false);
     }
 
     g.print();
 
-    for v in 0..(2*n) {
+    for v in g.n.times(2).iter_verts() {
         println!("{}: {}", v, percolator.polys[v]);
     }
 
     println!("Differences (same + same - cross - cross):");
-    for v in 0..n {
-        let poly = percolator.polys[v].sub(&percolator.polys[v + n]);
+    for v in g.n.iter_verts() {
+        let poly = percolator.polys[v].sub(&percolator.polys[v.incr_by_order(g.n)]);
         println!("old {}: {}", v, poly);
         println!("new {}: {}", v, poly.add(&poly.apply(&Polynomial::of_vec(&vec![1, -1]))));
     }

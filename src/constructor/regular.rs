@@ -1,12 +1,16 @@
 use utilities::*;
 use crate::graph::*;
-use rand::prelude::SliceRandom;
+use rand::{prelude::SliceRandom, thread_rng};
+
+use super::*;
+use super::Constructor::*;
+use utilities::vertex_tools::*;
 
 pub fn new_from_degree_sequence(deg_seq: &Vec<Degree>, is_regular: bool) -> Graph {
     let n = deg_seq.len();
     let mut sum = 0;
     for d in deg_seq.iter() {
-        if d.to_usize() >= n {
+        if d.at_least(n) {
             panic!("Order must be larger than max degree!");
         }
         sum += d.to_usize();
@@ -21,15 +25,15 @@ pub fn new_from_degree_sequence(deg_seq: &Vec<Degree>, is_regular: bool) -> Grap
             pairings.push(i);
         }
     }
-    let mut adj_list: Vec<Vec<usize>>;
+    let mut adj_list: VertexVec<Vec<Vertex>>;
 
     'find_good_shuffle: loop {
-        adj_list = vec![vec![]; n];
+        adj_list = VertexVec::new(Order::of_usize(n), &vec![]);
         pairings.shuffle(&mut rng);
         let mut is_good = true;
         'test_shuffle: for i in 0..(sum / 2) {
-            let u = pairings[i];
-            let v = pairings[i + (sum / 2)];
+            let u = Vertex::of_usize(pairings[i]);
+            let v = Vertex::of_usize(pairings[i + (sum / 2)]);
             if u == v || adj_list[u].contains(&v) {
                 is_good = false;
                 break 'test_shuffle;

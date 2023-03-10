@@ -1,10 +1,15 @@
 use crate::graph::*;
 
-use std::collections::HashSet;
-use queues::*;
+use utilities::vertex_tools::*;
+use utilities::edge_tools::*;
+use utilities::component_tools::*;
 
-fn dmp_embed_edge(g: &Graph, coprime: &mut Vec<bool>, prime_edges: &mut Vec<Vec<bool>>,
-        faces: &mut HashSet<Vec<usize>>, admissible_face: &Vec<usize>, i: usize, j: usize, depth: u32) -> bool {
+use std::collections::HashSet;
+
+fn dmp_embed_edge(g: &Graph, coprime: &mut VertexVec<bool>, prime_edges: &mut VertexVec<VertexVec<bool>>,
+        faces: &mut HashSet<Vec<Vertex>>, admissible_face: &Vec<Vertex>, e: Edge, depth: u32) -> bool {
+    let i = e.fst();
+    let j = e.snd();
     prime_edges[i][j] = true;
     prime_edges[j][i] = true;
     if faces.len() > 1 {
@@ -38,44 +43,18 @@ fn dmp_embed_edge(g: &Graph, coprime: &mut Vec<bool>, prime_edges: &mut Vec<Vec<
     dmp_rec(g, coprime, prime_edges, faces, depth + 1)
 }
 
-fn dmp_embed_fragment(g: &Graph, coprime: &mut Vec<bool>, prime_edges: &mut Vec<Vec<bool>>,
-        faces: &mut HashSet<Vec<usize>>, admissible_face: &Vec<usize>,
-        contact_u: usize, contact_v: usize, depth: u32) -> bool {
-    let n = g.n.to_usize();
+fn dmp_embed_fragment(g: &Graph, coprime: &mut VertexVec<bool>, prime_edges: &mut VertexVec<VertexVec<bool>>,
+        faces: &mut HashSet<Vec<Vertex>>, admissible_face: &Vec<Vertex>,
+        contact_edge: Edge, depth: u32) -> bool {
     // Flood fill to find a path through the fragment from u to v.
-    let mut prev = vec![n; n];
-    let mut q: Queue<usize> = queue![];
-    prev[contact_u] = contact_u;
-    let _ = q.add(contact_u);
-    'flood_fill: loop {
-        match q.remove() {
-            Ok(node) => {
-                for next in g.adj_list[node].iter() {
-                    if node != contact_u && *next == contact_v {
-                        prev[contact_v] = node;
-                        break 'flood_fill;
-                    } else if prev[*next] == n && coprime[*next] {
-                        prev[*next] = node;
-                        let _ = q.add(*next);
-                    }
-                }
-            }
-            Err(e) => {
-                // This has caused a crash.
-                g.print();
-                println!("Prime edges: {:?}", prime_edges);
-                println!("Admissible face: {:?}", admissible_face);
-                println!("(u, v): ({}, {})", contact_u, contact_v);
-                println!("Coprime: {:?}", coprime);
-                panic!("AAAAAAAAAA {}", e)
-            }
-        }
-    }
+    let contact_u = contact_edge.fst();
+    let contact_v = contact_edge.snd();
+    let prev = g.flood_fill(contact_u, Some(contact_v), Some(coprime));
 
     let mut alpha_path = vec![contact_v];
     let mut node = contact_v;
     while node != contact_u {
-        node = prev[node];
+        node = prev[node].unwrap();
         alpha_path.push(node);
     }
 
@@ -104,8 +83,8 @@ fn dmp_embed_fragment(g: &Graph, coprime: &mut Vec<bool>, prime_edges: &mut Vec<
         v_index += 1;
     }
 
-    let mut face1: Vec<usize> = vec![];
-    let mut face2: Vec<usize> = vec![];
+    let mut face1: Vec<Vertex> = vec![];
+    let mut face2: Vec<Vertex> = vec![];
     let min = u_index.min(v_index);
     let max = u_index.max(v_index);
     for u in admissible_face.iter().take(min) {
@@ -142,8 +121,8 @@ fn dmp_embed_fragment(g: &Graph, coprime: &mut Vec<bool>, prime_edges: &mut Vec<
 }
 
 // Actually run the DMP algorithm recursively
-fn dmp_rec(g: &Graph, coprime: &mut Vec<bool>, prime_edges: &mut Vec<Vec<bool>>, 
-        faces: &mut HashSet<Vec<usize>>, depth: u32) -> bool {
+fn dmp_rec(g: &Graph, coprime: &mut VertexVec<bool>, prime_edges: &mut VertexVec<VertexVec<bool>>, 
+        faces: &mut HashSet<Vec<Vertex>>, depth: u32) -> bool {
     if depth > 10000 {
         println!("TOO DEEP!");
         g.print_matrix();
@@ -152,11 +131,10 @@ fn dmp_rec(g: &Graph, coprime: &mut Vec<bool>, prime_edges: &mut Vec<Vec<bool>>,
         println!("Coprime: {:?}", coprime);
         panic!("Too deep!");
     }
-    let n = g.n.to_usize();
 
     let mut is_everything = true;
-    'test_if_everything: for (i, i_prime_edges) in prime_edges.iter().enumerate() {
-        for (j, ij_prime_edges) in i_prime_edges.iter().enumerate() {
+    'test_if_everything: for (i, i_prime_edges) in prime_edges.iter_enum() {
+        for (j, ij_prime_edges) in i_prime_edges.iter_enum() {
             if g.adj[i][j] != *ij_prime_edges {
                 is_everything = false;
                 break 'test_if_everything;
@@ -170,22 +148,22 @@ fn dmp_rec(g: &Graph, coprime: &mut Vec<bool>, prime_edges: &mut Vec<Vec<bool>>,
     }
 
     // Compute the set of fragments
-    let mut edge_fragments: Vec<(usize, usize)> = vec![];
+    let mut edge_fragments: Vec<Edge> = vec![];
     // Just do it slowly for now.
-    for i in 0..n {
+    for i in g.n.iter_verts() {
         if !coprime[i] {
             for j in g.adj_list[i].iter() {
                 if !coprime[*j] && !prime_edges[i][*j] {
-                    edge_fragments.push((i, *j));
+                    edge_fragments.push(Edge::of_pair(i, *j));
                 }
             }
         }
     }
 
-    let frag_comps = g.filtered_components(coprime);
-    let mut frag_indices: Vec<usize> = vec![];
-    let mut found_comp = vec![false; n];
-    for i in 0..n {
+    let frag_comps = g.filtered_components(Some(coprime));
+    let mut frag_indices: Vec<Component> = vec![];
+    let mut found_comp = ComponentVec::new(g.n, &false);
+    for i in g.n.iter_verts() {
         if coprime[i] && !found_comp[frag_comps[i]] {
             frag_indices.push(frag_comps[i]);
             found_comp[frag_comps[i]] = true;
@@ -195,13 +173,13 @@ fn dmp_rec(g: &Graph, coprime: &mut Vec<bool>, prime_edges: &mut Vec<Vec<bool>>,
 
     // Edge-fragments
     let num_edge_frags = edge_fragments.len();
-    let mut first_edge_admissible_face: &Vec<usize> = &vec![];
-    let mut admissible_face: &Vec<usize> = &vec![];
+    let mut first_edge_admissible_face: &Vec<Vertex> = &vec![];
+    let mut admissible_face: &Vec<Vertex> = &vec![];
 
-    for (edge_index, (i, j)) in edge_fragments.iter().enumerate() {
+    for (edge_index, e) in edge_fragments.iter().enumerate() {
         let mut num_found = 0;
         'iter_faces: for face in faces.iter() {
-            if face.contains(i) && face.contains(j) {
+            if face.contains(&e.fst()) && face.contains(&e.snd()) {
                 // It is admissible.
                 num_found += 1;
                 if num_found == 1 {
@@ -221,21 +199,20 @@ fn dmp_rec(g: &Graph, coprime: &mut Vec<bool>, prime_edges: &mut Vec<Vec<bool>>,
         if num_found == 1 {
             // We can embed this edge and move on.
             return dmp_embed_edge(g, coprime, prime_edges, &mut faces.to_owned(), 
-                admissible_face, *i, *j, depth);
+                admissible_face, *e, depth);
         }
     }
 
-    let mut first_frag_admissible_face: &Vec<usize> = &vec![];
-    let mut first_frag_contact_u = 0;
-    let mut first_frag_contact_v = 0;
-    let mut fragment: Vec<usize> = vec![];
+    let mut first_frag_admissible_face: &Vec<Vertex> = &vec![];
+    let mut first_frag_contact_edge = None;
+    let mut fragment: Vec<Vertex> = vec![];
 
     // Big fragments
     for (frag_index, frag) in frag_indices.iter().enumerate() {
-        let mut contact_verts: Vec<usize> = vec![];
-        let mut found = vec![false; n];
-        for i in 0..n {
-            if frag_comps[i] == frag_comps[*frag] {
+        let mut contact_verts: Vec<Vertex> = vec![];
+        let mut found = VertexVec::new(g.n, &false);
+        for i in g.n.iter_verts() {
+            if frag_comps[i] == *frag {
                 fragment.push(i);
                 for j in g.adj_list[i].iter() {
                     if !coprime[*j] && !found[*j] {
@@ -255,8 +232,7 @@ fn dmp_rec(g: &Graph, coprime: &mut Vec<bool>, prime_edges: &mut Vec<Vec<bool>>,
                     admissible_face = face;
                     if frag_index == 0 {
                         first_frag_admissible_face = face;
-                        first_frag_contact_u = contact_verts[0];
-                        first_frag_contact_v = contact_verts[1];
+                        first_frag_contact_edge = Some(Edge::of_pair(contact_verts[0], contact_verts[1]));
                     }
                 } else if num_found == 2 {
                     break 'test_faces;
@@ -270,49 +246,50 @@ fn dmp_rec(g: &Graph, coprime: &mut Vec<bool>, prime_edges: &mut Vec<Vec<bool>>,
         if num_found == 1 {
             // We need to embed a path from this fragment.
             return dmp_embed_fragment(g, coprime, prime_edges, &mut faces.to_owned(), 
-                admissible_face, contact_verts[0], contact_verts[1], depth);
+                admissible_face, first_frag_contact_edge.unwrap(), depth);
         }
     }
     
     // We still haven't embedded anything, so we need to just embed something and recurse
     if num_edge_frags > 0 {
-        let (i, j) = edge_fragments[0];
         dmp_embed_edge(g, coprime, prime_edges, &mut faces.to_owned(), 
-            first_edge_admissible_face, i, j, depth)
+            first_edge_admissible_face, edge_fragments[0], depth)
     } else {
         dmp_embed_fragment(g, coprime, prime_edges, &mut faces.to_owned(), 
-            first_frag_admissible_face, first_frag_contact_u, first_frag_contact_v, depth)
+            first_frag_admissible_face, first_frag_contact_edge.unwrap(), depth)
     }
 }
 
 // We may now assume that g is 2-connected and has at least 5 vertices.
 fn is_two_connected_planar(g: &Graph) -> bool {
-    let n = g.n.to_usize();
     // Find a cycle of G.
-    let mut cocycle = vec![true; n];
+    let mut cocycle = VertexVec::new(g.n, &true);
     let mut face = vec![];
-    let mut cycle_edges: Vec<Vec<bool>> = vec![(); n].iter().map(|()| vec![false; n]).collect();
-    let mut head = 0;
-    let mut prev = n;
+    let mut cycle_edges: VertexVec<VertexVec<bool>> = VertexVec::new(g.n, &VertexVec::new(g.n, &false));
+    let mut head = Vertex::ZERO;
+    let mut prev = None;
     // This probably has to succeed due to 2-connectedness.
     while cocycle[head] {
         cocycle[head] = false;
         face.push(head);
-        if prev != n {
-            cycle_edges[prev][head] = true;
-            cycle_edges[head][prev] = true;
+        match prev {
+            Some(prev) => {
+                cycle_edges[prev][head] = true;
+                cycle_edges[head][prev] = true;
+            }
+            None => ()
         }
         'find_next: for v in g.adj_list[head].iter() {
-            if *v != prev {
-                prev = head;
+            if prev != Some(*v) {
+                prev = Some(head);
                 head = *v;
                 break 'find_next;
             }
         }
     }
 
-    cycle_edges[prev][head] = true;
-    cycle_edges[head][prev] = true;
+    cycle_edges[prev.unwrap()][head] = true;
+    cycle_edges[head][prev.unwrap()] = true;
 
     let mut faces = HashSet::new();
     faces.insert(face);
@@ -321,13 +298,12 @@ fn is_two_connected_planar(g: &Graph) -> bool {
 }
 
 // We may assume that g is connected. Split into 2-connected components.
-fn is_component_planar_rec(g: &Graph, filter: &mut [bool]) -> bool {
+fn is_component_planar_rec(g: &Graph, filter: &mut VertexVec<bool>) -> bool {
     // First trim all leaves.
     let mut leaf_trimmed = true;
-    let n = g.n.to_usize();
     while leaf_trimmed {
         leaf_trimmed = false;
-        for i in 0..n {
+        for i in g.n.iter_verts() {
             if filter[i] && g.filtered_degree(i, filter) <= 1 {
                 filter[i] = false;
                 leaf_trimmed = true;
@@ -344,41 +320,42 @@ fn is_component_planar_rec(g: &Graph, filter: &mut [bool]) -> bool {
         false
     } else {
         // split G into 2-connected components and run on them seperately.
-        let mut cutvertex = n;
-        'find_cutvertex: for i in 0..n {
+        let mut cutvertex = None;
+        'find_cutvertex: for i in g.n.iter_verts() {
             if filter[i] {
                 filter[i] = false;
-                if g.num_filtered_components(filter) > 1 {
-                    cutvertex = i;
+                if g.num_filtered_components(Some(filter)) > 1 {
+                    cutvertex = Some(i);
                     break 'find_cutvertex;
                 }
                 filter[i] = true;
             }
         }
-        if cutvertex == n {
-            is_two_connected_planar(&g.of_filtered(filter))
-        } else {
-            // filter[cutvertex] still false from above.
-            let comps = g.filtered_components(filter);
-            let mut is_comp = vec![false; n];
-            let mut is_planar = true;
-            'component_checks: for i in 0..n {
-                if filter[i] && !is_comp[comps[i]] {
-                    let mut comp_filter = vec![false; n];
-                    is_comp[comps[i]] = true;
-                    for j in 0..n {
-                        if filter[j] && comps[j] == comps[i] {
-                            comp_filter[j] = true;
+        match cutvertex {
+            None => is_two_connected_planar(&g.of_filtered(filter)),
+            Some(cutvertex) => {
+                // filter[cutvertex] still false from above.
+                let comps = g.filtered_components(Some(filter));
+                let mut is_comp = ComponentVec::new(g.n, &false);
+                let mut is_planar = true;
+                'component_checks: for i in g.n.iter_verts() {
+                    if filter[i] && !is_comp[comps[i]] {
+                        let mut comp_filter = VertexVec::new(g.n, &false);
+                        is_comp[comps[i]] = true;
+                        for j in g.n.iter_verts() {
+                            if filter[j] && comps[j] == comps[i] {
+                                comp_filter[j] = true;
+                            }
+                        }
+                        comp_filter[cutvertex] = true;
+                        if !is_component_planar_rec(g, &mut comp_filter) {
+                            is_planar = false;
+                            break 'component_checks;
                         }
                     }
-                    comp_filter[cutvertex] = true;
-                    if !is_component_planar_rec(g, &mut comp_filter) {
-                        is_planar = false;
-                        break 'component_checks;
-                    }
                 }
+                is_planar
             }
-            is_planar
         }
         
     }
@@ -386,13 +363,12 @@ fn is_component_planar_rec(g: &Graph, filter: &mut [bool]) -> bool {
 
 pub fn is_planar(g: &Graph) -> bool {
     let comps = g.components();
-    let n = g.n.to_usize();
-    let mut comp_processed = vec![false; n];
+    let mut comp_processed = ComponentVec::new(g.n, &false);
     let mut is_planar = true;
-    'component_search: for i in 0..n {
+    'component_search: for i in g.n.iter_verts() {
         if !comp_processed[comps[i]] {
             comp_processed[comps[i]] = true;
-            let mut filter: Vec<bool> = comps.iter().map(|x| *x == comps[i]).collect();
+            let mut filter: VertexVec<bool> = comps.iter().map(|x| *x == comps[i]).collect();
             if !is_component_planar_rec(g, &mut filter) {
                 is_planar = false;
                 break 'component_search;
@@ -400,4 +376,47 @@ pub fn is_planar(g: &Graph) -> bool {
         }
     }
     is_planar
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::graph::*;
+    use super::*;
+    use utilities::*;
+
+    #[test]
+    fn test_planar_1() {
+        assert!(is_planar(&Graph::test_graph(1)));
+    }
+
+    #[test]
+    fn test_planar_2() {
+        assert!(is_planar(&Graph::test_graph(2)));
+    }
+
+    #[test]
+    fn test_planar_3() {
+        assert!(!is_planar(&Graph::test_graph(3)));
+    }
+
+    #[test]
+    fn test_planar_k5() {
+        assert!(!is_planar(&Graph::new_complete(Order::of_usize(5))))
+    }
+
+    #[test]
+    fn test_planar_k33() {
+        let three = Order::of_usize(3);
+        assert!(!is_planar(&Graph::new_complete_bipartite(three, three)))
+    }
+
+    #[test]
+    fn test_planar_e1() {
+        assert!(is_planar(&Graph::new_empty(Order::of_usize(1))))
+    }
+
+    #[test]
+    fn test_planar_e10() {
+        assert!(is_planar(&Graph::new_empty(Order::of_usize(10))))
+    }
 }

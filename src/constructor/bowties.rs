@@ -1,42 +1,23 @@
 use crate::graph::*;
-use rand::prelude::SliceRandom;
+use rand::{prelude::SliceRandom, thread_rng};
+
+use super::*;
+use utilities::vertex_tools::*;
 
 pub fn new_bowties(scale: usize, degree: Degree) -> Graph {
     let d = degree.to_usize();
     let mult = ((d % 2) + 1) * (2 * d - 1);
     let n = scale * mult;
+    let order = Order::of_usize(n);
     let num_bowties = scale * (d / (2 - (d % 2)));
     let mut rng = thread_rng();
 
-    let mut adj_list: Vec<Vec<usize>> = vec![vec![]; n];
+    let mut adj_list: VertexVec<Vec<Vertex>> = VertexVec::new(order, &vec![]);
     
     for i in 0..num_bowties {
-        adj_list[2 * i].push(2 * i + 1);
-        adj_list[2 * i + 1].push(2 * i);
+        adj_list[Vertex::of_usize(2 * i)].push(Vertex::of_usize(2 * i + 1));
+        adj_list[Vertex::of_usize(2 * i + 1)].push(Vertex::of_usize(2 * i));
     }
-
-    /*
-    let threads = 2 * (d - 1);
-    let mut vert = 2 * num_bowties;
-    let mut count = 0;
-    let mut vert_pars = vec![vec![0; num_bowties]; threads];
-    for i in 0..threads {
-        vert_pars[i] = (0..num_bowties).collect();
-        vert_pars[i].shuffle(&mut rng);
-    }
-
-    for part in 0..threads {
-        for i in 0..num_bowties {
-            let bowtie = vert_pars[part][i];
-            let u = 2 * bowtie + (part % 2);
-            adj_list[vert].push(u);
-            adj_list[u].push(vert);
-            count += 1;
-            if count % d == 0 {
-                vert += 1;
-            }
-        }
-    }*/
 
     let num_ends = num_bowties * 2 * (d - 1);
     let mut ordering: Vec<usize> = (0..num_ends).collect();
@@ -59,11 +40,11 @@ pub fn new_bowties(scale: usize, degree: Degree) -> Graph {
     }
 
     for (i, v) in ordering.iter().enumerate() {
-        let u = *v / (d - 1);
-        let vert = (i / d) + 2 * num_bowties;
+        let u = Vertex::of_usize(*v / (d - 1));
+        let vert = Vertex::of_usize((i / d) + 2 * num_bowties);
         adj_list[u].push(vert);
         adj_list[vert].push(u);
     }
 
-    Graph::of_adj_list(adj_list, Random(RandomConstructor::Bowties(scale, degree)))
+    Graph::of_adj_list(adj_list, Constructor::Random(RandomConstructor::Bowties(scale, degree)))
 }

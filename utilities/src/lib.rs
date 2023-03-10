@@ -2,14 +2,19 @@ use std::fmt;
 use std::cmp::*;
 use std::ops;
 
+use vertex_tools::Vertex;
+use vertex_tools::VertexPairIterator;
+
 pub mod polynomial;
 pub mod rational;
 pub mod edge_tools;
+pub mod vertex_tools;
+pub mod component_tools;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Order(usize);
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Degree(usize);
 
 impl Order {
@@ -21,8 +26,52 @@ impl Order {
         Order(n)
     }
 
+    pub fn iter_verts(&self) -> impl Iterator<Item = Vertex> {
+        (0..self.0).map(|x| Vertex::of_usize(x))
+    }
+
+    pub fn iter_verts_rev(&self) -> impl Iterator<Item = Vertex> {
+        (0..self.0).rev().map(|x| Vertex::of_usize(x))
+    }
+
+    pub fn iter_pairs(&self) -> impl Iterator<Item = (Vertex, Vertex)> {
+        VertexPairIterator::new(*self)
+    }
+
+    pub fn at_least(&self, d: usize) -> bool {
+        self.0 >= d
+    }
+
+    pub fn at_most(&self, d: usize) -> bool {
+        self.0 <= d
+    }
+
+    pub fn less_than(&self, d: usize) -> bool {
+        self.0 < d
+    }
+
+    pub fn more_than(&self, d: usize) -> bool {
+        self.0 > d
+    }
+
     pub fn to_usize(&self) -> usize {
         self.0 as usize
+    }
+
+    pub fn incr(&self) -> Order {
+        Order(self.0 + 1)
+    }
+
+    pub fn to_max_vertex(&self) -> Vertex {
+        Vertex::of_usize(self.0 - 1)
+    }
+
+    pub fn times(&self, x: usize) -> Order {
+        Order(self.0 * x)
+    }
+
+    pub fn triangle(&self) -> usize {
+        (self.0 * (self.0 - 1)) / 2
     }
 }
 
@@ -31,29 +80,17 @@ impl fmt::Display for Order {
         write!(f, "{}", self.0)
     }
 }
+impl ops::Add<Order> for Order {
+    type Output = Order;
 
-impl PartialEq for Order {
-    fn eq(&self, other: &Order) -> bool {
-        self.0 == other.0
-    }
-}
-
-impl Eq for Order { }
-
-impl PartialOrd for Order {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for Order {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.0.cmp(&other.0)
+    fn add(self, rhs: Order) -> Order {
+        Order(self.0 + rhs.0)
     }
 }
 
 impl Degree {
     pub const ZERO: Degree = Degree(0);
+    pub const INF: Degree = Degree(usize::MAX);
 
     pub fn of_string(text: &str) -> Degree {
         Degree(text.parse().unwrap())
@@ -69,6 +106,10 @@ impl Degree {
 
     pub fn incr(&self) -> Degree {
         Degree(self.0 + 1)
+    }
+
+    pub fn incr_inplace(&mut self) {
+        self.0 += 1;
     }
 
     pub fn decr(&self) -> Degree {
@@ -99,26 +140,6 @@ impl Degree {
 impl fmt::Display for Degree {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.0)
-    }
-}
-
-impl PartialEq for Degree {
-    fn eq(&self, other: &Degree) -> bool {
-        self.0 == other.0
-    }
-}
-
-impl Eq for Degree { }
-
-impl PartialOrd for Degree {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for Degree {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.0.cmp(&other.0)
     }
 }
 

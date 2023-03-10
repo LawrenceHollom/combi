@@ -1,6 +1,7 @@
 use std::fmt;
 
 use utilities::*;
+use utilities::vertex_tools::*;
 
 #[derive(Copy, Clone)]
 pub enum UnitOperation {
@@ -9,9 +10,9 @@ pub enum UnitOperation {
     BunkbedPosts,
     BunkbedSimulation,
     PercolationPolys,
-    BunkbedCuts(usize),
+    BunkbedCuts(Vertex),
     BunkbedDists,
-    BunkbedDiffs(usize, Option<usize>),
+    BunkbedDiffs(Vertex, Option<usize>),
     PrintIntervalColoring,
     PrintDominatingSet,
     Signature,
@@ -28,10 +29,10 @@ impl UnitOperation {
             "bunkbed_posts" | "posts" => Some(BunkbedPosts),
             "bunkbed_sim" => Some(BunkbedSimulation),
             "percolate" => Some(PercolationPolys),
-            "bunkbed_cut" | "bunkbed_cuts" => Some(BunkbedCuts(args[0].parse().unwrap())),
+            "bunkbed_cut" | "bunkbed_cuts" => Some(BunkbedCuts(Vertex::of_string(args[0]))),
             "bunkbed_dists" => Some(BunkbedDists),
             "bunkbed_diffs" | "bb_diffs" => {
-                Some(BunkbedDiffs(args[0].parse().unwrap(),
+                Some(BunkbedDiffs(Vertex::of_string(args[0]),
                     args.get(1).map(|x| x.parse().unwrap())))
             }
             "print_interval" | "interval" => Some(PrintIntervalColoring),

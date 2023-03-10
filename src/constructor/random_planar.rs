@@ -1,7 +1,11 @@
+use rand::{thread_rng, Rng};
 use utilities::*;
 use crate::graph::*;
 
-pub fn new_triangulation(order: &Order) -> Graph {
+use super::*;
+use utilities::vertex_tools::*;
+
+pub fn new_triangulation(order: Order) -> Graph {
     let n = order.to_usize();
     let mut rng = thread_rng();
     let mut faces = vec![[0, 1, 2], [0, 1, 3], [0, 2, 3], [1, 2, 3]];
@@ -16,38 +20,22 @@ pub fn new_triangulation(order: &Order) -> Graph {
         faces.push([old_face[2], old_face[0], v]);
     }
 
-    let mut adj = vec![vec![false; n]; n];
+    let mut adj_list = VertexVec::new(order, &vec![]);
     for face in faces.iter() {
         for (i, j) in pairs.iter() {
-            adj[face[*i]][face[*j]] = true;
+            adj_list[Vertex::of_usize(face[*i])].push(Vertex::of_usize(face[*j]));
         }
     }
 
-    let mut adj_list = vec![vec![]; n];
-    let mut deg = vec![0; n];
-    for i in 0..n {
-        for j in 0..n {
-            if adj[i][j] {
-                adj_list[i].push(j);
-                deg[i] += 1;
-            }
-        }
-    }
-
-    Graph {
-        n: *order,
-        adj,
-        adj_list,
-        deg: deg.iter().map(|d| Degree::of_usize(*d)).collect(),
-        constructor: Constructor::Random(crate::constructor::RandomConstructor::Triangulation(*order))
-    }
+    Graph::of_adj_list(adj_list, Constructor::Random(crate::constructor::RandomConstructor::Triangulation(order)))
 }
 
-pub fn new_maximal(order: &Order) -> Graph {
+pub fn new_maximal(order: Order) -> Graph {
     let n = order.to_usize();
     let mut rng = thread_rng();
     let mut next_vert_around_face = vec![n; n];
     let mut adj = vec![vec![false; n]; n];
+    let mut adj_list = VertexVec::new(order, &vec![]);
     let pairs = vec![(0,1), (1,0), (0,2), (2,0), (1,2), (2,1)];
 
     for (i, j) in pairs.iter() {
@@ -83,27 +71,18 @@ pub fn new_maximal(order: &Order) -> Graph {
         adj[w][u] = true;
     }
 
-    let mut adj_list = vec![vec![]; n];
-    let mut deg = vec![0; n];
     for i in 0..n {
         for j in 0..n {
             if adj[i][j] {
-                adj_list[i].push(j);
-                deg[i] += 1;
+                adj_list[Vertex::of_usize(i)].push(Vertex::of_usize(j));
             }
         }
     }
 
-    Graph {
-        n: *order,
-        adj,
-        adj_list,
-        deg: deg.iter().map(|d| Degree::of_usize(*d)).collect(),
-        constructor: Constructor::Random(crate::constructor::RandomConstructor::MaximalPlanar(*order))
-    }
+    Graph::of_adj_list(adj_list, Constructor::Random(crate::constructor::RandomConstructor::MaximalPlanar(order)))
 }
 
-pub fn new_conditioned(order: &Order, max_deg: Option<Degree>, min_girth: Option<usize>) -> Graph {
+pub fn new_conditioned(order: Order, max_deg: Option<Degree>, min_girth: Option<usize>) -> Graph {
     let mut g = new_maximal(order);
     match min_girth {
         Some(girth) => {
@@ -122,22 +101,23 @@ pub fn new_conditioned(order: &Order, max_deg: Option<Degree>, min_girth: Option
     g
 }
 
-pub fn k_gon_gluing(order: &Order, k: usize) -> Graph {
+pub fn k_gon_gluing(order: Order, k: usize) -> Graph {
     let n = order.to_usize();
-    let mut adj_list: Vec<Vec<usize>> = vec![vec![]; n];
-    let mut outer_face: Vec<usize> = (0..k).collect();
+    let mut adj_list = VertexVec::new(order, &vec![]);
+    let mut outer_face: Vec<Vertex> = (0..k).map(|x| Vertex::of_usize(x)).collect();
     let mut rng = thread_rng();
+    let mut next_vert = Vertex::of_usize(k);
     let mut num_placed = k;
-    fn add_cycle(adj_list: &mut Vec<Vec<usize>>, verts: &Vec<usize>, k: usize) {
+    fn add_cycle(adj_list: &mut VertexVec<Vec<Vertex>>, verts: &Vec<Vertex>, k: usize) {
         for i in 0..k {
             let j = (i + 1) % k;
             adj_list[verts[i]].push(verts[j]);
             adj_list[verts[j]].push(verts[i]);
         }
     }
-    add_cycle(&mut adj_list, &(0..k).collect(), k);
+    add_cycle(&mut adj_list, &outer_face, k);
     'place_verts: loop {
-        if num_placed == n && outer_face.len() < 2 * k {
+        if next_vert.is_n(order) && outer_face.len() < 2 * k {
             break 'place_verts;
         }
         // pick a random overlap length.
@@ -147,8 +127,8 @@ pub fn k_gon_gluing(order: &Order, k: usize) -> Graph {
         // pick the interval to connect to
         let outer_len = outer_face.len();
         let interval_start = rng.gen_range(0..outer_len);
-        let mut new_face: Vec<usize> = vec![];
-        let mut new_outer_face: Vec<usize> = vec![];
+        let mut new_face: Vec<Vertex> = vec![];
+        let mut new_outer_face: Vec<Vertex> = vec![];
         for i in 0..overlap_len {
             let pos = (i + interval_start) % outer_len;
             new_face.push(outer_face[pos]);
@@ -156,16 +136,17 @@ pub fn k_gon_gluing(order: &Order, k: usize) -> Graph {
         for i in 0..(outer_len - overlap_len + 2) {
             new_outer_face.push(outer_face[(outer_len + interval_start + overlap_len + i - 1) % outer_len]);
         }
-        for i in 0..(k - overlap_len) {
-            new_face.push(num_placed + i);
-            new_outer_face.push(num_placed + i);
+        for _i in 0..(k - overlap_len) {
+            new_face.push(next_vert);
+            new_outer_face.push(next_vert);
+            next_vert.incr_inplace();
         }
         //println!("Adding cycle {:?}; overlap_len: {}, interval_start: {}; outer_face: {:?}, new_outer_face: {:?}", new_face, overlap_len, interval_start, outer_face, new_outer_face);
         add_cycle(&mut adj_list, &new_face, k);
         num_placed += k - overlap_len;
         outer_face = new_outer_face;
     }
-    let g = Graph::of_adj_list(adj_list, Random(RandomConstructor::PlanarGons(*order, k)));
+    let g = Graph::of_adj_list(adj_list, Constructor::Random(RandomConstructor::PlanarGons(order, k)));
     if !g.is_adj_commutative() {
         panic!("Not commutative!");
     }

@@ -2,9 +2,8 @@ use crate::graph::*;
 
 pub fn is_triangle_free(g: &Graph) -> bool {
     let mut is_triangle_free = true;
-    let n = g.n.to_usize();
     
-    'test_verts: for u in 0..n {
+    'test_verts: for u in g.n.iter_verts() {
         for (i, v) in g.adj_list[u].iter().enumerate() {
             for (j, w) in g.adj_list[u].iter().enumerate() {
                 if j > i {
