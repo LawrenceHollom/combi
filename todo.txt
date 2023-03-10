@@ -23,6 +23,8 @@
 - This way we could see e.g. how many triangle-free graphs we needed to check.
 - Be more intelligent about cutting verbosity:
 -- If threshold barely passed, then still print regular updates.
+-- Have a vec of thresholds and store a vec of how many have succeeded to each point.
+-- Multiply or divide verbosity by 2 according to how close we are to target (of one message every few seconds?)
 
 == PLANAR GIRTH CONSTRUCTOR ==
 - k_gons is broken at the moment?
@@ -51,11 +53,6 @@
 - Use case is probably cubic graphs, and sets of three edges (as graphs will be
   just barely 3-connected.)
 - If done correctly then can compute domination numbers for very large graphs.
-
-== FLOOD FILL ==
-- Code up a generic flood fill algo; it comes up so much.
-- Adding what stops the flood fill will be the difficult bit.
-- This needs the generic edge framework for this to be feasible.
 
 == HOUSE OF GRAPHS ==
 - Have a new kitchen sink option for smashing through houseofgraphs

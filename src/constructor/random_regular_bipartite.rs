@@ -1,5 +1,10 @@
+use queues::*;
+use rand::{thread_rng, Rng};
 use utilities::*;
 use crate::graph::*;
+
+use super::*;
+use utilities::vertex_tools::*;
 
 pub fn new_biregular(left_order: Order, left_deg: Degree, right_deg: Degree) -> Graph {
     // CR someday: if degree > order / 4 then generate the complement instead (needs less alternating paths)

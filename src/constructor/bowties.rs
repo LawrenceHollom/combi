@@ -1,5 +1,8 @@
 use crate::graph::*;
-use rand::prelude::SliceRandom;
+use rand::{prelude::SliceRandom, thread_rng};
+
+use super::*;
+use utilities::vertex_tools::*;
 
 pub fn new_bowties(scale: usize, degree: Degree) -> Graph {
     let d = degree.to_usize();
@@ -43,5 +46,5 @@ pub fn new_bowties(scale: usize, degree: Degree) -> Graph {
         adj_list[vert].push(u);
     }
 
-    Graph::of_adj_list(adj_list, Random(RandomConstructor::Bowties(scale, degree)))
+    Graph::of_adj_list(adj_list, Constructor::Random(RandomConstructor::Bowties(scale, degree)))
 }

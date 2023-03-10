@@ -1,6 +1,9 @@
 use utilities::*;
 use crate::graph::*;
 
+use super::*;
+use utilities::vertex_tools::*;
+
 pub fn new_rooted(parents: &Vec<usize>) -> Graph {
     let n = Order::of_usize(parents.len() + 1);
 

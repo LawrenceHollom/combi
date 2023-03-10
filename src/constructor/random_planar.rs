@@ -1,5 +1,9 @@
+use rand::{thread_rng, Rng};
 use utilities::*;
 use crate::graph::*;
+
+use super::*;
+use utilities::vertex_tools::*;
 
 pub fn new_triangulation(order: Order) -> Graph {
     let n = order.to_usize();
@@ -142,7 +146,7 @@ pub fn k_gon_gluing(order: Order, k: usize) -> Graph {
         num_placed += k - overlap_len;
         outer_face = new_outer_face;
     }
-    let g = Graph::of_adj_list(adj_list, Random(RandomConstructor::PlanarGons(order, k)));
+    let g = Graph::of_adj_list(adj_list, Constructor::Random(RandomConstructor::PlanarGons(order, k)));
     if !g.is_adj_commutative() {
         panic!("Not commutative!");
     }

@@ -1,6 +1,10 @@
 use utilities::*;
 use crate::graph::*;
-use rand::prelude::SliceRandom;
+use rand::{prelude::SliceRandom, thread_rng};
+
+use super::*;
+use super::Constructor::*;
+use utilities::vertex_tools::*;
 
 pub fn new_from_degree_sequence(deg_seq: &Vec<Degree>, is_regular: bool) -> Graph {
     let n = deg_seq.len();

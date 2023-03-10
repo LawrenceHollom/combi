@@ -2,6 +2,9 @@ use std::fs;
 
 use crate::graph::*;
 
+use super::*;
+use utilities::vertex_tools::*;
+
 pub fn new_graph(filename: &String) -> Graph {
     let mut pathbuf = std::env::current_exe().unwrap();
     pathbuf.pop();
@@ -32,7 +35,7 @@ pub fn new_graph(filename: &String) -> Graph {
                 }
             }
 
-            let g = Graph::of_adj_list(adj_list, File(filename.to_owned()));
+            let g = Graph::of_adj_list(adj_list, Constructor::File(filename.to_owned()));
             if !g.is_adj_commutative() {
                 panic!("Adjacency matrix of g is not commutative!");
             }

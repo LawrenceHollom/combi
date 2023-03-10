@@ -2,6 +2,18 @@ use utilities::*;
 use std::fmt;
 
 use crate::pattern::*;
+use crate::graph::*;
+
+mod products;
+mod erdos_renyi;
+pub mod from_file;
+mod grid;
+mod random_planar;
+mod random_regular_bipartite;
+mod tree;
+mod raw;
+mod bowties;
+mod regular;
 
 #[derive(Clone)]
 pub enum ProductConstructor {
@@ -184,6 +196,50 @@ impl Constructor {
             str => File(str.to_owned()),
         }
     }
+
+    pub fn new_graph(&self) -> Graph {
+        use Constructor::*;
+        use RandomConstructor::*;
+        use RawConstructor::*;
+
+        match self {
+            Product(product, c1, c2) => {
+                products::new_product(product, self, &c1.new_graph(), &c2.new_graph())
+            }
+            RootedTree(parents) => tree::new_rooted(parents),
+            Random(Biregular(order, left_deg, right_deg)) => {
+                random_regular_bipartite::new_biregular(*order, *left_deg, *right_deg)
+            }
+            Random(ErdosRenyi(order, p)) => erdos_renyi::new(*order, *p),
+            Random(Triangulation(order)) => random_planar::new_triangulation(*order),
+            Random(MaximalPlanar(order)) => random_planar::new_maximal(*order),
+            Random(PlanarConditioned(order, max_deg, min_girth)) => {
+                random_planar::new_conditioned(*order, *max_deg, *min_girth)
+            }
+            Random(PlanarGons(order, k)) => random_planar::k_gon_gluing(*order, *k),
+            Random(Bowties(scale, degree)) => bowties::new_bowties(*scale, *degree),
+            Random(Regular(order, degree)) => regular::new_regular(order, degree),
+            Random(DegreeSequence(deg_seq)) => regular::new_from_degree_sequence(deg_seq, false),
+            Random(VertexStructured(pattern, num)) => pattern.new_graph(*num),
+            Random(EdgeStructured(pattern, num)) => pattern.new_graph(*num),
+            Raw(Grid(height, width)) => grid::new(height, width),
+            Raw(Complete(order)) => Graph::new_complete(*order),
+            Raw(CompleteBipartite(left, right)) => Graph::new_complete_bipartite(*left, *right),
+            Raw(Cyclic(order)) => Graph::new_cyclic(*order),
+            Raw(Path(order)) => Graph::new_path(*order),
+            Raw(Star(order)) => Graph::new_star(*order),
+            Raw(Empty(order)) => Graph::new_empty(*order),
+            Raw(Cube(dimension)) => raw::new_cube(*dimension),
+            Raw(FanoPlane) => raw::new_fano_plane(),
+            Raw(Petersen(cycles, skip)) => raw::new_petersen(*cycles, *skip),
+            Raw(Octahedron) => raw::new_octahedron(),
+            Raw(Icosahedron) => raw::new_icosahedron(),
+            Raw(Dodecahedron) => raw::new_dodecahedron(),
+            File(filename) => from_file::new_graph(filename),
+            Special => panic!("Cannot directly construct Special graph!"),
+        }
+    }
+
 }
 
 impl ProductConstructor {

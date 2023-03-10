@@ -144,7 +144,7 @@ impl Instruction {
     }
 
     fn execute_single_return(&self, constr: &Constructor) -> (Graph, Operator) {
-        let g = Graph::new(constr);
+        let g = constr.new_graph();
         let mut operator = Operator::new();
         self.compute_and_print(&g, &mut operator);
         (g, operator)
@@ -179,7 +179,7 @@ impl Instruction {
             let p = tab.start + (tab.step * (i as f64));
             for _j in 0..reps {
                 let constr = Constructor::Random(RandomConstructor::ErdosRenyi(tab.order, p));
-                let g = Graph::new(&constr);
+                let g = constr.new_graph();
                 let mut operator = Operator::new();
                 for (op, sum) in operators.iter().zip(sums.iter_mut()) {
                     *sum += operator.operate_rational(&g, op).to_f64();
@@ -218,7 +218,7 @@ impl Instruction {
                 printed_number = true;
             }
             rep += 1;
-            let g = Graph::new(constr);
+            let g = constr.new_graph();
             let mut operator = Operator::new();
             let mut all_satisfied = true;
             let mut num_satisfied = 0;
@@ -272,7 +272,7 @@ impl Instruction {
             if is_in_order {
                 let mut operator = Operator::new();
                 // We just copy the vector of parents because fuck it, that's why.
-                let g = Graph::new(&Constructor::RootedTree(parents.to_vec()));
+                let g = Constructor::RootedTree(parents.to_vec()).new_graph();
                 
                 let success = operator.operate_bool(&g, condition);
                 if success {
@@ -363,7 +363,7 @@ impl Instruction {
             let mut new_constructors: Vec<Constructor> = vec![];
             let mut graphs: Vec<Graph> = vec![];
             for constr in constructors[verts].iter() {
-                graphs.push(Graph::new(constr));
+                graphs.push(constr.new_graph());
             }
             'decompose: for factor in 2..verts {
                 if factor * factor > verts {
@@ -377,7 +377,7 @@ impl Instruction {
                             if factor < verts / factor || i <= j {
                                 for product in ProductConstructor::all() {
                                     let constr = Product(product, Box::new((*c1).to_owned()), Box::new((*c2).to_owned()));
-                                    let g = Graph::new(&constr);
+                                    let g = constr.new_graph();
                                     let mut is_already_there = false;
                                     'find_graph: for h in graphs.iter() {
                                         if h.is_isomorphic_to(&g) {
@@ -431,7 +431,7 @@ impl Instruction {
 
             for _rep in 0..10 {
                 for constr in random_constructors.iter() {
-                    let g = Graph::new(constr);
+                    let g = constr.new_graph();
                     if self.test_sink_graph(&g, conditions) {
                         break 'main;
                     }

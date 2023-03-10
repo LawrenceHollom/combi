@@ -1,5 +1,10 @@
 use crate::graph::*;
 
+use super::*;
+use utilities::vertex_tools::*;
+use super::Constructor::*;
+use super::RawConstructor::*;
+
 pub fn new_cube(dimension: usize) -> Graph {
     let n = 2_u32.pow(dimension as u32) as usize;
     let order = Order::of_usize(n);

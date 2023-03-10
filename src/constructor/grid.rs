@@ -1,6 +1,9 @@
 use utilities::*;
 use crate::graph::*;
 
+use super::*;
+use utilities::vertex_tools::*;
+
 pub fn new(height: &Order, width: &Order) -> Graph {
     let n = height.to_usize() * width.to_usize();
     let order = Order::of_usize(n);

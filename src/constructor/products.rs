@@ -1,6 +1,9 @@
 use utilities::*;
 use crate::graph::*;
 
+use super::*;
+use utilities::vertex_tools::*;
+
 // "Does (u1, u2) ~ (v1, v2) in the product graph?"
 fn generic_condition(product: &ProductConstructor, g1: &Graph, g2: &Graph, u1: Vertex, v1: Vertex, u2: Vertex, v2: Vertex) -> bool {
     use ProductConstructor::*;

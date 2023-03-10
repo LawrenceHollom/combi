@@ -1,5 +1,9 @@
+use rand::{thread_rng, Rng};
 use utilities::*;
 use crate::graph::*;
+
+use super::*;
+use utilities::vertex_tools::*;
 
 pub fn new(order: Order, p: f64) -> Graph {    
     let mut adj_list = VertexVec::new(order, &vec![]);
