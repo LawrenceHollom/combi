@@ -65,6 +65,7 @@ impl Operator {
                     Connectedness => connectedness::connectedness(g),
                     Thomassen(long_path_cap) => edge_partitions::thomassen_check(g, *long_path_cap),
                     NumBipartiteEdgeBisections => edge_partitions::count_bipartite_edge_bisections(g),
+                    GameChromaticNumber => chromatic::game_chromatic_number(g),
                     Number(k) => *k,
                 };
                 self.previous_int_values.insert(*operation, value);
@@ -144,6 +145,7 @@ impl Operator {
                     IsTriangleFree => subgraphs::is_triangle_free(g),
                     CanBeEdgePartitionedIntoLinearForestAndMatching => edge_partitions::edge_partition_forest_and_matching(g),
                     GoodCubicDominationBase => cubic_domination::is_good(g),
+                    GameChromaticWinner(k) => chromatic::alice_wins_chromatic_game(g, *k),
                     Debug => debug::debug(g),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);
@@ -187,6 +189,7 @@ impl Operator {
             BunkbedDiffs(u, print_size) => bunkbed::interesting_configurations(g, *u, *print_size),
             PrintIntervalColoring => interval_coloring::print_interval_coloring(g),
             PrintDominatingSet => domination::print_random_dominator(g),
+            GameChromaticTable => chromatic::print_game_chromatic_table(g),
             Signature => signature::print_signature(g),
             Unit => (),
         }

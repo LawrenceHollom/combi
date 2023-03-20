@@ -42,6 +42,7 @@ pub enum BoolOperation {
     IsTriangleFree,
     CanBeEdgePartitionedIntoLinearForestAndMatching,
     GoodCubicDominationBase, // This one is incredibly specific.
+    GameChromaticWinner(usize),
     Debug,
 }
 
@@ -124,6 +125,7 @@ impl BoolOperation {
                     "triangle_free" | "tri_free" | "k3_free" => Some(IsTriangleFree),
                     "is_forest_and_matching" | "ifam" => Some(CanBeEdgePartitionedIntoLinearForestAndMatching),
                     "gcdb" => Some(GoodCubicDominationBase),
+                    "does_alice_win_chromatic_game" | "a_wins_chi_g" => Some(GameChromaticWinner(args[0].parse().unwrap())),
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -192,6 +194,7 @@ impl fmt::Display for BoolOperation {
                 "Can G be edge-partitioned into a linear forest and a matching".to_owned()
             }
             GoodCubicDominationBase => "Some very specific thing for domination of cubic graphs.".to_owned(),
+            GameChromaticWinner(k) => format!("Whether Alice wins the chromatic game on {} colours", k),
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };
         write!(f, "{}", name)

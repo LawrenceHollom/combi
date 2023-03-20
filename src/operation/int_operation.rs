@@ -28,6 +28,7 @@ pub enum IntOperation {
     Connectedness,
     Thomassen(Option<usize>),
     NumBipartiteEdgeBisections,
+    GameChromaticNumber,
     Number(u32),
 }
 
@@ -66,6 +67,7 @@ impl IntOperation {
                 }
             }
             "bipartite_edge_bisections" | "beb" => Some(NumBipartiteEdgeBisections),
+            "game_chromatic_number" | "chi_g" => Some(GameChromaticNumber),
             str => str.parse().ok().map(Number),
         }
     }
@@ -100,6 +102,7 @@ impl fmt::Display for IntOperation {
             Connectedness => "Connectedness",
             Thomassen(_) => "Minimax path length in linear forest bisection of cubic graph",
             NumBipartiteEdgeBisections => "Number of 2-edge-colourings of cubic graph with both parts bipartite",
+            GameChromaticNumber => "Game chromatic number",
             Number(n) => {
                 sta = n.to_string();
                 sta.as_str()
