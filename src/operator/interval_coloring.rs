@@ -22,8 +22,8 @@ fn find_interval_coloring_rec(g: &Graph, vert_ordering: &Vec<Vertex>, colored: &
         let node = vert_ordering[num_colored];
         colored[node] = true;
         let deg = g.deg[node].to_usize() as i32;
-        let mut min_col = i32::MAX;
-        let mut max_col = i32::MIN;
+        let mut min_col = i32::MAX / 2;
+        let mut max_col = i32::MIN / 2;
         let mut used_colors = HashSet::new();
         let mut edges_to_color = vec![];
         let mut is_proper = true;
@@ -54,7 +54,7 @@ fn find_interval_coloring_rec(g: &Graph, vert_ordering: &Vec<Vertex>, colored: &
             // The interval is too wide; we cannot colour it.
             return None;
         }
-        if min_col == i32::MAX && max_col == i32::MIN {
+        if min_col == i32::MAX / 2 && max_col == i32::MIN / 2 {
             // There are no edges. Force the start to be 0
             max_col = deg - 1;
             min_col = 0;
