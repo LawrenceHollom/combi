@@ -230,6 +230,10 @@ impl <T: Debug + Clone> VertexVec<T> {
         false
     }
 
+    pub fn drop_vertices(&self) -> &Vec<T> {
+        &self.vec
+    }
+
     pub fn println(&self) {
         println!("{:?}", self.vec);
     }

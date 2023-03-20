@@ -384,6 +384,10 @@ impl Graph {
         self.deg.iter().map(|x| x.to_usize()).max().unwrap() as u32
     }
 
+    pub fn degree_sequence(&self) -> &Vec<Degree> {
+        &self.deg.drop_vertices()
+    }
+
     pub fn floyd_warshall(&self) -> VertexVec<VertexVec<usize>> {
         let mut dist = VertexVec::new(self.n, &VertexVec::new(self.n, &usize::MAX));
         for (i, d) in dist.iter_mut_enum() {

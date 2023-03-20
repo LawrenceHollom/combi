@@ -109,7 +109,7 @@ impl Operator {
         match *infix {
             And => x1 && x2,
             Or => x1 || x2,
-            Implies => x1 && !x2,
+            Implies => !x1 || x2,
             Xor => x1 ^ x2,
         }
     }

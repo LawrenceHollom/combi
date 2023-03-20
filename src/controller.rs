@@ -112,8 +112,13 @@ impl fmt::Display for Controller {
 
 impl Instruction {
     pub fn of_string(text: &str) -> Instruction {
-        let re = regex::Regex::new(r"->|=>").unwrap();
-        let pars: Vec<&str> = re.split(text).map(|par| par.trim()).collect();
+        /*let re = regex::Regex::new(r"->|=>").unwrap();
+        let pars: Vec<&str> = re.split(text).map(|par| par.trim()).collect();*/
+        let pars = match parse_infix_like_restricted(text, vec!['-', '=', '>']) {
+            Some((par1, _op, par2)) => vec![par1, par2],
+            None => vec![text.trim()],
+        };
+
         let controller = Controller::of_string(pars[0]);
         let operations = 
             if pars.len() > 1 {
@@ -330,6 +335,7 @@ impl Instruction {
         if result {
             println!("Graph satisfying condition found!");
             println!("Constructor: {}", g.constructor);
+            operator.print_all();
             println!("Graph:");
             g.print();
         }

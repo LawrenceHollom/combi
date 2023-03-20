@@ -70,10 +70,12 @@ fn alice_wins_chromatic_game_rec(g: &Graph, k: usize, max_colour_used: usize,
                     if can_use_c {
                         is_something_playable = true;
                         colour[v] = Some(c);
-                        let sub_alice_win = alice_wins_chromatic_game_rec(g, k, max_colour_used.max(c), colour, num_cold + 1);
+                        let max_col = max_colour_used.max(c);
+                        let sub_alice_win = alice_wins_chromatic_game_rec(g, k, max_col, colour, num_cold + 1);
                         if sub_alice_win != alice_win {
                             // This is a winning strategy for this player.
                             alice_win = sub_alice_win;
+                            colour[v] = None;
                             break 'test_verts;
                         }
                         colour[v] = None;
@@ -90,7 +92,22 @@ fn alice_wins_chromatic_game_rec(g: &Graph, k: usize, max_colour_used: usize,
     }
 }
 
+// if (k+1)th smallest degree is <k then Alice can certainly win for k colours.
+fn alice_greedy_lower_bound(g: &Graph) -> usize {
+    let mut degs = g.degree_sequence().to_owned();
+    degs.sort();
+    for (k, d) in degs.iter().rev().enumerate() {
+        if d.to_usize() < k {
+            return k;
+        }
+    }
+    return g.n.to_usize();
+}
+
 pub fn alice_wins_chromatic_game(g: &Graph, k: usize) -> bool {
+    if k >= alice_greedy_lower_bound(g) {
+        return true;
+    }
     let mut colour = VertexVec::new(g.n, &None);
     for v in g.iter_verts() {
         colour[v] = Some(0);
@@ -114,7 +131,7 @@ pub fn game_chromatic_number(g: &Graph) -> u32 {
 
 pub fn print_game_chromatic_table(g: &Graph) {
     let delta = g.max_degree();
-    for k in 1..(delta + 1) {
+    for k in 1..=(delta + 1) {
         if alice_wins_chromatic_game(g, k as usize) {
             println!("{}: Alice", k);
         } else {

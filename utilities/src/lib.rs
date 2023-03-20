@@ -186,8 +186,7 @@ pub fn parse_function_like(text: &str) -> (&str, Vec<&str>) {
     }
 }
 
-pub fn parse_infix_like(text: &str) -> Option<(&str, &str, &str)> {
-    let infix_symbols = vec!['+', '-', '/', '*', '>', '<', '=', '&', '|', '^'];
+pub fn parse_infix_like_restricted(text: &str, infix_symbols: Vec<char>) -> Option<(&str, &str, &str)> {
     let mut operator_start = 0;
     let mut operator_end = 0;
     let bytes = text.as_bytes();
@@ -218,8 +217,13 @@ pub fn parse_infix_like(text: &str) -> Option<(&str, &str, &str)> {
     } else if operator_start > 0 && operator_end > 0 {
         let op1 = &text[left_chop..(operator_start - left_chop)];
         let op2 = &text[(operator_end + (if bytes[operator_end] == '(' as u8 { 1 } else { 0 }))..text.len()];
-        Some((op1, &text[operator_start..operator_end], op2))
+        Some((op1.trim(), &text[operator_start..operator_end], op2.trim()))
     } else {
         None
     }
+}
+
+pub fn parse_infix_like(text: &str) -> Option<(&str, &str, &str)> {
+    let infix_symbols = vec!['+', '-', '/', '*', '>', '<', '=', '&', '|', '^'];
+    parse_infix_like_restricted(text, infix_symbols)
 }

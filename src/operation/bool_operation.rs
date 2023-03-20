@@ -104,6 +104,7 @@ impl BoolOperation {
             }
             None => {
                 let (func, args) = parse_function_like(text);
+                println!("PARSING: func: {}, args: {:?}", func, args);
                 match func.trim().to_lowercase().as_str() {
                     "not" | "!" | "¬" => {
                         BoolOperation::of_string_result(args[0]).map(|op|
