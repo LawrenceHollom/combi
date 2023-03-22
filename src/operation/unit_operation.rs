@@ -15,6 +15,7 @@ pub enum UnitOperation {
     BunkbedDiffs(Vertex, Option<usize>),
     PrintIntervalColoring,
     PrintDominatingSet,
+    GameChromaticTable,
     Signature,
     Unit,
 }
@@ -37,6 +38,7 @@ impl UnitOperation {
             }
             "print_interval" | "interval" => Some(PrintIntervalColoring),
             "print_dominator" | "print_gamma" => Some(PrintDominatingSet),
+            "game_chromatic_table" | "chi_g_table" | "chi_g_t" => Some(GameChromaticTable),
             "signature" | "sig" => Some(Signature),
             "()" | "(" => Some(Unit),
             &_ => None,
@@ -59,6 +61,7 @@ impl fmt::Display for UnitOperation {
             BunkbedDiffs(_u, _size) => "Print info about interesting bunkbed configs",
             PrintIntervalColoring => "Print an interval coloring (if exists)",
             PrintDominatingSet => "Print a random-ish minimal dominating set",
+            GameChromaticTable => "Print winners of chromatic game for various k",
             Signature => "Print a bunch of graph invariants",
             Unit => "Do nothing",
         };
