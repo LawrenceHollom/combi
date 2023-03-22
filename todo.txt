@@ -4,11 +4,6 @@
 -- Something for int_operation return type which needs only Ord.
 -- Type for number of edges
 - Remove all the 2.pow type things; use << instead.
-- Move all flood fill to use Graph::flood_fill.
-- Split up graph into more files. Maybe have a constructions folder
--- Want a file for all the flood-fill stuff.
--- Maybe move all the constructors to some constructors folder?
---- Would need a lot of code moving.
 - Think about whether we want to merge indexers on EdgeSet and EdgeVec
 - Replace EdgeSet::of_int with the g,iter_edge_sets, and sim for VertexSet.
 
