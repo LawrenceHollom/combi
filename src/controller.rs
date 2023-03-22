@@ -2,7 +2,11 @@ use std::fmt;
 use std::time::*;
 use std::io::*;
 
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 use utilities::*;
+use utilities::edge_tools::*;
+use utilities::vertex_tools::*;
 
 use crate::constructor::*;
 use crate::operator::Operator;
@@ -26,6 +30,7 @@ pub enum Controller {
     Until(Constructor, Vec<BoolOperation>),
     SearchTrees(usize, BoolOperation, Degree),
     KitchenSink(Vec<BoolOperation>),
+    Process(Order),
     Help,
 }
 
@@ -75,6 +80,9 @@ impl Controller {
                 KitchenSink(args.iter().map(|arg| 
                     BoolOperation::of_string_result(*arg).unwrap()).collect())
             }
+            "process" | "proc" => {
+                Process(Order::of_string(args[0]))
+            }
             "help" | "h" => Help,
             &_ => {
                 Single(Constructor::of_string(text))
@@ -104,6 +112,9 @@ impl fmt::Display for Controller {
             }
             KitchenSink(conditions) => {
                 write!(f, "Search the kitchen sink for a graph satisfying {:?}", *conditions)
+            }
+            Process(order) => {
+                write!(f, "Random graph process of order {}", order)
             }
             Help => write!(f, "Print help text"),
         }
@@ -199,6 +210,27 @@ impl Instruction {
             }
             println!();
             rows.push(sums);
+        }
+    }
+
+    fn execute_process(&self, order: Order) {
+        // Add the edges one by one, and run on each graph from empty to complete.
+        let mut edges = vec![];
+        for (u, v) in order.iter_pairs() {
+            edges.push(Edge::of_pair(u, v));
+        }
+        let mut rng = thread_rng();
+        edges.shuffle(&mut rng);
+        println!("Edges: {:?}", edges);
+        let mut adj_list: VertexVec<Vec<Vertex>> = VertexVec::new(order, &vec![]);
+
+        for (i, e) in edges.iter().enumerate() {
+            adj_list[e.fst()].push(e.snd());
+            adj_list[e.snd()].push(e.fst());
+            let g = Graph::of_adj_list(adj_list.to_owned(), Constructor::Special);
+            let mut operator = Operator::new();
+            print!("[{} / {}]: ", i+1, edges.len());
+            self.compute_and_print(&g, &mut operator);
         }
     }
 
@@ -479,6 +511,7 @@ impl Instruction {
             Until(constr, conditions) => self.execute_until(constr, conditions),
             SearchTrees(n, condition, max_degree) => self.search_trees(*n, condition, max_degree),
             KitchenSink(conditions) => self.execute_kitchen_sink(conditions),
+            Process(order) => self.execute_process(*order),
             Help => Self::print_help(),
         }
     }
