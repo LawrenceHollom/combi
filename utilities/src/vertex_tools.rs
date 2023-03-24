@@ -66,6 +66,10 @@ impl Vertex {
         Vertex(self.0 - 1)
     }
 
+    pub fn decr_inplace(&mut self) {
+        self.0 -= 1;
+    }
+
     pub fn decr_wrap(&self, n: Order) -> Vertex {
         Vertex((self.0 + n.to_usize() - 1) % n.to_usize())
     }

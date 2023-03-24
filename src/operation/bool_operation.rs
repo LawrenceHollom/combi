@@ -43,6 +43,7 @@ pub enum BoolOperation {
     CanBeEdgePartitionedIntoLinearForestAndMatching,
     GoodCubicDominationBase, // This one is incredibly specific.
     GameChromaticWinner(usize),
+    IsChromaticGameMonotone,
     Debug,
 }
 
@@ -127,6 +128,7 @@ impl BoolOperation {
                     "is_forest_and_matching" | "ifam" => Some(CanBeEdgePartitionedIntoLinearForestAndMatching),
                     "gcdb" => Some(GoodCubicDominationBase),
                     "does_alice_win_chromatic_game" | "a_wins_chi_g" => Some(GameChromaticWinner(args[0].parse().unwrap())),
+                    "chromatic_game_monotone" | "chi_g_monot" => Some(IsChromaticGameMonotone),
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -196,6 +198,7 @@ impl fmt::Display for BoolOperation {
             }
             GoodCubicDominationBase => "Some very specific thing for domination of cubic graphs.".to_owned(),
             GameChromaticWinner(k) => format!("Whether Alice wins the chromatic game on {} colours", k),
+            IsChromaticGameMonotone => "Is the chromatic game monotone in the number of colours".to_owned(),
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };
         write!(f, "{}", name)

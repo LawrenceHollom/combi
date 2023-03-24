@@ -146,6 +146,7 @@ impl Operator {
                     CanBeEdgePartitionedIntoLinearForestAndMatching => edge_partitions::edge_partition_forest_and_matching(g),
                     GoodCubicDominationBase => cubic_domination::is_good(g),
                     GameChromaticWinner(k) => chromatic::alice_wins_chromatic_game(g, *k),
+                    IsChromaticGameMonotone => chromatic::game_chromatic_colour_monotone(g),
                     Debug => debug::debug(g),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);
