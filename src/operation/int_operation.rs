@@ -29,6 +29,7 @@ pub enum IntOperation {
     Thomassen(Option<usize>),
     NumBipartiteEdgeBisections,
     GameChromaticNumber,
+    GameChromaticNumberGreedy,
     Number(u32),
 }
 
@@ -68,6 +69,7 @@ impl IntOperation {
             }
             "bipartite_edge_bisections" | "beb" => Some(NumBipartiteEdgeBisections),
             "game_chromatic_number" | "chi_g" => Some(GameChromaticNumber),
+            "game_chromatic_alice_greedy" | "chi_g_greedy" => Some(GameChromaticNumberGreedy),
             str => str.parse().ok().map(Number),
         }
     }
@@ -103,6 +105,7 @@ impl fmt::Display for IntOperation {
             Thomassen(_) => "Minimax path length in linear forest bisection of cubic graph",
             NumBipartiteEdgeBisections => "Number of 2-edge-colourings of cubic graph with both parts bipartite",
             GameChromaticNumber => "Game chromatic number",
+            GameChromaticNumberGreedy => "Threshold for Alice to win greedily in chi_g",
             Number(n) => {
                 sta = n.to_string();
                 sta.as_str()

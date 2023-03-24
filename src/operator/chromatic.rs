@@ -1,3 +1,4 @@
+use std::io::Write;
 use std::time::SystemTime;
 
 use crate::graph::*;
@@ -331,7 +332,7 @@ fn alice_wins_chromatic_game_rec(g: &Graph, k: usize, max_colour_used: usize,
 }
 
 // if (k+1)th smallest degree is <k then Alice can certainly win for k colours.
-fn alice_greedy_lower_bound(g: &Graph) -> usize {
+pub fn alice_greedy_lower_bound(g: &Graph) -> usize {
     let mut degs = g.degree_sequence().to_owned();
     degs.sort();
     for (k, d) in degs.iter().rev().enumerate() {
@@ -377,6 +378,8 @@ pub fn game_chromatic_colour_monotone(g: &Graph) -> bool {
     for k in 1..greedy {
         let alice_wins = alice_wins_chromatic_game(g, k);
         print!("{}", if alice_wins { 'A' } else { 'B' });
+        std::io::stdout().flush().unwrap();
+
         if alice_prev_winner && !alice_wins {
             println!("[win!]"); 
             return false;

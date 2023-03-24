@@ -66,6 +66,7 @@ impl Operator {
                     Thomassen(long_path_cap) => edge_partitions::thomassen_check(g, *long_path_cap),
                     NumBipartiteEdgeBisections => edge_partitions::count_bipartite_edge_bisections(g),
                     GameChromaticNumber => chromatic::game_chromatic_number(g),
+                    GameChromaticNumberGreedy => chromatic::alice_greedy_lower_bound(g) as u32,
                     Number(k) => *k,
                 };
                 self.previous_int_values.insert(*operation, value);
