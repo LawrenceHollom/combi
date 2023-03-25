@@ -55,7 +55,7 @@ pub fn chromatic_number(g: &Graph) -> u32 {
 struct Config(usize);
 
 struct Coder {
-    n: Order,
+    _n: Order,
     k: usize,
     num_configs: usize,
     pows: VertexVec<usize>,
@@ -68,7 +68,7 @@ impl Coder {
             pows[v] = (k + 1).pow(i as u32);
         }
         let num_configs = (k + 1).pow(n.to_usize() as u32);
-        Coder { n, k, num_configs, pows }
+        Coder { _n: n, k, num_configs, pows }
     }
     
     fn get_colour(&self, config: Config, u: &Vertex) -> Option<usize> {
@@ -80,7 +80,7 @@ impl Coder {
         }
     }
 
-    fn is_alice_turn(&self, config: Config) -> bool {
+    fn _is_alice_turn(&self, config: Config) -> bool {
         // Need to count how many verts have been played
         let mut num_played = 0;
         for pow in self.pows.iter() {
@@ -95,10 +95,10 @@ impl Coder {
         Config(config.0 - ((self.k - col) * self.pows[v]))
     }
 
-    fn incr_colour(&self, config: Config, pos: Vertex) -> (Config, Vertex) {
+    fn _incr_colour(&self, config: Config, pos: Vertex) -> (Config, Vertex) {
         let config_out = Config(config.0 + self.pows[pos]);
         let mut pos_out = pos;
-        while !pos_out.is_n(self.n) && (config_out.0 / self.pows[pos_out]) % (self.k + 1) == 0 {
+        while !pos_out.is_n(self._n) && (config_out.0 / self.pows[pos_out]) % (self.k + 1) == 0 {
             pos_out.incr_inplace();
         }
         (config_out, pos_out)
@@ -131,7 +131,7 @@ impl Coder {
     }
 
     fn _print(&self, config: Config) {
-        for v in self.n.iter_verts() {
+        for v in self._n.iter_verts() {
             print!("{} ", self.get_colour(config, &v).map_or("-".to_owned(), |col| col.to_string()));
         }
         println!();
@@ -204,7 +204,7 @@ fn alice_wins_chromatic_game_fast(g: &Graph, k: usize) -> bool {
     false
 }
 
-fn alice_wins_chromatic_game_array(g: &Graph, k: usize) -> bool {
+fn _alice_wins_chromatic_game_array(g: &Graph, k: usize) -> bool {
     if k >= alice_greedy_lower_bound(g) {
         return true;
     }
@@ -241,7 +241,7 @@ fn alice_wins_chromatic_game_array(g: &Graph, k: usize) -> bool {
         }
         if is_valid && pos.is_zero() {
             // We've actually got something that we can think about.
-            let is_alice_turn = coder.is_alice_turn(config);
+            let is_alice_turn = coder._is_alice_turn(config);
             let mut found_winner = false;
             let mut found_move = false;
             let mut found_unplayed = false;
@@ -276,17 +276,17 @@ fn alice_wins_chromatic_game_array(g: &Graph, k: usize) -> bool {
                 // This is winning for Alice
                 alice_wins[config.0] = true;
             }
-            (config, pos) = coder.incr_colour(config, pos);
+            (config, pos) = coder._incr_colour(config, pos);
         } else if is_valid {
             pos.decr_inplace();
         } else {
-            (config, pos) = coder.incr_colour(config, pos);
+            (config, pos) = coder._incr_colour(config, pos);
         }
     }
     alice_wins[coder.get_start_config().0]
 }
 
-fn alice_wins_chromatic_game_rec(g: &Graph, k: usize, max_colour_used: usize, 
+fn _alice_wins_chromatic_game_rec(g: &Graph, k: usize, max_colour_used: usize, 
         colour: &mut VertexVec<Option<usize>>, num_cold: usize) -> bool {
     if g.n.at_most(num_cold) {
         // G is coloured, so Alice has won
@@ -310,7 +310,7 @@ fn alice_wins_chromatic_game_rec(g: &Graph, k: usize, max_colour_used: usize,
                         is_something_playable = true;
                         colour[v] = Some(c);
                         let max_col = max_colour_used.max(c);
-                        let sub_alice_win = alice_wins_chromatic_game_rec(g, k, max_col, colour, num_cold + 1);
+                        let sub_alice_win = _alice_wins_chromatic_game_rec(g, k, max_col, colour, num_cold + 1);
                         if sub_alice_win != alice_win {
                             // This is a winning strategy for this player.
                             alice_win = sub_alice_win;
@@ -343,14 +343,14 @@ pub fn alice_greedy_lower_bound(g: &Graph) -> usize {
     return g.n.to_usize();
 }
 
-pub fn alice_wins_chromatic_game_slow(g: &Graph, k: usize) -> bool {
+pub fn _alice_wins_chromatic_game_slow(g: &Graph, k: usize) -> bool {
     if k >= alice_greedy_lower_bound(g) {
         return true;
     }
     let mut colour = VertexVec::new(g.n, &None);
     for v in g.iter_verts() {
         colour[v] = Some(0);
-        if alice_wins_chromatic_game_rec(g, k, 0, &mut colour, 1) {
+        if _alice_wins_chromatic_game_rec(g, k, 0, &mut colour, 1) {
             return true;
         }
         colour[v] = None;
@@ -401,7 +401,7 @@ pub fn print_game_chromatic_table(g: &Graph) {
     println!("Greedy: {}", alice_greedy_lower_bound(g));
     for k in 1..=(delta + 1) {
         checkpoint_time = SystemTime::now();
-        print!("Slow:  ");
+        /*print!("Slow:  ");
         if alice_wins_chromatic_game_slow(g, k as usize) {
             print!("{}: Alice", k);
         } else {
@@ -417,7 +417,7 @@ pub fn print_game_chromatic_table(g: &Graph) {
         }
         println!(", t: {}", checkpoint_time.elapsed().unwrap().as_millis());
         checkpoint_time = SystemTime::now();
-        print!("Fast:  ");
+        print!("Fast:  ");*/
         if alice_wins_chromatic_game_fast(g, k as usize) {
             print!("{}: Alice", k);
         } else {
