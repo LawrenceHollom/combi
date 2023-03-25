@@ -196,13 +196,21 @@ fn alice_wins_chromatic_game_fast(g: &Graph, k: usize) -> bool {
     let coder = Coder::new(g.n, k);
     // This could be smaller as we'll assume configs start with None or Some(0).
     let mut history = HashMap::new();
-    for v in g.iter_verts() {
+    let mut alice_wins = false;
+    'test_verts: for v in g.iter_verts() {
         let config = coder.play_move(coder.get_start_config(), v, 0);
         if alice_wins_chromatic_game_fast_rec(g, k, 0, &coder, config, &mut history, 1) {
-            return true;
+            alice_wins = true;
+            history.insert(config, true);
+            break 'test_verts;
         }
+        history.insert(config, false);
     }
-    false
+    /*for (k, v) in history.iter() {
+        print!("{}: ", if *v { "A" } else { "B" });
+        coder._print(*k);
+    }*/
+    alice_wins
 }
 
 fn _alice_wins_chromatic_game_array(g: &Graph, k: usize) -> bool {

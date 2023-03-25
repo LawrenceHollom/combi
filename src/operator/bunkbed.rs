@@ -272,10 +272,7 @@ fn find_possible_injections(g: &Graph, sig: &ConfSignature, domain: &Vec<EdgeSet
     }
 
     // This is very inefficient for when sig has lots of doubles and blanks.
-    // This scores "big yuck" on code quality.
-    for inj_code_index in 0..2_u128.pow(g.size() as u32) {
-        let inj_code = EdgeSet::of_int(inj_code_index, indexer);
-
+    for inj_code in g.iter_edge_sets() {
         // Test if inj_code meshes nicely with the doubles and blanks.
         if inj_code.inter(&sig.doubles_index).is_empty() && inj_code.inter(&sig.blanks_index).is_empty() {
             let mut is_inj_good = true;
@@ -431,11 +428,12 @@ pub fn interesting_configurations(g: &Graph, u: Vertex, print_size: Option<usize
     println!();
     let iter_max = 2_u128.pow(m as u32);
     let mut percentage = 0;
-    for config_index in 0..iter_max {
+    let mut index = 0;
+    for config in bunkbed.iter_edge_sets() {
         // config encodes which of the edges are/are not present.
-        let config = EdgeSet::of_int(config_index, &bunkbed_indexer);
         let connected = bunkbed.flood_fill_dist(Vertex::ZERO);
-        if m >= 20 && (100 * config_index) / iter_max > percentage {
+        index += 1;
+        if m >= 20 && (100 * index) / iter_max > percentage {
             percentage += 1;
             print!("{}% ", percentage);
             std::io::stdout().flush().unwrap();

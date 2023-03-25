@@ -33,8 +33,7 @@ pub struct EdgeSetIterator {
 
 #[derive(Clone)]
 pub struct EdgeVec<T: Debug + Copy> {
-    indexer: Vec<Option<usize>>,
-    indexer_inv: Vec<Edge>,
+    indexer: EdgeIndexer,
     vec: Vec<T>,
 }
 
@@ -122,6 +121,18 @@ impl EdgeIndexer {
         EdgeIndexer { indexer, indexer_inv, num_edges, hash }
     }
 
+    pub fn index(&self, e: Edge) -> Option<usize> {
+        self.indexer[e.encode()]
+    }
+
+    pub fn index_unwrap(&self, e: Edge) -> usize {
+        self.indexer[e.encode()].unwrap()
+    }
+
+    pub fn invert(&self, i: usize) -> Edge {
+        self.indexer_inv[i]
+    }
+
     fn default_hash(indexer: &Vec<Option<usize>>) -> u64 {
         let mut s = DefaultHasher::new();
         indexer.hash(&mut s);
@@ -150,7 +161,7 @@ impl EdgeSet {
         }
     }
 
-    pub fn of_int(code: u128, indexer: &EdgeIndexer) -> EdgeSet {
+    fn of_int(code: u128, indexer: &EdgeIndexer) -> EdgeSet {
         EdgeSet { 
             edges: code,
             indexer_hash: indexer.hash,
@@ -219,36 +230,36 @@ impl EdgeSet {
 
 impl<T: Debug + Copy> EdgeVec<T> {
     pub fn new(adj_list: &VertexVec<Vec<Vertex>>, value: T) -> EdgeVec<T> {
-        let (indexer, indexer_inv, len) = make_indexer(adj_list);
+        let indexer = EdgeIndexer::new(adj_list);
+        let num_edges = indexer.num_edges;
         EdgeVec {
             indexer,
-            indexer_inv,
-            vec: vec![value; len],
+            vec: vec![value; num_edges],
         }
     }
 
     pub fn new_fn(adj_list: &VertexVec<Vec<Vertex>>, f: fn(Edge) -> T) -> EdgeVec<T> {
-        let (indexer, indexer_inv, len) = make_indexer(adj_list);
-        let mut vec = vec![f(Edge::FILLER); len];
+        let indexer = EdgeIndexer::new(adj_list);
+        let mut vec = vec![f(Edge::FILLER); indexer.num_edges];
 
         for (u, adj) in adj_list.iter_enum() {
             for v in adj.iter() {
                 if *v > u {
                     let e = Edge::of_pair(u, *v); 
-                    vec[indexer[e.encode()].unwrap()] = f(e);
+                    vec[indexer.index_unwrap(e)] = f(e);
                 }
             }
         }
 
-        EdgeVec { indexer, indexer_inv, vec }
+        EdgeVec { indexer, vec }
     }
 
     pub fn set(&mut self, e: Edge, value: T) {
-        self.vec[self.indexer[e.encode()].unwrap()] = value;
+        self.vec[self.indexer.index_unwrap(e)] = value;
     }
 
     pub fn get(&self, e: Edge) -> T {
-        self.vec[self.indexer[e.encode()].unwrap()]
+        self.vec[self.indexer.index_unwrap(e)]
     }
 
     pub fn find_max(&self, min: T, cmp: fn(&T, &T) -> Ordering) -> Option<Edge> {
@@ -258,7 +269,7 @@ impl<T: Debug + Copy> EdgeVec<T> {
         for (i, val) in self.vec.iter().enumerate() {
             if cmp(val, &max) == Ordering::Greater {
                 max = *val;
-                best_edge = Some(self.indexer_inv[i]);
+                best_edge = Some(self.indexer.invert(i));
             }
         }
 
@@ -270,7 +281,7 @@ impl<T: Debug + Copy> EdgeVec<T> {
     }
 
     pub fn iter_enum(&self) -> impl Iterator<Item = (Edge, &T)> {
-        self.vec.iter().enumerate().map(|(i, t)| (self.indexer_inv[i], t))
+        self.vec.iter().enumerate().map(|(i, t)| (self.indexer.invert(i), t))
     }
 
     fn n(&self) -> usize {
@@ -281,7 +292,7 @@ impl<T: Debug + Copy> EdgeVec<T> {
         let n = Order::of_usize(self.n());
         for (u, v) in n.iter_pairs() {
             let e = Edge::of_pair(u, v);
-            match self.indexer[e.encode()] {
+            match self.indexer.index(e) {
                 Some(i) => {
                     println!("{} ~ {}: {:?}", u, v, self.vec[i]);
                 }
@@ -322,13 +333,13 @@ impl<T: Debug + Copy> Index<Edge> for EdgeVec<T> {
     type Output = T;
 
     fn index(&self, index: Edge) -> &Self::Output {
-        &self.vec[self.indexer[index.encode()].unwrap()]
+        &self.vec[self.indexer.index_unwrap(index)]
     }
 }
 
 impl<T: Debug + Copy> IndexMut<Edge> for EdgeVec<T> {
     fn index_mut(&mut self, index: Edge) -> &mut Self::Output {
-        &mut self.vec[self.indexer[index.encode()].unwrap()]
+        &mut self.vec[self.indexer.index_unwrap(index)]
     }
 }
 
