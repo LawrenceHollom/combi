@@ -14,6 +14,7 @@ mod tree;
 mod raw;
 mod bowties;
 mod regular;
+mod semiregular;
 
 #[derive(Clone)]
 pub enum ProductConstructor {
@@ -40,6 +41,7 @@ pub enum RandomConstructor {
     PlanarGons(Order, usize),
     VertexStructured(VertexPattern, usize),
     EdgeStructured(EdgePattern, usize),
+    ConnectedSemiregular(Order, f64, f64),
 }
 
 #[derive(Clone)]
@@ -164,6 +166,14 @@ impl Constructor {
                     }
                 }
             }
+            "connected_semi_regular" | "conn" => {
+                let exponent = if args.len() > 2 {
+                        args[2].parse().unwrap()
+                    } else {
+                        1.0
+                    };
+                Random(ConnectedSemiregular(Order::of_string(args[0]), args[1].parse().unwrap(), exponent))
+            }
             "grid" => {
                 Raw(Grid(Order::of_string(args[0]), Order::of_string(args[1])))
             },
@@ -222,6 +232,7 @@ impl Constructor {
             Random(DegreeSequence(deg_seq)) => regular::new_from_degree_sequence(deg_seq, false),
             Random(VertexStructured(pattern, num)) => pattern.new_graph(*num),
             Random(EdgeStructured(pattern, num)) => pattern.new_graph(*num),
+            Random(ConnectedSemiregular(order, p, exp)) => semiregular::new_semiregular(*order, *p, *exp),
             Raw(Grid(height, width)) => grid::new(height, width),
             Raw(Complete(order)) => Graph::new_complete(*order),
             Raw(CompleteBipartite(left, right)) => Graph::new_complete_bipartite(*left, *right),
@@ -323,6 +334,9 @@ impl fmt::Display for RandomConstructor {
             }
             EdgeStructured(pattern, num) => {
                 write!(f, "Structured edge-gluing of {} copies of the {} pattern", num, pattern)
+            }
+            ConnectedSemiregular(order, p, exp) => {
+                write!(f, "Connected semiregular graph of order {} and average degree {} with weighting exponent {}", order, p, exp)
             }
         }
     }

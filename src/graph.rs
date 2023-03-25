@@ -22,20 +22,41 @@ impl Graph {
     pub fn of_adj_list(adj_list: VertexVec<Vec<Vertex>>, constructor: Constructor) -> Graph {
         let n = adj_list.len();
         let mut adj = VertexVec::new(n, &VertexVec::new(n, &false));
-        let mut deg = VertexVec::new_fn(n, |_| Degree::ZERO);
-        let mut new_adj_list = VertexVec::new_fn(n, |_| vec![]);
+        let deg = adj_list.iter().map(|adjs| Degree::of_usize(adjs.len())).collect();
     
         for i in n.iter_verts() {
             for j in adj_list[i].iter() {
                 adj[i][*j] = true;
-                new_adj_list[i].push(*j);
-                deg[i].incr_inplace();
             }
         }
+        
         Graph {
             n,
             adj,
-            adj_list: new_adj_list,
+            adj_list,
+            deg,
+            constructor
+        }
+    }
+
+    pub fn of_matrix(adj: VertexVec<VertexVec<bool>>, constructor: Constructor) -> Graph {
+        let n = adj.len();
+        let mut adj_list = VertexVec::new(n, &vec![]);
+        let mut deg = VertexVec::new(n, &Degree::ZERO);
+
+        for (i, j) in n.iter_pairs() {
+            if adj[i][j] {
+                adj_list[i].push(j);
+                adj_list[j].push(i);
+                deg[i].incr_inplace();
+                deg[j].incr_inplace();
+            }
+        }
+
+        Graph { 
+            n,
+            adj,
+            adj_list,
             deg,
             constructor
         }
