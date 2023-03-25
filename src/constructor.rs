@@ -194,7 +194,7 @@ impl Constructor {
             "petersen" => {
                 if args.len() >= 2 {
                     Raw(Petersen(args[0].parse().unwrap(), args[1].parse().unwrap()))
-                } else if args.len() >= 1 {
+                } else if !args.is_empty() {
                     Raw(Petersen(args[0].parse().unwrap(), 2))
                 } else {
                     Raw(Petersen(5, 2))

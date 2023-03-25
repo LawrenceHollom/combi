@@ -84,19 +84,13 @@ pub fn new_maximal(order: Order) -> Graph {
 
 pub fn new_conditioned(order: Order, max_deg: Option<Degree>, min_girth: Option<usize>) -> Graph {
     let mut g = new_maximal(order);
-    match min_girth {
-        Some(girth) => {
-            for k in 3..girth {
-                g.remove_all_k_cycles(k);
-            }
+    if let Some(min_girth) = min_girth {
+        for k in 3..min_girth {
+            g.remove_all_k_cycles(k);
         }
-        None => (),
     }
-    match max_deg {
-        Some(max_deg) => {
-            g.reduce_max_degree(max_deg);
-        }
-        None => ()
+    if let Some(max_deg) = max_deg {
+        g.reduce_max_degree(max_deg);
     }
     g
 }
@@ -104,11 +98,11 @@ pub fn new_conditioned(order: Order, max_deg: Option<Degree>, min_girth: Option<
 pub fn k_gon_gluing(order: Order, k: usize) -> Graph {
     let n = order.to_usize();
     let mut adj_list = VertexVec::new(order, &vec![]);
-    let mut outer_face: Vec<Vertex> = (0..k).map(|x| Vertex::of_usize(x)).collect();
+    let mut outer_face: Vec<Vertex> = (0..k).map(Vertex::of_usize).collect();
     let mut rng = thread_rng();
     let mut next_vert = Vertex::of_usize(k);
     let mut num_placed = k;
-    fn add_cycle(adj_list: &mut VertexVec<Vec<Vertex>>, verts: &Vec<Vertex>, k: usize) {
+    fn add_cycle(adj_list: &mut VertexVec<Vec<Vertex>>, verts: &[Vertex], k: usize) {
         for i in 0..k {
             let j = (i + 1) % k;
             adj_list[verts[i]].push(verts[j]);

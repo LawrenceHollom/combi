@@ -226,7 +226,7 @@ fn print_problem_configs(g: &Graph, a: &EdgeSet, b: &EdgeSet, indexer: &EdgeInde
 }
 
 // Actually implement some given function to turn neg_confs into pos_confs.
-fn attempt_injection(g: &Graph, u: Vertex, pos_confs: &Vec<EdgeSet>, neg_confs: &Vec<EdgeSet>, indexer: &EdgeIndexer,
+fn attempt_injection(g: &Graph, u: Vertex, pos_confs: &[EdgeSet], neg_confs: &[EdgeSet], indexer: &EdgeIndexer,
         inj: &dyn Fn(&Graph, &EdgeSet, Vertex, &EdgeIndexer) -> EdgeSet) {
     println!("Attempting injection!");
     let mut flipped_confs: HashSet<EdgeSet> = HashSet::new();
@@ -264,7 +264,7 @@ fn attempt_injection(g: &Graph, u: Vertex, pos_confs: &Vec<EdgeSet>, neg_confs: 
 // and print them if there aren't too many.
 // We will flip a set of edges dependent only on sig, which means that the
 // function, if valid, is automatically an injection.
-fn find_possible_injections(g: &Graph, sig: &ConfSignature, domain: &Vec<EdgeSet>, range: &Vec<EdgeSet>, indexer: &EdgeIndexer) {
+fn find_possible_injections(g: &Graph, sig: &ConfSignature, domain: &[EdgeSet], range: &[EdgeSet], indexer: &EdgeIndexer) {
     let mut injections: Vec<EdgeSet> = vec![];
     let mut range_set: HashSet<EdgeSet> = HashSet::new();
     for x in range.iter() {
@@ -298,7 +298,7 @@ fn find_possible_injections(g: &Graph, sig: &ConfSignature, domain: &Vec<EdgeSet
         }
     }
 
-    if injections.len() == 0 {
+    if injections.is_empty() {
         println!("Found no valid injections!");
         println!("DOMAIN:");
         for config in domain.iter() {
@@ -329,7 +329,7 @@ fn find_possible_injections(g: &Graph, sig: &ConfSignature, domain: &Vec<EdgeSet
 
 // We have a big list of positive and negative configs we care about.
 // This function processes them to try and learn about possible injections.
-fn process_bunkbed_configs(g: &Graph, u: Vertex, pos_confs: &Vec<EdgeSet>, neg_confs: &Vec<EdgeSet>, indexer: &EdgeIndexer) {
+fn process_bunkbed_configs(g: &Graph, u: Vertex, pos_confs: &[EdgeSet], neg_confs: &[EdgeSet], indexer: &EdgeIndexer) {
     let pos_signatures: Vec<(EdgeSet, ConfSignature)> = 
         pos_confs.iter()
             .map(|conf| (conf.to_owned(), ConfSignature::new(g, conf, indexer)))
@@ -372,7 +372,7 @@ fn process_bunkbed_configs(g: &Graph, u: Vertex, pos_confs: &Vec<EdgeSet>, neg_c
             if x.len() == 1 && y.len() == 1 && flip_postless_component(g, &y[0], u, indexer) != x[0] {
                 mappables.push((x[0].to_owned(), y[0].to_owned()));
             }
-            if y.len() > 0 {
+            if !y.is_empty() {
                 find_possible_injections(g, sig, y, x, indexer);
             }
         }

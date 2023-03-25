@@ -65,7 +65,7 @@ impl IntOperation {
             "diameter" | "diam" => Some(Diameter),
             "radius" => Some(Radius),
             "thomassen" => {
-                if args.len() == 0 {
+                if args.is_empty() {
                     Some(Thomassen(None))
                 } else {
                     Some(Thomassen(Some(args[0].parse().unwrap())))

@@ -125,16 +125,13 @@ fn get_min_and_max_col(coloring: &EdgeVec<Option<i32>>) -> (i32, i32) {
     let mut min_col = i32::MAX;
     let mut max_col = i32::MIN;
     for col in coloring.iter() {
-        match *col {
-            Some(col) => {
-                if col < min_col {
-                    min_col = col
-                }
-                if col > max_col {
-                    max_col = col;
-                }
+        if let Some(col) = *col {
+            if col < min_col {
+                min_col = col
             }
-            None => (),
+            if col > max_col {
+                max_col = col;
+            }
         }
     }
     (min_col, max_col)
@@ -177,9 +174,8 @@ pub fn print_interval_coloring(g: &Graph) {
         Some(coloring) => {
             let (min_col, max_col) = get_min_and_max_col(&coloring);
             for (e, color) in coloring.iter_enum() {
-                match *color {
-                    Some(col) => println!("{} : {}", e, col - min_col),
-                    None => (),
+                if let Some(col) = *color {
+                    println!("{} : {}", e, col - min_col);
                 }
             }
             println!("Number of colours: {}", (max_col - min_col + 1));

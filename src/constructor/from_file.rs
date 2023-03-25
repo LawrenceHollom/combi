@@ -19,9 +19,9 @@ pub fn new_graph(filename: &String) -> Graph {
             let order = Order::of_usize(n);
             let mut adj_list: VertexVec<Vec<Vertex>> = VertexVec::new(order, &vec![]);
 
-            if lines[1].contains("~") {
+            if lines[1].contains('~') {
                 for line in lines.iter().skip(1) {
-                    let pars: Vec<&str> = line.split("~").collect();
+                    let pars: Vec<&str> = line.split('~').collect();
                     let u: Vertex = Vertex::of_string(pars[0]);
                     let v: Vertex = Vertex::of_string(pars[1]);
                     adj_list[u].push(v);
@@ -29,7 +29,7 @@ pub fn new_graph(filename: &String) -> Graph {
                 }
             } else {
                 for (i, line) in lines.iter().skip(1).enumerate() {
-                    for par in line.split(",") {
+                    for par in line.split(',') {
                         adj_list[Vertex::of_usize(i)].push(Vertex::of_string(par));
                     }
                 }

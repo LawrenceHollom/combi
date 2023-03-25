@@ -40,16 +40,13 @@ impl Percolator {
         let connected = g.flood_fill_dist(Vertex::ZERO);
 
         for (v, dist) in connected.iter_enum().skip(1) {
-            match *dist {
-                Some(dist) => {
-                    self.polys[v].add_inplace(&self.probs[num_edges]);
-                    if compute_dists {
-                        for poly in self.dist_polys[v].iter_mut().skip(dist as usize) {
-                            poly.add_inplace(&self.probs[num_edges]);
-                        }
+            if let Some(dist) = *dist {
+                self.polys[v].add_inplace(&self.probs[num_edges]);
+                if compute_dists {
+                    for poly in self.dist_polys[v].iter_mut().skip(dist as usize) {
+                        poly.add_inplace(&self.probs[num_edges]);
                     }
                 }
-                None => (),
             }
         }
     }

@@ -260,9 +260,8 @@ fn _alice_wins_chromatic_game_array(g: &Graph, k: usize) -> bool {
                     found_unplayed = true;
                     let mut colours_hit = 0;
                     for u in g.adj_list[v].iter() {
-                        match coder.get_colour(config, u) {
-                            Some(col) => colours_hit |= 1 << col,
-                            None => (),
+                        if let Some(col) = coder.get_colour(config, u) {
+                            colours_hit |= 1 << col;
                         }
                     }
 
@@ -349,7 +348,7 @@ pub fn alice_greedy_lower_bound(g: &Graph) -> usize {
             return k;
         }
     }
-    return g.n.to_usize();
+    g.n.to_usize()
 }
 
 pub fn _alice_wins_chromatic_game_slow(g: &Graph, k: usize) -> bool {

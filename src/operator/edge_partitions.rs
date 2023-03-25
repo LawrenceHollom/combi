@@ -17,7 +17,7 @@ fn opn_min(a: Option<usize>, b: Option<usize>) -> Option<usize> {
 }
 
 fn minimax_forest_analyse_rec(g: &Graph, colours: &mut EdgeVec<u8>, next_vert: Vertex, other_end: &mut EdgeVec<Option<Edge>>,
-        path_len: &mut EdgeVec<usize>, max_len_here: usize, best_len: Option<usize>, edges: &Vec<Edge>,
+        path_len: &mut EdgeVec<usize>, max_len_here: usize, best_len: Option<usize>, edges: &[Edge],
         part_two_max_len: Option<usize>, long_path_count: usize, long_path_cap: Option<usize>) -> Option<usize> {
     let local_cols: Vec<u8> = edges.iter().map(|e| colours.get(*e)).collect();
     
@@ -87,7 +87,7 @@ fn minimax_forest_analyse_rec(g: &Graph, colours: &mut EdgeVec<u8>, next_vert: V
         value = opn_min(value, minimax_forest_set_colours_rec(g, colours, next_vert.incr(), other_end, 
             path_len, max_len_here, best_len, part_two_max_len, long_path_count, long_path_cap));
     }
-    return value;
+    value
 }
 
 fn minimax_forest_set_colours_rec(g: &Graph, colours: &mut EdgeVec<u8>, next_vert: Vertex, other_end: &mut EdgeVec<Option<Edge>>,
@@ -146,7 +146,7 @@ fn minimax_forest_len(g: &Graph, part_two_max_len: Option<usize>, long_path_cap:
     let (g, _ordering_inv) = g.order_by_nbhd();
 
     let mut colours = EdgeVec::new(&g.adj_list, 0);
-    let mut other_end = EdgeVec::new_fn(&g.adj_list, |x| Some(x));
+    let mut other_end = EdgeVec::new_fn(&g.adj_list, Some);
     let mut path_len = EdgeVec::new(&g.adj_list, 1);
 
     minimax_forest_set_colours_rec(&g, &mut colours, Vertex::ZERO, &mut other_end, &mut path_len, 
@@ -206,29 +206,22 @@ pub fn count_bipartite_edge_bisections(g: &Graph) -> u32 {
         let mut red_sizes = ComponentVec::new(g.n, &0);
         for e in indexer.iter_edges() {
             if blue_edges.has_edge(*e, &indexer) {
-                match blue_comps[*e] {
-                    Some(comp) => blue_sizes[comp] += 1,
-                    None => (),
+                if let Some(comp) = blue_comps[*e] {
+                    blue_sizes[comp] += 1;
                 }
-            } else {
-                match red_comps[*e] {
-                    Some(comp) => red_sizes[comp] += 1,
-                    None => ()
-                }
+            } else if let Some(comp) = red_comps[*e] {
+                red_sizes[comp] += 1;
             }
         }
-        match (blue_sizes.max(&0, usize::cmp), red_sizes.max(&0, usize::cmp)) {
-            (Some(max_blue_size), Some(max_red_size)) => {
-                if max_blue_size < max_red_size {
-                    num_good_by_size[*max_red_size - 1][*max_blue_size - 1] += 1;
-                } else {
-                    num_good_by_size[*max_blue_size - 1][*max_red_size - 1] += 1;
-                }
-                if num_good_by_size[3][2] > 0 {
-                    return 0;
-                }
+        if let (Some(max_blue_size), Some(max_red_size)) = (blue_sizes.max(&0, usize::cmp), red_sizes.max(&0, usize::cmp)) {
+            if max_blue_size < max_red_size {
+                num_good_by_size[*max_red_size - 1][*max_blue_size - 1] += 1;
+            } else {
+                num_good_by_size[*max_blue_size - 1][*max_red_size - 1] += 1;
             }
-            _ => (),
+            if num_good_by_size[3][2] > 0 {
+                return 0;
+            }
         }
     }
 

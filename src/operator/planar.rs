@@ -272,12 +272,9 @@ fn is_two_connected_planar(g: &Graph) -> bool {
     while cocycle[head] {
         cocycle[head] = false;
         face.push(head);
-        match prev {
-            Some(prev) => {
-                cycle_edges[prev][head] = true;
-                cycle_edges[head][prev] = true;
-            }
-            None => ()
+        if let Some(prev) = prev {
+            cycle_edges[prev][head] = true;
+            cycle_edges[head][prev] = true;
         }
         'find_next: for v in g.adj_list[head].iter() {
             if prev != Some(*v) {

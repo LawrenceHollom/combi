@@ -153,7 +153,7 @@ impl Instruction {
         let rep_start = SystemTime::now();
         let numbers: Vec<String> = self.operations
                 .iter()
-                .map(|op| operator.operate(&g, op))
+                .map(|op| operator.operate(g, op))
                 .collect();
         println!("{}: [{}], time: {}", self.operations_string(), numbers.join(", "),
             rep_start.elapsed().unwrap().as_millis());

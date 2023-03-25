@@ -173,7 +173,7 @@ impl Graph {
     }
 
     pub fn iter_verts(&self) -> impl Iterator<Item = Vertex> {
-        (0..self.n.to_usize()).map(|x| Vertex::of_usize(x))
+        (0..self.n.to_usize()).map(Vertex::of_usize)
     }
 
     pub fn is_isomorphic_to(&self, g: &Graph) -> bool {
@@ -181,7 +181,7 @@ impl Graph {
     }
 
     pub fn filtered_components(&self, filter: Option<&VertexVec<bool>>) -> VertexVec<Component> {
-        flood_fill::filtered_components(&self, filter)
+        flood_fill::filtered_components(self, filter)
     }
     
     pub fn components(&self) -> VertexVec<Component> {
@@ -406,7 +406,7 @@ impl Graph {
     }
 
     pub fn degree_sequence(&self) -> &Vec<Degree> {
-        &self.deg.drop_vertices()
+        self.deg.drop_vertices()
     }
 
     pub fn floyd_warshall(&self) -> VertexVec<VertexVec<usize>> {
