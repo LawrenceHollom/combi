@@ -431,6 +431,34 @@ impl Graph {
         dist
     }
 
+    pub fn diameter(&self) -> u32 {
+        let dist = self.floyd_warshall();
+        let mut diam = 0;
+        for (u, v) in self.n.iter_pairs() {
+            if dist[u][v] > diam {
+                diam = dist[u][v];
+            }
+        }
+        diam as u32
+    }
+
+    pub fn radius(&self) -> u32 {
+        let dist = self.floyd_warshall();
+        let mut radius = usize::MAX;
+        for u in self.iter_verts() {
+            let mut furthest = 0;
+            for v in self.iter_verts() {
+                if dist[u][v] > furthest {
+                    furthest = dist[u][v];
+                }
+            }
+            if furthest < radius {
+                radius = furthest;
+            }
+        }
+        radius as u32
+    }
+
     pub fn delete_edge(&mut self, e: Edge) {
         let x = e.fst();
         let y = e.snd();

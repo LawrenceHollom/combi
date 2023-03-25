@@ -26,6 +26,8 @@ pub enum IntOperation {
     MinDegree,
     MaxDegree,
     Connectedness,
+    Diameter,
+    Radius,
     Thomassen(Option<usize>),
     NumBipartiteEdgeBisections,
     GameChromaticNumber,
@@ -60,6 +62,8 @@ impl IntOperation {
             "min_degree" | "min_deg" => Some(MinDegree),
             "max_degree" | "max_deg" | "delta" => Some(MaxDegree),
             "connectedness" | "connectivity" => Some(Connectedness),
+            "diameter" | "diam" => Some(Diameter),
+            "radius" => Some(Radius),
             "thomassen" => {
                 if args.len() == 0 {
                     Some(Thomassen(None))
@@ -102,6 +106,8 @@ impl fmt::Display for IntOperation {
             MinDegree => "Min degree",
             MaxDegree => "Max degree",
             Connectedness => "Connectedness",
+            Diameter => "Diameter",
+            Radius => "Radius",
             Thomassen(_) => "Minimax path length in linear forest bisection of cubic graph",
             NumBipartiteEdgeBisections => "Number of 2-edge-colourings of cubic graph with both parts bipartite",
             GameChromaticNumber => "Game chromatic number",

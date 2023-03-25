@@ -63,6 +63,8 @@ impl Operator {
                     MinDegree => g.min_degree(),
                     MaxDegree => g.max_degree(),
                     Connectedness => connectedness::connectedness(g),
+                    Diameter => g.diameter(),
+                    Radius => g.radius(),
                     Thomassen(long_path_cap) => edge_partitions::thomassen_check(g, *long_path_cap),
                     NumBipartiteEdgeBisections => edge_partitions::count_bipartite_edge_bisections(g),
                     GameChromaticNumber => chromatic::game_chromatic_number(g),

@@ -5,7 +5,8 @@ pub fn print_signature(g: &Graph) {
     use crate::operation::int_operation::IntOperation::*;
     let int_operations = 
         vec![Order, Size, NumComponents, MinDegree, MaxDegree, 
-        DominationNumber, ChromaticNumber, Girth, Connectedness];
+        DominationNumber, ChromaticNumber, Girth, Connectedness,
+        Diameter, Radius];
     use crate::operation::bool_operation::BoolOperation::*;
     let bool_operations =
         vec![IsPlanar, IsTriangleFree];
