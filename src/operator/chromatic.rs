@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::io::Write;
 use std::time::SystemTime;
 
@@ -51,13 +52,13 @@ pub fn chromatic_number(g: &Graph) -> u32 {
     num_colours as u32
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 struct Config(usize);
 
 struct Coder {
     _n: Order,
     k: usize,
-    num_configs: usize,
+    _num_configs: usize,
     pows: VertexVec<usize>,
 }
 
@@ -68,7 +69,7 @@ impl Coder {
             pows[v] = (k + 1).pow(i as u32);
         }
         let num_configs = (k + 1).pow(n.to_usize() as u32);
-        Coder { _n: n, k, num_configs, pows }
+        Coder { _n: n, k, _num_configs: num_configs, pows }
     }
     
     fn get_colour(&self, config: Config, u: &Vertex) -> Option<usize> {
@@ -139,14 +140,14 @@ impl Coder {
 }
 
 fn alice_wins_chromatic_game_fast_rec(g: &Graph, k: usize, max_colour_used: usize, coder: &Coder,
-                config: Config, history: &mut Vec<Option<bool>>, num_cold: usize) -> bool {
+                config: Config, history: &mut HashMap<Config, bool>, num_cold: usize) -> bool {
     if g.n.at_most(num_cold) {
         // G is coloured, so Alice has won
         true
     } else {
         let wlog_index = coder.get_wlog_index(config);
-        match history[wlog_index.0] {
-            Some(alice_win) => alice_win,
+        match history.get(&wlog_index) {
+            Some(alice_win) => *alice_win,
             None => {
                 let mut alice_win = num_cold % 2 == 1;
                 let mut is_something_playable = false;
@@ -181,7 +182,7 @@ fn alice_wins_chromatic_game_fast_rec(g: &Graph, k: usize, max_colour_used: usiz
                     alice_win = false
                 }
                 // Record for posterity.
-                history[wlog_index.0] = Some(alice_win);
+                history.insert(wlog_index, alice_win);
                 alice_win
             }
         }
@@ -194,7 +195,7 @@ fn alice_wins_chromatic_game_fast(g: &Graph, k: usize) -> bool {
     }
     let coder = Coder::new(g.n, k);
     // This could be smaller as we'll assume configs start with None or Some(0).
-    let mut history = vec![None; coder.num_configs];
+    let mut history = HashMap::new();
     for v in g.iter_verts() {
         let config = coder.play_move(coder.get_start_config(), v, 0);
         if alice_wins_chromatic_game_fast_rec(g, k, 0, &coder, config, &mut history, 1) {
@@ -210,7 +211,7 @@ fn _alice_wins_chromatic_game_array(g: &Graph, k: usize) -> bool {
     }
     let coder = Coder::new(g.n, k);
     // Conceivably want this to be a hashmap as so many of these don't work.
-    let mut alice_wins = vec![false; coder.num_configs];
+    let mut alice_wins = vec![false; coder._num_configs];
     let mut config = Config(0);
     let mut pos = g.n.to_max_vertex();
     
@@ -224,7 +225,7 @@ fn _alice_wins_chromatic_game_array(g: &Graph, k: usize) -> bool {
     }
 
     'loop_configs: loop {
-        if config.0 >= coder.num_configs {
+        if config.0 >= coder._num_configs {
             break 'loop_configs;
         }
         
