@@ -1,3 +1,14 @@
+== ITERATOR AND AUTOMORPHISMS ==
+- Detect identical nodes in graphs and iterate over subsets more efficiently
+- e.g. there are only 3 ways to pick 2 vertices from K_{s,t}
+- Need to be able to answer questions like:
+-- Given these 4 labelled vertices, what is the canonical equivalent choice?
+-- If this vertex is fixed, how many genuine choices do I have?
+-- Can I ask this about K(10) where there are 10! autojs without falling over?
+
+== SINK ALL ==
+- Like sink, but print out list of names of all graphs found with this property.
+
 == THE KITCHEN SINK ==
 - Maybe add option for increasing by number of edges or something
 - test with sink((size>0)&&(theta>=acyclic)) -> halts at n=15
@@ -43,10 +54,6 @@
 == HOUSE OF GRAPHS ==
 - Have a new kitchen sink option for smashing through houseofgraphs
 -- Work this in with the old one in some sensible way.
-
-== ITERATOR ==
-- Detect identical nodes in graphs and iterate over subsets more efficiently
-- e.g. there are only 3 ways to pick 2 vertices from K_{s,t}
 
 == BUNKBEDS ==
 - The code is very (very) slow, and naive. Should be some wins to be had in terms of speed
