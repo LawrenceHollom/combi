@@ -8,6 +8,7 @@ mod operator;
 mod operation;
 mod constructor;
 mod pattern;
+mod annotations;
 
 use controller::*;
 
