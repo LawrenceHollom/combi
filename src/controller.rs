@@ -30,6 +30,7 @@ pub enum Controller {
     Until(Constructor, Vec<BoolOperation>),
     SearchTrees(usize, BoolOperation, Degree),
     KitchenSink(Vec<BoolOperation>),
+    KitchenSinkAll(Vec<BoolOperation>),
     Process(Order),
     Help,
 }
@@ -80,6 +81,10 @@ impl Controller {
                 KitchenSink(args.iter().map(|arg| 
                     BoolOperation::of_string_result(*arg).unwrap()).collect())
             }
+            "sink_all" => {
+                KitchenSinkAll(args.iter().map(|arg| 
+                    BoolOperation::of_string_result(*arg).unwrap()).collect())
+            }
             "process" | "proc" => {
                 Process(Order::of_string(args[0]))
             }
@@ -112,6 +117,9 @@ impl fmt::Display for Controller {
             }
             KitchenSink(conditions) => {
                 write!(f, "Search the kitchen sink for a graph satisfying {:?}", *conditions)
+            }
+            KitchenSinkAll(conditions) => {
+                write!(f, "Search the kitchen sink for all graphs satisfying {:?}", *conditions)
             }
             Process(order) => {
                 write!(f, "Random graph process of order {}", order)
@@ -355,7 +363,7 @@ impl Instruction {
         }
     }
             
-    fn test_sink_graph(&self, g: &Graph, conditions: &[BoolOperation]) -> bool {
+    fn test_sink_graph(&self, g: &Graph, conditions: &[BoolOperation], find_all: bool) -> bool {
         let mut operator = Operator::new();
         let mut result = true;
         'test_conditions: for condition in conditions.iter() {
@@ -365,38 +373,54 @@ impl Instruction {
             }
         }
         if result {
-            println!("Graph satisfying condition found!");
-            println!("Constructor: {}", g.constructor);
-            operator.print_all();
-            println!("Graph:");
-            g.print();
+            if find_all {
+                println!("{}", g.constructor);
+            } else {
+                // print lots of information in this case.
+                println!("Graph satisfying condition found!");
+                println!("Constructor: {}", g.constructor);
+                operator.print_all();
+                println!("Graph:");
+                g.print();
+            }
         }
         result
     }
 
-    fn execute_kitchen_sink(&self, conditions: &[BoolOperation]) {
+    fn execute_kitchen_sink(&self, conditions: &[BoolOperation], find_all: bool) {
         use Constructor::*;
         use RawConstructor::*;
 
-        let mut constructors: Vec<Vec<Constructor>> = vec![vec![]];
+        let max_verts = 100;
+        let mut constructors: Vec<Vec<Constructor>> = vec![vec![]; max_verts];
         let max_new_graphs = 100000;
         fn ous(n: usize) -> Order {
             Order::of_usize(n)
         }
-        constructors.push(vec![]);
-        constructors.push(vec![Raw(Complete(ous(2))), Raw(Empty(ous(2)))]);
-        constructors.push(vec![Raw(Complete(ous(3))), Raw(Path(ous(3))), Raw(Empty(ous(3)))]);
+        constructors[2].append(&mut vec![Raw(Complete(ous(2))), Raw(Empty(ous(2)))]);
+        constructors[3].append(&mut vec![Raw(Complete(ous(3))), Raw(Path(ous(3))), Raw(Empty(ous(3)))]);
 
-        let mut verts = 4;
-        let mut num_new_graphs = 0;
-        'main: loop {
-            constructors.push(vec![]);
+        for verts in 4..max_verts {
             let order = ous(verts);
             constructors[verts].push(Raw(Complete(order)));
             constructors[verts].push(Raw(Cyclic(order)));
             constructors[verts].push(Raw(Path(order)));
             constructors[verts].push(Raw(Star(order)));
             constructors[verts].push(Raw(Empty(order)));
+            if verts % 4 == 2 && verts >= 10 {
+                constructors[verts].push(Raw(Petersen(verts / 2, 2)));
+                if verts >= 14 {
+                    constructors[verts].push(Raw(Petersen(verts / 2, 3)));
+                }
+            }
+        }
+        constructors[6].push(Raw(Octahedron));
+        constructors[12].push(Raw(Icosahedron));
+        constructors[20].push(Raw(Dodecahedron));
+
+        let mut verts = 4;
+        let mut num_new_graphs = 0;
+        'main: loop {
 
             let mut new_constructors: Vec<Constructor> = vec![];
             let mut graphs: Vec<Graph> = vec![];
@@ -425,7 +449,7 @@ impl Instruction {
                                     }
                                     if !is_already_there {
                                         // Actually test the graph
-                                        if self.test_sink_graph(&g, conditions) {
+                                        if self.test_sink_graph(&g, conditions, find_all) && !find_all {
                                             break 'main;
                                         }
                                         graphs.push(g);
@@ -470,7 +494,7 @@ impl Instruction {
             for _rep in 0..10 {
                 for constr in random_constructors.iter() {
                     let g = constr.new_graph();
-                    if self.test_sink_graph(&g, conditions) {
+                    if self.test_sink_graph(&g, conditions, find_all) && !find_all {
                         break 'main;
                     }
                 }
@@ -510,7 +534,8 @@ impl Instruction {
             Tabulate(tabulation) => self.execute_tabulate(tabulation),
             Until(constr, conditions) => self.execute_until(constr, conditions),
             SearchTrees(n, condition, max_degree) => self.search_trees(*n, condition, max_degree),
-            KitchenSink(conditions) => self.execute_kitchen_sink(conditions),
+            KitchenSink(conditions) => self.execute_kitchen_sink(conditions, false),
+            KitchenSinkAll(conditions) => self.execute_kitchen_sink(conditions, true),
             Process(order) => self.execute_process(*order),
             Help => Self::print_help(),
         }
