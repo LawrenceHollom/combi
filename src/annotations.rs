@@ -102,6 +102,7 @@ impl Automorphism {
                         break 'place_vertices;
                     }
                     
+                    num_placed += 1;
                     map[*to_place] = Some(valid_locations[rng.gen_range(0..valid_locations.len())]);
                     for w in g.adj_list[*to_place].iter() {
                         if !visited[*w] {
@@ -184,9 +185,12 @@ impl AnnotatedGraph {
      * Use random techniques to keep things interesting.
      */
     fn approximate_weak_auto_comps(g: &Graph, hashes: &VertexVec<u64>) -> VertexVec<Component> {
+        println!("Finding weak auto comps!");
         let mut comps = UnionFind::new(g.n);
         let hash_comps = Self::get_hash_paritions(hashes);
         let mut rng = thread_rng();
+
+        println!("hash_comps: {:?}", hash_comps);
 
         for (_hash, hash_comp) in hash_comps.iter() {
             for (i, v) in hash_comp.iter().enumerate() {
