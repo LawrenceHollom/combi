@@ -1,6 +1,5 @@
 use rand::{thread_rng, Rng, rngs::ThreadRng};
 use utilities::*;
-use crate::graph::*;
 
 use super::*;
 use utilities::vertex_tools::*;
