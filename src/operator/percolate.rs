@@ -56,7 +56,7 @@ impl Percolator {
 
         let mut true_adj_list: VertexVec<Vec<Vertex>> = VertexVec::new(g.n, &vec![]);
         
-        for (i, j) in g.n.iter_pairs() {
+        for (i, j) in g.iter_pairs() {
             if g.adj[i][j] && rng.gen_bool(p) {
                 true_adj_list[i].push(j);
                 true_adj_list[j].push(i);
@@ -94,7 +94,7 @@ impl Percolator {
 
             let mut true_adj_list: VertexVec<Vec<Vertex>> = VertexVec::new(g.n, &vec![]);
             let mut edge_index = 0;
-            for (i, j) in g.n.iter_pairs() {
+            for (i, j) in g.iter_pairs() {
                 if g.adj[i][j] {
                     if edges[edge_index] {
                         true_adj_list[i].push(j);

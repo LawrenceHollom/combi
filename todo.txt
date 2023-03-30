@@ -6,9 +6,6 @@
 -- If this vertex is fixed, how many genuine choices do I have?
 -- Can I ask this about K(10) where there are 10! autojs without falling over?
 
-== SINK ALL ==
-- Like sink, but print out list of names of all graphs found with this property.
-
 == THE KITCHEN SINK ==
 - Maybe add option for increasing by number of edges or something
 - test with sink((size>0)&&(theta>=acyclic)) -> halts at n=15

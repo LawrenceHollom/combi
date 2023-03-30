@@ -176,6 +176,10 @@ impl Graph {
         (0..self.n.to_usize()).map(Vertex::of_usize)
     }
 
+    pub fn iter_pairs(&self) -> impl Iterator<Item = (Vertex, Vertex)> {
+        self.n.iter_pairs()
+    }
+
     pub fn is_isomorphic_to(&self, g: &Graph) -> bool {
         isomorphisms::is_isomorphic_to(self, g)
     }

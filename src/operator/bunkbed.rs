@@ -185,7 +185,7 @@ fn flip_postless_component(g: &Graph, config: &EdgeSet, u: Vertex, indexer: &Edg
 }
 
 fn print_title(g: &Graph) {
-    for (u, v) in g.n.iter_pairs() {
+    for (u, v) in g.iter_pairs() {
         if g.adj[u][v] {
             print!("({}~{})", u, v);
         }
@@ -195,13 +195,13 @@ fn print_title(g: &Graph) {
 
 fn print_config(g: &Graph, config: &EdgeSet, indexer: &EdgeIndexer) {
     print_title(g);
-    for (u, v) in g.n.iter_pairs() {
+    for (u, v) in g.iter_pairs() {
         if g.adj[u][v] {
             print!("( {} )", config.has_edge(Edge::of_pair(u, v).incr_by_order(g.n), indexer) as usize);
         }
     }
     println!();
-    for (u, v) in g.n.iter_pairs() {
+    for (u, v) in g.iter_pairs() {
         if g.adj[u][v] {
             print!("( {} )", config.has_edge(Edge::of_pair(u, v), indexer) as usize);
         }
@@ -279,7 +279,7 @@ fn find_possible_injections(g: &Graph, sig: &ConfSignature, domain: &[EdgeSet], 
             // Try flipping everything in domain by inj and see if it makes a subset of range.
             'test_inj: for x in domain.iter() {
                 let mut new_conf = x.to_owned();
-                for (u, v) in g.n.iter_pairs() {
+                for (u, v) in g.iter_pairs() {
                     let e = Edge::of_pair(u, v);
                     if g.adj[u][v] && inj_code.has_edge(e, indexer) {
                         // flip here.
@@ -313,7 +313,7 @@ fn find_possible_injections(g: &Graph, sig: &ConfSignature, domain: &[EdgeSet], 
         println!("Possible injections: ");
         print_title(g);
         for inj in injections.iter() {
-            for (u, v) in g.n.iter_pairs() {
+            for (u, v) in g.iter_pairs() {
                 if g.adj[u][v] {
                     print!("( {} )", inj.has_edge(Edge::of_pair(u, v), indexer));
                 }
@@ -381,7 +381,7 @@ fn process_bunkbed_configs(g: &Graph, u: Vertex, pos_confs: &[EdgeSet], neg_conf
     println!("Mappables which flip_postless_component fails on: ");
     for (x, y) in mappables.iter() {
         println!("Pair:");    
-        for (u, v) in g.n.iter_pairs() {
+        for (u, v) in g.iter_pairs() {
             if g.adj[u][v] {
                 let e = Edge::of_pair(u, v);
                 if x.has_edge(e, indexer) ^ y.has_edge(e, indexer) {

@@ -16,6 +16,10 @@ pub struct ComponentVec<T: Debug + Clone> {
     vec: VertexVec<T>
 }
 
+pub struct UnionFind {
+    vec: VertexVec<Vertex>
+}
+
 impl Component {
     pub const ZERO: Component = Component(Vertex::ZERO);
 
@@ -25,6 +29,10 @@ impl Component {
 
     pub fn to_vertex(&self) -> Vertex {
         self.0
+    }
+
+    pub fn is_vertex(&self, v: Vertex) -> bool {
+        self.0 == v
     }
 }
 
@@ -102,6 +110,42 @@ impl <T: Debug + Clone> ComponentVec<T> {
 
     pub fn println(&self) {
         println!("{:?}", self.vec);
+    }
+}
+
+impl UnionFind {
+    pub fn new(n: Order) -> UnionFind {
+        UnionFind { vec: VertexVec::new_fn(n, |x| x) }
+    }
+
+    fn flatten_to(&mut self, x: Vertex, root: Vertex) {
+        let mut z = x;
+        while self.vec[z] != root {
+            let sta = self.vec[z];
+            self.vec[z] = root;
+            z = sta;
+        }
+    }
+
+    pub fn merge(&mut self, x: Vertex, y: Vertex) {
+        let mut root = x;
+        while root != self.vec[root] {
+            root = self.vec[root];
+        }
+        self.flatten_to(x, root);
+        self.flatten_to(y, root);
+    }
+
+    pub fn get_component(&self, v: Vertex) -> Component {
+        let mut x = self.vec[v];
+        while x != self.vec[x] {
+            x = self.vec[x];
+        }
+        Component::of_vertex(x)
+    }
+
+    pub fn to_component_vec(self) -> VertexVec<Component> {
+        VertexVec::new_fn(self.vec.len(), |v| self.get_component(v))
     }
 }
 

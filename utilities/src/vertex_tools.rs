@@ -159,7 +159,7 @@ impl Iterator for VertexPairIterator {
 }
 
 impl <T: Debug + Clone> VertexVec<T> {
-    pub fn new_fn(n: Order, f: fn(Vertex) -> T) -> VertexVec<T> {
+    pub fn new_fn(n: Order, f: impl Fn(Vertex) -> T) -> VertexVec<T> {
         VertexVec { vec: n.iter_verts().map(|x| f(x)).collect() }
     }
 
