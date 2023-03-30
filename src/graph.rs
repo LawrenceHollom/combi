@@ -10,6 +10,7 @@ mod flood_fill;
 mod isomorphisms;
 mod cycles;
 
+#[derive(Clone)]
 pub struct Graph {
     pub n: Order,
     pub adj: VertexVec<VertexVec<bool>>,

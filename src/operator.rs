@@ -21,6 +21,7 @@ use std::collections::HashMap;
 
 use utilities::rational::*;
 
+use crate::annotations;
 use crate::operation::*;
 use crate::graph::*;
 
@@ -194,6 +195,7 @@ impl Operator {
             PrintIntervalColoring => interval_coloring::print_interval_coloring(g),
             PrintDominatingSet => domination::print_random_dominator(g),
             GameChromaticTable => chromatic::print_game_chromatic_table(g),
+            PrintAutomorphisms => annotations::print_automorphism_info(g),
             Signature => signature::print_signature(g),
             Unit => (),
         }

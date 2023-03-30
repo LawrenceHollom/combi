@@ -16,6 +16,7 @@ pub enum UnitOperation {
     PrintIntervalColoring,
     PrintDominatingSet,
     GameChromaticTable,
+    PrintAutomorphisms,
     Signature,
     Unit,
 }
@@ -39,6 +40,7 @@ impl UnitOperation {
             "print_interval" | "interval" => Some(PrintIntervalColoring),
             "print_dominator" | "print_gamma" => Some(PrintDominatingSet),
             "game_chromatic_table" | "chi_g_table" | "chi_g_t" => Some(GameChromaticTable),
+            "print_automorphisms" | "print_autos" => Some(PrintAutomorphisms),
             "signature" | "sig" => Some(Signature),
             "()" | "(" => Some(Unit),
             &_ => None,
@@ -62,6 +64,7 @@ impl fmt::Display for UnitOperation {
             PrintIntervalColoring => "Print an interval coloring (if exists)",
             PrintDominatingSet => "Print a random-ish minimal dominating set",
             GameChromaticTable => "Print winners of chromatic game for various k",
+            PrintAutomorphisms => "Print automorphisms of g, and other autoj metadata",
             Signature => "Print a bunch of graph invariants",
             Unit => "Do nothing",
         };

@@ -25,6 +25,7 @@ use utilities::component_tools::*;
 /**
  * This stores an automorphism of the graph.
  */
+#[derive(Clone, Debug)]
 struct Automorphism {
     map: VertexVec<Vertex>,
 }
@@ -192,6 +193,7 @@ impl AnnotatedGraph {
                 for w in hash_comp.iter().skip(i + 1) {
                     if let Some(aut) = Automorphism::randomly_extend_map(g, hashes, *v, *w, &mut rng) {
                         // We have an autoj. Hoorah! Now add the information it provides.
+                        println!("Found an autoj! {:?}", aut);
                         for (from, to) in aut.iter() {
                             if from != *to {
                                 comps.merge(from, *to);
@@ -270,4 +272,8 @@ impl VertexSignature {
         }
         hashes
     }
+}
+
+pub fn print_automorphism_info(g: &Graph) {
+    let annotated = AnnotatedGraph::new(g.to_owned());
 }
