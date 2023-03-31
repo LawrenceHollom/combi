@@ -264,23 +264,6 @@ pub fn print_game_chromatic_table(g: &Graph) {
     println!("Greedy: {}", alice_greedy_lower_bound(g));
     for k in 1..=(delta + 1) {
         checkpoint_time = SystemTime::now();
-        /*print!("Slow:  ");
-        if alice_wins_chromatic_game_slow(g, k as usize) {
-            print!("{}: Alice", k);
-        } else {
-            print!("{}: Bob", k);
-        }
-        println!(", t: {}", checkpoint_time.elapsed().unwrap().as_millis());
-        checkpoint_time = SystemTime::now();
-        print!("Array: ");
-        if alice_wins_chromatic_game_array(g, k as usize) {
-            print!("{}: Alice", k);
-        } else {
-            print!("{}: Bob", k);
-        }
-        println!(", t: {}", checkpoint_time.elapsed().unwrap().as_millis());
-        checkpoint_time = SystemTime::now();
-        print!("Fast:  ");*/
         if alice_wins_chromatic_game_fast(g, k as usize) {
             print!("{}: Alice", k);
         } else {
@@ -311,5 +294,35 @@ mod tests {
     #[test]
     fn test_chi_e10() {
         assert_eq!(chromatic_number(&Graph::new_empty(Order::of_usize(10))), 1);
+    }
+
+    #[test]
+    fn test_game_1() {
+        assert_eq!(game_chromatic_number(&Graph::test_graph(1)), 4);
+    }
+
+    #[test]
+    fn test_game_2() {
+        assert_eq!(game_chromatic_number(&Graph::test_graph(2)), 3);
+    }
+
+    #[test]
+    fn test_game_3() {
+        assert_eq!(game_chromatic_number(&Graph::test_graph(3)), 4);
+    }
+
+    #[test]
+    fn test_game_e10() {
+        assert_eq!(game_chromatic_number(&Graph::new_empty(Order::of_usize(10))), 1);
+    }
+
+    #[test]
+    fn test_game_k10() {
+        assert_eq!(game_chromatic_number(&Graph::new_complete(Order::of_usize(10))), 10);
+    }
+
+    #[test]
+    fn test_game_p4() {
+        assert_eq!(game_chromatic_number(&Graph::new_path(Order::of_usize(4))), 3);
     }
 }
