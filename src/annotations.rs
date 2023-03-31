@@ -32,12 +32,13 @@ struct Automorphism {
 
 // This stores what isomorphisms we've found of a graph.
 // This probably also stores e.g. distance matrix from Floyd-Warshall
+#[derive(Clone)]
 struct AnnotatedGraph {
     g: Graph,
-    dists: Option<VertexVec<VertexVec<usize>>>,
-    vertex_hashes: Option<VertexVec<u64>>,
-    weak_auto_comps: Option<VertexVec<Component>>,
-    strong_auto_comps: Option<VertexVec<Component>>,
+    dists: VertexVec<VertexVec<usize>>,
+    vertex_hashes: VertexVec<u64>,
+    weak_auto_comps: VertexVec<Component>,
+    strong_auto_comps: VertexVec<Component>,
 }
 
 /**
@@ -155,28 +156,6 @@ impl Automorphism {
 }
 
 impl AnnotatedGraph {
-    pub fn new_blank(g: Graph) -> AnnotatedGraph {
-        AnnotatedGraph {
-            g, 
-            dists: None,
-            vertex_hashes: None,
-            weak_auto_comps: None,
-            strong_auto_comps: None, 
-
-        }
-    }
-
-    pub fn new_dists(g: Graph) -> AnnotatedGraph {
-        let dists = g.floyd_warshall();
-        AnnotatedGraph {
-            g, 
-            dists: Some(dists), 
-            vertex_hashes: None,
-            weak_auto_comps: None, 
-            strong_auto_comps: None
-        }
-    }
-
     fn get_hash_paritions(hashes: &VertexVec<u64>) -> HashMap<u64, Vec<Vertex>> {
         let mut partns: HashMap<u64, Vec<Vertex>> = HashMap::new();
         for (v, hash) in hashes.iter_enum(){
@@ -204,7 +183,7 @@ impl AnnotatedGraph {
     fn approximate_weak_auto_comps(g: &Graph, hashes: &VertexVec<u64>) -> VertexVec<Component> {
         println!("Finding weak auto comps!");
         let mut comps = UnionFind::new(g.n);
-        let hash_comps = Self::get_hash_paritions(hashes);
+        let hash_comps = Self::get_hash_paritions(&hashes);
         let mut rng = thread_rng();
 
         println!("hash_comps: {:?}", hash_comps);
@@ -212,7 +191,7 @@ impl AnnotatedGraph {
         for (_hash, hash_comp) in hash_comps.iter() {
             for (i, v) in hash_comp.iter().enumerate() {
                 for w in hash_comp.iter().skip(i + 1) {
-                    if let Some(aut) = Automorphism::randomly_extend_map(g, hashes, *v, *w, &mut rng) {
+                    if let Some(aut) = Automorphism::randomly_extend_map(&g, &hashes, *v, *w, &mut rng) {
                         // We have an autoj. Hoorah! Now add the information it provides.
                         println!("Found an autoj! {:?}", aut);
                         for (from, to) in aut.iter() {
@@ -261,16 +240,32 @@ impl AnnotatedGraph {
 
     pub fn new(g: Graph) -> AnnotatedGraph {
         let dists = g.floyd_warshall();
-        let hashes = VertexSignature::compute_vertex_hashes(&g, &dists);
-        let weak_auto_comps = Self::approximate_weak_auto_comps(&g, &hashes);
+        let vertex_hashes = VertexSignature::compute_vertex_hashes(&g, &dists);
+        let weak_auto_comps = Self::approximate_weak_auto_comps(&g, &vertex_hashes);
         let strong_auto_comps = Self::strong_auto_comps(&g);
         AnnotatedGraph { 
-            g,
-            dists: Some(dists),
-            vertex_hashes: Some(hashes),
-            weak_auto_comps: Some(weak_auto_comps), 
-            strong_auto_comps: Some(strong_auto_comps) 
+            g, 
+            dists, 
+            vertex_hashes, 
+            weak_auto_comps, 
+            strong_auto_comps
         }
+    }
+
+    /**
+     * Returns a Vec of representatives of the weak autoj classes.
+     * This should be re-written properly as an iterator.
+     */
+    pub fn weak_representatives(&self) -> Vec<Vertex> {
+        let mut representatives = vec![];
+        let mut components_found = ComponentVec::new(self.g.n, &false);
+        for v in self.g.iter_verts() {
+            if !components_found[self.weak_auto_comps[v]] {
+                components_found[self.weak_auto_comps[v]] = true;
+                representatives.push(v);
+            }
+        }
+        representatives
     }
 }
 
@@ -297,4 +292,9 @@ impl VertexSignature {
 
 pub fn print_automorphism_info(g: &Graph) {
     let annotated = AnnotatedGraph::new(g.to_owned());
+    println!("Dists: {:?}", annotated.dists);
+    println!("Hashes: {:?}", annotated.vertex_hashes);
+    println!("Strong: {:?}", annotated.strong_auto_comps);
+    println!("Weak: {:?}", annotated.weak_auto_comps);
+    println!("Weak representatives: {:?}", annotated.weak_representatives());
 }
