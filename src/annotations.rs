@@ -7,6 +7,7 @@ use crate::graph::*;
 use queues::*;
 use rand::{Rng, thread_rng};
 use rand::rngs::ThreadRng;
+use utilities::*;
 use utilities::vertex_tools::*;
 use utilities::component_tools::*;
 
@@ -33,8 +34,8 @@ struct Automorphism {
 // This stores what isomorphisms we've found of a graph.
 // This probably also stores e.g. distance matrix from Floyd-Warshall
 #[derive(Clone)]
-struct AnnotatedGraph {
-    g: Graph,
+pub struct Annotations {
+    n: Order,
     dists: VertexVec<VertexVec<usize>>,
     vertex_hashes: VertexVec<u64>,
     weak_auto_comps: VertexVec<Component>,
@@ -155,7 +156,7 @@ impl Automorphism {
     }
 }
 
-impl AnnotatedGraph {
+impl Annotations {
     fn get_hash_paritions(hashes: &VertexVec<u64>) -> HashMap<u64, Vec<Vertex>> {
         let mut partns: HashMap<u64, Vec<Vertex>> = HashMap::new();
         for (v, hash) in hashes.iter_enum(){
@@ -238,13 +239,13 @@ impl AnnotatedGraph {
         comps
     }
 
-    pub fn new(g: Graph) -> AnnotatedGraph {
+    pub fn new(g: &Graph) -> Annotations {
         let dists = g.floyd_warshall();
         let vertex_hashes = VertexSignature::compute_vertex_hashes(&g, &dists);
         let weak_auto_comps = Self::approximate_weak_auto_comps(&g, &vertex_hashes);
         let strong_auto_comps = Self::strong_auto_comps(&g);
-        AnnotatedGraph { 
-            g, 
+        Annotations {
+            n: g.n, 
             dists, 
             vertex_hashes, 
             weak_auto_comps, 
@@ -258,8 +259,8 @@ impl AnnotatedGraph {
      */
     pub fn weak_representatives(&self) -> Vec<Vertex> {
         let mut representatives = vec![];
-        let mut components_found = ComponentVec::new(self.g.n, &false);
-        for v in self.g.iter_verts() {
+        let mut components_found = ComponentVec::new(self.n, &false);
+        for v in self.n.iter_verts() {
             if !components_found[self.weak_auto_comps[v]] {
                 components_found[self.weak_auto_comps[v]] = true;
                 representatives.push(v);
@@ -291,7 +292,7 @@ impl VertexSignature {
 }
 
 pub fn print_automorphism_info(g: &Graph) {
-    let annotated = AnnotatedGraph::new(g.to_owned());
+    let annotated = Annotations::new(g);
     println!("Dists: {:?}", annotated.dists);
     println!("Hashes: {:?}", annotated.vertex_hashes);
     println!("Strong: {:?}", annotated.strong_auto_comps);

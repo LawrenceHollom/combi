@@ -6,6 +6,7 @@
 -- If this vertex is fixed, how many genuine choices do I have?
 -- Can I ask this about K(10) where there are 10! autojs without falling over?
 - We need better hashes for vertices - this is where to be clever to speed things up.
+- Actually need to thread the AnnotatedGraph backwards and work out where it comes from.
 
 == MORE REFACTORING ==
 - Perhaps VertexSet should know what n is?

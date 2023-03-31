@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::io::Write;
 use std::time::SystemTime;
 
+use crate::annotations::Annotations;
 use crate::graph::*;
 
 use utilities::*;
@@ -139,7 +140,7 @@ impl Coder {
     }
 }
 
-fn alice_wins_chromatic_game_fast_rec(g: &Graph, k: usize, max_colour_used: usize, coder: &Coder,
+fn alice_wins_chromatic_game_fast_rec(g: &Graph, ann: &Annotations, k: usize, max_colour_used: usize, coder: &Coder,
                 config: Config, history: &mut HashMap<Config, bool>, num_cold: usize) -> bool {
     if g.n.at_most(num_cold) {
         // G is coloured, so Alice has won
@@ -167,7 +168,7 @@ fn alice_wins_chromatic_game_fast_rec(g: &Graph, k: usize, max_colour_used: usiz
                                 is_something_playable = true;
                                 let new_config = coder.play_move(config, v, c);
                                 let max_col = max_colour_used.max(c);
-                                let sub_alice_win = alice_wins_chromatic_game_fast_rec(g, k, max_col, coder, new_config, history, num_cold + 1);
+                                let sub_alice_win = alice_wins_chromatic_game_fast_rec(g, ann, k, max_col, coder, new_config, history, num_cold + 1);
                                 if sub_alice_win != alice_win {
                                     // This is a winning strategy for this player.
                                     alice_win = sub_alice_win;
@@ -189,7 +190,7 @@ fn alice_wins_chromatic_game_fast_rec(g: &Graph, k: usize, max_colour_used: usiz
     }
 }
 
-fn alice_wins_chromatic_game_fast(g: &Graph, k: usize) -> bool {
+fn alice_wins_chromatic_game_fast(g: &Graph, ann: &Annotations, k: usize) -> bool {
     if k >= alice_greedy_lower_bound(g) {
         return true;
     }
@@ -197,9 +198,9 @@ fn alice_wins_chromatic_game_fast(g: &Graph, k: usize) -> bool {
     // This could be smaller as we'll assume configs start with None or Some(0).
     let mut history = HashMap::new();
     let mut alice_wins = false;
-    'test_verts: for v in g.iter_verts() {
-        let config = coder.play_move(coder.get_start_config(), v, 0);
-        if alice_wins_chromatic_game_fast_rec(g, k, 0, &coder, config, &mut history, 1) {
+    'test_verts: for v in ann.weak_representatives().iter() {
+        let config = coder.play_move(coder.get_start_config(), *v, 0);
+        if alice_wins_chromatic_game_fast_rec(g, ann, k, 0, &coder, config, &mut history, 1) {
             alice_wins = true;
             history.insert(config, true);
             break 'test_verts;
@@ -226,25 +227,25 @@ pub fn alice_greedy_lower_bound(g: &Graph) -> usize {
     g.n.to_usize()
 }
 
-pub fn alice_wins_chromatic_game(g: &Graph, k: usize) -> bool {
-    alice_wins_chromatic_game_fast(g, k)
+pub fn alice_wins_chromatic_game(g: &Graph, ann: &Annotations, k: usize) -> bool {
+    alice_wins_chromatic_game_fast(g, ann, k)
 }
 
-pub fn game_chromatic_number(g: &Graph) -> u32 {
+pub fn game_chromatic_number(g: &Graph, ann: &Annotations) -> u32 {
     let mut k = 1;
     loop {
-        if alice_wins_chromatic_game(g, k) {
+        if alice_wins_chromatic_game(g, ann, k) {
             return k as u32;
         }
         k += 1;
     }
 }
 
-pub fn game_chromatic_colour_monotone(g: &Graph) -> bool {
+pub fn game_chromatic_colour_monotone(g: &Graph, ann: &Annotations) -> bool {
     let greedy = alice_greedy_lower_bound(g);
     let mut alice_prev_winner = false;
     for k in 1..greedy {
-        let alice_wins = alice_wins_chromatic_game(g, k);
+        let alice_wins = alice_wins_chromatic_game(g, ann, k);
         print!("{}", if alice_wins { 'A' } else { 'B' });
         std::io::stdout().flush().unwrap();
 
@@ -263,13 +264,13 @@ pub fn game_chromatic_colour_monotone(g: &Graph) -> bool {
     true
 }
 
-pub fn print_game_chromatic_table(g: &Graph) {
+pub fn print_game_chromatic_table(g: &Graph, ann: &Annotations) {
     let delta = g.max_degree();
     let mut checkpoint_time;
     println!("Greedy: {}", alice_greedy_lower_bound(g));
     for k in 1..=(delta + 1) {
         checkpoint_time = SystemTime::now();
-        if alice_wins_chromatic_game_fast(g, k as usize) {
+        if alice_wins_chromatic_game_fast(g, ann, k as usize) {
             print!("{}: Alice", k);
         } else {
             print!("{}: Bob", k);
@@ -301,33 +302,38 @@ mod tests {
         assert_eq!(chromatic_number(&Graph::new_empty(Order::of_usize(10))), 1);
     }
 
+    fn test_chi_g(g: &Graph) -> u32 {
+        let ann = Annotations::new(g);
+        game_chromatic_number(g, &ann)
+    }
+
     #[test]
     fn test_game_1() {
-        assert_eq!(game_chromatic_number(&Graph::test_graph(1)), 4);
+        assert_eq!(test_chi_g(&Graph::test_graph(1)), 4);
     }
 
     #[test]
     fn test_game_2() {
-        assert_eq!(game_chromatic_number(&Graph::test_graph(2)), 3);
+        assert_eq!(test_chi_g(&Graph::test_graph(2)), 3);
     }
 
     #[test]
     fn test_game_3() {
-        assert_eq!(game_chromatic_number(&Graph::test_graph(3)), 4);
+        assert_eq!(test_chi_g(&Graph::test_graph(3)), 4);
     }
 
     #[test]
     fn test_game_e10() {
-        assert_eq!(game_chromatic_number(&Graph::new_empty(Order::of_usize(10))), 1);
+        assert_eq!(test_chi_g(&Graph::new_empty(Order::of_usize(10))), 1);
     }
 
     #[test]
     fn test_game_k10() {
-        assert_eq!(game_chromatic_number(&Graph::new_complete(Order::of_usize(10))), 10);
+        assert_eq!(test_chi_g(&Graph::new_complete(Order::of_usize(10))), 10);
     }
 
     #[test]
     fn test_game_p4() {
-        assert_eq!(game_chromatic_number(&Graph::new_path(Order::of_usize(4))), 3);
+        assert_eq!(test_chi_g(&Graph::new_path(Order::of_usize(4))), 3);
     }
 }

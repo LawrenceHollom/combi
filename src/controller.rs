@@ -157,11 +157,11 @@ impl Instruction {
         operations_strs.join(", ")
     }
 
-    fn compute_and_print(&self, g: &Graph, operator: &mut Operator) {
+    fn compute_and_print(&self, operator: &mut Operator) {
         let rep_start = SystemTime::now();
         let numbers: Vec<String> = self.operations
                 .iter()
-                .map(|op| operator.operate(g, op))
+                .map(|op| operator.operate(op))
                 .collect();
         println!("{}: [{}], time: {}", self.operations_string(), numbers.join(", "),
             rep_start.elapsed().unwrap().as_millis());
@@ -169,8 +169,8 @@ impl Instruction {
 
     fn execute_single_return(&self, constr: &Constructor) -> (Graph, Operator) {
         let g = constr.new_graph();
-        let mut operator = Operator::new();
-        self.compute_and_print(&g, &mut operator);
+        let mut operator = Operator::new(&g);
+        self.compute_and_print(&mut operator);
         (g, operator)
     }
 
@@ -204,9 +204,9 @@ impl Instruction {
             for _j in 0..reps {
                 let constr = Constructor::Random(RandomConstructor::ErdosRenyi(tab.order, p));
                 let g = constr.new_graph();
-                let mut operator = Operator::new();
+                let mut operator = Operator::new(&g);
                 for (op, sum) in operators.iter().zip(sums.iter_mut()) {
-                    *sum += operator.operate_rational(&g, op).to_f64();
+                    *sum += operator.operate_rational(op).to_f64();
                 }
             }
             for sum in sums.iter_mut() {
@@ -236,9 +236,9 @@ impl Instruction {
             adj_list[e.fst()].push(e.snd());
             adj_list[e.snd()].push(e.fst());
             let g = Graph::of_adj_list(adj_list.to_owned(), Constructor::Special);
-            let mut operator = Operator::new();
+            let mut operator = Operator::new(&g);
             print!("[{} / {}]: ", i+1, edges.len());
-            self.compute_and_print(&g, &mut operator);
+            self.compute_and_print(&mut operator);
         }
     }
 
@@ -264,11 +264,11 @@ impl Instruction {
             }
             rep += 1;
             let g = constr.new_graph();
-            let mut operator = Operator::new();
+            let mut operator = Operator::new(&g);
             let mut all_satisfied = true;
             let mut num_satisfied = 0;
             'test_conditions: for condition in conditions.iter() {
-                if operator.operate_bool(&g, condition) {
+                if operator.operate_bool(condition) {
                     num_satisfied += 1;
                     if num_satisfied >= required_steps {
                         if !printed_number {
@@ -295,7 +295,7 @@ impl Instruction {
                 println!("All conditions satisfied! {:?}", conditions);
                 println!("Graph: ");
                 g.print();
-                self.compute_and_print(&g, &mut operator);
+                self.compute_and_print(&mut operator);
                 satisfied = true;
             }
         }
@@ -315,11 +315,11 @@ impl Instruction {
                 }
             }
             if is_in_order {
-                let mut operator = Operator::new();
                 // We just copy the vector of parents because fuck it, that's why.
                 let g = Constructor::RootedTree(parents.to_vec()).new_graph();
+                let mut operator = Operator::new(&g);
                 
-                let success = operator.operate_bool(&g, condition);
+                let success = operator.operate_bool(condition);
                 if success {
                     println!("Success!");
                     g.print();
@@ -364,10 +364,10 @@ impl Instruction {
     }
             
     fn test_sink_graph(&self, g: &Graph, conditions: &[BoolOperation], find_all: bool) -> bool {
-        let mut operator = Operator::new();
+        let mut operator = Operator::new(g);
         let mut result = true;
         'test_conditions: for condition in conditions.iter() {
-            if !operator.operate_bool(g, condition) {
+            if !operator.operate_bool(condition) {
                 result = false;
                 break 'test_conditions;
             }
