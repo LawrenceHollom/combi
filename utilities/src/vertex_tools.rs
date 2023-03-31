@@ -22,6 +22,13 @@ pub struct VertexSet {
     verts: u128
 }
 
+#[derive(Clone, PartialEq, Eq)]
+pub struct VertexSetIterator {
+    n: Order,
+    verts: VertexSet,
+    i: Vertex,
+}
+
 pub struct VertexPairIterator {
     curr: (Vertex, Vertex),
     n: Order,
@@ -313,6 +320,20 @@ impl VertexSet {
         }
         size as usize
     }
+
+    pub fn iter(&self, n: Order) -> VertexSetIterator {
+        VertexSetIterator::new(*self, n)
+    }
+}
+
+impl VertexSetIterator {
+    pub fn new(verts: VertexSet, n: Order) -> VertexSetIterator {
+        VertexSetIterator { 
+            n, 
+            verts, 
+            i: Vertex::ZERO 
+        }
+    }
 }
 
 impl fmt::Display for Vertex {
@@ -338,5 +359,22 @@ impl<T: Debug + Clone> IndexMut<Vertex> for VertexVec<T> {
 impl fmt::Display for VertexSet {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.verts)
+    }
+}
+
+impl Iterator for VertexSetIterator {
+    type Item = Vertex;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while !self.i.is_n(self.n) && !self.verts.has_vert(self.i) {
+            self.i.incr_inplace();
+        }
+        if self.i.is_n(self.n) {
+            None
+        } else {
+            let out = self.i;
+            self.i.incr_inplace();
+            Some(out)
+        }
     }
 }

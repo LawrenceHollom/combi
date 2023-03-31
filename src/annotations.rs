@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
@@ -59,7 +59,9 @@ impl Automorphism {
     pub fn randomly_extend_map(g: &Graph, hashes: &VertexVec<u64>, from: Vertex, 
             to: Vertex, rng: &mut ThreadRng) -> Option<Automorphism> {
         let mut map = VertexVec::new(g.n, &None);
+        let mut map_inv = VertexVec::new(g.n, &None);
         map[from] = Some(to);
+        map_inv[to] = Some(from);
         let mut q = queue![];
         let mut visited = VertexVec::new(g.n, &false);
         visited[from] = true;
@@ -69,31 +71,30 @@ impl Automorphism {
         }
         let mut is_autoj_good = true;
         let mut num_placed = 1;
-        let mut adj_sets = VertexVec::new(g.n, &HashSet::new());
+        let mut adj_sets = VertexVec::new(g.n, &VertexSet::new());
         for (v, adj_set) in adj_sets.iter_mut_enum() {
             for u in g.adj_list[v].iter() {
-                adj_set.insert(*u);
+                adj_set.add_vert(*u);
             }
         }
         'place_vertices: loop {
             match q.remove() {
                 Ok(to_place) => {
-                    let mut locations: Option<HashSet<Vertex>> = None;
-                    for v in g.adj_list[*to_place].iter() {
-                        if let Some(v_mapped) = map[*v] {
-                            match locations {
-                                Some(good_locations) => {
-                                    locations = Some(good_locations.intersection(&adj_sets[v_mapped]).cloned().collect());
-                                }
-                                None => {
-                                    locations = Some(adj_sets[v_mapped].to_owned());
-                                }
+                    let mut locations = VertexSet::everything(g.n);
+                    // Could also rule out nbhds of non-adj things.
+                    for (obj, img_opn) in map.iter_enum() {
+                        if let Some(img) = img_opn {
+                            if g.adj[obj][*to_place] {
+                                // The images need to be adjacent too.
+                                locations = locations.inter(&adj_sets[*img]);
+                            } else {
+                                locations = locations.inter(&adj_sets[*img].not());
                             }
                         }
                     }
                     let mut valid_locations = vec![];
-                    for v in locations.unwrap() {
-                        if hashes[*to_place] == hashes[v] {
+                    for v in locations.iter(g.n) {
+                        if hashes[*to_place] == hashes[v] && map_inv[v].is_none() {
                             valid_locations.push(v)
                         }
                     }
@@ -103,7 +104,9 @@ impl Automorphism {
                     }
                     
                     num_placed += 1;
-                    map[*to_place] = Some(valid_locations[rng.gen_range(0..valid_locations.len())]);
+                    let destination = valid_locations[rng.gen_range(0..valid_locations.len())];
+                    map[*to_place] = Some(destination);
+                    map_inv[destination] = Some(*to_place);
                     for w in g.adj_list[*to_place].iter() {
                         if !visited[*w] {
                             visited[*w] = true;
@@ -125,8 +128,22 @@ impl Automorphism {
                 break 'test_map;
             }
         }
+        
         if is_autoj_good {
-            Some(Automorphism{ map: map.iter().map(|x| x.unwrap()).collect() })
+            let map: VertexVec<Vertex> = map.iter().map(|x| x.unwrap()).collect();
+            // Now need to test if this map is actually an autoj
+            // Perhaps if we add non-adjness above then this should be guaranteed.
+            'test_if_autoj: for (u, v) in g.iter_pairs() {
+                if g.adj[u][v] != g.adj[map[u]][map[v]] {
+                    is_autoj_good = false;
+                    break 'test_if_autoj;
+                }
+            }
+            if is_autoj_good {
+                Some(Automorphism{ map })
+            } else {
+                None
+            }
         } else {
             None
         }
@@ -215,7 +232,7 @@ impl AnnotatedGraph {
      * Then those vertices are strongly isomorphic.
      * This is tested by simply checking if two vertices have the same nbhd
      */
-    fn strong_auto_comps(g: &Graph, hashes: &VertexVec<u64>) -> VertexVec<Component> {
+    fn strong_auto_comps(g: &Graph) -> VertexVec<Component> {
         let mut comps = VertexVec::new_fn(g.n, |v| Component::of_vertex(v));
         
         fn just_hash(adjs: &Vec<Vertex>) -> u64 {
@@ -246,7 +263,7 @@ impl AnnotatedGraph {
         let dists = g.floyd_warshall();
         let hashes = VertexSignature::compute_vertex_hashes(&g, &dists);
         let weak_auto_comps = Self::approximate_weak_auto_comps(&g, &hashes);
-        let strong_auto_comps = Self::strong_auto_comps(&g, &hashes);
+        let strong_auto_comps = Self::strong_auto_comps(&g);
         AnnotatedGraph { 
             g,
             dists: Some(dists),
