@@ -32,7 +32,6 @@ pub fn girth(g: &Graph) -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use crate::graph::*;
     use super::*;
     use utilities::*;
 

@@ -437,7 +437,6 @@ pub fn print_game_chromatic_table(g: &Graph) {
 
 #[cfg(test)]
 mod tests {
-    use crate::graph::*;
     use super::*;
     #[test]
     fn test_chi_1() {

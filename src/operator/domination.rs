@@ -484,7 +484,6 @@ pub fn total_domination_game_length(g: &Graph) -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use crate::graph::*;
     use super::*;
 
     #[test]

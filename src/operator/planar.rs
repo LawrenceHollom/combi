@@ -377,7 +377,6 @@ pub fn is_planar(g: &Graph) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use crate::graph::*;
     use super::*;
     use utilities::*;
 
