@@ -274,7 +274,9 @@ impl VertexSignature {
     fn new(g: &Graph, v: Vertex, dists: &VertexVec<VertexVec<usize>>) -> VertexSignature {
         let mut dist_counts = vec![0; g.n.to_usize()];
         for u in g.iter_verts() {
-            dist_counts[dists[u][v]] += 1;
+            if dists[u][v] < usize::MAX {
+                dist_counts[dists[u][v]] += 1;
+            }
         }
         VertexSignature { dist_counts }
     }

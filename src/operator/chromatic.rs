@@ -220,7 +220,7 @@ pub fn alice_greedy_lower_bound(g: &Graph) -> usize {
     degs.sort();
     for (k, d) in degs.iter().rev().enumerate() {
         if d.to_usize() < 2 * k {
-            return k * 2;
+            return 2 * k;
         }
     }
     g.n.to_usize()
