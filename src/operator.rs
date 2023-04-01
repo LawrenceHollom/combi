@@ -50,12 +50,12 @@ impl AnnotationsBox {
         AnnotationsBox(None)
     }
 
-    pub fn get_annotations(&mut self, g: &Graph) -> &Annotations {
+    pub fn get_annotations(&mut self, g: &Graph) -> &mut Annotations {
         if self.0.is_none() {
             let ann = Annotations::new(g);
             self.0 = Some(ann);
         }
-        self.0.as_ref().unwrap()
+        self.0.as_mut().unwrap()
     }
 }
 

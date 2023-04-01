@@ -275,8 +275,16 @@ impl VertexSet {
         VertexSet{ verts: set, n }
     }
 
+    pub fn of_vert(n: Order, v: Vertex) -> VertexSet {
+        VertexSet{ verts: 1 << v.0, n }
+    }
+
     pub fn add_vert(&mut self, v: Vertex) {
         self.verts |= 1 << v.0;
+    }
+
+    pub fn add_vert_immutable(&self, v: Vertex) -> VertexSet {
+        VertexSet{ verts: self.verts | 1 << v.0, n: self.n }
     }
 
     pub fn add_all(&mut self, vs: VertexSet) {
@@ -305,6 +313,11 @@ impl VertexSet {
 
     pub fn is_nonempty(&self) -> bool {
         self.verts != 0
+    }
+
+    pub fn is_everything(&self) -> bool {
+        let everything = (1 << self.n.to_usize()) - 1;
+        self.verts & everything == everything
     }
 
     pub fn has_vert(&self, v: Vertex) -> bool {
@@ -337,6 +350,17 @@ impl VertexSet {
 
     pub fn iter(&self) -> VertexSetIterator {
         VertexSetIterator::new(*self)
+    }
+
+    pub fn print(&self) {
+        for v in self.n.iter_verts() {
+            if self.has_vert(v) {
+                print!("1");
+            } else {
+                print!("0");
+            }
+        }
+        println!();
     }
 }
 

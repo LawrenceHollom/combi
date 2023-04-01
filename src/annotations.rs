@@ -67,6 +67,8 @@ impl Automorphism {
             map[*from] = Some(*to);
             map_inv[*to] = Some(*from);
             visited[*from] = true;
+        }
+        for (from, _to) in partial.iter() {
             for v in g.adj_list[*from].iter() {
                 if !visited[*v] {
                     visited[*v] = true;
@@ -138,7 +140,7 @@ impl Automorphism {
         if is_autoj_good {
             let map: VertexVec<Vertex> = map.iter().map(|x| x.unwrap()).collect();
             // Now need to test if this map is actually an autoj
-            // Perhaps if we add non-adjness above then this should be guaranteed.
+            // This is maybe unecessary, but not a bottleneck.
             'test_if_autoj: for (u, v) in g.iter_pairs() {
                 if g.adj[u][v] != g.adj[map[u]][map[v]] {
                     is_autoj_good = false;
@@ -286,6 +288,7 @@ impl Annotations {
                 }
                 let reps = comps.get_representatives();
                 self.history.insert(fixed, reps);
+                reps.inter(&fixed.not());
                 reps
             }
         }

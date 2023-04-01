@@ -4,6 +4,9 @@
 -- This takes a VertexSet of fixed things and returns a VertexSet of class representatives.
 -- Then things can be made even faster.
 -- This should be calculated on-the-fly by working out a few autos
+- Need some kind of DFS token to help with keeping track of when it's not worth
+   searching for autojs any more when dfs-ing...
+- There are probably some issues with finding autojs. Dig into this more.
 
 == MORE REFACTORING ==
 - Perhaps VertexSet should know what n is?
