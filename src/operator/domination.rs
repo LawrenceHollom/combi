@@ -5,7 +5,7 @@ use utilities::rational::*;
 use utilities::vertex_tools::*;
 
 fn get_nbhd_code(g: &Graph, v: Vertex) -> VertexSet {
-    let mut dominion = VertexSet::new();
+    let mut dominion = VertexSet::new(g.n);
     dominion.add_vert(v);
     for u in g.adj_list[v].iter() {
         dominion.add_vert(*u);
@@ -44,7 +44,7 @@ fn min_dominator_bfs(g: &Graph, dominator: &mut VertexVec<bool>, best_dominator:
         return num_picked;
     }
 
-    let mut hittable = VertexSet::new();
+    let mut hittable = VertexSet::new(g.n);
     // Test that it's still possible to hit everything.
     for i in last_pick.incr().iter_from(g.n) {
         hittable.add_all(get_nbhd_code(g, i));
@@ -57,7 +57,7 @@ fn min_dominator_bfs(g: &Graph, dominator: &mut VertexVec<bool>, best_dominator:
     // Add another vertex.
     // First test which vertices are worth adding; i.e. not superceded by any others.
     // subdominia[v] is stuff covered by v not in dominion already.
-    let mut subdominia: VertexVec<VertexSet> = VertexVec::new(g.n, &VertexSet::new());
+    let mut subdominia: VertexVec<VertexSet> = VertexVec::new(g.n, &VertexSet::new(g.n));
 
     for vert in last_pick.incr().iter_from(g.n) {
         subdominia[vert] = get_nbhd_code(g, vert).inter(&dominion.not());
@@ -167,7 +167,7 @@ fn compute_domination_number_and_set(g: &Graph, predominations: VertexSet, best_
     let (h, ordering_inv) = g.order_by_nbhd();
 
     // Fix predominations to look at ordering_inv.
-    let mut h_predominations = VertexSet::new();
+    let mut h_predominations = VertexSet::new(g.n);
     for i in g.n.iter_verts() {
         if predominations.has_vert(i) {
             h_predominations.add_vert(ordering_inv[i]);
@@ -207,7 +207,7 @@ pub fn domination_number_with_predominations(g: &Graph, predominations: VertexSe
 }
 
 pub fn domination_number(g: &Graph) -> u32 {
-    domination_number_with_predominations(g, VertexSet::new())
+    domination_number_with_predominations(g, VertexSet::new(g.n))
 }
 
 pub fn print_random_dominator(g: &Graph) {
@@ -219,7 +219,7 @@ pub fn print_random_dominator(g: &Graph) {
         ordering[ordering_inv[i]] = i;
     }
 
-    let _ = compute_domination_number_and_set(&h, VertexSet::new(), &mut best_dominator);
+    let _ = compute_domination_number_and_set(&h, VertexSet::new(g.n), &mut best_dominator);
     let mut dominator_verts: Vec<Vertex> = 
         best_dominator.iter_enum()
                     .filter(|(_i, x)| **x)
@@ -232,7 +232,7 @@ pub fn print_random_dominator(g: &Graph) {
 pub fn is_domination_number_at_least(g: &Graph, lower_bound: usize) -> bool {
     let mut dominator = VertexVec::new(g.n, &false);
     let mut best_dominator =  VertexVec::new(g.n, &false);
-    let mut number = dominate_greedy(g, VertexSet::new(), &mut best_dominator);
+    let mut number = dominate_greedy(g, VertexSet::new(g.n), &mut best_dominator);
 
     let (h, _ordering_inv) = g.order_by_nbhd();
     let max_nbrs = get_max_nbrs(&h);
@@ -242,7 +242,7 @@ pub fn is_domination_number_at_least(g: &Graph, lower_bound: usize) -> bool {
         }
         dominator[i] = true;
         let this_number = min_dominator_bfs(&h, &mut dominator, &mut best_dominator, 1, i, 
-            number, Some(lower_bound), &max_nbrs, VertexSet::new());
+            number, Some(lower_bound), &max_nbrs, VertexSet::new(g.n));
         if this_number < number {
             number = this_number;
         }
@@ -254,14 +254,14 @@ pub fn is_domination_number_at_least(g: &Graph, lower_bound: usize) -> bool {
 pub fn domination_redundancy(g: &Graph) -> Rational {
     let mut dominator = VertexVec::new(g.n, &false);
     let mut best_dominator = VertexVec::new(g.n, &false);
-    let mut number = dominate_greedy(g, VertexSet::new(), &mut best_dominator);
+    let mut number = dominate_greedy(g, VertexSet::new(g.n), &mut best_dominator);
 
     let (h, _ordering_inv) = g.order_by_nbhd();
     let max_nbrs = get_max_nbrs(&h);
     for i in Vertex::ZERO.iter_from_to_incl(max_nbrs[Vertex::ZERO]) {
         dominator[i] = true;
         let this_number = min_dominator_bfs(&h, &mut dominator, &mut best_dominator, 1, i, 
-            number + 1, None, &max_nbrs, VertexSet::new());
+            number + 1, None, &max_nbrs, VertexSet::new(g.n));
         if this_number < number {
             number = this_number;
         }

@@ -124,7 +124,7 @@ struct ConfSignature {
 
 impl ConfSignature {
     pub fn new(g: &Graph, config: &EdgeSet, indexer: &EdgeIndexer) -> ConfSignature {
-        let mut posts_index = VertexSet::new();
+        let mut posts_index = VertexSet::new(g.n);
         let mut blanks_index = EdgeSet::new(indexer);
         let mut doubles_index = EdgeSet::new(indexer);
         for u in g.n.iter_verts() {

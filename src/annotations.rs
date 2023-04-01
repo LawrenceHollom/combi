@@ -31,15 +31,14 @@ struct Automorphism {
     map: VertexVec<Vertex>,
 }
 
-// This stores what isomorphisms we've found of a graph.
-// This probably also stores e.g. distance matrix from Floyd-Warshall
 #[derive(Clone)]
 pub struct Annotations {
     n: Order,
     dists: VertexVec<VertexVec<usize>>,
     vertex_hashes: VertexVec<u64>,
-    weak_auto_comps: VertexVec<Component>,
-    strong_auto_comps: VertexVec<Component>,
+    weak_auto_comps: UnionFind,
+    strong_auto_comps: UnionFind,
+    history: HashMap<VertexSet, VertexSet>,
 }
 
 /**
@@ -58,22 +57,27 @@ struct VertexSignature {
 }
 
 impl Automorphism {
-    pub fn randomly_extend_map(g: &Graph, hashes: &VertexVec<u64>, from: Vertex, 
-            to: Vertex, rng: &mut ThreadRng) -> Option<Automorphism> {
+    pub fn randomly_extend_map(g: &Graph, hashes: &VertexVec<u64>, partial: &Vec<(Vertex, Vertex)>, rng: &mut ThreadRng) -> Option<Automorphism> {
         let mut map = VertexVec::new(g.n, &None);
         let mut map_inv = VertexVec::new(g.n, &None);
-        map[from] = Some(to);
-        map_inv[to] = Some(from);
         let mut q = queue![];
         let mut visited = VertexVec::new(g.n, &false);
-        visited[from] = true;
-        for v in g.adj_list[from].iter() {
-            visited[*v] = true;
-            let _ = q.add(v);
+
+        for (from, to) in partial.iter() {
+            map[*from] = Some(*to);
+            map_inv[*to] = Some(*from);
+            visited[*from] = true;
+            for v in g.adj_list[*from].iter() {
+                if !visited[*v] {
+                    visited[*v] = true;
+                    let _ = q.add(v);
+                }
+            }
         }
+
         let mut is_autoj_good = true;
         let mut num_placed = 1;
-        let mut adj_sets = VertexVec::new(g.n, &VertexSet::new());
+        let mut adj_sets = VertexVec::new(g.n, &VertexSet::new(g.n));
         for (v, adj_set) in adj_sets.iter_mut_enum() {
             for u in g.adj_list[v].iter() {
                 adj_set.add_vert(*u);
@@ -95,7 +99,7 @@ impl Automorphism {
                         }
                     }
                     let mut valid_locations = vec![];
-                    for v in locations.iter(g.n) {
+                    for v in locations.iter() {
                         if hashes[*to_place] == hashes[v] && map_inv[v].is_none() {
                             valid_locations.push(v)
                         }
@@ -181,7 +185,7 @@ impl Annotations {
      * Have lots of attempts of: map a to b, and then build the autoj around this.
      * Use random techniques to keep things interesting.
      */
-    fn approximate_weak_auto_comps(g: &Graph, hashes: &VertexVec<u64>) -> VertexVec<Component> {
+    fn approximate_weak_auto_comps(g: &Graph, hashes: &VertexVec<u64>) -> UnionFind {
         let mut comps = UnionFind::new(g.n);
         let hash_comps = Self::get_hash_paritions(&hashes);
         let mut rng = thread_rng();
@@ -189,7 +193,7 @@ impl Annotations {
         for (_hash, hash_comp) in hash_comps.iter() {
             for (i, v) in hash_comp.iter().enumerate() {
                 for w in hash_comp.iter().skip(i + 1) {
-                    if let Some(aut) = Automorphism::randomly_extend_map(&g, &hashes, *v, *w, &mut rng) {
+                    if let Some(aut) = Automorphism::randomly_extend_map(&g, &hashes, &vec![(*v, *w)], &mut rng) {
                         // We have an autoj. Hoorah! Now add the information it provides.
                         for (from, to) in aut.iter() {
                             if from != *to {
@@ -200,7 +204,7 @@ impl Annotations {
                 }
             }
         }
-        comps.to_component_vec()
+        comps
     }
 
     /**
@@ -208,8 +212,8 @@ impl Annotations {
      * Then those vertices are strongly isomorphic.
      * This is tested by simply checking if two vertices have the same nbhd
      */
-    fn strong_auto_comps(g: &Graph) -> VertexVec<Component> {
-        let mut comps = VertexVec::new_fn(g.n, |v| Component::of_vertex(v));
+    fn strong_auto_comps(g: &Graph) -> UnionFind {
+        let mut comps = UnionFind::new(g.n);
         
         fn just_hash(adjs: &Vec<Vertex>) -> u64 {
             let mut hasher = DefaultHasher::new();
@@ -219,7 +223,7 @@ impl Annotations {
 
         let hash_nbhds: VertexVec<u64> = g.adj_list.iter().map(just_hash).collect();
         for (u, v) in g.iter_pairs() {
-            if comps[v].is_vertex(v) && hash_nbhds[u] == hash_nbhds[v] {
+            if comps.get_component(v).is_vertex(v) && hash_nbhds[u] == hash_nbhds[v] {
                 let mut are_equal = true;
                 'test_equality: for w in g.iter_verts() {
                     if g.adj[v][w] != g.adj[u][w] {
@@ -228,7 +232,7 @@ impl Annotations {
                     }
                 }
                 if are_equal {
-                    comps[v] = comps[u];
+                    comps.merge(u, v)
                 }
             }
         }
@@ -245,24 +249,46 @@ impl Annotations {
             dists, 
             vertex_hashes, 
             weak_auto_comps, 
-            strong_auto_comps
+            strong_auto_comps,
+            history: HashMap::new(),
         }
     }
 
     /**
-     * Returns a Vec of representatives of the weak autoj classes.
-     * This should be re-written properly as an iterator.
+     * Returns a VertexSet of representatives of the weak autoj classes.
      */
-    pub fn weak_representatives(&self) -> Vec<Vertex> {
-        let mut representatives = vec![];
-        let mut components_found = ComponentVec::new(self.n, &false);
-        for v in self.n.iter_verts() {
-            if !components_found[self.weak_auto_comps[v]] {
-                components_found[self.weak_auto_comps[v]] = true;
-                representatives.push(v);
+    pub fn weak_representatives(&self) -> VertexSet {
+        self.weak_auto_comps.get_representatives()
+    }
+
+    pub fn get_representatives(&mut self, g: &Graph, fixed: VertexSet) -> VertexSet {
+        match self.history.get(&fixed) {
+            Some(representatives) => *representatives,
+            None => {
+                // We now need to try and find ways in which this can extend to an autoj.
+                // Just do something a bit silly for now.
+                let mut rng = thread_rng();
+                let mut comps = UnionFind::new(self.n);
+                let partial = fixed.iter().map(|x| (x, x)).collect::<Vec<(Vertex, Vertex)>>();
+                
+                let the_code_below_is_dumb_and_you_should_fix_it = 42;
+                // Maybe use strong equivalence and feed in the comps we know about so
+                // it can aim for getting something new. Then stop when it can't find
+                // any more information.
+                for _ in 0..10 {
+                    if let Some(aut) = Automorphism::randomly_extend_map(g, &self.vertex_hashes, &partial, &mut rng) {
+                        for (from, to) in aut.iter() {
+                            if from != *to {
+                                comps.merge(from, *to);
+                            }
+                        }
+                    }
+                }
+                let reps = comps.get_representatives();
+                self.history.insert(fixed, reps);
+                reps
             }
         }
-        representatives
     }
 }
 

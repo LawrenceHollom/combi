@@ -19,12 +19,12 @@ pub struct VertexVec<T: Debug + Clone> {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct VertexSet {
-    verts: u128
+    verts: u128,
+    n: Order,
 }
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct VertexSetIterator {
-    n: Order,
     verts: VertexSet,
     i: Vertex,
 }
@@ -263,16 +263,16 @@ impl <T: Debug + Clone> FromIterator<T> for VertexVec<T> {
 }
 
 impl VertexSet {
-    pub fn new() -> VertexSet {
-        VertexSet{ verts: 0 }
+    pub fn new(n: Order) -> VertexSet {
+        VertexSet{ verts: 0, n }
     }
 
     pub fn everything(n: Order) -> VertexSet {
-        VertexSet{ verts: (1 << n.to_usize()) - 1 }
+        VertexSet{ verts: (1 << n.to_usize()) - 1, n }
     }
 
-    pub fn of_int(set: u128) -> VertexSet {
-        VertexSet{ verts: set }
+    pub fn of_int(set: u128, n: Order) -> VertexSet {
+        VertexSet{ verts: set, n }
     }
 
     pub fn add_vert(&mut self, v: Vertex) {
@@ -284,19 +284,19 @@ impl VertexSet {
     }
 
     pub fn union(&self, other: &VertexSet) -> VertexSet {
-        VertexSet{ verts: self.verts | other.verts }
+        VertexSet{ verts: self.verts | other.verts, n: self.n }
     }
 
     pub fn inter(&self, other: &VertexSet) -> VertexSet {
-        VertexSet{ verts: self.verts & other.verts }
+        VertexSet{ verts: self.verts & other.verts, n: self.n }
     }
 
     pub fn xor(&self, other: &VertexSet) -> VertexSet {
-        VertexSet { verts: self.verts ^ other.verts }
+        VertexSet { verts: self.verts ^ other.verts, n: self.n }
     }
 
     pub fn not(&self) -> VertexSet {
-        VertexSet { verts: !self.verts }
+        VertexSet { verts: !self.verts, n: self.n }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -321,15 +321,28 @@ impl VertexSet {
         size as usize
     }
 
-    pub fn iter(&self, n: Order) -> VertexSetIterator {
-        VertexSetIterator::new(*self, n)
+    pub fn get_first_element(&self) -> Option<Vertex> {
+        let mut sta = self.verts;
+        if sta == 0 {
+            None
+        } else {
+            let mut vert = Vertex::ZERO;
+            while sta % 2 == 0 {
+                vert.incr_inplace();
+                sta >>= 1;
+            }
+            Some(vert)
+        }
+    }
+
+    pub fn iter(&self) -> VertexSetIterator {
+        VertexSetIterator::new(*self)
     }
 }
 
 impl VertexSetIterator {
-    pub fn new(verts: VertexSet, n: Order) -> VertexSetIterator {
+    pub fn new(verts: VertexSet) -> VertexSetIterator {
         VertexSetIterator { 
-            n, 
             verts, 
             i: Vertex::ZERO 
         }
@@ -366,10 +379,10 @@ impl Iterator for VertexSetIterator {
     type Item = Vertex;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while !self.i.is_n(self.n) && !self.verts.has_vert(self.i) {
+        while !self.i.is_n(self.verts.n) && !self.verts.has_vert(self.i) {
             self.i.incr_inplace();
         }
-        if self.i.is_n(self.n) {
+        if self.i.is_n(self.verts.n) {
             None
         } else {
             let out = self.i;

@@ -16,6 +16,7 @@ pub struct ComponentVec<T: Debug + Clone> {
     vec: VertexVec<T>
 }
 
+#[derive(Clone, Debug)]
 pub struct UnionFind {
     vec: VertexVec<Vertex>
 }
@@ -146,6 +147,20 @@ impl UnionFind {
 
     pub fn to_component_vec(self) -> VertexVec<Component> {
         VertexVec::new_fn(self.vec.len(), |v| self.get_component(v))
+    }
+
+    pub fn get_representatives(&self) -> VertexSet {
+        let n = self.vec.len();
+        let mut found = ComponentVec::new(n, &false);
+        let mut reps = VertexSet::new(n);
+        for (v, comp_v) in self.vec.iter_enum() {
+            let comp = Component::of_vertex(*comp_v);
+            if !found[comp] {
+                found[comp] = true;
+                reps.add_vert(v);
+            }
+        }
+        reps
     }
 }
 

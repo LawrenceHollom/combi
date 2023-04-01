@@ -11,7 +11,7 @@ pub mod edge_tools;
 pub mod vertex_tools;
 pub mod component_tools;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Order(usize);
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]

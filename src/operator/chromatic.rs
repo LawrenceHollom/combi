@@ -199,7 +199,7 @@ fn alice_wins_chromatic_game_fast(g: &Graph, ann: &Annotations, k: usize) -> boo
     let mut history = HashMap::new();
     let mut alice_wins = false;
     'test_verts: for v in ann.weak_representatives().iter() {
-        let config = coder.play_move(coder.get_start_config(), *v, 0);
+        let config = coder.play_move(coder.get_start_config(), v, 0);
         if alice_wins_chromatic_game_fast_rec(g, ann, k, 0, &coder, config, &mut history, 1) {
             alice_wins = true;
             history.insert(config, true);

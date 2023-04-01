@@ -12,7 +12,7 @@ use queues::*;
 pub fn max_acyclic_subgraph(g: &Graph) -> u32 {
     let mut max_acyclic = 2;
     for i in 0..pow(2, g.n.to_usize() as u64) {
-        let subset = VertexSet::of_int(i as u128);
+        let subset = VertexSet::of_int(i as u128, g.n);
 
         let mut is_cycle = false;
         let size = subset.size();
