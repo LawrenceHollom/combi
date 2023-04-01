@@ -207,10 +207,10 @@ fn alice_wins_chromatic_game_fast(g: &Graph, ann: &Annotations, k: usize) -> boo
         }
         history.insert(config, false);
     }
-    for (k, v) in history.iter() {
+    /*for (k, v) in history.iter() {
         print!("{}: ", if *v { "A" } else { "B" });
         coder._print(*k);
-    }
+    }*/
     alice_wins
 }
 

@@ -182,19 +182,15 @@ impl Annotations {
      * Use random techniques to keep things interesting.
      */
     fn approximate_weak_auto_comps(g: &Graph, hashes: &VertexVec<u64>) -> VertexVec<Component> {
-        println!("Finding weak auto comps!");
         let mut comps = UnionFind::new(g.n);
         let hash_comps = Self::get_hash_paritions(&hashes);
         let mut rng = thread_rng();
-
-        println!("hash_comps: {:?}", hash_comps);
 
         for (_hash, hash_comp) in hash_comps.iter() {
             for (i, v) in hash_comp.iter().enumerate() {
                 for w in hash_comp.iter().skip(i + 1) {
                     if let Some(aut) = Automorphism::randomly_extend_map(&g, &hashes, *v, *w, &mut rng) {
                         // We have an autoj. Hoorah! Now add the information it provides.
-                        println!("Found an autoj! {:?}", aut);
                         for (from, to) in aut.iter() {
                             if from != *to {
                                 comps.merge(from, *to);
