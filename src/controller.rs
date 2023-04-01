@@ -9,6 +9,7 @@ use utilities::edge_tools::*;
 use utilities::vertex_tools::*;
 
 use crate::constructor::*;
+use crate::operator::AnnotationsBox;
 use crate::operator::Operator;
 use crate::graph::Graph;
 
@@ -157,21 +158,22 @@ impl Instruction {
         operations_strs.join(", ")
     }
 
-    fn compute_and_print(&self, operator: &mut Operator) {
+    fn compute_and_print(&self, operator: &mut Operator, ann: &mut AnnotationsBox) {
         let rep_start = SystemTime::now();
         let numbers: Vec<String> = self.operations
                 .iter()
-                .map(|op| operator.operate(op))
+                .map(|op| operator.operate(ann, op))
                 .collect();
         println!("{}: [{}], time: {}", self.operations_string(), numbers.join(", "),
             rep_start.elapsed().unwrap().as_millis());
     }
 
-    fn execute_single_return(&self, constr: &Constructor) -> (Graph, Operator) {
+    fn execute_single_return(&self, constr: &Constructor) -> Operator {
         let g = constr.new_graph();
-        let mut operator = Operator::new(&g);
-        self.compute_and_print(&mut operator);
-        (g, operator)
+        let mut operator = Operator::new(g);
+        let mut ann = AnnotationsBox::new();
+        self.compute_and_print(&mut operator, &mut ann);
+        operator
     }
 
     fn execute_single(&self, constr: &Constructor) {
@@ -204,9 +206,10 @@ impl Instruction {
             for _j in 0..reps {
                 let constr = Constructor::Random(RandomConstructor::ErdosRenyi(tab.order, p));
                 let g = constr.new_graph();
-                let mut operator = Operator::new(&g);
+                let mut operator = Operator::new(g);
+                let mut ann = AnnotationsBox::new();
                 for (op, sum) in operators.iter().zip(sums.iter_mut()) {
-                    *sum += operator.operate_rational(op).to_f64();
+                    *sum += operator.operate_rational(&mut ann, op).to_f64();
                 }
             }
             for sum in sums.iter_mut() {
@@ -236,9 +239,10 @@ impl Instruction {
             adj_list[e.fst()].push(e.snd());
             adj_list[e.snd()].push(e.fst());
             let g = Graph::of_adj_list(adj_list.to_owned(), Constructor::Special);
-            let mut operator = Operator::new(&g);
+            let mut ann = AnnotationsBox::new();
+            let mut operator = Operator::new(g);
             print!("[{} / {}]: ", i+1, edges.len());
-            self.compute_and_print(&mut operator);
+            self.compute_and_print(&mut operator, &mut ann);
         }
     }
 
@@ -264,11 +268,12 @@ impl Instruction {
             }
             rep += 1;
             let g = constr.new_graph();
-            let mut operator = Operator::new(&g);
+            let mut ann = AnnotationsBox::new();
+            let mut operator = Operator::new(g);
             let mut all_satisfied = true;
             let mut num_satisfied = 0;
             'test_conditions: for condition in conditions.iter() {
-                if operator.operate_bool(condition) {
+                if operator.operate_bool(&mut ann, condition) {
                     num_satisfied += 1;
                     if num_satisfied >= required_steps {
                         if !printed_number {
@@ -294,8 +299,8 @@ impl Instruction {
             if all_satisfied {
                 println!("All conditions satisfied! {:?}", conditions);
                 println!("Graph: ");
-                g.print();
-                self.compute_and_print(&mut operator);
+                operator.print_graph();
+                self.compute_and_print(&mut operator, &mut ann);
                 satisfied = true;
             }
         }
@@ -317,12 +322,13 @@ impl Instruction {
             if is_in_order {
                 // We just copy the vector of parents because fuck it, that's why.
                 let g = Constructor::RootedTree(parents.to_vec()).new_graph();
-                let mut operator = Operator::new(&g);
+                let mut operator = Operator::new(g);
+                let mut ann = AnnotationsBox::new();
                 
-                let success = operator.operate_bool(condition);
+                let success = operator.operate_bool(&mut ann, condition);
                 if success {
                     println!("Success!");
-                    g.print();
+                    operator.print_graph();
                 }
 
                 success
@@ -363,25 +369,26 @@ impl Instruction {
         }
     }
             
-    fn test_sink_graph(&self, g: &Graph, conditions: &[BoolOperation], find_all: bool) -> bool {
+    fn test_sink_graph(&self, g: Graph, conditions: &[BoolOperation], find_all: bool) -> bool {
         let mut operator = Operator::new(g);
+        let mut ann = AnnotationsBox::new();
         let mut result = true;
         'test_conditions: for condition in conditions.iter() {
-            if !operator.operate_bool(condition) {
+            if !operator.operate_bool(&mut ann, condition) {
                 result = false;
                 break 'test_conditions;
             }
         }
         if result {
             if find_all {
-                println!("{}", g.constructor);
+                println!("{}", operator.get_constructor());
             } else {
                 // print lots of information in this case.
                 println!("Graph satisfying condition found!");
-                println!("Constructor: {}", g.constructor);
+                println!("Constructor: {}", operator.get_constructor());
                 operator.print_all();
                 println!("Graph:");
-                g.print();
+                operator.print_graph();
             }
         }
         result
@@ -449,7 +456,7 @@ impl Instruction {
                                     }
                                     if !is_already_there {
                                         // Actually test the graph
-                                        if self.test_sink_graph(&g, conditions, find_all) && !find_all {
+                                        if self.test_sink_graph(g.clone(), conditions, find_all) && !find_all {
                                             break 'main;
                                         }
                                         graphs.push(g);
@@ -494,7 +501,7 @@ impl Instruction {
             for _rep in 0..10 {
                 for constr in random_constructors.iter() {
                     let g = constr.new_graph();
-                    if self.test_sink_graph(&g, conditions, find_all) && !find_all {
+                    if self.test_sink_graph(g, conditions, find_all) && !find_all {
                         break 'main;
                     }
                 }

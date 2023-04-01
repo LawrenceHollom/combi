@@ -10,12 +10,13 @@ pub fn print_signature(g: &Graph) {
     use crate::operation::bool_operation::BoolOperation::*;
     let bool_operations =
         vec![IsPlanar, IsTriangleFree];
-    let mut operator = Operator::new();
+    let mut ann = crate::operator::AnnotationsBox::new();
+    let mut operator = Operator::new(g.to_owned());
     for op in int_operations.iter() {
-        properties.push((format!("{}", op), format!("{}", operator.operate_int(g, op))));
+        properties.push((format!("{}", op), format!("{}", operator.operate_int(&mut ann, op))));
     }
     for op in bool_operations.iter() {
-        properties.push((format!("{}", op), format!("{}", operator.operate_bool(g, op))));
+        properties.push((format!("{}", op), format!("{}", operator.operate_bool(&mut ann, op))));
     }
     let max_len = properties.iter().map(|(s, _)| s.len()).max().unwrap();
     for (s1, s2) in properties.iter() {

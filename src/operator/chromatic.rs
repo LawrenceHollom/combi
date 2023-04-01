@@ -219,9 +219,8 @@ pub fn alice_greedy_lower_bound(g: &Graph) -> usize {
     let mut degs = g.degree_sequence().to_owned();
     degs.sort();
     for (k, d) in degs.iter().rev().enumerate() {
-        if d.to_usize() < k {
+        if d.to_usize() < 2 * k {
             return k * 2;
-            panic!("The code above is probably wrong. Actually think about it.");
         }
     }
     g.n.to_usize()
