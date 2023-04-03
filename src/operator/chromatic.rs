@@ -142,7 +142,6 @@ impl Coder {
 
 fn alice_wins_chromatic_game_fast_rec(g: &Graph, ann: &mut Annotations, k: usize, max_colour_used: usize, coder: &Coder,
                 config: Config, history: &mut HashMap<Config, bool>, fixed_verts: VertexSet, should_find_reps: bool, num_cold: usize) -> bool {
-    fixed_verts.print();
     if g.n.at_most(num_cold) {
         // G is coloured, so Alice has won
         true

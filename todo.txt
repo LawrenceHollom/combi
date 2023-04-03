@@ -64,6 +64,12 @@
 -- Then once both endpoints are in, can cut off immediately.
 -- Should speed things up a little.
 
+== CHROMATIC GAME MONOTONICITY ==
+- until(seq(0,2,5,4,1),chi=3,chi_g_greedy>=5,!(a_wins_chi_g(4)),a_wins_chi_g(3))
+- process(12)->a_wins_chi_g(3),a_wins_chi_g(4)
+-- Seek [true, false]
+-- Perhaps write some automated thing to run this test?
+
 == BUGS ==
 - Maybe ->() has stopped working? Gets picked up as infix-like
 - sink(domination>10) doesn't trip on E(11)
