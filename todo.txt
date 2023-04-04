@@ -1,3 +1,6 @@
+== CHROMATIC GAME ==
+- If something is unplayable then Bob wins immediately. This appears to not be implemented.
+
 == ITERATOR AND AUTOMORPHISMS ==
 - Better hashes for vertices; start throwing onion info in.
 - Keep Annotations as &mut and continually update a HashTable of representatives:
