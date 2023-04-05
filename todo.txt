@@ -1,8 +1,10 @@
 == CHROMATIC GAME ==
-- If something is unplayable then Bob wins immediately. This appears to not be implemented.
 - Only other hope of speedup: switch up the order in which we check moves by some heuristic
 -- Maybe we spend ages searching the tree for one of B's moves when there's a better one that would win instantly
 -- Batshit crazy idea: train a very quick-to-eval ML algo to guess what the best next move is.
+- Test strong monotonicity hypothesis: that if A wins from some position in k colours, then A must also
+  win from an identical position embedded into k+1 colours.
+-- n.b. this need not be true for the whole conjecture to hold; maybe A does some silly things and can salvage it.
 
 == ITERATOR AND AUTOMORPHISMS ==
 - Better hashes for vertices; start throwing onion info in.

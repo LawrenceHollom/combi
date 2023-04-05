@@ -57,7 +57,7 @@ pub fn chromatic_number(g: &Graph) -> u32 {
 struct Config(u128);
 
 struct Coder {
-    _n: Order,
+    n: Order,
     k: usize,
     pows: VertexVec<u128>,
 }
@@ -68,7 +68,7 @@ impl Coder {
         for (i, v) in n.iter_verts().enumerate() {
             pows[v] = ((k + 1) as u128).pow(i as u32);
         }
-        Coder { _n: n, k, pows }
+        Coder { n, k, pows }
     }
     
     fn get_colour(&self, config: Config, u: &Vertex) -> Option<usize> {
@@ -80,28 +80,18 @@ impl Coder {
         }
     }
 
-    fn _is_alice_turn(&self, config: Config) -> bool {
-        // Need to count how many verts have been played
-        let mut num_played = 0;
-        for pow in self.pows.iter() {
-            if ((config.0 / pow) % ((self.k + 1) as u128)) as usize != self.k {
-                num_played += 1;
-            }
-        }
-        num_played % 2 == 0
-    }
-
     fn play_move(&self, config: Config, v: Vertex, col: usize) -> Config {
         Config(config.0 - ((self.k - col) as u128 * self.pows[v]))
     }
 
-    fn _incr_colour(&self, config: Config, pos: Vertex) -> (Config, Vertex) {
-        let config_out = Config(config.0 + self.pows[pos]);
-        let mut pos_out = pos;
-        while !pos_out.is_n(self._n) && (config_out.0 / self.pows[pos_out]) % (self.k + 1) as u128 == 0 {
-            pos_out.incr_inplace();
+    fn increase_k(&self, other: &Coder, config: Config) -> Config {
+        let mut out = other.get_start_config();
+        for v in self.n.iter_verts() {
+            if let Some(col) = self.get_colour(config, &v) {
+                out = other.play_move(out, v, col);
+            }
         }
-        (config_out, pos_out)
+        out
     }
 
     fn get_start_config(&self) -> Config {
@@ -130,15 +120,15 @@ impl Coder {
         Config(wlog_index)
     }
 
-    fn _print(&self, config: Config) {
-        for v in self._n.iter_verts() {
+    fn print(&self, config: Config) {
+        for v in self.n.iter_verts() {
             print!("{} ", self.get_colour(config, &v).map_or("-".to_owned(), |col| col.to_string()));
         }
         println!();
     }
 }
 
-fn alice_wins_chromatic_game_fast_rec(g: &Graph, ann: &mut Annotations, k: usize, max_colour_used: usize, coder: &Coder,
+fn alice_wins_chromatic_game_rec(g: &Graph, ann: &mut Annotations, k: usize, max_colour_used: usize, coder: &Coder,
                 config: Config, history: &mut HashMap<Config, bool>, fixed_verts: VertexSet, should_find_reps: bool, num_cold: usize) -> bool {
     if g.n.at_least(30) && num_cold <= 16 {
         println!("Step! {}", num_cold);
@@ -181,7 +171,7 @@ fn alice_wins_chromatic_game_fast_rec(g: &Graph, ann: &mut Annotations, k: usize
                                 can_be_cold = true;
                                 let new_config = coder.play_move(config, v, c);
                                 let max_col = max_colour_used.max(c);
-                                let sub_alice_win = alice_wins_chromatic_game_fast_rec(g, ann, k, max_col, 
+                                let sub_alice_win = alice_wins_chromatic_game_rec(g, ann, k, max_col, 
                                     coder, new_config, history, fixed_verts.add_vert_immutable(v), next_should_find_reps, num_cold + 1);
                                 if sub_alice_win != alice_win {
                                     // This is a winning strategy for this player.
@@ -209,28 +199,66 @@ fn alice_wins_chromatic_game_fast_rec(g: &Graph, ann: &mut Annotations, k: usize
     }
 }
 
-fn alice_wins_chromatic_game_fast(g: &Graph, ann: &mut Annotations, k: usize) -> bool {
+pub fn alice_wins_chromatic_game(g: &Graph, ann: &mut Annotations, k: usize, print_strategy: bool) -> bool {
     if k >= alice_greedy_lower_bound(g) {
         return true;
     }
     let coder = Coder::new(g.n, k);
-    // This could be smaller as we'll assume configs start with None or Some(0).
     let mut history = HashMap::new();
     let mut alice_wins = false;
     'test_verts: for v in ann.weak_representatives().iter() {
         let config = coder.play_move(coder.get_start_config(), v, 0);
-        if alice_wins_chromatic_game_fast_rec(g, ann, k, 0, &coder, config, &mut history, VertexSet::of_vert(g.n, v), true, 1) {
+        if alice_wins_chromatic_game_rec(g, ann, k, 0, &coder, config, &mut history, VertexSet::of_vert(g.n, v), true, 1) {
             alice_wins = true;
             history.insert(config, true);
             break 'test_verts;
         }
         history.insert(config, false);
     }
-    /*for (k, v) in history.iter() {
-        print!("{}: ", if *v { "A" } else { "B" });
-        coder._print(*k);
-    }*/
+    if print_strategy {
+        for (k, v) in history.iter() {
+            print!("{}: ", if *v { "A" } else { "B" });
+            coder.print(*k);
+        }
+    }
     alice_wins
+}
+
+pub fn print_chromatic_game_strategy(g: &Graph, ann: &mut Annotations, k: usize) {
+    let _ = alice_wins_chromatic_game(g, ann, k, true);
+}
+
+pub fn chromatic_game_strong_monotonicity(g: &Graph, ann: &mut Annotations) -> bool {
+    let greedy = alice_greedy_lower_bound(g);
+    let coders: Vec<Coder> = (0..=greedy).map(|k| Coder::new(g.n, k)).collect();
+    let mut histories: Vec<HashMap<Config, bool>> = (0..=greedy).map(|_| HashMap::new()).collect(); 
+    for v in ann.weak_representatives().iter() {
+        for k in 2..=greedy {
+            let config = coders[k].play_move(coders[k].get_start_config(), v, 0);
+            let win = alice_wins_chromatic_game_rec(g, ann, k, 0, &coders[k], config,
+                &mut histories[k], VertexSet::of_vert(g.n, v), true, 1);
+            histories[k].insert(config, win);
+        }
+    }
+
+    let mut is_monot = true;
+
+    'monot_test: for k in 2..greedy {
+        for (config, a_lo_win) in histories[k].iter() {
+            if *a_lo_win {
+                if let Some(a_hi_win) = histories[k+1].get(&coders[k].increase_k(&coders[k+1], *config)) {
+                    if !*a_hi_win {
+                        is_monot = false;
+                        print!("Gotcha.");
+                        coders[k].print(*config);
+                        break 'monot_test;
+                    }
+                }
+            }
+        }
+    }
+
+    is_monot
 }
 
 // Alice's greedy strategy is to play vertices in decreasing order of degree.
@@ -245,14 +273,10 @@ pub fn alice_greedy_lower_bound(g: &Graph) -> usize {
     g.n.to_usize()
 }
 
-pub fn alice_wins_chromatic_game(g: &Graph, ann: &mut Annotations, k: usize) -> bool {
-    alice_wins_chromatic_game_fast(g, ann, k)
-}
-
 pub fn game_chromatic_number(g: &Graph, ann: &mut Annotations) -> u32 {
     let mut k = 1;
     loop {
-        if alice_wins_chromatic_game(g, ann, k) {
+        if alice_wins_chromatic_game(g, ann, k, false) {
             return k as u32;
         }
         k += 1;
@@ -263,7 +287,7 @@ pub fn game_chromatic_colour_monotone(g: &Graph, ann: &mut Annotations) -> bool 
     let greedy = alice_greedy_lower_bound(g);
     let mut alice_prev_winner = false;
     for k in 1..greedy {
-        let alice_wins = alice_wins_chromatic_game(g, ann, k);
+        let alice_wins = alice_wins_chromatic_game(g, ann, k, false);
         print!("{}", if alice_wins { 'A' } else { 'B' });
         std::io::stdout().flush().unwrap();
 
@@ -288,7 +312,7 @@ pub fn print_game_chromatic_table(g: &Graph, ann: &mut Annotations) {
     println!("Greedy: {}", alice_greedy_lower_bound(g));
     for k in 1..=(delta + 1) {
         checkpoint_time = SystemTime::now();
-        if alice_wins_chromatic_game_fast(g, ann, k as usize) {
+        if alice_wins_chromatic_game(g, ann, k as usize, false) {
             print!("{}: Alice", k);
         } else {
             print!("{}: Bob", k);
