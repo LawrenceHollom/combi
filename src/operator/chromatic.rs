@@ -54,27 +54,25 @@ pub fn chromatic_number(g: &Graph) -> u32 {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-struct Config(usize);
+struct Config(u128);
 
 struct Coder {
     _n: Order,
     k: usize,
-    _num_configs: usize,
-    pows: VertexVec<usize>,
+    pows: VertexVec<u128>,
 }
 
 impl Coder {
     pub fn new(n: Order, k: usize) -> Coder {
         let mut pows = VertexVec::new(n, &0);
         for (i, v) in n.iter_verts().enumerate() {
-            pows[v] = (k + 1).pow(i as u32);
+            pows[v] = ((k + 1) as u128).pow(i as u32);
         }
-        let num_configs = (k + 1).pow(n.to_usize() as u32);
-        Coder { _n: n, k, _num_configs: num_configs, pows }
+        Coder { _n: n, k, pows }
     }
     
     fn get_colour(&self, config: Config, u: &Vertex) -> Option<usize> {
-        let col = (config.0 / self.pows[*u]) % (self.k + 1);
+        let col = ((config.0 / self.pows[*u]) % ((self.k + 1) as u128)) as usize;
         if col == self.k {
             None
         } else {
@@ -86,7 +84,7 @@ impl Coder {
         // Need to count how many verts have been played
         let mut num_played = 0;
         for pow in self.pows.iter() {
-            if (config.0 / pow) % (self.k + 1) != self.k {
+            if ((config.0 / pow) % ((self.k + 1) as u128)) as usize != self.k {
                 num_played += 1;
             }
         }
@@ -94,13 +92,13 @@ impl Coder {
     }
 
     fn play_move(&self, config: Config, v: Vertex, col: usize) -> Config {
-        Config(config.0 - ((self.k - col) * self.pows[v]))
+        Config(config.0 - ((self.k - col) as u128 * self.pows[v]))
     }
 
     fn _incr_colour(&self, config: Config, pos: Vertex) -> (Config, Vertex) {
         let config_out = Config(config.0 + self.pows[pos]);
         let mut pos_out = pos;
-        while !pos_out.is_n(self._n) && (config_out.0 / self.pows[pos_out]) % (self.k + 1) == 0 {
+        while !pos_out.is_n(self._n) && (config_out.0 / self.pows[pos_out]) % (self.k + 1) as u128 == 0 {
             pos_out.incr_inplace();
         }
         (config_out, pos_out)
@@ -109,7 +107,7 @@ impl Coder {
     fn get_start_config(&self) -> Config {
         let mut config = 0;
         for pow in self.pows.iter() {
-            config += *pow * self.k;
+            config += *pow * self.k as u128;
         }
         Config(config)
     }
@@ -122,12 +120,12 @@ impl Coder {
         let mut next_col = 0;
 
         for pow in self.pows.iter() {
-            let digit = (config.0 / pow) % (self.k + 1);
+            let digit = ((config.0 / pow) % (self.k + 1) as u128) as usize;
             if map[digit].is_none() {
                 map[digit] = Some(next_col);
                 next_col += 1;
             }
-            wlog_index += map[digit].unwrap() * pow;
+            wlog_index += map[digit].unwrap() as u128 * pow;
         }
         Config(wlog_index)
     }
@@ -142,6 +140,9 @@ impl Coder {
 
 fn alice_wins_chromatic_game_fast_rec(g: &Graph, ann: &mut Annotations, k: usize, max_colour_used: usize, coder: &Coder,
                 config: Config, history: &mut HashMap<Config, bool>, fixed_verts: VertexSet, should_find_reps: bool, num_cold: usize) -> bool {
+    if g.n.at_least(30) && num_cold <= 16 {
+        println!("Step! {}", num_cold);
+    }
     if g.n.at_most(num_cold) {
         // G is coloured, so Alice has won
         true
@@ -166,6 +167,7 @@ fn alice_wins_chromatic_game_fast_rec(g: &Graph, ann: &mut Annotations, k: usize
 
                 'test_verts: for v in reps.iter() {
                     if coder.get_colour(config, &v).is_none() {
+                        let mut can_be_cold = false;
                         for c in 0..col_cap {
                             let mut can_use_c = true;
                             'test_c: for u in g.adj_list[v].iter() {
@@ -176,6 +178,7 @@ fn alice_wins_chromatic_game_fast_rec(g: &Graph, ann: &mut Annotations, k: usize
                             }
                             if can_use_c {
                                 is_something_playable = true;
+                                can_be_cold = true;
                                 let new_config = coder.play_move(config, v, c);
                                 let max_col = max_colour_used.max(c);
                                 let sub_alice_win = alice_wins_chromatic_game_fast_rec(g, ann, k, max_col, 
@@ -186,6 +189,11 @@ fn alice_wins_chromatic_game_fast_rec(g: &Graph, ann: &mut Annotations, k: usize
                                     break 'test_verts;
                                 }
                             }
+                        }
+                        if !can_be_cold {
+                            // This vertex cannot be coloured, so Bob wins.
+                            alice_win = false;
+                            break 'test_verts;
                         }
                     }
                 }
