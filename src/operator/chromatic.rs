@@ -53,7 +53,7 @@ pub fn chromatic_number(g: &Graph) -> u32 {
     num_colours as u32
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 struct Config(u128);
 
 struct Coder {
@@ -129,8 +129,9 @@ impl Coder {
 }
 
 fn alice_wins_chromatic_game_rec(g: &Graph, ann: &mut Annotations, k: usize, max_colour_used: usize, coder: &Coder,
-                config: Config, history: &mut HashMap<Config, bool>, fixed_verts: VertexSet, should_find_reps: bool, num_cold: usize) -> bool {
-    if g.n.at_least(30) && num_cold <= 16 {
+                config: Config, history: &mut HashMap<Config, bool>, fixed_verts: VertexSet, should_find_reps: bool, 
+                num_cold: usize, fast_mode: bool) -> bool {
+    if g.n.at_least(30) && num_cold <= 15 {
         println!("Step! {}", num_cold);
     }
     if g.n.at_most(num_cold) {
@@ -141,7 +142,8 @@ fn alice_wins_chromatic_game_rec(g: &Graph, ann: &mut Annotations, k: usize, max
         match history.get(&wlog_index) {
             Some(alice_win) => *alice_win,
             None => {
-                let mut alice_win = num_cold % 2 == 1;
+                let alice_turn = num_cold % 2 == 0;
+                let mut alice_win = !alice_turn;
                 let mut is_something_playable = false;
                 let col_cap = (max_colour_used + 2).min(k);
                 let mut next_should_find_reps = should_find_reps;
@@ -172,11 +174,14 @@ fn alice_wins_chromatic_game_rec(g: &Graph, ann: &mut Annotations, k: usize, max
                                 let new_config = coder.play_move(config, v, c);
                                 let max_col = max_colour_used.max(c);
                                 let sub_alice_win = alice_wins_chromatic_game_rec(g, ann, k, max_col, 
-                                    coder, new_config, history, fixed_verts.add_vert_immutable(v), next_should_find_reps, num_cold + 1);
-                                if sub_alice_win != alice_win {
+                                    coder, new_config, history, fixed_verts.add_vert_immutable(v), next_should_find_reps,
+                                    num_cold + 1, fast_mode);
+                                if sub_alice_win == alice_turn {
                                     // This is a winning strategy for this player.
                                     alice_win = sub_alice_win;
-                                    break 'test_verts;
+                                    if fast_mode {
+                                        break 'test_verts;
+                                    }
                                 }
                             }
                         }
@@ -199,6 +204,16 @@ fn alice_wins_chromatic_game_rec(g: &Graph, ann: &mut Annotations, k: usize, max
     }
 }
 
+fn print_history(history: &HashMap<Config, bool>, coder: &Coder) {
+    let mut configs: Vec<Config> = history.keys().cloned().collect();
+    configs.sort();
+    for config in configs {
+        let v = history.get(&config).unwrap();
+        print!("{}: ", if *v { "A" } else { "B" });
+        coder.print(config);
+    }
+}
+
 pub fn alice_wins_chromatic_game(g: &Graph, ann: &mut Annotations, k: usize, print_strategy: bool) -> bool {
     if k >= alice_greedy_lower_bound(g) {
         return true;
@@ -208,7 +223,8 @@ pub fn alice_wins_chromatic_game(g: &Graph, ann: &mut Annotations, k: usize, pri
     let mut alice_wins = false;
     'test_verts: for v in ann.weak_representatives().iter() {
         let config = coder.play_move(coder.get_start_config(), v, 0);
-        if alice_wins_chromatic_game_rec(g, ann, k, 0, &coder, config, &mut history, VertexSet::of_vert(g.n, v), true, 1) {
+        if alice_wins_chromatic_game_rec(g, ann, k, 0, &coder, config, &mut history, 
+                VertexSet::of_vert(g.n, v), true, 1, true) {
             alice_wins = true;
             history.insert(config, true);
             break 'test_verts;
@@ -216,10 +232,7 @@ pub fn alice_wins_chromatic_game(g: &Graph, ann: &mut Annotations, k: usize, pri
         history.insert(config, false);
     }
     if print_strategy {
-        for (k, v) in history.iter() {
-            print!("{}: ", if *v { "A" } else { "B" });
-            coder.print(*k);
-        }
+        print_history(&history, &coder)
     }
     alice_wins
 }
@@ -236,7 +249,7 @@ pub fn chromatic_game_strong_monotonicity(g: &Graph, ann: &mut Annotations) -> b
         for k in 2..=greedy {
             let config = coders[k].play_move(coders[k].get_start_config(), v, 0);
             let win = alice_wins_chromatic_game_rec(g, ann, k, 0, &coders[k], config,
-                &mut histories[k], VertexSet::of_vert(g.n, v), true, 1);
+                &mut histories[k], VertexSet::of_vert(g.n, v), true, 1, false);
             histories[k].insert(config, win);
         }
     }
@@ -244,13 +257,20 @@ pub fn chromatic_game_strong_monotonicity(g: &Graph, ann: &mut Annotations) -> b
     let mut is_monot = true;
 
     'monot_test: for k in 2..greedy {
-        for (config, a_lo_win) in histories[k].iter() {
+        for (lo_config, a_lo_win) in histories[k].iter() {
             if *a_lo_win {
-                if let Some(a_hi_win) = histories[k+1].get(&coders[k].increase_k(&coders[k+1], *config)) {
+                let hi_config = coders[k].increase_k(&coders[k+1], *lo_config);
+                if let Some(a_hi_win) = histories[k+1].get(&hi_config) {
                     if !*a_hi_win {
                         is_monot = false;
-                        print!("Gotcha.");
-                        coders[k].print(*config);
+                        print!("Gotcha. (k = {}) (win = {:?})  config: ", k, histories[k].get(lo_config));
+                        coders[k].print(*lo_config);
+                        print!("High:   (k = {}) (win = {:?}) config: ", k+1, histories[k+1].get(&hi_config));
+                        coders[k+1].print(hi_config);
+                        println!("    ~~~~  {}-HISTORY  ~~~~", k);
+                        print_history(&histories[k], &coders[k]);
+                        println!("    ~~~~  {}-HISTORY  ~~~~", k+1);
+                        print_history(&histories[k+1], &coders[k+1]);
                         break 'monot_test;
                     }
                 }
