@@ -85,7 +85,6 @@
 
 == BUGS ==
 - Maybe ->() has stopped working? Gets picked up as infix-like
-- sink(domination>10) doesn't trip on E(11)
 
 == HELP COMMAND ==
 - Print all the various operations.
