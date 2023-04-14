@@ -327,7 +327,7 @@ pub fn game_chromatic_colour_monotone(g: &Graph, ann: &mut Annotations) -> bool 
 }
 
 pub fn print_game_chromatic_table(g: &Graph, ann: &mut Annotations) {
-    let delta = g.max_degree();
+    let delta = g.max_degree().to_usize();
     let mut checkpoint_time;
     println!("Greedy: {}", alice_greedy_lower_bound(g));
     for k in 1..=(delta + 1) {

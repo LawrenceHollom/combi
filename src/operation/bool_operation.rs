@@ -46,6 +46,7 @@ pub enum BoolOperation {
     IsChromaticGameMonotone,
     IsChromaticGameStronglyMonotone,
     ArboricityGameWinner(usize),
+    IsDDegenerate(Degree),
     Debug,
 }
 
@@ -137,6 +138,9 @@ impl BoolOperation {
                     "arboricity_game_winner" | "a_g_win" => {
                         Some(ArboricityGameWinner(args[0].parse().unwrap()))
                     }
+                    "is_d_degenerate" | "d_degen" => {
+                        Some(IsDDegenerate(Degree::of_string(args[0])))
+                    }
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -220,6 +224,9 @@ impl fmt::Display for BoolOperation {
             }
             ArboricityGameWinner(k) => {
                 format!("Whether Maker wins the arboricity game on {} colours", k)
+            }
+            IsDDegenerate(d) => {
+                format!("Whether the graph is {}-degenerate", d)
             }
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };

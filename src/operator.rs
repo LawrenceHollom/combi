@@ -17,6 +17,7 @@ mod debug;
 mod signature;
 mod edge_partitions;
 mod arboricity;
+mod degeneracy;
 
 use std::collections::HashMap;
 
@@ -86,8 +87,8 @@ impl Operator {
                     TotalDominationGameLength => domination::total_domination_game_length(&self.g),
                     NumIntervalColors => interval_coloring::num_interval_colors(&self.g),
                     MaxInducedForest => induced_forest::max_induced_forest(&self.g),
-                    MinDegree => self.g.min_degree(),
-                    MaxDegree => self.g.max_degree(),
+                    MinDegree => self.g.min_degree().to_usize() as u32,
+                    MaxDegree => self.g.max_degree().to_usize() as u32,
                     Connectedness => connectedness::connectedness(&self.g),
                     Diameter => self.g.diameter(),
                     Radius => self.g.radius(),
@@ -96,6 +97,7 @@ impl Operator {
                     GameChromaticNumber => chromatic::game_chromatic_number(&self.g, ann.get_annotations(&self.g)),
                     GameChromaticNumberGreedy => chromatic::alice_greedy_lower_bound(&self.g) as u32,
                     GameArboricityNumber => arboricity::game_arboricity_number(&self.g),
+                    Degeneracy => degeneracy::degeneracy(&self.g),
                     Number(k) => *k,
                 };
                 self.previous_int_values.insert(*operation, value);
@@ -181,6 +183,7 @@ impl Operator {
                         chromatic::chromatic_game_strong_monotonicity(&self.g, ann.get_annotations(&self.g))
                     }
                     ArboricityGameWinner(k) => arboricity::maker_wins_arboricity_game(&self.g, *k),
+                    IsDDegenerate(d) => degeneracy::is_d_degenerate(&self.g, *d),
                     Debug => debug::debug(&self.g),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);

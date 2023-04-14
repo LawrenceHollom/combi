@@ -402,12 +402,12 @@ impl Graph {
         self.adj_list[v].iter().filter(|x| filter[**x]).count()
     }
 
-    pub fn min_degree(&self) -> u32 {
-        self.deg.iter().map(|x| x.to_usize()).min().unwrap() as u32
+    pub fn min_degree(&self) -> Degree {
+        *self.deg.iter().min().unwrap()
     }
 
-    pub fn max_degree(&self) -> u32 {
-        self.deg.iter().map(|x| x.to_usize()).max().unwrap() as u32
+    pub fn max_degree(&self) -> Degree {
+        *self.deg.iter().max().unwrap()
     }
 
     pub fn degree_sequence(&self) -> &Vec<Degree> {
