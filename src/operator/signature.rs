@@ -6,7 +6,7 @@ pub fn print_signature(g: &Graph) {
     let int_operations = 
         vec![Order, Size, NumComponents, MinDegree, MaxDegree, 
         DominationNumber, ChromaticNumber, Girth, Connectedness,
-        Diameter, Radius];
+        Diameter, Radius, Degeneracy];
     use crate::operation::bool_operation::BoolOperation::*;
     let bool_operations =
         vec![IsPlanar, IsTriangleFree];

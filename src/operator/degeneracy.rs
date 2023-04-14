@@ -58,3 +58,32 @@ pub fn degeneracy(g: &Graph) -> u32 {
     }
     d.to_usize() as u32
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_degen_1() {
+        assert_eq!(degeneracy(&Graph::test_graph(1)), 3);
+    }
+
+    #[test]
+    fn test_degen_2() {
+        assert_eq!(degeneracy(&Graph::test_graph(2)), 2);
+    }
+
+    #[test]
+    fn test_degen_3() {
+        assert_eq!(degeneracy(&Graph::test_graph(3)), 3);
+    }
+
+    #[test]
+    fn test_degen_e10() {
+        assert_eq!(degeneracy(&Graph::new_empty(Order::of_usize(10))), 0);
+    }
+
+    #[test]
+    fn test_degen_k10() {
+        assert_eq!(degeneracy(&Graph::new_complete(Order::of_usize(10))), 9);
+    }
+}
