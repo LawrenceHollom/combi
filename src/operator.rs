@@ -173,8 +173,11 @@ impl Operator {
                     IsTriangleFree => subgraphs::is_triangle_free(&self.g),
                     CanBeEdgePartitionedIntoLinearForestAndMatching => edge_partitions::edge_partition_forest_and_matching(&self.g),
                     GoodCubicDominationBase => cubic_domination::is_good(&self.g),
-                    GameChromaticWinner(k) => chromatic::alice_wins_chromatic_game(&self.g, ann.get_annotations(&self.g), *k),
+                    GameChromaticWinner(k) => chromatic::alice_wins_chromatic_game(&self.g, ann.get_annotations(&self.g), *k, false),
                     IsChromaticGameMonotone => chromatic::game_chromatic_colour_monotone(&self.g, ann.get_annotations(&self.g)),
+                    IsChromaticGameStronglyMonotone => {
+                        chromatic::chromatic_game_strong_monotonicity(&self.g, ann.get_annotations(&self.g))
+                    }
                     Debug => debug::debug(&self.g),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);
@@ -219,6 +222,7 @@ impl Operator {
             PrintIntervalColoring => interval_coloring::print_interval_coloring(&self.g),
             PrintDominatingSet => domination::print_random_dominator(&self.g),
             GameChromaticTable => chromatic::print_game_chromatic_table(&self.g, ann.get_annotations(&self.g)),
+            GameChromaticStrategy(k) => chromatic::print_chromatic_game_strategy(&self.g, ann.get_annotations(&self.g), *k),
             PrintAutomorphisms => print_automorphism_info(&self.g),
             Signature => signature::print_signature(&self.g),
             Unit => (),
