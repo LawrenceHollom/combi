@@ -33,6 +33,7 @@ pub enum Controller {
     KitchenSink(Vec<BoolOperation>),
     KitchenSinkAll(Vec<BoolOperation>),
     Process(Order),
+    ProcessUntil(Order, Vec<BoolOperation>),
     Help,
 }
 
@@ -89,6 +90,10 @@ impl Controller {
             "process" | "proc" => {
                 Process(Order::of_string(args[0]))
             }
+            "process_until" | "proc_until" => {
+                ProcessUntil(Order::of_string(args[0]),
+                    args.iter().skip(1).map(|arg| BoolOperation::of_string_result(*arg).unwrap()).collect())
+            }
             "help" | "h" => Help,
             &_ => {
                 Single(Constructor::of_string(text))
@@ -124,6 +129,9 @@ impl fmt::Display for Controller {
             }
             Process(order) => {
                 write!(f, "Random graph process of order {}", order)
+            }
+            ProcessUntil(order, conditions) => {
+                write!(f, "Run graph processes of order {} until {:?}", order, conditions)
             }
             Help => write!(f, "Print help text"),
         }
@@ -224,14 +232,19 @@ impl Instruction {
         }
     }
 
-    fn execute_process(&self, order: Order) {
-        // Add the edges one by one, and run on each graph from empty to complete.
+    fn get_shuffled_edges(&self, order: Order) -> Vec<Edge> {
         let mut edges = vec![];
         for (u, v) in order.iter_pairs() {
             edges.push(Edge::of_pair(u, v));
         }
         let mut rng = thread_rng();
         edges.shuffle(&mut rng);
+        edges
+    }
+
+    fn execute_process(&self, order: Order) {
+        // Add the edges one by one, and run on each graph from empty to complete.
+        let edges = self.get_shuffled_edges(order);
         println!("Edges: {:?}", edges);
         let mut adj_list: VertexVec<Vec<Vertex>> = VertexVec::new(order, &vec![]);
 
@@ -243,6 +256,41 @@ impl Instruction {
             let mut operator = Operator::new(g);
             print!("[{} / {}]: ", i+1, edges.len());
             self.compute_and_print(&mut operator, &mut ann);
+        }
+    }
+
+    fn execute_process_until(&self, order: Order, conditions: &[BoolOperation]) {
+        let mut rep = 0;
+        let start_time = SystemTime::now();
+        'test_procs: loop {
+            let edges = self.get_shuffled_edges(order);
+            let mut adj_list: VertexVec<Vec<Vertex>> = VertexVec::new(order, &vec![]);
+
+            for e in edges.iter() {
+                adj_list[e.fst()].push(e.snd());
+                adj_list[e.snd()].push(e.fst());
+                let g = Graph::of_adj_list(adj_list.to_owned(), Constructor::Special);
+                let mut ann = AnnotationsBox::new();
+                let mut operator = Operator::new(g);
+                let mut is_good = true;
+                'test_conditions: for operation in conditions.iter() {
+                    if !operator.operate_bool(&mut ann, operation) {
+                        is_good = false;
+                        break 'test_conditions;
+                    }
+                }
+                if is_good {
+                    println!("Found graph satisfying conditions!");
+                    operator.print_all();
+                    operator.print_graph();
+                    break 'test_procs;
+                }
+            }
+            rep += 1;
+            if rep <= 10 || (rep <= 100 && rep % 10 == 0) || (rep <= 1000 && rep % 100 == 0) || rep % 1000 == 0 {
+                let avg_time = start_time.elapsed().unwrap().as_millis() / rep;
+                println!("Completed process {}, no example found. Average duration: {}", rep, avg_time);
+            }
         }
     }
 
@@ -544,6 +592,7 @@ impl Instruction {
             KitchenSink(conditions) => self.execute_kitchen_sink(conditions, false),
             KitchenSinkAll(conditions) => self.execute_kitchen_sink(conditions, true),
             Process(order) => self.execute_process(*order),
+            ProcessUntil(order, conditions) => self.execute_process_until(*order, conditions),
             Help => Self::print_help(),
         }
     }
