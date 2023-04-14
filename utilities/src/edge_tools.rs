@@ -176,7 +176,7 @@ impl EdgeSet {
 
     pub fn add_edge(&mut self, e: Edge, indexer: &EdgeIndexer) {
         self.check_indexer(indexer);
-        self.edges &= 1 << indexer[e].unwrap();
+        self.edges |= 1 << indexer[e].unwrap();
     }
 
     pub fn remove_edge(&mut self, e: Edge, indexer: &EdgeIndexer) {

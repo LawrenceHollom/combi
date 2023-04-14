@@ -16,6 +16,7 @@ mod subgraphs;
 mod debug;
 mod signature;
 mod edge_partitions;
+mod arboricity;
 
 use std::collections::HashMap;
 
@@ -94,6 +95,7 @@ impl Operator {
                     NumBipartiteEdgeBisections => edge_partitions::count_bipartite_edge_bisections(&self.g),
                     GameChromaticNumber => chromatic::game_chromatic_number(&self.g, ann.get_annotations(&self.g)),
                     GameChromaticNumberGreedy => chromatic::alice_greedy_lower_bound(&self.g) as u32,
+                    GameArboricityNumber => arboricity::game_arboricity_number(&self.g),
                     Number(k) => *k,
                 };
                 self.previous_int_values.insert(*operation, value);
@@ -178,6 +180,7 @@ impl Operator {
                     IsChromaticGameStronglyMonotone => {
                         chromatic::chromatic_game_strong_monotonicity(&self.g, ann.get_annotations(&self.g))
                     }
+                    ArboricityGameWinner(k) => arboricity::maker_wins_arboricity_game(&self.g, *k),
                     Debug => debug::debug(&self.g),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);

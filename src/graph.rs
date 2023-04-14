@@ -518,6 +518,10 @@ impl Graph {
         cycles::remove_all_k_cycles(self, k)
     }
 
+    pub fn is_filtered_acyclic(&self, filter: EdgeSet, indexer: &EdgeIndexer) -> bool {
+        cycles::is_filtered_acyclic(self, filter, indexer)
+    }
+
     pub fn iter_edge_sets(&self) -> EdgeSetIterator {
         EdgeSetIterator::new(&self.adj_list)
     }

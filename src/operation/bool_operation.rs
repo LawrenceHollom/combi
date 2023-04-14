@@ -45,6 +45,7 @@ pub enum BoolOperation {
     GameChromaticWinner(usize),
     IsChromaticGameMonotone,
     IsChromaticGameStronglyMonotone,
+    ArboricityGameWinner(usize),
     Debug,
 }
 
@@ -128,9 +129,14 @@ impl BoolOperation {
                     "triangle_free" | "tri_free" | "k3_free" => Some(IsTriangleFree),
                     "is_forest_and_matching" | "ifam" => Some(CanBeEdgePartitionedIntoLinearForestAndMatching),
                     "gcdb" => Some(GoodCubicDominationBase),
-                    "does_alice_win_chromatic_game" | "a_wins_chi_g" => Some(GameChromaticWinner(args[0].parse().unwrap())),
+                    "does_alice_win_chromatic_game" | "a_wins_chi_g" => {
+                        Some(GameChromaticWinner(args[0].parse().unwrap()))
+                    }
                     "chromatic_game_monotone" | "chi_g_monot" => Some(IsChromaticGameMonotone),
                     "chromatic_game_strongly_monotone" | "chi_g_sm" => Some(IsChromaticGameStronglyMonotone),
+                    "arboricity_game_winner" | "a_g_win" => {
+                        Some(ArboricityGameWinner(args[0].parse().unwrap()))
+                    }
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -192,16 +198,29 @@ impl fmt::Display for BoolOperation {
             IsPlanar => "Is planar".to_owned(),
             IsRegular => "Is regular".to_owned(),
             BunkbedDiffsAllUnimodal => "Bunkbed diff polys are all unimodal".to_owned(),
-            HasRegularLosslessEdgeDominator => "Has regular lossless edge-dominating set".to_owned(),
+            HasRegularLosslessEdgeDominator => {
+                "Has regular lossless edge-dominating set".to_owned()
+            }
             IsKConnected(k) => format!("Is {}-connectd", *k),
             IsTriangleFree => "Is triangle free".to_owned(),
             CanBeEdgePartitionedIntoLinearForestAndMatching => {
                 "Can G be edge-partitioned into a linear forest and a matching".to_owned()
             }
-            GoodCubicDominationBase => "Some very specific thing for domination of cubic graphs.".to_owned(),
-            GameChromaticWinner(k) => format!("Whether Alice wins the chromatic game on {} colours", k),
-            IsChromaticGameMonotone => "Is the chromatic game monotone in the number of colours".to_owned(),
-            IsChromaticGameStronglyMonotone => "Is the chromatic game strongly monotone".to_owned(),
+            GoodCubicDominationBase => {
+                "Some very specific thing for domination of cubic graphs.".to_owned()
+            }
+            GameChromaticWinner(k) => {
+                format!("Whether Alice wins the chromatic game on {} colours", k)
+            }
+            IsChromaticGameMonotone => {
+                "Is the chromatic game monotone in the number of colours".to_owned()
+            }
+            IsChromaticGameStronglyMonotone => {
+                "Is the chromatic game strongly monotone".to_owned()
+            }
+            ArboricityGameWinner(k) => {
+                format!("Whether Maker wins the arboricity game on {} colours", k)
+            }
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };
         write!(f, "{}", name)

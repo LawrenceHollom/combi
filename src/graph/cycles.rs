@@ -23,6 +23,43 @@ fn list_cycles_rec(g: &Graph, dist: &VertexVec<VertexVec<usize>>, visited: &mut 
     }
 }
 
+pub fn is_filtered_acyclic(g: &Graph, filter: EdgeSet, indexer: &EdgeIndexer) -> bool {
+    // Just bfs, and if we hit the same vertex twice then that's an L.
+    let mut is_acyclic = true;
+    let mut q: Queue<Vertex> = queue![];
+    let mut parent = VertexVec::new(g.n, &None);
+    'test_verts: for v in g.iter_verts() {
+        if parent[v].is_none() {
+            parent[v] = Some(v);
+            let _ = q.add(v);
+            'bfs: loop {
+                match q.remove() {
+                    Ok(u) => {
+                        for w in g.adj_list[u].iter() {
+                            if *w != parent[u].unwrap() {
+                                // If it is, then we've already sorted it.
+                                let e = Edge::of_pair(*w, u);
+                                if filter.has_edge(e, indexer) {
+                                    // We only care if it's in the filter.
+                                    if parent[*w].is_some() {
+                                        is_acyclic = false;
+                                        break 'test_verts;
+                                    } else {
+                                        parent[*w] = Some(u);
+                                        let _ = q.add(*w);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Err(_) => break 'bfs,
+                }
+            }
+        }
+    }
+    is_acyclic
+}
+
 pub fn remove_all_k_cycles(g: &mut Graph, k: usize) {    
     let dist = g.floyd_warshall();
 

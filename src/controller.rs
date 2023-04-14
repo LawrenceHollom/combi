@@ -475,12 +475,17 @@ impl Instruction {
 
         let mut verts = 4;
         let mut num_new_graphs = 0;
+        
         'main: loop {
-
             let mut new_constructors: Vec<Constructor> = vec![];
             let mut graphs: Vec<Graph> = vec![];
             for constr in constructors[verts].iter() {
-                graphs.push(constr.new_graph());
+                // Actually test the graph
+                let g = constr.new_graph();
+                if self.test_sink_graph(g.clone(), conditions, find_all) && !find_all {
+                    break 'main;
+                }
+                graphs.push(g);
             }
             'decompose: for factor in 2..verts {
                 if factor * factor > verts {

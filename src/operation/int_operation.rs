@@ -32,6 +32,7 @@ pub enum IntOperation {
     NumBipartiteEdgeBisections,
     GameChromaticNumber,
     GameChromaticNumberGreedy,
+    GameArboricityNumber,
     Number(u32),
 }
 
@@ -74,6 +75,7 @@ impl IntOperation {
             "bipartite_edge_bisections" | "beb" => Some(NumBipartiteEdgeBisections),
             "game_chromatic_number" | "chi_g" => Some(GameChromaticNumber),
             "game_chromatic_alice_greedy" | "chi_g_greedy" => Some(GameChromaticNumberGreedy),
+            "game_arboricity_number" | "a_g" => Some(GameArboricityNumber),
             str => str.parse().ok().map(Number),
         }
     }
@@ -112,6 +114,7 @@ impl fmt::Display for IntOperation {
             NumBipartiteEdgeBisections => "Number of 2-edge-colourings of cubic graph with both parts bipartite",
             GameChromaticNumber => "Game chromatic number",
             GameChromaticNumberGreedy => "Threshold for Alice to win greedily in chi_g",
+            GameArboricityNumber => "Game arboricity number",
             Number(n) => {
                 sta = n.to_string();
                 sta.as_str()
