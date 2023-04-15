@@ -538,24 +538,26 @@ impl Instruction {
                 break 'main;
             }
 
-            // Test some random graphs for good measure
-            let mut random_constructors: Vec<Constructor> = vec![];
+            if !find_all {
+                // Test some random graphs for good measure
+                let mut random_constructors: Vec<Constructor> = vec![];
 
-            use RandomConstructor::*;
-            let nf = verts as f64;
-            random_constructors.push(Random(ErdosRenyi(ous(verts), 1.0 / nf)));
-            for i in (-1)..4 {
-                random_constructors.push(Random(ErdosRenyi(ous(verts), (nf.ln() + (i as f64 * nf.ln().ln())) / nf)));
-            }
-            random_constructors.push(Random(ErdosRenyi(ous(verts), 0.1)));
-            random_constructors.push(Random(ErdosRenyi(ous(verts), 0.2)));
-            random_constructors.push(Random(ErdosRenyi(ous(verts), 0.5)));
+                use RandomConstructor::*;
+                let nf = verts as f64;
+                random_constructors.push(Random(ErdosRenyi(ous(verts), 1.0 / nf)));
+                for i in (-1)..4 {
+                    random_constructors.push(Random(ErdosRenyi(ous(verts), (nf.ln() + (i as f64 * nf.ln().ln())) / nf)));
+                }
+                random_constructors.push(Random(ErdosRenyi(ous(verts), 0.1)));
+                random_constructors.push(Random(ErdosRenyi(ous(verts), 0.2)));
+                random_constructors.push(Random(ErdosRenyi(ous(verts), 0.5)));
 
-            for _rep in 0..10 {
-                for constr in random_constructors.iter() {
-                    let g = constr.new_graph();
-                    if self.test_sink_graph(g, conditions, find_all) && !find_all {
-                        break 'main;
+                for _rep in 0..10 {
+                    for constr in random_constructors.iter() {
+                        let g = constr.new_graph();
+                        if self.test_sink_graph(g, conditions, find_all) && !find_all {
+                            break 'main;
+                        }
                     }
                 }
             }
