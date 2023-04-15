@@ -103,8 +103,11 @@ mod tests {
     }
 
     #[test]
-    fn test_arb_game_cube() {
-        let constr = Constructor::Raw(RawConstructor::Cube(3));
+    fn test_arb_game_prism() {
+        use Constructor::*;
+        let constr = Product(ProductConstructor::Cartesian, 
+            Box::new(Raw(RawConstructor::Complete(ous(2)))), 
+            Box::new(Raw(RawConstructor::Complete(ous(3)))));
         test_arb_game(&constr.new_graph(), 2)
     }
 
