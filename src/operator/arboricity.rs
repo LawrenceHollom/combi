@@ -75,10 +75,56 @@ pub fn maker_wins_arboricity_game(g: &Graph, k: usize) -> bool {
 
 pub fn game_arboricity_number(g: &Graph) -> u32 {
     let mut k = 1;
+    if g.size() == 0 {
+        return 0;
+    }
     loop {
         if maker_wins_arboricity_game(g, k) {
             return k as u32;
         }
         k += 1;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::constructor::RawConstructor;
+
+    use super::*;
+    use utilities::*;
+    use crate::constructor::*;
+
+    fn test_arb_game(g: &Graph, a_g: u32) {
+        assert_eq!(game_arboricity_number(g), a_g)
+    }
+
+    fn ous(n: usize) -> Order {
+        Order::of_usize(n)
+    }
+
+    #[test]
+    fn test_arb_game_cube() {
+        let constr = Constructor::Raw(RawConstructor::Cube(3));
+        test_arb_game(&constr.new_graph(), 2)
+    }
+
+    #[test]
+    fn test_arb_game_k33() {
+        test_arb_game(&&Graph::new_complete_bipartite(ous(3), ous(3)), 2);
+    }
+
+    #[test]
+    fn test_arb_game_k4() {
+        test_arb_game(&Graph::new_complete(ous(4)), 3);
+    }
+
+    #[test]
+    fn test_arb_game_e10() {
+        test_arb_game(&Graph::new_empty(ous(10)), 0);
+    }
+
+    #[test]
+    fn test_arb_game_p4() {
+        test_arb_game(&Graph::new_path(Order::of_usize(4)), 1);
     }
 }
