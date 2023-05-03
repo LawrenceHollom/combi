@@ -533,7 +533,7 @@ impl Instruction {
                 constructors[verts].push((*c).to_owned());
             }
             
-            println!("Added kitchen sink graphs with {} vertices. There are {} of them.", verts, constructors[verts].len());
+            println!("  Added kitchen sink graphs with {} vertices. There are {} of them.", verts, constructors[verts].len());
             if num_new_graphs >= max_new_graphs {
                 break 'main;
             }
@@ -561,7 +561,7 @@ impl Instruction {
                     }
                 }
             }
-            println!("Completed graphs with {} vertices", verts);
+            println!("  Completed graphs with {} vertices", verts);
 
             verts += 1;
         }
