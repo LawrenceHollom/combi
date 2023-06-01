@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 use std::io::Write;
 use std::time::SystemTime;
+use std::fmt;
 
 use crate::annotations::Annotations;
 use crate::graph::*;
 
-use utilities::*;
 use utilities::vertex_tools::*;
+use utilities::chromatic_tools::*;
 
 fn can_be_coloured_rec(g: &Graph, num_colours: usize, max_colour_used: usize, colour: &mut VertexVec<Option<usize>>, next_vert: Vertex) -> bool {
     if next_vert.is_n(g.n) {
@@ -51,84 +52,6 @@ pub fn chromatic_number(g: &Graph) -> u32 {
         }
     }
     num_colours as u32
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-struct Config(u128);
-
-struct Coder {
-    n: Order,
-    k: usize,
-    pows: VertexVec<u128>,
-}
-
-impl Coder {
-    pub fn new(n: Order, k: usize) -> Coder {
-        let mut pows = VertexVec::new(n, &0);
-        for (i, v) in n.iter_verts().enumerate() {
-            pows[v] = ((k + 1) as u128).pow(i as u32);
-        }
-        Coder { n, k, pows }
-    }
-    
-    fn get_colour(&self, config: Config, u: &Vertex) -> Option<usize> {
-        let col = ((config.0 / self.pows[*u]) % ((self.k + 1) as u128)) as usize;
-        if col == self.k {
-            None
-        } else {
-            Some(col)
-        }
-    }
-
-    fn play_move(&self, config: Config, v: Vertex, col: usize) -> Config {
-        Config(config.0 - ((self.k - col) as u128 * self.pows[v]))
-    }
-
-    fn increase_k(&self, other: &Coder, config: Config) -> Config {
-        let mut out = other.get_start_config();
-        for v in self.n.iter_verts() {
-            if let Some(col) = self.get_colour(config, &v) {
-                out = other.play_move(out, v, col);
-            }
-        }
-        out
-    }
-
-    fn get_start_config(&self) -> Config {
-        let mut config = 0;
-        for pow in self.pows.iter() {
-            config += *pow * self.k as u128;
-        }
-        Config(config)
-    }
-
-    // Returns an index with every wlog assumption made that we can make.
-    fn get_wlog_index(&self, config: Config, fix_last_col: bool) -> Config {
-        let mut map = vec![None; self.k + 1];
-        map[self.k] = Some(self.k);
-        if fix_last_col {
-            map[self.k - 1] = Some(self.k - 1);
-        }
-        let mut wlog_index = 0;
-        let mut next_col = 0;
-
-        for pow in self.pows.iter() {
-            let digit = ((config.0 / pow) % (self.k + 1) as u128) as usize;
-            if map[digit].is_none() {
-                map[digit] = Some(next_col);
-                next_col += 1;
-            }
-            wlog_index += map[digit].unwrap() as u128 * pow;
-        }
-        Config(wlog_index)
-    }
-
-    fn print(&self, config: Config) {
-        for v in self.n.iter_verts() {
-            print!("{} ", self.get_colour(config, &v).map_or("-".to_owned(), |col| col.to_string()));
-        }
-        println!();
-    }
 }
 
 /**
@@ -375,6 +298,71 @@ pub fn alice_wins_chromatic_game_with_duds(g: &Graph, ann: &mut Annotations, k: 
     let mut history = HashMap::new();
     get_chromatic_game_history(g, ann, k, true, true, &mut history, &coder);
     *history.get(&coder.get_start_config()).unwrap()
+}
+
+#[derive(Copy, Clone)]
+struct Subwins {
+    a_lo: bool,
+    b_lo: bool,
+    a_hi: bool,
+    b_hi: bool
+}
+
+impl Subwins {
+    const FALSE: Subwins = Subwins { a_lo: false, b_lo: false, a_hi: false, b_hi: false };
+}
+
+impl fmt::Debug for Subwins {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fn digify(b: bool) -> usize { if b { 1 } else { 0 } }
+        write!(f, "a: {}{}, b: {}{}", digify(self.a_lo), digify(self.a_hi), digify(self.b_lo), digify(self.b_hi))
+    }
+}
+
+pub fn is_some_subset_non_monotone(g: &Graph, ann: &mut Annotations, k: usize) -> bool {
+    let lo_coder = Coder::new(g.n, k);
+    let mut lo_history = HashMap::new();
+    get_chromatic_game_history(g, ann, k, false, false, &mut lo_history, &lo_coder);
+    let hi_coder = Coder::new(g.n, k + 1);
+    let mut hi_history = HashMap::new();
+    get_chromatic_game_history(g, ann, k + 1, false, false, &mut hi_history, &hi_coder);
+    let num_subsets = 1 << g.n.to_usize();
+    let mut subset_wins = vec![Subwins::FALSE; num_subsets];
+    for (config, a_win) in lo_history.iter() {
+        let vertex_set_code = lo_coder.vertex_set(*config).to_int() as usize;
+        if *a_win {
+            subset_wins[vertex_set_code].a_lo = true;
+        } else {
+            subset_wins[vertex_set_code].b_lo = true;
+        }
+    }
+    for (config, a_win) in hi_history.iter() {
+        let vertex_set_code = hi_coder.vertex_set(*config).to_int() as usize;
+        if *a_win {
+            subset_wins[vertex_set_code].a_hi = true;
+        } else {
+            subset_wins[vertex_set_code].b_hi = true;
+        }
+    }
+
+    let mut is_all_monot = true;
+    for vertex_set in 0..num_subsets {
+        let set = VertexSet::of_int(vertex_set as u128, g.n);
+        let subwins = subset_wins[vertex_set];
+        //print!("{:?} ", subwins);
+        //set.print();
+        if subwins.a_lo && !subwins.a_hi {
+            is_all_monot = false;
+            print!("Failure by A at ");
+            set.print();
+        }
+        if subwins.b_hi && !subwins.b_lo {
+            is_all_monot = false;
+            print!("Failure by B at ");
+            set.print();
+        }
+    }
+    !is_all_monot
 }
 
 // Alice's greedy strategy is to play vertices in decreasing order of degree.

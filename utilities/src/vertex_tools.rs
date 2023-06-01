@@ -279,6 +279,10 @@ impl VertexSet {
         VertexSet{ verts: 1 << v.0, n }
     }
 
+    pub fn to_int(&self) -> u128 {
+        self.verts
+    }
+
     pub fn add_vert(&mut self, v: Vertex) {
         self.verts |= 1 << v.0;
     }

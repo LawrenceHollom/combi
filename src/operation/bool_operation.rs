@@ -50,6 +50,8 @@ pub enum BoolOperation {
     IsBunkbedPostRemovalInductionGood,
     CanChromaticGameHaveDudUniqueWin,
     GameChromaticWinnerWithDuds(usize),
+    ChromaticGameSubsetMonotonicity(usize),
+    LinearGameChromaticWinner(usize),
     Debug,
 }
 
@@ -147,6 +149,10 @@ impl BoolOperation {
 		            "is_bb_p_r_g" => Some(IsBunkbedPostRemovalInductionGood),
                     "can_dud_win" => Some(CanChromaticGameHaveDudUniqueWin),
                     "chi_g_duds" => Some(GameChromaticWinnerWithDuds(args[0].parse().unwrap())),
+                    "chi_g_subsets" => Some(ChromaticGameSubsetMonotonicity(args[0].parse().unwrap())),
+                    "linear_chromatic_winner" | "lin_chi_g_win" | "lcgw" => {
+                        Some(LinearGameChromaticWinner(args[0].parse().unwrap()))
+                    }
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -242,6 +248,12 @@ impl fmt::Display for BoolOperation {
             }
             GameChromaticWinnerWithDuds(k) => {
                 format!("Whether Maker wins the chromatic game on {} colours (one of which is a dud)", k)
+            }
+            ChromaticGameSubsetMonotonicity(k) => {
+                format!("Whether the chromatic game has subset-monotonicity from k = {} to {}", k, k + 1)
+            }
+            LinearGameChromaticWinner(k) => {
+                format!("Whether Maker wins the linear chromatic game on {} colours", k)
             }
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };

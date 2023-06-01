@@ -84,8 +84,8 @@
 
 == CHROMATIC GAME MONOTONICITY ==
 - until(seq(0,2,5,4,1),chi=3,chi_g_greedy>=5,!(a_wins_chi_g(4)),a_wins_chi_g(3))
-- process(12)->a_wins_chi_g(3),a_wins_chi_g(4)
--- Seek [true, false]
+- process(12)->a_wins_chi_g(3),!(a_wins_chi_g(4))
+-- Seek [true, true]
 -- Perhaps write some automated thing to run this test?
 
 == BUGS ==

@@ -34,6 +34,7 @@ pub enum IntOperation {
     GameChromaticNumberGreedy,
     GameArboricityNumber,
     Degeneracy,
+    LinearGameChromaticNumber,
     Number(u32),
 }
 
@@ -78,6 +79,7 @@ impl IntOperation {
             "game_chromatic_alice_greedy" | "chi_g_greedy" => Some(GameChromaticNumberGreedy),
             "game_arboricity_number" | "a_g" => Some(GameArboricityNumber),
             "degeneracy" | "degen" => Some(Degeneracy),
+            "linear_chi_g" | "lcg" => Some(LinearGameChromaticNumber),
             str => str.parse().ok().map(Number),
         }
     }
@@ -118,6 +120,7 @@ impl fmt::Display for IntOperation {
             GameChromaticNumberGreedy => "Threshold for Alice to win greedily in chi_g",
             GameArboricityNumber => "Game arboricity number",
             Degeneracy => "Degeneracy",
+            LinearGameChromaticNumber => "Linear game chromatic number",
             Number(n) => {
                 sta = n.to_string();
                 sta.as_str()
