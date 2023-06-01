@@ -18,6 +18,7 @@ pub enum UnitOperation {
     GameChromaticTable,
     GameChromaticStrategy(usize),
     PrintAutomorphisms,
+    BunkbedPostRemoval,
     Signature,
     Unit,
 }
@@ -43,6 +44,7 @@ impl UnitOperation {
             "game_chromatic_table" | "chi_g_table" | "chi_g_t" => Some(GameChromaticTable),
             "game_chromatic_strategy" | "chi_g_strat" => Some(GameChromaticStrategy(args[0].parse().unwrap())),
             "print_automorphisms" | "print_autos" => Some(PrintAutomorphisms),
+	    "bunkbed_post_removal" | "bb_p_r" => Some(BunkbedPostRemoval),
             "signature" | "sig" => Some(Signature),
             "()" | "(" => Some(Unit),
             &_ => None,
@@ -68,6 +70,7 @@ impl fmt::Display for UnitOperation {
             GameChromaticTable => "Print winners of chromatic game for various k",
             GameChromaticStrategy(k) => { str = format!("Strategy for chromatic game for {} colours", k); &str }
             PrintAutomorphisms => "Print automorphisms of g, and other autoj metadata",
+	    BunkbedPostRemoval => "Tests bunkbed induction via removing posts",
             Signature => "Print a bunch of graph invariants",
             Unit => "Do nothing",
         };

@@ -47,6 +47,7 @@ pub enum BoolOperation {
     IsChromaticGameStronglyMonotone,
     ArboricityGameWinner(usize),
     IsDDegenerate(Degree),
+    IsBunkbedPostRemovalInductionGood,
     Debug,
 }
 
@@ -141,6 +142,9 @@ impl BoolOperation {
                     "is_d_degenerate" | "d_degen" => {
                         Some(IsDDegenerate(Degree::of_string(args[0])))
                     }
+		    "is_bb_p_r_g" => {
+			Some(IsBunkbedPostRemovalInductionGood)
+		    }
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -228,6 +232,9 @@ impl fmt::Display for BoolOperation {
             IsDDegenerate(d) => {
                 format!("Whether the graph is {}-degenerate", d)
             }
+	    IsBunkbedPostRemovalInductionGood => {
+		format!("Is bunkbed post removal induction good?")
+	    }
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };
         write!(f, "{}", name)
