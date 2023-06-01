@@ -185,7 +185,8 @@ impl Operator {
                     }
                     ArboricityGameWinner(k) => arboricity::maker_wins_arboricity_game(&self.g, *k),
                     IsDDegenerate(d) => degeneracy::is_d_degenerate(&self.g, *d),
-		    IsBunkbedPostRemovalInductionGood => bunkbed_reduced::is_post_removal_induction_always_good(&self.g),
+                    IsBunkbedPostRemovalInductionGood => bunkbed_reduced::is_post_removal_induction_always_good(&self.g),
+                    CanChromaticGameHaveDudUniqueWin => chromatic::can_chormatic_game_dud_unique_win(&self.g, ann.get_annotations(&self.g)),
                     Debug => debug::debug(&self.g),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);

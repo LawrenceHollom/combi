@@ -128,9 +128,24 @@ impl Coder {
     }
 }
 
+/**
+ * Recursively test if Alice can win the chromatic game. Parameters:
+ * 
+ * k: number of colours
+ * max_colour_used: highest numbered colour used so far
+ * config: the state of the board (i.e. how the graph is coloured so far)
+ * history: a record of what we already know about winning states
+ * fixed_verts: used to get vertex class representatives in the early stages.
+ * num_cols: how many vertices have already been coloured
+ * fast_mode: stop the simulation as soon as we know that a player has won.
+ *      If this is false, then we create a complete simulation of the game, even following
+ *      winning and losing positions through to the end.
+ * can_b_play_duds: if true, then colour k-1 is the 'dud' colour, can only be played
+ *      by B, and does not effect the surrounding vertices.
+ */
 fn alice_wins_chromatic_game_rec(g: &Graph, ann: &mut Annotations, k: usize, max_colour_used: usize, coder: &Coder,
                 config: Config, history: &mut HashMap<Config, bool>, fixed_verts: VertexSet, should_find_reps: bool, 
-                num_cold: usize, fast_mode: bool) -> bool {
+                num_cold: usize, fast_mode: bool, can_b_play_duds: bool) -> bool {
     if g.n.at_least(30) && num_cold <= 15 {
         println!("Step! {}", num_cold);
     }
@@ -145,7 +160,11 @@ fn alice_wins_chromatic_game_rec(g: &Graph, ann: &mut Annotations, k: usize, max
                 let alice_turn = num_cold % 2 == 0;
                 let mut alice_win = !alice_turn;
                 let mut is_something_playable = false;
-                let col_cap = (max_colour_used + 2).min(k);
+                let col_cap = if can_b_play_duds && alice_turn {
+                        (max_colour_used + 2).min(k - 1)
+                    } else {
+                        (max_colour_used + 2).min(k)
+                    };
                 let mut next_should_find_reps = should_find_reps;
                 let reps = if should_find_reps {
                         let reps = ann.get_representatives(g, fixed_verts);
@@ -162,20 +181,26 @@ fn alice_wins_chromatic_game_rec(g: &Graph, ann: &mut Annotations, k: usize, max
                         let mut can_be_cold = false;
                         for c in 0..col_cap {
                             let mut can_use_c = true;
-                            'test_c: for u in g.adj_list[v].iter() {
-                                if coder.get_colour(config, u) == Some(c) {
-                                    can_use_c = false;
-                                    break 'test_c;
+                            let is_this_a_dud = can_b_play_duds && c == k - 1 && !alice_turn;
+                            if !is_this_a_dud {
+                                'test_c: for u in g.adj_list[v].iter() {
+                                    if coder.get_colour(config, u) == Some(c) {
+                                        can_use_c = false;
+                                        break 'test_c;
+                                    }
                                 }
                             }
                             if can_use_c {
-                                is_something_playable = true;
-                                can_be_cold = true;
+                                if !is_this_a_dud {
+                                    // if the only valid play is a dud, then B wins.
+                                    is_something_playable = true;
+                                    can_be_cold = true;
+                                }
                                 let new_config = coder.play_move(config, v, c);
                                 let max_col = max_colour_used.max(c);
                                 let sub_alice_win = alice_wins_chromatic_game_rec(g, ann, k, max_col, 
                                     coder, new_config, history, fixed_verts.add_vert_immutable(v), next_should_find_reps,
-                                    num_cold + 1, fast_mode);
+                                    num_cold + 1, fast_mode, can_b_play_duds);
                                 if sub_alice_win == alice_turn {
                                     // This is a winning strategy for this player.
                                     alice_win = sub_alice_win;
@@ -214,27 +239,37 @@ fn print_history(history: &HashMap<Config, bool>, coder: &Coder) {
     }
 }
 
+fn get_chromatic_game_history(g: &Graph, ann: &mut Annotations, k: usize, can_b_play_duds: bool,
+        fast_mode: bool, history: &mut HashMap<Config, bool>, coder: &Coder) {
+    let mut alice_wins = false;
+    'test_verts: for v in ann.weak_representatives().iter() {
+        let config = coder.play_move(coder.get_start_config(), v, 0);
+        if alice_wins_chromatic_game_rec(g, ann, k, 0, &coder, config, history, 
+                VertexSet::of_vert(g.n, v), true, 1, 
+                fast_mode, can_b_play_duds) {
+            alice_wins = true;
+            history.insert(config, true);
+            if fast_mode {
+                break 'test_verts;
+            }
+        } else {
+            history.insert(config, false);
+        }
+    }
+    history.insert(coder.get_start_config(), alice_wins);
+}
+
 pub fn alice_wins_chromatic_game(g: &Graph, ann: &mut Annotations, k: usize, print_strategy: bool) -> bool {
     if k >= alice_greedy_lower_bound(g) {
         return true;
     }
     let coder = Coder::new(g.n, k);
     let mut history = HashMap::new();
-    let mut alice_wins = false;
-    'test_verts: for v in ann.weak_representatives().iter() {
-        let config = coder.play_move(coder.get_start_config(), v, 0);
-        if alice_wins_chromatic_game_rec(g, ann, k, 0, &coder, config, &mut history, 
-                VertexSet::of_vert(g.n, v), true, 1, true) {
-            alice_wins = true;
-            history.insert(config, true);
-            break 'test_verts;
-        }
-        history.insert(config, false);
-    }
+    get_chromatic_game_history(g, ann, k, false, true, &mut history, &coder);
     if print_strategy {
         print_history(&history, &coder)
     }
-    alice_wins
+    *history.get(&coder.get_start_config()).unwrap()
 }
 
 pub fn print_chromatic_game_strategy(g: &Graph, ann: &mut Annotations, k: usize) {
@@ -245,13 +280,16 @@ pub fn chromatic_game_strong_monotonicity(g: &Graph, ann: &mut Annotations) -> b
     let greedy = alice_greedy_lower_bound(g);
     let coders: Vec<Coder> = (0..=greedy).map(|k| Coder::new(g.n, k)).collect();
     let mut histories: Vec<HashMap<Config, bool>> = (0..=greedy).map(|_| HashMap::new()).collect(); 
-    for v in ann.weak_representatives().iter() {
-        for k in 2..=greedy {
+    for k in 2..=greedy {
+        /*for v in ann.weak_representatives().iter() {
             let config = coders[k].play_move(coders[k].get_start_config(), v, 0);
             let win = alice_wins_chromatic_game_rec(g, ann, k, 0, &coders[k], config,
-                &mut histories[k], VertexSet::of_vert(g.n, v), true, 1, false);
+                &mut histories[k], VertexSet::of_vert(g.n, v), true, 1, 
+                false, false);
             histories[k].insert(config, win);
-        }
+        }*/
+        get_chromatic_game_history(g, ann, k, false, false, 
+            &mut histories[k], &coders[k]);
     }
 
     let mut is_monot = true;
@@ -279,6 +317,51 @@ pub fn chromatic_game_strong_monotonicity(g: &Graph, ann: &mut Annotations) -> b
     }
 
     is_monot
+}
+
+/**
+ * Tests whether there is ever a situation in the B-duds game where B's
+ * only winning move is to play a dud.
+ */
+pub fn can_chormatic_game_dud_unique_win(g: &Graph, ann: &mut Annotations) -> bool {
+    let greedy = alice_greedy_lower_bound(g);
+    for k in 2..greedy {
+        let coder = Coder::new(g.n, k);
+        let mut history = HashMap::new();
+        get_chromatic_game_history(g, ann, k, true, false, &mut history, &coder);
+        for (config, a_win) in history.iter() {
+            // need that the only winning move at some vertex is k-1.
+            if !*a_win {
+                for v in g.iter_verts() {
+                    if coder.get_colour(*config, &v).is_none() {
+                        let mut is_v_dud_win_only = false;
+                        let mut is_some_other_move_playable = false;
+                        match history.get(&coder.play_move(*config, v, k - 1)) {
+                            Some(true) => {
+                                is_v_dud_win_only = true;
+                                'test_all_other_cols: for col in 0..(k-1) {
+                                    if let Some(a_win) = history.get(&coder.play_move(*config, v, col)) {
+                                        is_some_other_move_playable = true;
+                                        if *a_win {
+                                            is_v_dud_win_only = false;
+                                            break 'test_all_other_cols;
+                                        }
+                                    }
+                                }
+                            }
+                            Some(false) | None => (),
+                        }
+                        if is_v_dud_win_only && is_some_other_move_playable {
+                            println!("Found a dud win only place! Vertex {}", v);
+                            coder.print(*config);
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    false
 }
 
 // Alice's greedy strategy is to play vertices in decreasing order of degree.
