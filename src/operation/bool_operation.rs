@@ -49,6 +49,7 @@ pub enum BoolOperation {
     IsDDegenerate(Degree),
     IsBunkbedPostRemovalInductionGood,
     CanChromaticGameHaveDudUniqueWin,
+    GameChromaticWinnerWithDuds(usize),
     Debug,
 }
 
@@ -143,12 +144,9 @@ impl BoolOperation {
                     "is_d_degenerate" | "d_degen" => {
                         Some(IsDDegenerate(Degree::of_string(args[0])))
                     }
-		            "is_bb_p_r_g" => {
-                        Some(IsBunkbedPostRemovalInductionGood)
-                    }
-                    "can_dud_win" => {
-                        Some(CanChromaticGameHaveDudUniqueWin)
-                    }
+		            "is_bb_p_r_g" => Some(IsBunkbedPostRemovalInductionGood),
+                    "can_dud_win" => Some(CanChromaticGameHaveDudUniqueWin),
+                    "chi_g_duds" => Some(GameChromaticWinnerWithDuds(args[0].parse().unwrap())),
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -241,6 +239,9 @@ impl fmt::Display for BoolOperation {
             }
             CanChromaticGameHaveDudUniqueWin => {
                 format!("Whether chromatic game have dud as unique winning move")
+            }
+            GameChromaticWinnerWithDuds(k) => {
+                format!("Whether Maker wins the chromatic game on {} colours (one of which is a dud)", k)
             }
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };

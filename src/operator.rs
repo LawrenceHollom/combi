@@ -147,22 +147,23 @@ impl Operator {
         }
     }
 
-    pub fn operate_bool(&mut self, ann: &mut AnnotationsBox, operation: &BoolOperation) -> bool {
+    pub fn operate_bool(&mut self, ann_box: &mut AnnotationsBox, operation: &BoolOperation) -> bool {
         use BoolOperation::*;
+        let ann = ann_box.get_annotations(&self.g);
         match self.previous_bool_values.get(operation) {
             Some(value) => *value,
             None => {
                 let value = match operation {
                     IntInfix(infix, op1, op2) => {
-                        self.operate_int_to_bool_infix(ann, infix, op1, op2)
+                        self.operate_int_to_bool_infix(ann_box, infix, op1, op2)
                     }
                     FloatInfix(infix, op1, op2) => {
-                        self.operate_float_to_bool_infix(ann, infix, op1, op2)
+                        self.operate_float_to_bool_infix(ann_box, infix, op1, op2)
                     }
                     BoolInfix(infix, op1, op2) => {
-                        self.operate_bool_to_bool_infix(ann, infix, op1, op2)
+                        self.operate_bool_to_bool_infix(ann_box, infix, op1, op2)
                     }
-                    Not(op) => !self.operate_bool(ann, op),
+                    Not(op) => !self.operate_bool(ann_box, op),
                     IsDominationNumberAtLeast(lower_bound) => {
                         domination::is_domination_number_at_least(&self.g, *lower_bound)
                     }
@@ -178,15 +179,16 @@ impl Operator {
                     IsTriangleFree => subgraphs::is_triangle_free(&self.g),
                     CanBeEdgePartitionedIntoLinearForestAndMatching => edge_partitions::edge_partition_forest_and_matching(&self.g),
                     GoodCubicDominationBase => cubic_domination::is_good(&self.g),
-                    GameChromaticWinner(k) => chromatic::alice_wins_chromatic_game(&self.g, ann.get_annotations(&self.g), *k, false),
-                    IsChromaticGameMonotone => chromatic::game_chromatic_colour_monotone(&self.g, ann.get_annotations(&self.g)),
+                    GameChromaticWinner(k) => chromatic::alice_wins_chromatic_game(&self.g, ann, *k, false),
+                    IsChromaticGameMonotone => chromatic::game_chromatic_colour_monotone(&self.g, ann),
                     IsChromaticGameStronglyMonotone => {
-                        chromatic::chromatic_game_strong_monotonicity(&self.g, ann.get_annotations(&self.g))
+                        chromatic::chromatic_game_strong_monotonicity(&self.g, ann)
                     }
                     ArboricityGameWinner(k) => arboricity::maker_wins_arboricity_game(&self.g, *k),
                     IsDDegenerate(d) => degeneracy::is_d_degenerate(&self.g, *d),
                     IsBunkbedPostRemovalInductionGood => bunkbed_reduced::is_post_removal_induction_always_good(&self.g),
-                    CanChromaticGameHaveDudUniqueWin => chromatic::can_chormatic_game_dud_unique_win(&self.g, ann.get_annotations(&self.g)),
+                    CanChromaticGameHaveDudUniqueWin => chromatic::can_chormatic_game_dud_unique_win(&self.g, ann),
+                    GameChromaticWinnerWithDuds(k) => chromatic::alice_wins_chromatic_game_with_duds(&self.g, ann, *k),
                     Debug => debug::debug(&self.g),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);

@@ -339,11 +339,13 @@ pub fn can_chormatic_game_dud_unique_win(g: &Graph, ann: &mut Annotations) -> bo
                     if coder.get_colour(*config, &v).is_none() {
                         let mut is_v_dud_win_only = false;
                         let mut is_some_other_move_playable = false;
-                        match history.get(&coder.play_move(*config, v, k - 1)) {
+                        let dud_config = coder.get_wlog_index(coder.play_move(*config, v, k - 1), true);
+                        match history.get(&dud_config) {
                             Some(false) => {
                                 is_v_dud_win_only = true;
                                 'test_all_other_cols: for col in 0..(k-1) {
-                                    if let Some(a_win) = history.get(&coder.play_move(*config, v, col)) {
+                                    let new_config = coder.get_wlog_index(coder.play_move(*config, v, col), true);
+                                    if let Some(a_win) = history.get(&new_config) {
                                         is_some_other_move_playable = true;
                                         if !*a_win {
                                             is_v_dud_win_only = false;
@@ -366,6 +368,13 @@ pub fn can_chormatic_game_dud_unique_win(g: &Graph, ann: &mut Annotations) -> bo
         }
     }
     false
+}
+
+pub fn alice_wins_chromatic_game_with_duds(g: &Graph, ann: &mut Annotations, k: usize) -> bool {
+    let coder = Coder::new(g.n, k);
+    let mut history = HashMap::new();
+    get_chromatic_game_history(g, ann, k, true, true, &mut history, &coder);
+    *history.get(&coder.get_start_config()).unwrap()
 }
 
 // Alice's greedy strategy is to play vertices in decreasing order of degree.
