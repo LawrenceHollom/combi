@@ -103,9 +103,12 @@ impl Coder {
     }
 
     // Returns an index with every wlog assumption made that we can make.
-    fn get_wlog_index(&self, config: Config) -> Config {
+    fn get_wlog_index(&self, config: Config, fix_last_col: bool) -> Config {
         let mut map = vec![None; self.k + 1];
         map[self.k] = Some(self.k);
+        if fix_last_col {
+            map[self.k - 1] = Some(self.k - 1);
+        }
         let mut wlog_index = 0;
         let mut next_col = 0;
 
@@ -153,14 +156,14 @@ fn alice_wins_chromatic_game_rec(g: &Graph, ann: &mut Annotations, k: usize, max
         // G is coloured, so Alice has won
         true
     } else {
-        let wlog_index = coder.get_wlog_index(config);
+        let wlog_index = coder.get_wlog_index(config, can_b_play_duds);
         match history.get(&wlog_index) {
             Some(alice_win) => *alice_win,
             None => {
                 let alice_turn = num_cold % 2 == 0;
                 let mut alice_win = !alice_turn;
                 let mut is_something_playable = false;
-                let col_cap = if can_b_play_duds && alice_turn {
+                let col_cap = if can_b_play_duds && (alice_turn || g.n.at_most(num_cold + 1)) {
                         (max_colour_used + 2).min(k - 1)
                     } else {
                         (max_colour_used + 2).min(k)
@@ -337,22 +340,23 @@ pub fn can_chormatic_game_dud_unique_win(g: &Graph, ann: &mut Annotations) -> bo
                         let mut is_v_dud_win_only = false;
                         let mut is_some_other_move_playable = false;
                         match history.get(&coder.play_move(*config, v, k - 1)) {
-                            Some(true) => {
+                            Some(false) => {
                                 is_v_dud_win_only = true;
                                 'test_all_other_cols: for col in 0..(k-1) {
                                     if let Some(a_win) = history.get(&coder.play_move(*config, v, col)) {
                                         is_some_other_move_playable = true;
-                                        if *a_win {
+                                        if !*a_win {
                                             is_v_dud_win_only = false;
                                             break 'test_all_other_cols;
                                         }
                                     }
                                 }
                             }
-                            Some(false) | None => (),
+                            Some(true) | None => (),
                         }
                         if is_v_dud_win_only && is_some_other_move_playable {
-                            println!("Found a dud win only place! Vertex {}", v);
+                            print_history(&history, &coder);
+                            println!("Found a dud win only place! k = {}. Vertex {}", k, v);
                             coder.print(*config);
                             return true;
                         }
