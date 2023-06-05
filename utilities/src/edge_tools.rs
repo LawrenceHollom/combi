@@ -121,6 +121,20 @@ impl EdgeIndexer {
         EdgeIndexer { indexer, indexer_inv, num_edges, hash }
     }
 
+    pub fn new_complete(order: Order) -> EdgeIndexer {
+        let mut indexer: Vec<Option<usize>> = vec![None; order.triangle()];
+        let mut indexer_inv: Vec<Edge> = vec![];
+        let mut i = 0;
+        for (u, v) in order.iter_pairs() {
+            let e = Edge::of_pair(u, v);
+            indexer[e.encode()] = Some(i);
+            indexer_inv.push(e);
+            i += 1;
+        }
+        let hash = Self::default_hash(&indexer);
+        EdgeIndexer { indexer, indexer_inv, num_edges: i, hash }
+    }
+
     pub fn index(&self, e: Edge) -> Option<usize> {
         self.indexer[e.encode()]
     }

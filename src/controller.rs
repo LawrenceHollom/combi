@@ -34,6 +34,7 @@ pub enum Controller {
     KitchenSinkAll(Vec<BoolOperation>),
     Process(Order),
     ProcessUntil(Order, Vec<BoolOperation>),
+    SearchAll(Order, Vec<BoolOperation>),
     Help,
 }
 
@@ -94,6 +95,10 @@ impl Controller {
                 ProcessUntil(Order::of_string(args[0]),
                     args.iter().skip(1).map(|arg| BoolOperation::of_string_result(*arg).unwrap()).collect())
             }
+            "search_all" | "all" => {
+                SearchAll(Order::of_string(args[0]),
+                    args.iter().skip(1).map(|arg| BoolOperation::of_string_result(*arg).unwrap()).collect())
+            }
             "help" | "h" => Help,
             &_ => {
                 Single(Constructor::of_string(text))
@@ -132,6 +137,9 @@ impl fmt::Display for Controller {
             }
             ProcessUntil(order, conditions) => {
                 write!(f, "Run graph processes of order {} until {:?}", order, conditions)
+            }
+            SearchAll(order, conditions) => {
+                write!(f, "Search all graphs of order {} until {:?}", order, conditions)
             }
             Help => write!(f, "Print help text"),
         }
@@ -259,6 +267,24 @@ impl Instruction {
         }
     }
 
+    fn do_all_conditions_hold(&self, g: Graph, conditions: &[BoolOperation]) -> bool {
+        let mut ann = AnnotationsBox::new();
+        let mut operator = Operator::new(g);
+        let mut is_good = true;
+        'test_conditions: for operation in conditions.iter() {
+            if !operator.operate_bool(&mut ann, operation) {
+                is_good = false;
+                break 'test_conditions;
+            }
+        }
+        if is_good {
+            println!("Found graph satisfying conditions!");
+            operator.print_all();
+            operator.print_graph();
+        }
+        is_good
+    }
+
     fn execute_process_until(&self, order: Order, conditions: &[BoolOperation]) {
         let mut rep = 0;
         let start_time = SystemTime::now();
@@ -270,19 +296,7 @@ impl Instruction {
                 adj_list[e.fst()].push(e.snd());
                 adj_list[e.snd()].push(e.fst());
                 let g = Graph::of_adj_list(adj_list.to_owned(), Constructor::Special);
-                let mut ann = AnnotationsBox::new();
-                let mut operator = Operator::new(g);
-                let mut is_good = true;
-                'test_conditions: for operation in conditions.iter() {
-                    if !operator.operate_bool(&mut ann, operation) {
-                        is_good = false;
-                        break 'test_conditions;
-                    }
-                }
-                if is_good {
-                    println!("Found graph satisfying conditions!");
-                    operator.print_all();
-                    operator.print_graph();
+                if self.do_all_conditions_hold(g, conditions) {
                     break 'test_procs;
                 }
             }
@@ -291,6 +305,52 @@ impl Instruction {
                 let avg_time = start_time.elapsed().unwrap().as_millis() / rep;
                 println!("Completed process {}, no example found. Average duration: {}", rep, avg_time);
             }
+        }
+    }
+
+    fn execute_search_all(&self, order: Order, conditions: &[BoolOperation]) {
+        let mut adj = VertexVec::new(order, &VertexVec::new(order, &false));
+        let mut degs = VertexVec::new(order, &Degree::ZERO);
+        let indexer = EdgeIndexer::new_complete(order);
+
+        let num_edges = (order.to_usize() * (order.to_usize() - 1)) / 2;
+        let mut found_graph = false;
+
+        'test_all_graphs: for code in 1..(1_u128 << num_edges) {
+            let mut i = 0;
+            let mut sta = code;
+            while sta % 2 == 0 {
+                let e = indexer.invert(i);
+                adj[e.fst()][e.snd()] = false;
+                degs[e.fst()].decr_inplace();
+                degs[e.snd()].decr_inplace();
+                i += 1;
+                sta /= 2;
+            }
+            let e = indexer.invert(i);
+            adj[e.fst()][e.snd()] = true;
+            degs[e.fst()].incr_inplace();
+            degs[e.snd()].incr_inplace();
+
+            // If this graph has decreasing degree sequence, then actually run it.
+            let mut is_good = true;
+            'test_degs: for (i, deg) in degs.iter().enumerate().skip(1) {
+                if *deg > degs[Vertex::of_usize(i - 1)] {
+                    is_good = false;
+                    break 'test_degs;
+                }
+            }
+
+            if is_good {
+                let g = Graph::of_matrix(adj.to_owned(), Constructor::Special);
+                if self.do_all_conditions_hold(g, conditions) {
+                    found_graph = true;
+                    break 'test_all_graphs;
+                }
+            }
+        }
+        if !found_graph {
+            println!("No graph found.");
         }
     }
 
@@ -600,6 +660,7 @@ impl Instruction {
             KitchenSinkAll(conditions) => self.execute_kitchen_sink(conditions, true),
             Process(order) => self.execute_process(*order),
             ProcessUntil(order, conditions) => self.execute_process_until(*order, conditions),
+            SearchAll(order, conditions) => self.execute_search_all(*order, conditions),
             Help => Self::print_help(),
         }
     }
