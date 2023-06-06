@@ -52,6 +52,7 @@ pub enum BoolOperation {
     GameChromaticWinnerWithDuds(usize),
     ChromaticGameSubsetMonotonicity(usize),
     LinearGameChromaticWinner(usize),
+    GameGrundyWinner(usize),
     Debug,
 }
 
@@ -152,6 +153,9 @@ impl BoolOperation {
                     "chi_g_subsets" => Some(ChromaticGameSubsetMonotonicity(args[0].parse().unwrap())),
                     "linear_chromatic_winner" | "lin_chi_g_win" | "lcgw" => {
                         Some(LinearGameChromaticWinner(args[0].parse().unwrap()))
+                    }
+                    "game_grundy_winner" | "grundy_win" => {
+                        Some(GameGrundyWinner(args[0].parse().unwrap()))
                     }
                     "debug" => Some(Debug),
                     &_ => None,
@@ -254,6 +258,9 @@ impl fmt::Display for BoolOperation {
             }
             LinearGameChromaticWinner(k) => {
                 format!("Whether Maker wins the linear chromatic game on {} colours", k)
+            }
+            GameGrundyWinner(k) => {
+                format!("Whether Maker wins Grundy game on {} colours", k)
             }
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };

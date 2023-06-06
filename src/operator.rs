@@ -20,6 +20,7 @@ mod arboricity;
 mod degeneracy;
 mod bunkbed_reduced;
 mod chromatic_linear;
+mod grundy;
 
 use std::collections::HashMap;
 
@@ -101,6 +102,7 @@ impl Operator {
                     GameArboricityNumber => arboricity::game_arboricity_number(&self.g),
                     Degeneracy => degeneracy::degeneracy(&self.g),
                     LinearGameChromaticNumber => chromatic_linear::linear_game_chromatic_number(&self.g),
+                    GameGrundyNumber => grundy::game_grundy_number(&self.g),
                     Number(k) => *k,
                 };
                 self.previous_int_values.insert(*operation, value);
@@ -193,6 +195,7 @@ impl Operator {
                     GameChromaticWinnerWithDuds(k) => chromatic::alice_wins_chromatic_game_with_duds(&self.g, ann, *k),
                     ChromaticGameSubsetMonotonicity(k) => chromatic::is_some_subset_non_monotone(&self.g, ann, *k),
                     LinearGameChromaticWinner(k) => chromatic_linear::does_maker_win_linear_chromatic_game(&self.g, *k),
+                    GameGrundyWinner(k) => grundy::does_maker_win_grundy_game(&self.g, *k),
                     Debug => debug::debug(&self.g),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);

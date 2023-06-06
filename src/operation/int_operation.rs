@@ -35,6 +35,7 @@ pub enum IntOperation {
     GameArboricityNumber,
     Degeneracy,
     LinearGameChromaticNumber,
+    GameGrundyNumber,
     Number(u32),
 }
 
@@ -80,6 +81,7 @@ impl IntOperation {
             "game_arboricity_number" | "a_g" => Some(GameArboricityNumber),
             "degeneracy" | "degen" => Some(Degeneracy),
             "linear_chi_g" | "lcg" => Some(LinearGameChromaticNumber),
+            "game_grundy_number" | "game_grundy" => Some(GameGrundyNumber),
             str => str.parse().ok().map(Number),
         }
     }
@@ -121,6 +123,7 @@ impl fmt::Display for IntOperation {
             GameArboricityNumber => "Game arboricity number",
             Degeneracy => "Degeneracy",
             LinearGameChromaticNumber => "Linear game chromatic number",
+            GameGrundyNumber => "Game Grundy number",
             Number(n) => {
                 sta = n.to_string();
                 sta.as_str()
