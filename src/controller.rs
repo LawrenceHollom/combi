@@ -322,6 +322,7 @@ impl Instruction {
             while sta % 2 == 0 {
                 let e = indexer.invert(i);
                 adj[e.fst()][e.snd()] = false;
+                adj[e.snd()][e.fst()] = false;
                 degs[e.fst()].decr_inplace();
                 degs[e.snd()].decr_inplace();
                 i += 1;
@@ -329,6 +330,7 @@ impl Instruction {
             }
             let e = indexer.invert(i);
             adj[e.fst()][e.snd()] = true;
+            adj[e.snd()][e.fst()] = true;
             degs[e.fst()].incr_inplace();
             degs[e.snd()].incr_inplace();
 
