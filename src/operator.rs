@@ -21,6 +21,7 @@ mod degeneracy;
 mod bunkbed_reduced;
 mod chromatic_linear;
 mod grundy;
+mod marking_game;
 
 use std::collections::HashMap;
 
@@ -104,6 +105,7 @@ impl Operator {
                     Degeneracy => degeneracy::degeneracy(&self.g),
                     LinearGameChromaticNumber => chromatic_linear::linear_game_chromatic_number(&self.g),
                     GameGrundyNumber => grundy::game_grundy_number(&self.g, ann),
+                    MarkingGameNumber => marking_game::marking_game_number(&self.g),
                     Number(k) => *k,
                 };
                 self.previous_int_values.insert(*operation, value);

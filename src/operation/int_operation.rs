@@ -36,6 +36,7 @@ pub enum IntOperation {
     Degeneracy,
     LinearGameChromaticNumber,
     GameGrundyNumber,
+    MarkingGameNumber,
     Number(u32),
 }
 
@@ -82,6 +83,7 @@ impl IntOperation {
             "degeneracy" | "degen" => Some(Degeneracy),
             "linear_chi_g" | "lcg" => Some(LinearGameChromaticNumber),
             "game_grundy_number" | "game_grundy" => Some(GameGrundyNumber),
+            "marking_game_number" | "mark" => Some(MarkingGameNumber),
             str => str.parse().ok().map(Number),
         }
     }
@@ -124,6 +126,7 @@ impl fmt::Display for IntOperation {
             Degeneracy => "Degeneracy",
             LinearGameChromaticNumber => "Linear game chromatic number",
             GameGrundyNumber => "Game Grundy number",
+            MarkingGameNumber => "marking game number",
             Number(n) => {
                 sta = n.to_string();
                 sta.as_str()
