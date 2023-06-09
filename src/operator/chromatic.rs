@@ -5,6 +5,7 @@ use std::fmt;
 
 use crate::annotations::Annotations;
 use crate::graph::*;
+use super::marking_game::*;
 
 use utilities::vertex_tools::*;
 use utilities::chromatic_tools::*;
@@ -187,15 +188,16 @@ fn get_chromatic_game_history(g: &Graph, ann: &mut Annotations, k: usize, can_b_
 
 pub fn alice_wins_chromatic_game(g: &Graph, ann: &mut Annotations, k: usize, print_strategy: bool) -> bool {
     if k >= alice_greedy_lower_bound(g) {
-        return true;
+        true
+    } else {
+        let coder = Coder::new(g.n, k);
+        let mut history = HashMap::new();
+        get_chromatic_game_history(g, ann, k, false, true, &mut history, &coder);
+        if print_strategy {
+            print_history(&history, &coder)
+        }
+        *history.get(&coder.get_start_config()).unwrap()
     }
-    let coder = Coder::new(g.n, k);
-    let mut history = HashMap::new();
-    get_chromatic_game_history(g, ann, k, false, true, &mut history, &coder);
-    if print_strategy {
-        print_history(&history, &coder)
-    }
-    *history.get(&coder.get_start_config()).unwrap()
 }
 
 pub fn print_chromatic_game_strategy(g: &Graph, ann: &mut Annotations, k: usize) {

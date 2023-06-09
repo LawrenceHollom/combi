@@ -6,6 +6,8 @@ use crate::annotations::*;
 use utilities::vertex_tools::*;
 use utilities::chromatic_tools::*;
 
+use super::chromatic::*;
+
 fn maker_wins_grundy_game_rec_fast(g: &Graph, ann: &mut Annotations, k: usize, config: Config, coder: &Coder,
         num_cold: usize, history: &mut HashMap<Config, bool>, fixed_verts: VertexSet, should_find_reps: bool) -> bool {
     if g.n.at_most(num_cold) {
@@ -68,10 +70,14 @@ fn maker_wins_grundy_game_rec_fast(g: &Graph, ann: &mut Annotations, k: usize, c
 }
 
 pub fn does_maker_win_grundy_game(g: &Graph, ann: &mut Annotations, k: usize) -> bool {
-    let coder = Coder::new(g.n, k);
-    let mut history = HashMap::new();
-    maker_wins_grundy_game_rec_fast(g, ann, k, coder.get_start_config(), &coder, 0, 
-        &mut history, VertexSet::new(g.n), true)
+    if k >= alice_greedy_lower_bound(g) {
+        true
+    } else {
+        let coder = Coder::new(g.n, k);
+        let mut history = HashMap::new();
+        maker_wins_grundy_game_rec_fast(g, ann, k, coder.get_start_config(), &coder, 0, 
+            &mut history, VertexSet::new(g.n), true)
+    }
 }
 
 pub fn game_grundy_number(g: &Graph, ann: &mut Annotations) -> u32 { 

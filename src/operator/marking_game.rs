@@ -33,7 +33,6 @@ fn marking_game_number_rec(g: &Graph, marked: VertexSet, num_marked: usize,
                         }
                     }
                 }
-                marked.print();
                 history.insert(marked, best_remaining_score);
                 best_remaining_score
             }
