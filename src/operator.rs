@@ -66,7 +66,7 @@ impl AnnotationsBox {
 }
 
 impl Operator {
-    fn operate_int(&mut self, ann_box: &mut AnnotationsBox, operation: &IntOperation) -> u32 {
+    pub fn operate_int(&mut self, ann_box: &mut AnnotationsBox, operation: &IntOperation) -> u32 {
         use IntOperation::*;
         let ann = ann_box.get_annotations(&self.g);
         match self.previous_int_values.get(operation) {
@@ -107,6 +107,7 @@ impl Operator {
                     GameGrundyNumber => grundy::game_grundy_number(&self.g, ann),
                     MarkingGameNumber => marking_game::marking_game_number(&self.g),
                     ConnectedGameChromaticNumber => chromatic::connected_game_chromatic_number(&self.g, ann),
+                    ConnectedMarkingGameNumber => marking_game::connected_marking_game_number(&self.g),
                     Number(k) => *k,
                 };
                 self.previous_int_values.insert(*operation, value);

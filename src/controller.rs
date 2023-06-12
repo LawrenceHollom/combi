@@ -9,6 +9,7 @@ use utilities::edge_tools::*;
 use utilities::vertex_tools::*;
 
 use crate::constructor::*;
+use crate::operation::int_operation::IntOperation;
 use crate::operator::AnnotationsBox;
 use crate::operator::Operator;
 use crate::graph::Graph;
@@ -34,6 +35,7 @@ pub enum Controller {
     KitchenSinkAll(Vec<BoolOperation>),
     Process(Order),
     ProcessUntil(Order, Vec<BoolOperation>),
+    ProcessUntilDecreasing(Order, IntOperation, Vec<BoolOperation>),
     SearchAll(Order, Vec<BoolOperation>),
     Help,
 }
@@ -95,6 +97,10 @@ impl Controller {
                 ProcessUntil(Order::of_string(args[0]),
                     args.iter().skip(1).map(|arg| BoolOperation::of_string_result(*arg).unwrap()).collect())
             }
+            "process_until_decreasing" | "proc_until_dec" => {
+                ProcessUntilDecreasing(Order::of_string(args[0]), IntOperation::of_string_result(args[1]).unwrap(),
+                    args.iter().skip(2).map(|arg| BoolOperation::of_string_result(*arg).unwrap()).collect())
+            }
             "search_all" | "all" => {
                 SearchAll(Order::of_string(args[0]),
                     args.iter().skip(1).map(|arg| BoolOperation::of_string_result(*arg).unwrap()).collect())
@@ -137,6 +143,10 @@ impl fmt::Display for Controller {
             }
             ProcessUntil(order, conditions) => {
                 write!(f, "Run graph processes of order {} until {:?}", order, conditions)
+            }
+            ProcessUntilDecreasing(order, int_op, conditions) => {
+                write!(f, "Run graph processes of order {} until {:?} decreases from one graph to the next and {:?} holds",
+                    order, int_op, conditions)
             }
             SearchAll(order, conditions) => {
                 write!(f, "Search all graphs of order {} until {:?}", order, conditions)
@@ -267,17 +277,16 @@ impl Instruction {
         }
     }
 
-    fn do_all_conditions_hold(&self, g: Graph, conditions: &[BoolOperation]) -> bool {
-        let mut ann = AnnotationsBox::new();
-        let mut operator = Operator::new(g);
+    fn do_all_conditions_hold(&self, operator: &mut Operator, ann_box: &mut AnnotationsBox, 
+            conditions: &[BoolOperation], should_print: bool) -> bool {
         let mut is_good = true;
         'test_conditions: for operation in conditions.iter() {
-            if !operator.operate_bool(&mut ann, operation) {
+            if !operator.operate_bool(ann_box, operation) {
                 is_good = false;
                 break 'test_conditions;
             }
         }
-        if is_good {
+        if is_good && should_print {
             println!("Found graph satisfying conditions!");
             operator.print_all();
             operator.print_graph();
@@ -296,8 +305,47 @@ impl Instruction {
                 adj_list[e.fst()].push(e.snd());
                 adj_list[e.snd()].push(e.fst());
                 let g = Graph::of_adj_list(adj_list.to_owned(), Constructor::Special);
-                if self.do_all_conditions_hold(g, conditions) {
+                let mut operator = Operator::new(g);
+                let mut ann_box = AnnotationsBox::new();
+                if self.do_all_conditions_hold(&mut operator, &mut ann_box, conditions, true) {
                     break 'test_procs;
+                }
+            }
+            rep += 1;
+            if rep <= 10 || (rep <= 100 && rep % 10 == 0) || (rep <= 1000 && rep % 100 == 0) || rep % 1000 == 0 {
+                let avg_time = start_time.elapsed().unwrap().as_millis() / rep;
+                println!("Completed process {}, no example found. Average duration: {}", rep, avg_time);
+            }
+        }
+    }
+
+    fn execute_process_until_decreasing(&self, order: Order, int_op: &IntOperation, conditions: &[BoolOperation]) {
+        let mut rep = 0;
+        let start_time = SystemTime::now();
+        'test_procs: loop {
+            let edges = self.get_shuffled_edges(order);
+            let mut adj_list: VertexVec<Vec<Vertex>> = VertexVec::new(order, &vec![]);
+            let mut last_value_opn = None;
+
+            for e in edges.iter() {
+                adj_list[e.fst()].push(e.snd());
+                adj_list[e.snd()].push(e.fst());
+                let g = Graph::of_adj_list(adj_list.to_owned(), Constructor::Special);
+                let mut operator = Operator::new(g);
+                let mut ann_box = AnnotationsBox::new();
+                if self.do_all_conditions_hold(&mut operator, &mut ann_box, conditions, false) {
+                    let new_value = operator.operate_int(&mut ann_box, int_op);
+                    if let Some(last_value) = last_value_opn {
+                        if last_value > new_value {
+                            println!("Decreasement found! g:");
+                            operator.print_graph();
+                            println!("After adding edge {}", e);
+                            break 'test_procs;
+                        }
+                    }
+                    last_value_opn = Some(new_value)
+                } else {
+                    last_value_opn = None;
                 }
             }
             rep += 1;
@@ -345,7 +393,9 @@ impl Instruction {
 
             if is_good {
                 let g = Graph::of_matrix(adj.to_owned(), Constructor::Special);
-                if self.do_all_conditions_hold(g, conditions) {
+                let mut operator = Operator::new(g);
+                let mut ann_box = AnnotationsBox::new();
+                if self.do_all_conditions_hold(&mut operator, &mut ann_box, conditions, true) {
                     found_graph = true;
                     break 'test_all_graphs;
                 }
@@ -662,6 +712,9 @@ impl Instruction {
             KitchenSinkAll(conditions) => self.execute_kitchen_sink(conditions, true),
             Process(order) => self.execute_process(*order),
             ProcessUntil(order, conditions) => self.execute_process_until(*order, conditions),
+            ProcessUntilDecreasing(order, int_op, conditions) => {
+                self.execute_process_until_decreasing(*order, int_op, conditions)
+            }
             SearchAll(order, conditions) => self.execute_search_all(*order, conditions),
             Help => Self::print_help(),
         }

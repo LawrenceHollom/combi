@@ -38,6 +38,7 @@ pub enum IntOperation {
     GameGrundyNumber,
     MarkingGameNumber,
     ConnectedGameChromaticNumber,
+    ConnectedMarkingGameNumber,
     Number(u32),
 }
 
@@ -86,6 +87,7 @@ impl IntOperation {
             "game_grundy_number" | "game_grundy" => Some(GameGrundyNumber),
             "marking_game_number" | "mark" => Some(MarkingGameNumber),
             "connected_game_chromatic_number" | "chi_cg" => Some(ConnectedGameChromaticNumber),
+            "connected_marking_game_numner" | "mark_c" => Some(ConnectedMarkingGameNumber),
             str => str.parse().ok().map(Number),
         }
     }
@@ -130,6 +132,7 @@ impl fmt::Display for IntOperation {
             GameGrundyNumber => "Game Grundy number",
             MarkingGameNumber => "marking game number",
             ConnectedGameChromaticNumber => "Connected game chromatic number",
+            ConnectedMarkingGameNumber => "Connected marking game number",
             Number(n) => {
                 sta = n.to_string();
                 sta.as_str()
