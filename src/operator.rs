@@ -202,6 +202,7 @@ impl Operator {
                     LinearGameChromaticWinner(k) => chromatic_linear::does_maker_win_linear_chromatic_game(&self.g, *k),
                     GameGrundyWinner(k) => grundy::does_maker_win_grundy_game(&self.g, ann, *k),
                     MakerWinsConnectedChromaticGame(k) => chromatic::maker_wins_connected_chromatic_game(&self.g, ann, *k, false),
+                    IsBipartite => chromatic::is_bipartite(&self.g),
                     Debug => debug::debug(&self.g),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);

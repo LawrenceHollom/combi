@@ -42,6 +42,10 @@ fn can_be_coloured(g: &Graph, num_colours: usize) -> bool {
     can_be_coloured_rec(g, num_colours, 0, &mut colour, Vertex::ZERO.incr())
 }
 
+pub fn is_bipartite(g: &Graph) -> bool {
+    can_be_coloured(g, 2)
+}
+
 pub fn chromatic_number(g: &Graph) -> u32 {
     let mut num_colours = 1;
     'find_chromatic_number: loop {

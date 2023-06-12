@@ -54,6 +54,7 @@ pub enum BoolOperation {
     LinearGameChromaticWinner(usize),
     GameGrundyWinner(usize),
     MakerWinsConnectedChromaticGame(usize),
+    IsBipartite,
     Debug,
 }
 
@@ -159,6 +160,7 @@ impl BoolOperation {
                         Some(GameGrundyWinner(args[0].parse().unwrap()))
                     }
                     "chi_cg_win" => Some(MakerWinsConnectedChromaticGame(args[0].parse().unwrap())),
+                    "is_bipartite" | "is_bip" => Some(IsBipartite),
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -267,6 +269,7 @@ impl fmt::Display for BoolOperation {
             MakerWinsConnectedChromaticGame(k) => {
                 format!("Whether Maker wins the connected chromatic game on {} colours", k)
             }
+            IsBipartite => "Is bipartite".to_owned(),
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };
         write!(f, "{}", name)
