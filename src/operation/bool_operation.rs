@@ -53,6 +53,7 @@ pub enum BoolOperation {
     ChromaticGameSubsetMonotonicity(usize),
     LinearGameChromaticWinner(usize),
     GameGrundyWinner(usize),
+    MakerWinsConnectedChromaticGame(usize),
     Debug,
 }
 
@@ -136,7 +137,7 @@ impl BoolOperation {
                     "triangle_free" | "tri_free" | "k3_free" => Some(IsTriangleFree),
                     "is_forest_and_matching" | "ifam" => Some(CanBeEdgePartitionedIntoLinearForestAndMatching),
                     "gcdb" => Some(GoodCubicDominationBase),
-                    "does_alice_win_chromatic_game" | "a_wins_chi_g" => {
+                    "does_alice_win_chromatic_game" | "a_wins_chi_g" | "chi_g_win" => {
                         Some(GameChromaticWinner(args[0].parse().unwrap()))
                     }
                     "chromatic_game_monotone" | "chi_g_monot" => Some(IsChromaticGameMonotone),
@@ -157,6 +158,7 @@ impl BoolOperation {
                     "game_grundy_winner" | "grundy_win" => {
                         Some(GameGrundyWinner(args[0].parse().unwrap()))
                     }
+                    "chi_cg_win" => Some(MakerWinsConnectedChromaticGame(args[0].parse().unwrap())),
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -261,6 +263,9 @@ impl fmt::Display for BoolOperation {
             }
             GameGrundyWinner(k) => {
                 format!("Whether Maker wins Grundy game on {} colours", k)
+            }
+            MakerWinsConnectedChromaticGame(k) => {
+                format!("Whether Maker wins the connected chromatic game on {} colours", k)
             }
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };

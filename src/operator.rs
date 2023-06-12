@@ -106,6 +106,7 @@ impl Operator {
                     LinearGameChromaticNumber => chromatic_linear::linear_game_chromatic_number(&self.g),
                     GameGrundyNumber => grundy::game_grundy_number(&self.g, ann),
                     MarkingGameNumber => marking_game::marking_game_number(&self.g),
+                    ConnectedGameChromaticNumber => chromatic::connected_game_chromatic_number(&self.g, ann),
                     Number(k) => *k,
                 };
                 self.previous_int_values.insert(*operation, value);
@@ -199,6 +200,7 @@ impl Operator {
                     ChromaticGameSubsetMonotonicity(k) => chromatic::is_some_subset_non_monotone(&self.g, ann, *k),
                     LinearGameChromaticWinner(k) => chromatic_linear::does_maker_win_linear_chromatic_game(&self.g, *k),
                     GameGrundyWinner(k) => grundy::does_maker_win_grundy_game(&self.g, ann, *k),
+                    MakerWinsConnectedChromaticGame(k) => chromatic::maker_wins_connected_chromatic_game(&self.g, ann, *k, false),
                     Debug => debug::debug(&self.g),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);

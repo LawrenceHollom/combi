@@ -5,7 +5,6 @@ use std::fmt;
 
 use crate::annotations::Annotations;
 use crate::graph::*;
-use super::marking_game::*;
 
 use utilities::vertex_tools::*;
 use utilities::chromatic_tools::*;
@@ -69,10 +68,11 @@ pub fn chromatic_number(g: &Graph) -> u32 {
  *      winning and losing positions through to the end.
  * can_b_play_duds: if true, then colour k-1 is the 'dud' colour, can only be played
  *      by B, and does not effect the surrounding vertices.
+ * must_be_connected: if true then we are playing the connected version of the game.
  */
 fn alice_wins_chromatic_game_rec(g: &Graph, ann: &mut Annotations, k: usize, max_colour_used: usize, coder: &Coder,
                 config: Config, history: &mut HashMap<Config, bool>, fixed_verts: VertexSet, should_find_reps: bool, 
-                num_cold: usize, fast_mode: bool, can_b_play_duds: bool) -> bool {
+                num_cold: usize, fast_mode: bool, can_b_play_duds: bool, must_be_connected: bool) -> bool {
     if g.n.at_least(30) && num_cold <= 15 {
         println!("Step! {}", num_cold);
     }
@@ -106,6 +106,19 @@ fn alice_wins_chromatic_game_rec(g: &Graph, ann: &mut Annotations, k: usize, max
                 'test_verts: for v in reps.iter() {
                     if coder.get_colour(config, &v).is_none() {
                         let mut can_be_cold = false;
+                        let mut is_adj_condition_good = true;
+                        if must_be_connected {
+                            is_adj_condition_good = false;
+                            'test_adj: for w in g.adj_list[v].iter() {
+                                if coder.get_colour(config, &w).is_some() {
+                                    is_adj_condition_good = true;
+                                    break 'test_adj;
+                                }
+                            }
+                        }
+                        if !is_adj_condition_good {
+                            continue 'test_verts;
+                        }
                         for c in 0..col_cap {
                             let mut can_use_c = true;
                             let is_this_a_dud = can_b_play_duds && c == k - 1 && !alice_turn;
@@ -127,7 +140,7 @@ fn alice_wins_chromatic_game_rec(g: &Graph, ann: &mut Annotations, k: usize, max
                                 let max_col = max_colour_used.max(c);
                                 let sub_alice_win = alice_wins_chromatic_game_rec(g, ann, k, max_col, 
                                     coder, new_config, history, fixed_verts.add_vert_immutable(v), next_should_find_reps,
-                                    num_cold + 1, fast_mode, can_b_play_duds);
+                                    num_cold + 1, fast_mode, can_b_play_duds, must_be_connected);
                                 if sub_alice_win == alice_turn {
                                     // This is a winning strategy for this player.
                                     alice_win = sub_alice_win;
@@ -167,13 +180,13 @@ fn print_history(history: &HashMap<Config, bool>, coder: &Coder) {
 }
 
 fn get_chromatic_game_history(g: &Graph, ann: &mut Annotations, k: usize, can_b_play_duds: bool,
-        fast_mode: bool, history: &mut HashMap<Config, bool>, coder: &Coder) {
+        fast_mode: bool, must_be_connected: bool, history: &mut HashMap<Config, bool>, coder: &Coder) {
     let mut alice_wins = false;
     'test_verts: for v in ann.weak_representatives().iter() {
         let config = coder.play_move(coder.get_start_config(), v, 0);
         if alice_wins_chromatic_game_rec(g, ann, k, 0, &coder, config, history, 
                 VertexSet::of_vert(g.n, v), true, 1, 
-                fast_mode, can_b_play_duds) {
+                fast_mode, can_b_play_duds, must_be_connected) {
             alice_wins = true;
             history.insert(config, true);
             if fast_mode {
@@ -192,7 +205,7 @@ pub fn alice_wins_chromatic_game(g: &Graph, ann: &mut Annotations, k: usize, pri
     } else {
         let coder = Coder::new(g.n, k);
         let mut history = HashMap::new();
-        get_chromatic_game_history(g, ann, k, false, true, &mut history, &coder);
+        get_chromatic_game_history(g, ann, k, false, true, false, &mut history, &coder);
         if print_strategy {
             print_history(&history, &coder)
         }
@@ -217,7 +230,7 @@ pub fn chromatic_game_strong_monotonicity(g: &Graph, ann: &mut Annotations) -> b
             histories[k].insert(config, win);
         }*/
         get_chromatic_game_history(g, ann, k, false, false, 
-            &mut histories[k], &coders[k]);
+            false, &mut histories[k], &coders[k]);
     }
 
     let mut is_monot = true;
@@ -256,7 +269,7 @@ pub fn can_chormatic_game_dud_unique_win(g: &Graph, ann: &mut Annotations) -> bo
     for k in 2..greedy {
         let coder = Coder::new(g.n, k);
         let mut history = HashMap::new();
-        get_chromatic_game_history(g, ann, k, true, false, &mut history, &coder);
+        get_chromatic_game_history(g, ann, k, true, false, false, &mut history, &coder);
         for (config, a_win) in history.iter() {
             // need that the only winning move at some vertex is k-1.
             if !*a_win {
@@ -298,7 +311,8 @@ pub fn can_chormatic_game_dud_unique_win(g: &Graph, ann: &mut Annotations) -> bo
 pub fn alice_wins_chromatic_game_with_duds(g: &Graph, ann: &mut Annotations, k: usize) -> bool {
     let coder = Coder::new(g.n, k);
     let mut history = HashMap::new();
-    get_chromatic_game_history(g, ann, k, true, true, &mut history, &coder);
+    get_chromatic_game_history(g, ann, k, true, true, false, 
+        &mut history, &coder);
     *history.get(&coder.get_start_config()).unwrap()
 }
 
@@ -324,10 +338,12 @@ impl fmt::Debug for Subwins {
 pub fn is_some_subset_non_monotone(g: &Graph, ann: &mut Annotations, k: usize) -> bool {
     let lo_coder = Coder::new(g.n, k);
     let mut lo_history = HashMap::new();
-    get_chromatic_game_history(g, ann, k, false, false, &mut lo_history, &lo_coder);
+    get_chromatic_game_history(g, ann, k, false, false, false,
+        &mut lo_history, &lo_coder);
     let hi_coder = Coder::new(g.n, k + 1);
     let mut hi_history = HashMap::new();
-    get_chromatic_game_history(g, ann, k + 1, false, false, &mut hi_history, &hi_coder);
+    get_chromatic_game_history(g, ann, k + 1, false, false, false,
+        &mut hi_history, &hi_coder);
     let num_subsets = 1 << g.n.to_usize();
     let mut subset_wins = vec![Subwins::FALSE; num_subsets];
     for (config, a_win) in lo_history.iter() {
@@ -386,6 +402,27 @@ pub fn game_chromatic_number(g: &Graph, ann: &mut Annotations) -> u32 {
             return k as u32;
         }
         k += 1;
+    }
+}
+
+pub fn maker_wins_connected_chromatic_game(g: &Graph, ann: &mut Annotations, k: usize, print_strategy: bool) -> bool {
+    let coder = Coder::new(g.n, k);
+    let mut history = HashMap::new();
+    get_chromatic_game_history(g, ann, k, false, true, true, 
+        &mut history, &coder);
+    if print_strategy {
+        print_history(&history, &coder)
+    }
+    *history.get(&coder.get_start_config()).unwrap()
+}
+
+pub fn connected_game_chromatic_number(g: &Graph, ann: &mut Annotations) -> u32 {
+    let mut k = 1;
+    loop {
+        if maker_wins_connected_chromatic_game(g, ann, k, false) {
+            return k as u32;
+        }
+        k += 1
     }
 }
 
