@@ -32,6 +32,7 @@ pub enum ProductConstructor {
 pub enum RandomConstructor {
     Biregular(Order, Degree, Degree),
     ErdosRenyi(Order, f64),
+    RandomBipartite(Order, f64),
     Triangulation(Order),
     MaximalPlanar(Order),
     PlanarConditioned(Order, Option<Degree>, Option<usize>),
@@ -118,6 +119,9 @@ impl Constructor {
             "erdos_renyi" | "er" | "g" => {
                 Random(ErdosRenyi(Order::of_string(args[0]), args[1].parse().unwrap()))
             },
+            "random_bipartite" | "b" => {
+                Random(RandomBipartite(Order::of_string(args[0]), args[1].parse().unwrap()))
+            }
             "triangulation" | "tri" => {
                 Random(Triangulation(Order::of_string(args[0])))
             },
@@ -221,6 +225,7 @@ impl Constructor {
                 random_regular_bipartite::new_biregular(*order, *left_deg, *right_deg)
             }
             Random(ErdosRenyi(order, p)) => erdos_renyi::new(*order, *p),
+            Random(RandomBipartite(order, p)) => erdos_renyi::new_bipartite(*order, *p),
             Random(Triangulation(order)) => random_planar::new_triangulation(*order),
             Random(MaximalPlanar(order)) => random_planar::new_maximal(*order),
             Random(PlanarConditioned(order, max_deg, min_girth)) => {
@@ -306,6 +311,9 @@ impl fmt::Display for RandomConstructor {
             ErdosRenyi(order, p) => {
                 write!(f, "Erdos-Renyi graph of order {} with probability {}", order, p)
             },
+            RandomBipartite(order, p) => {
+                write!(f, "Random bipartite graph of order {} and probability {}", order, p)
+            }
             Triangulation(order) => {
                 write!(f, "Triangulation of order {}", order)
             }

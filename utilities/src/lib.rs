@@ -71,6 +71,10 @@ impl Order {
         Order(self.0 * x)
     }
 
+    pub fn div(&self, x: usize) -> Order {
+        Order(self.0 / x)
+    }
+
     pub fn triangle(&self) -> usize {
         (self.0 * (self.0 - 1)) / 2
     }
