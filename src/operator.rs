@@ -203,6 +203,7 @@ impl Operator {
                     GameGrundyWinner(k) => grundy::does_maker_win_grundy_game(&self.g, ann, *k),
                     MakerWinsConnectedChromaticGame(k) => chromatic::maker_wins_connected_chromatic_game(&self.g, ann, *k, false),
                     IsBipartite => chromatic::is_bipartite(&self.g),
+                    MakerWinsChromaticGameGreedily(k) => chromatic::alice_greedy_wins_chromatic_game(&self.g, ann, *k),
                     Debug => debug::debug(&self.g),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);
