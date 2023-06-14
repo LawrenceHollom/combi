@@ -88,6 +88,28 @@ impl Graph {
         Graph::of_adj_list(adj_list, Raw(CompleteBipartite(left, right)))
     }
 
+    pub fn new_turan(n: Order, chi: usize) -> Graph {
+        let mut adj_list = VertexVec::new(n, &vec![]);
+        let mut num_vertices_placed = 0;
+        let n_u = n.to_usize();
+
+        for i in 1..=chi {
+            let class_size = (i * n_u) / chi - num_vertices_placed;
+            for u in 0..num_vertices_placed {
+                for dv in 0..class_size {
+                    let v = Vertex::of_usize(num_vertices_placed + dv);
+                    let u_v = Vertex::of_usize(u);
+                    adj_list[u_v].push(v);
+                    adj_list[v].push(u_v);
+                }
+            }
+
+            num_vertices_placed += class_size;
+        }
+
+        Graph::of_adj_list(adj_list, Raw(Turan(n, chi)))
+    }
+
     pub fn new_cyclic(n: Order) -> Graph {
         let mut adj_list = VertexVec::new_fn(n, |_| vec![]);
 

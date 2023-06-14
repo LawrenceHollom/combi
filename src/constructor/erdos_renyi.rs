@@ -16,7 +16,7 @@ pub fn new(order: Order, p: f64) -> Graph {
     }
 
     Graph::of_adj_list(adj_list, Constructor::Random(
-        crate::constructor::RandomConstructor::ErdosRenyi(order, p)))
+        RandomConstructor::ErdosRenyi(order, p)))
 }
 
 pub fn new_bipartite(order: Order, p: f64) -> Graph {
@@ -32,5 +32,21 @@ pub fn new_bipartite(order: Order, p: f64) -> Graph {
     }
 
     Graph::of_adj_list(adj_list, Constructor::Random(
-        crate::constructor::RandomConstructor::RandomBipartite(order, p)))
+        RandomConstructor::RandomBipartite(order, p)))
+}
+
+pub fn new_random_subgraph(constructor: &Box<Constructor>, p: f64) -> Graph {
+    let g = constructor.new_graph();
+    let mut adj_list = VertexVec::new(g.n, &vec![]);
+    let mut rng = thread_rng();
+
+    for (i, j) in g.iter_pairs() {
+        if g.adj[i][j] && rng.gen_bool(p) {
+            adj_list[i].push(j);
+            adj_list[j].push(i);
+        }
+    }
+
+    Graph::of_adj_list(adj_list, Constructor::Random(
+        RandomConstructor::RandomSubgraph(constructor.to_owned(), p)))
 }

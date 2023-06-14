@@ -33,6 +33,7 @@ pub enum RandomConstructor {
     Biregular(Order, Degree, Degree),
     ErdosRenyi(Order, f64),
     RandomBipartite(Order, f64),
+    RandomSubgraph(Box<Constructor>, f64),
     Triangulation(Order),
     MaximalPlanar(Order),
     PlanarConditioned(Order, Option<Degree>, Option<usize>),
@@ -50,6 +51,7 @@ pub enum RawConstructor {
     Grid(Order, Order),
     Complete(Order),
     CompleteBipartite(Order, Order),
+    Turan(Order, usize),
     Cyclic(Order),
     Path(Order),
     Star(Order),
@@ -122,6 +124,10 @@ impl Constructor {
             "random_bipartite" | "b" => {
                 Random(RandomBipartite(Order::of_string(args[0]), args[1].parse().unwrap()))
             }
+            "subgraph" | "sub" => {
+                Random(RandomSubgraph(Box::new(Constructor::of_string(args[0])), 
+                    args[1].parse().unwrap()))
+            }
             "triangulation" | "tri" => {
                 Random(Triangulation(Order::of_string(args[0])))
             },
@@ -189,6 +195,7 @@ impl Constructor {
                     Raw(CompleteBipartite(n, Order::of_string(args[1])))
                 }
             }
+            "turan" | "t" => Raw(Turan(Order::of_string(args[0]), args[1].parse().unwrap())),
             "cyclic" | "c" => Raw(Cyclic(Order::of_string(args[0]))),
             "path" | "p" => Raw(Path(Order::of_string(args[0]))),
             "star" | "s" => Raw(Star(Order::of_string(args[0]))),
@@ -226,6 +233,9 @@ impl Constructor {
             }
             Random(ErdosRenyi(order, p)) => erdos_renyi::new(*order, *p),
             Random(RandomBipartite(order, p)) => erdos_renyi::new_bipartite(*order, *p),
+            Random(RandomSubgraph(constructor, p)) => {
+                erdos_renyi::new_random_subgraph(constructor, *p)
+            }
             Random(Triangulation(order)) => random_planar::new_triangulation(*order),
             Random(MaximalPlanar(order)) => random_planar::new_maximal(*order),
             Random(PlanarConditioned(order, max_deg, min_girth)) => {
@@ -241,6 +251,7 @@ impl Constructor {
             Raw(Grid(height, width)) => grid::new(height, width),
             Raw(Complete(order)) => Graph::new_complete(*order),
             Raw(CompleteBipartite(left, right)) => Graph::new_complete_bipartite(*left, *right),
+            Raw(Turan(order, chi)) => Graph::new_turan(*order, *chi),
             Raw(Cyclic(order)) => Graph::new_cyclic(*order),
             Raw(Path(order)) => Graph::new_path(*order),
             Raw(Star(order)) => Graph::new_star(*order),
@@ -314,6 +325,9 @@ impl fmt::Display for RandomConstructor {
             RandomBipartite(order, p) => {
                 write!(f, "Random bipartite graph of order {} and probability {}", order, p)
             }
+            RandomSubgraph(constructor, p) => {
+                write!(f, "Random subgraph of {}, keeping each edge with prob {}", **constructor, p)
+            }
             Triangulation(order) => {
                 write!(f, "Triangulation of order {}", order)
             }
@@ -363,6 +377,9 @@ impl fmt::Display for RawConstructor {
             CompleteBipartite(left, right) => {
                 write!(f, "Complete bipartite of order ({}, {})", left, right)
             },
+            Turan(order, chi) => {
+                write!(f, "The Turan graph of order {} with {} classes", order, chi)
+            }
             Cyclic(order) => {
                 write!(f, "Cyclic of order {}", order)
             },
