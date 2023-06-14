@@ -76,6 +76,88 @@ struct ChromaticParameters{
 }
 
 /**
+ * Run one step of the recursive chromatic game algo where Alice uses a
+ * greedy strategy - she colours the vertex with fewest available colours
+ * with the minimal indexed colour that is legal to play there.
+ */
+fn alice_greedy_algo_chromatic_game_step(g: &Graph, ann: &mut Annotations, params: &ChromaticParameters, max_colour_used: usize,
+            coder: &Coder, config: Config, history: &mut HashMap<Config, bool>, fixed_verts: VertexSet,
+            should_find_reps: bool, num_cold: usize) -> bool {
+    // It's Alice's turn and she's using the greedy algo.
+    let mut max_num_colours_adj = None;
+    let mut best_vert = None;
+    let mut best_colour = None;
+    for v in g.iter_verts() {
+        if coder.get_colour(config, &v).is_none() {
+            let mut num_colours_adj = 0;
+            let mut colour_found = vec![false; params.k];
+            for u in g.adj_list[v].iter() {
+                if let Some(c) = coder.get_colour(config, u) {
+                    if !colour_found[c] {
+                        colour_found[c] = true;
+                        num_colours_adj += 1;
+                    }
+                }
+            }
+            if num_colours_adj >= params.k {
+                // This vertex cannot be coloured.
+                return false;
+            }
+            if max_num_colours_adj.map_or(true, |max| num_colours_adj > max) {
+                let mut min_non_adj_colour = 0;
+                while colour_found[min_non_adj_colour] {
+                    min_non_adj_colour += 1;
+                }
+                max_num_colours_adj = Some(num_colours_adj);
+                best_vert = Some(v);
+                best_colour = Some(min_non_adj_colour);
+            }
+        }
+    }
+    match (best_vert, best_colour) {
+        (Some(vert), Some(colour)) => {
+            let max_col = max_colour_used.max(colour);
+            let new_config = coder.play_move(config, vert, colour);
+            let fixed_verts = fixed_verts.add_vert_immutable(vert);
+            alice_wins_chromatic_game_rec(g, ann, params, max_col, 
+                coder, new_config, history, fixed_verts, should_find_reps, num_cold + 1)
+        }
+        (_, _) => false
+    }
+}
+
+/**
+ * Is it the case that every vertex either
+ * - is coloured, or
+ * - has #(uncoloured_nbrs) + #(distinct adjacent colours) < k
+ * (If yes then it is impossible for Breaker to win.)
+ */
+fn is_every_vertex_safe(g: &Graph, params: &ChromaticParameters, coder: &Coder, config: Config) -> bool {
+    for v in g.iter_verts() {
+        if coder.get_colour(config, &v).is_none() {
+            let mut num_distinct_colours = 0;
+            let mut num_uncoloured = 0;
+            let mut colour_found = vec![false; params.k];
+            for u in g.adj_list[v].iter() {
+                if let Some(c) = coder.get_colour(config, u) {
+                    if !colour_found[c] {
+                        colour_found[c] = true;
+                        num_distinct_colours += 1;
+                    }
+                } else {
+                    num_uncoloured += 1;
+                }
+            }
+            if num_distinct_colours + num_uncoloured >= params.k {
+                // This vertex is unsafe, and could be made uncolourable.
+                return false;
+            }
+        }
+    }
+    true
+}
+
+/**
  * Recursively test if Alice can win the chromatic game. Parameters:
  * 
  * params: see above.
@@ -88,7 +170,7 @@ struct ChromaticParameters{
 fn alice_wins_chromatic_game_rec(g: &Graph, ann: &mut Annotations, params: &ChromaticParameters, max_colour_used: usize, 
                 coder: &Coder, config: Config, history: &mut HashMap<Config, bool>, fixed_verts: VertexSet, 
                 should_find_reps: bool, num_cold: usize) -> bool {
-    if g.n.at_least(30) && num_cold <= 15 {
+    if g.n.at_least(35) && num_cold <= 15 {
         println!("Step! {}", num_cold);
     }
     if g.n.at_most(num_cold) {
@@ -99,47 +181,15 @@ fn alice_wins_chromatic_game_rec(g: &Graph, ann: &mut Annotations, params: &Chro
         match (history.get(&wlog_index), num_cold % 2 == 0, params.alice_greedy) {
             (Some(alice_win), _, _) => *alice_win,
             (None, true, true) => {
-                // It's Alice's turn and she's using the greedy algo.
-                let mut max_num_colours_adj = None;
-                let mut best_vert = None;
-                let mut best_colour = None;
-                for v in g.iter_verts() {
-                    if coder.get_colour(config, &v).is_none() {
-                        let mut num_colours_adj = 0;
-                        let mut min_non_adj_colour = None;
-                        for c in 0..params.k {
-                            let mut uses_c = false;
-                            'test_adj: for u in g.adj_list[v].iter() {
-                                if coder.get_colour(config, u) == Some(c) {
-                                    uses_c = true;
-                                    break 'test_adj;
-                                }
-                            }
-                            if uses_c {
-                                num_colours_adj += 1;
-                            } else if min_non_adj_colour == None {
-                                min_non_adj_colour = Some(c);
-                            }
-                        }
-                        if max_num_colours_adj.map_or(true, |max| num_colours_adj > max) {
-                            max_num_colours_adj = Some(num_colours_adj);
-                            best_vert = Some(v);
-                            best_colour = min_non_adj_colour;
-                        }
-                    }
-                }
-                match (best_vert, best_colour) {
-                    (Some(vert), Some(colour)) => {
-                        let max_col = max_colour_used.max(colour);
-                        let new_config = coder.play_move(config, vert, colour);
-                        let fixed_verts = fixed_verts.add_vert_immutable(vert);
-                        alice_wins_chromatic_game_rec(g, ann, params, max_col, 
-                            coder, new_config, history, fixed_verts, should_find_reps, num_cold + 1)
-                    }
-                    (_, _) => false
-                }
+                alice_greedy_algo_chromatic_game_step(g, ann, params, 
+                    max_colour_used, coder, config, history, fixed_verts, 
+                    should_find_reps, num_cold)
             }
             (None, alice_turn, _) => {
+                if is_every_vertex_safe(g, params, coder, config) {
+                    // No vertex can be made uncolourable.
+                    return true;
+                }
                 let mut alice_win = !alice_turn;
                 let mut is_something_playable = false;
                 let col_cap = if params.can_b_play_duds && (alice_turn || g.n.at_most(num_cold + 1)) {
