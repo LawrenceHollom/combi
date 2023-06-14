@@ -12,6 +12,9 @@ pub struct Coder {
 
 impl Coder {
     pub fn new(n: Order, k: usize) -> Coder {
+        if (n.to_usize() as f64) * (k as f64 + 1.0).log2() >= 128.0 {
+            panic!("Parameters too large for chromatic_tools! (n, k) = ({}, {})", n, k);
+        }
         let mut pows = VertexVec::new(n, &0);
         for (i, v) in n.iter_verts().enumerate() {
             pows[v] = ((k + 1) as u128).pow(i as u32);
