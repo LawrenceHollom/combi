@@ -105,9 +105,9 @@ impl Operator {
                     Degeneracy => degeneracy::degeneracy(&self.g),
                     LinearGameChromaticNumber => chromatic_linear::linear_game_chromatic_number(&self.g),
                     GameGrundyNumber => grundy::game_grundy_number(&self.g, ann),
-                    MarkingGameNumber => marking_game::marking_game_number(&self.g),
+                    MarkingGameNumber => marking_game::marking_game_number(&self.g, false),
                     ConnectedGameChromaticNumber => chromatic::connected_game_chromatic_number(&self.g, ann),
-                    ConnectedMarkingGameNumber => marking_game::connected_marking_game_number(&self.g),
+                    ConnectedMarkingGameNumber => marking_game::marking_game_number(&self.g, true),
                     Number(k) => *k,
                 };
                 self.previous_int_values.insert(*operation, value);
@@ -252,6 +252,8 @@ impl Operator {
             PrintAutomorphisms => print_automorphism_info(&self.g),
 	        BunkbedPostRemoval => bunkbed_reduced::test_post_removal_induction(&self.g),
             Signature => signature::print_signature(&self.g),
+            PrintMarkingGameStrat => marking_game::print_marking_game_strat(&self.g, false),
+            PrintConnectedMarkingGameStrat => marking_game::print_marking_game_strat(&self.g, true),
             Unit => (),
         }
     }

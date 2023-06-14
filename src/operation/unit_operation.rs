@@ -19,6 +19,8 @@ pub enum UnitOperation {
     GameChromaticStrategy(usize),
     PrintAutomorphisms,
     BunkbedPostRemoval,
+    PrintMarkingGameStrat,
+    PrintConnectedMarkingGameStrat,
     Signature,
     Unit,
 }
@@ -46,6 +48,8 @@ impl UnitOperation {
             "print_automorphisms" | "print_autos" => Some(PrintAutomorphisms),
 	    "bunkbed_post_removal" | "bb_p_r" => Some(BunkbedPostRemoval),
             "signature" | "sig" => Some(Signature),
+            "mark_strat" => Some(PrintMarkingGameStrat),
+            "mark_c_strat" => Some(PrintConnectedMarkingGameStrat),
             "()" | "(" => Some(Unit),
             &_ => None,
         }
@@ -72,6 +76,8 @@ impl fmt::Display for UnitOperation {
             PrintAutomorphisms => "Print automorphisms of g, and other autoj metadata",
 	    BunkbedPostRemoval => "Tests bunkbed induction via removing posts",
             Signature => "Print a bunch of graph invariants",
+            PrintMarkingGameStrat => "Print marking game strategy",
+            PrintConnectedMarkingGameStrat => "Print connected marking game strategy",
             Unit => "Do nothing",
         };
         write!(f, "{}", name)
