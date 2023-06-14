@@ -1,3 +1,11 @@
+== MORE CONSTRUCTORS ==
+- Randomly twisted hypercube
+- Projective plane incidence graphs
+- Other nice algebraic constructions?
+
+== STOP ALL THE PHANTOM ERRORS ==
+- Seriously, what are they doing?
+
 == PRINTING AN EDGE VEC IS BROKEN ==
 - Try printing an EdgeVec on C4; we only see 2 edges.
 - But C3 works (and C6 doesn't). Very strange. Can access the phantom values though.
@@ -26,8 +34,6 @@
 - There are probably some issues with finding autojs. Dig into this more.
 
 == MORE REFACTORING ==
-- Perhaps VertexSet should know what n is?
--- Maybe it should also know its own size? But this will slow down some operations.
 - EdgeVec should keep the indexer outside of the set, and remember only the hash.
 
 == THE KITCHEN SINK ==
