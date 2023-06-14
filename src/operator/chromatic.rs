@@ -471,6 +471,8 @@ pub fn print_game_chromatic_table(g: &Graph, ann: &mut Annotations) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use utilities::*;
+
     #[test]
     fn test_chi_1() {
         assert_eq!(chromatic_number(&Graph::test_graph(1)), 4);
