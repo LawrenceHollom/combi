@@ -282,6 +282,8 @@ fn print_history(history: &HashMap<Config, bool>, coder: &Coder) {
         print!("{}: ", if *v { "A" } else { "B" });
         coder.print(config);
     }
+    println!("");
+    coder.print_history(history);
 }
 
 fn get_chromatic_game_history(g: &Graph, ann: &mut Annotations, params: &ChromaticParameters,

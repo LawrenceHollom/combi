@@ -44,7 +44,7 @@ impl UnitOperation {
             "game_chromatic_table" | "chi_g_table" | "chi_g_t" => Some(GameChromaticTable),
             "game_chromatic_strategy" | "chi_g_strat" => Some(GameChromaticStrategy(args[0].parse().unwrap())),
             "print_automorphisms" | "print_autos" => Some(PrintAutomorphisms),
-	    "bunkbed_post_removal" | "bb_p_r" => Some(BunkbedPostRemoval),
+	        "bunkbed_post_removal" | "bb_p_r" => Some(BunkbedPostRemoval),
             "signature" | "sig" => Some(Signature),
             "()" | "(" => Some(Unit),
             &_ => None,
