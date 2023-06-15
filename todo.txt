@@ -105,6 +105,8 @@
 - Would want a new crate for curses interaction and all that stuff.
 -- Is some of this already written somewhere?
 - And you would spend like a week writing this for yourself because???
+- Perhaps only interface for command construction, then revert to terminal.
+- Also maybe interface for strategy exploring?
 
 == KEEP CLIPPY HAPPY ==
 - You don't want to anger clippy.

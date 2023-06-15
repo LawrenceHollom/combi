@@ -155,7 +155,10 @@ impl Coder {
         if is_pov_turn {
             if considered_moves.len() > 0 {
                 self.print_indent(move_num);
-                print!("{} available moves. ", considered_moves.len());
+                print!("{} available moves (vert, col): ", considered_moves.len());
+                for (v, col) in considered_moves.iter() {
+                    print!("({}, {}) ", v, col);
+                }
                 let picked_move = considered_moves[0];
                 let max_played_colour = max_played_colour.max(picked_move.1);
                 self.print_history_print_one_turn(history, is_maker_pov, config, 
