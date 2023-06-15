@@ -108,25 +108,26 @@ impl Coder {
     }
 
     fn print_history_print_one_turn(&self, history: &HashMap<Config, bool>, is_maker_pov: bool,
-            config: Config, move_num: usize, v: Vertex, col: usize) {
+            config: Config, move_num: usize, v: Vertex, col: usize, max_played_colour: usize) {
         let player = self.get_current_name(move_num);
         let new_config = self.play_move(config, v, col);
         let wlog_config = self.get_wlog_index(new_config, false);
-        let maker_win = history.get(&wlog_config).unwrap();
-        print!("{} plays colour {} at {}. Maker wins: {}. Config: ", player, col, v, maker_win);
+        let winner_name = self.get_name_from_bool(*history.get(&wlog_config).unwrap());
+        print!("{} plays colour {} at {}. {} wins. Config: ", player, col, v, winner_name);
         self.print(new_config);
-        self.print_history_rec(history, is_maker_pov, new_config, move_num + 1);
+        self.print_history_rec(history, is_maker_pov, new_config, move_num + 1, max_played_colour);
     }
 
     fn print_history_rec(&self, history: &HashMap<Config, bool>, is_maker_pov: bool, 
-            config: Config, move_num: usize) {
+            config: Config, move_num: usize, max_played_colour: usize) {
         let is_maker_turn = move_num % 2 == 0;
         let is_pov_turn = is_maker_pov == is_maker_turn;
+        let colour_cap = if move_num == 0 { 1 } else { (max_played_colour + 2).min(self.k) };
         let mut considered_moves: Vec<(Vertex, usize)> = vec![];
         // If it's pov's turn then we only need to print one winning move.
         for v in self.n.iter_verts() {
             if self.get_colour(config, &v).is_none() {
-                for col in 0..self.k {
+                for col in 0..colour_cap {
                     let new_config = self.play_move(config, v, col);
                     let new_config_wlog = self.get_wlog_index(new_config, false);
                     if let Some(maker_win) = history.get(&new_config_wlog) {
@@ -137,7 +138,7 @@ impl Coder {
                             // We need to consider everything.
                             self.print_indent(move_num);
                             self.print_history_print_one_turn(history, is_maker_pov,
-                                config, move_num, v, col);
+                                config, move_num, v, col, max_played_colour.max(col));
                         }
                     }
                 }
@@ -148,8 +149,9 @@ impl Coder {
                 self.print_indent(move_num);
                 print!("{} available moves. ", considered_moves.len());
                 let picked_move = considered_moves[0];
+                let max_played_colour = max_played_colour.max(picked_move.1);
                 self.print_history_print_one_turn(history, is_maker_pov, config, 
-                    move_num, picked_move.0, picked_move.1);
+                    move_num, picked_move.0, picked_move.1, max_played_colour);
             } else {
                 self.print_indent(move_num);
                 println!("No moves saved for {}", self.get_current_name(move_num));
@@ -161,6 +163,6 @@ impl Coder {
         let start_config = self.get_start_config();
         let maker_wins = *history.get(&start_config).unwrap();
         println!("Printing history! {} wins.", self.get_name_from_bool(maker_wins));
-        self.print_history_rec(history, maker_wins, start_config, 0)
+        self.print_history_rec(history, maker_wins, start_config, 0, 0)
     }
 }
