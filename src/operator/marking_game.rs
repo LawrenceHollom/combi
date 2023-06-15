@@ -52,14 +52,17 @@ fn marking_game_number_rec(g: &Graph, marked: VertexSet, num_marked: usize, must
     }
 }
 
-pub fn marking_game_number(g: &Graph) -> u32 {
+pub fn marking_game_number(g: &Graph, must_be_connected: bool) -> u32 {
     let mut history = HashMap::new();
-    (marking_game_number_rec(g, VertexSet::new(g.n), 0, false, 
+    (marking_game_number_rec(g, VertexSet::new(g.n), 0, must_be_connected, 
         &mut history) + 1) as u32
 }
 
-pub fn connected_marking_game_number(g: &Graph) -> u32 {
+pub fn print_marking_game_strat(g: &Graph, must_be_connected: bool) {
     let mut history = HashMap::new();
-    (marking_game_number_rec(g, VertexSet::new(g.n), 0, true, 
-        &mut history) + 1) as u32
+    marking_game_number_rec(g, VertexSet::new(g.n), 0, must_be_connected, &mut history);
+    for (marked, number) in history.iter() {
+        print!("{}: ", number);
+        marked.print();
+    }
 }
