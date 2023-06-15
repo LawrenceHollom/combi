@@ -66,6 +66,14 @@ impl Coder {
         Config(config)
     }
 
+    pub fn config_of_set_monochrome(&self, set: VertexSet, col: usize) -> Config {
+        let mut config = self.get_start_config();
+        for v in set.iter() {
+            config = self.play_move(config, v, col);
+        }
+        config
+    }
+
     // Returns an index with every wlog assumption made that we can make.
     pub fn get_wlog_index(&self, config: Config, fix_last_col: bool) -> Config {
         let mut map = vec![None; self.k + 1];

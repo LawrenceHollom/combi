@@ -59,10 +59,16 @@ pub fn marking_game_number(g: &Graph, must_be_connected: bool) -> u32 {
 }
 
 pub fn print_marking_game_strat(g: &Graph, must_be_connected: bool) {
+    use utilities::chromatic_tools::*;
     let mut history = HashMap::new();
-    marking_game_number_rec(g, VertexSet::new(g.n), 0, must_be_connected, &mut history);
-    for (marked, number) in history.iter() {
-        print!("{}: ", number);
-        marked.print();
+    let empty_set = VertexSet::new(g.n);
+    marking_game_number_rec(g, empty_set, 0, must_be_connected, &mut history);
+    let winning_num = *history.get(&empty_set).unwrap();
+    let mut chromatic_history = HashMap::new();
+    let coder = Coder::new(g.n, 1);
+    for (set, score) in history.iter() {
+        chromatic_history.insert(coder.config_of_set_monochrome(*set, 0), *score <= winning_num);
     }
+    println!("Maker wins with {} markings; marking game number = {}", winning_num, winning_num + 1);
+    coder.print_history(&chromatic_history)
 }
