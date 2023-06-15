@@ -17,6 +17,7 @@ pub enum UnitOperation {
     PrintDominatingSet,
     GameChromaticTable,
     GameChromaticStrategy(usize),
+    ConnectedGameChromaticStrategy(usize),
     PrintAutomorphisms,
     BunkbedPostRemoval,
     PrintMarkingGameStrat,
@@ -45,6 +46,7 @@ impl UnitOperation {
             "print_dominator" | "print_gamma" => Some(PrintDominatingSet),
             "game_chromatic_table" | "chi_g_table" | "chi_g_t" => Some(GameChromaticTable),
             "game_chromatic_strategy" | "chi_g_strat" => Some(GameChromaticStrategy(args[0].parse().unwrap())),
+            "chi_cg_strat" => Some(ConnectedGameChromaticStrategy(args[0].parse().unwrap())),
             "print_automorphisms" | "print_autos" => Some(PrintAutomorphisms),
 	        "bunkbed_post_removal" | "bb_p_r" => Some(BunkbedPostRemoval),
             "signature" | "sig" => Some(Signature),
@@ -66,15 +68,25 @@ impl fmt::Display for UnitOperation {
             BunkbedPosts => "Bunkbed posts",
             BunkbedSimulation => "Bunkbed simulation",
             PercolationPolys => "Percolate",
-            BunkbedCuts(u) => { str = format!("Bunkbed cuts to {}", *u); &str }
+            BunkbedCuts(u) => { 
+                str = format!("Bunkbed cuts to {}", *u); 
+                &str 
+            }
             BunkbedDists => "Bunkbed distance-bounded polynomials",
             BunkbedDiffs(_u, _size) => "Print info about interesting bunkbed configs",
             PrintIntervalColoring => "Print an interval coloring (if exists)",
             PrintDominatingSet => "Print a random-ish minimal dominating set",
             GameChromaticTable => "Print winners of chromatic game for various k",
-            GameChromaticStrategy(k) => { str = format!("Strategy for chromatic game for {} colours", k); &str }
+            GameChromaticStrategy(k) => { 
+                str = format!("Strategy for vertex colouring game for {} colours", k); 
+                &str 
+            }
+            ConnectedGameChromaticStrategy(k) => {
+                str = format!("Strategy for connected vertex colouring game for {} colours", k);
+                &str
+            }
             PrintAutomorphisms => "Print automorphisms of g, and other autoj metadata",
-	    BunkbedPostRemoval => "Tests bunkbed induction via removing posts",
+	        BunkbedPostRemoval => "Tests bunkbed induction via removing posts",
             Signature => "Print a bunch of graph invariants",
             PrintMarkingGameStrat => "Print marking game strategy",
             PrintConnectedMarkingGameStrat => "Print connected marking game strategy",

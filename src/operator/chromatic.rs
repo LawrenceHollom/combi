@@ -274,18 +274,6 @@ fn alice_wins_chromatic_game_rec(g: &Graph, ann: &mut Annotations, params: &Chro
     }
 }
 
-fn print_history(history: &HashMap<Config, bool>, coder: &Coder) {
-    let mut configs: Vec<Config> = history.keys().cloned().collect();
-    configs.sort();
-    for config in configs {
-        let v = history.get(&config).unwrap();
-        print!("{}: ", if *v { "A" } else { "B" });
-        coder.print(config);
-    }
-    println!("");
-    coder.print_history(history);
-}
-
 fn get_chromatic_game_history(g: &Graph, ann: &mut Annotations, params: &ChromaticParameters,
         history: &mut HashMap<Config, bool>, coder: &Coder) {
     let mut alice_wins = false;
@@ -305,7 +293,7 @@ fn get_chromatic_game_history(g: &Graph, ann: &mut Annotations, params: &Chromat
     history.insert(coder.get_start_config(), alice_wins);
 }
 
-pub fn alice_wins_chromatic_game(g: &Graph, ann: &mut Annotations, k: usize, print_strategy: bool) -> bool {
+pub fn maker_wins_chromatic_game(g: &Graph, ann: &mut Annotations, k: usize, must_be_connected: bool, print_strategy: bool) -> bool {
     if k >= alice_greedy_lower_bound(g) {
         true
     } else {
@@ -315,12 +303,12 @@ pub fn alice_wins_chromatic_game(g: &Graph, ann: &mut Annotations, k: usize, pri
             k, 
             fast_mode: true, 
             can_b_play_duds: false, 
-            must_be_connected: false, 
+            must_be_connected, 
             alice_greedy: false,
         };
         get_chromatic_game_history(g, ann, &params, &mut history, &coder);
         if print_strategy {
-            print_history(&history, &coder)
+            coder.print_history(&history)
         }
         *history.get(&coder.get_start_config()).unwrap()
     }
@@ -340,8 +328,8 @@ pub fn alice_greedy_wins_chromatic_game(g: &Graph, ann: &mut Annotations, k: usi
     *history.get(&coder.get_start_config()).unwrap()
 }
 
-pub fn print_chromatic_game_strategy(g: &Graph, ann: &mut Annotations, k: usize) {
-    let _ = alice_wins_chromatic_game(g, ann, k, true);
+pub fn print_chromatic_game_strategy(g: &Graph, ann: &mut Annotations, k: usize, must_be_connected: bool) {
+    let _ = maker_wins_chromatic_game(g, ann, k, must_be_connected, true);
 }
 
 pub fn chromatic_game_strong_monotonicity(g: &Graph, ann: &mut Annotations) -> bool {
@@ -373,9 +361,9 @@ pub fn chromatic_game_strong_monotonicity(g: &Graph, ann: &mut Annotations) -> b
                         print!("High:   (k = {}) (win = {:?}) config: ", k+1, histories[k+1].get(&hi_config));
                         coders[k+1].print(hi_config);
                         println!("    ~~~~  {}-HISTORY  ~~~~", k);
-                        print_history(&histories[k], &coders[k]);
+                        coders[k].print_history(&histories[k]);
                         println!("    ~~~~  {}-HISTORY  ~~~~", k+1);
-                        print_history(&histories[k+1], &coders[k+1]);
+                        coders[k+1].print_history(&histories[k+1]);
                         break 'monot_test;
                     }
                 }
@@ -428,7 +416,7 @@ pub fn can_chormatic_game_dud_unique_win(g: &Graph, ann: &mut Annotations) -> bo
                             Some(true) | None => (),
                         }
                         if is_v_dud_win_only && is_some_other_move_playable {
-                            print_history(&history, &coder);
+                            coder.print_history(&history);
                             println!("Found a dud win only place! k = {}. Vertex {}", k, v);
                             coder.print(*config);
                             return true;
@@ -543,34 +531,17 @@ pub fn alice_greedy_lower_bound(g: &Graph) -> usize {
 pub fn game_chromatic_number(g: &Graph, ann: &mut Annotations) -> u32 {
     let mut k = 1;
     loop {
-        if alice_wins_chromatic_game(g, ann, k, false) {
+        if maker_wins_chromatic_game(g, ann, k, false, false) {
             return k as u32;
         }
         k += 1;
     }
 }
 
-pub fn maker_wins_connected_chromatic_game(g: &Graph, ann: &mut Annotations, k: usize, print_strategy: bool) -> bool {
-    let coder = Coder::new(g.n, k);
-    let mut history = HashMap::new();
-    let params = ChromaticParameters {
-        k,
-        fast_mode: true,
-        can_b_play_duds: false,
-        must_be_connected: true,
-        alice_greedy: false,
-    };
-    get_chromatic_game_history(g, ann, &params, &mut history, &coder);
-    if print_strategy {
-        print_history(&history, &coder)
-    }
-    *history.get(&coder.get_start_config()).unwrap()
-}
-
 pub fn connected_game_chromatic_number(g: &Graph, ann: &mut Annotations) -> u32 {
     let mut k = 1;
     loop {
-        if maker_wins_connected_chromatic_game(g, ann, k, false) {
+        if maker_wins_chromatic_game(g, ann, k, true, false) {
             return k as u32;
         }
         k += 1
@@ -581,7 +552,7 @@ pub fn game_chromatic_colour_monotone(g: &Graph, ann: &mut Annotations) -> bool 
     let greedy = alice_greedy_lower_bound(g);
     let mut alice_prev_winner = false;
     for k in 1..greedy {
-        let alice_wins = alice_wins_chromatic_game(g, ann, k, false);
+        let alice_wins = maker_wins_chromatic_game(g, ann, k, false, false);
         print!("{}", if alice_wins { 'A' } else { 'B' });
         std::io::stdout().flush().unwrap();
 
@@ -606,7 +577,7 @@ pub fn print_game_chromatic_table(g: &Graph, ann: &mut Annotations) {
     println!("Greedy: {}", alice_greedy_lower_bound(g));
     for k in 1..=(delta + 1) {
         checkpoint_time = SystemTime::now();
-        if alice_wins_chromatic_game(g, ann, k as usize, false) {
+        if maker_wins_chromatic_game(g, ann, k as usize, false, false) {
             print!("{}: Alice", k);
         } else {
             print!("{}: Bob", k);

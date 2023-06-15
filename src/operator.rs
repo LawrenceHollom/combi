@@ -188,7 +188,7 @@ impl Operator {
                     IsTriangleFree => subgraphs::is_triangle_free(&self.g),
                     CanBeEdgePartitionedIntoLinearForestAndMatching => edge_partitions::edge_partition_forest_and_matching(&self.g),
                     GoodCubicDominationBase => cubic_domination::is_good(&self.g),
-                    GameChromaticWinner(k) => chromatic::alice_wins_chromatic_game(&self.g, ann, *k, false),
+                    GameChromaticWinner(k) => chromatic::maker_wins_chromatic_game(&self.g, ann, *k, false, false),
                     IsChromaticGameMonotone => chromatic::game_chromatic_colour_monotone(&self.g, ann),
                     IsChromaticGameStronglyMonotone => {
                         chromatic::chromatic_game_strong_monotonicity(&self.g, ann)
@@ -201,7 +201,7 @@ impl Operator {
                     ChromaticGameSubsetMonotonicity(k) => chromatic::is_some_subset_non_monotone(&self.g, ann, *k),
                     LinearGameChromaticWinner(k) => chromatic_linear::does_maker_win_linear_chromatic_game(&self.g, *k),
                     GameGrundyWinner(k) => grundy::does_maker_win_grundy_game(&self.g, ann, *k),
-                    MakerWinsConnectedChromaticGame(k) => chromatic::maker_wins_connected_chromatic_game(&self.g, ann, *k, false),
+                    MakerWinsConnectedChromaticGame(k) => chromatic::maker_wins_chromatic_game(&self.g, ann, *k, true, false),
                     IsBipartite => chromatic::is_bipartite(&self.g),
                     MakerWinsChromaticGameGreedily(k) => chromatic::alice_greedy_wins_chromatic_game(&self.g, ann, *k),
                     Debug => debug::debug(&self.g),
@@ -248,7 +248,8 @@ impl Operator {
             PrintIntervalColoring => interval_coloring::print_interval_coloring(&self.g),
             PrintDominatingSet => domination::print_random_dominator(&self.g),
             GameChromaticTable => chromatic::print_game_chromatic_table(&self.g, ann.get_annotations(&self.g)),
-            GameChromaticStrategy(k) => chromatic::print_chromatic_game_strategy(&self.g, ann.get_annotations(&self.g), *k),
+            GameChromaticStrategy(k) => chromatic::print_chromatic_game_strategy(&self.g, ann.get_annotations(&self.g), *k, false),
+            ConnectedGameChromaticStrategy(k) => chromatic::print_chromatic_game_strategy(&self.g, ann.get_annotations(&self.g), *k, true),
             PrintAutomorphisms => print_automorphism_info(&self.g),
 	        BunkbedPostRemoval => bunkbed_reduced::test_post_removal_induction(&self.g),
             Signature => signature::print_signature(&self.g),
