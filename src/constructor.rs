@@ -51,6 +51,7 @@ pub enum RawConstructor {
     Grid(Order, Order),
     Complete(Order),
     CompleteBipartite(Order, Order),
+    CompleteMultipartite(Vec<Order>),
     Turan(Order, usize),
     Cyclic(Order),
     Path(Order),
@@ -191,8 +192,10 @@ impl Constructor {
                 let n = Order::of_string(args[0]);
                 if args.len() == 1 {
                     Raw(Complete(n))
-                } else {
+                } else if args.len() == 2 {
                     Raw(CompleteBipartite(n, Order::of_string(args[1])))
+                } else {
+                    Raw(CompleteMultipartite(args.iter().map(|arg| Order::of_string(arg)).collect()))
                 }
             }
             "turan" | "t" => Raw(Turan(Order::of_string(args[0]), args[1].parse().unwrap())),
@@ -251,6 +254,7 @@ impl Constructor {
             Raw(Grid(height, width)) => grid::new(height, width),
             Raw(Complete(order)) => Graph::new_complete(*order),
             Raw(CompleteBipartite(left, right)) => Graph::new_complete_bipartite(*left, *right),
+            Raw(CompleteMultipartite(orders)) => Graph::new_complete_multipartite(orders),
             Raw(Turan(order, chi)) => Graph::new_turan(*order, *chi),
             Raw(Cyclic(order)) => Graph::new_cyclic(*order),
             Raw(Path(order)) => Graph::new_path(*order),
@@ -377,6 +381,9 @@ impl fmt::Display for RawConstructor {
             CompleteBipartite(left, right) => {
                 write!(f, "Complete bipartite of order ({}, {})", left, right)
             },
+            CompleteMultipartite(orders) => {
+                write!(f, "Complete multipartite with part sizes {:?}", orders)
+            }
             Turan(order, chi) => {
                 write!(f, "The Turan graph of order {} with {} classes", order, chi)
             }

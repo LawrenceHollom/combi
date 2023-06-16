@@ -64,7 +64,7 @@ impl Graph {
     }
 
     pub fn new_complete(n: Order) -> Graph {
-        let mut adj_list = VertexVec::new_fn(n, |_| vec![]);
+        let mut adj_list = VertexVec::new(n, &vec![]);
 
         for (i, j) in n.iter_pairs() {
             adj_list[i].push(j);
@@ -75,7 +75,7 @@ impl Graph {
     }
 
     pub fn new_complete_bipartite(left: Order, right: Order) -> Graph {
-        let mut adj_list = VertexVec::new_fn(left + right, |_| vec![]);
+        let mut adj_list = VertexVec::new(left + right, &vec![]);
 
         for j in right.iter_verts() {
             let k = j.incr_by_order(left);
@@ -86,6 +86,30 @@ impl Graph {
         }
 
         Graph::of_adj_list(adj_list, Raw(CompleteBipartite(left, right)))
+    }
+
+    pub fn new_complete_multipartite(orders: &Vec<Order>) -> Graph {
+        let mut n_u = 0;
+        for order in orders.iter() {
+            n_u += order.to_usize();
+        }
+        let n = Order::of_usize(n_u);
+        let mut adj_list = VertexVec::new(n, &vec![]);
+
+        let mut num_vertices_placed = 0;
+        for part in orders.iter() {
+            for j in part.iter_verts() {
+                let u = j.incr_by(num_vertices_placed);
+                for i in 0..num_vertices_placed {
+                    let v = Vertex::of_usize(i);
+                    adj_list[u].push(v);
+                    adj_list[v].push(u);
+                }
+            }
+            num_vertices_placed += part.to_usize()
+        }
+
+        Graph::of_adj_list(adj_list, Raw(CompleteMultipartite(orders.to_owned())))
     }
 
     pub fn new_turan(n: Order, chi: usize) -> Graph {
