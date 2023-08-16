@@ -56,6 +56,7 @@ pub enum BoolOperation {
     MakerWinsConnectedChromaticGame(usize),
     IsBipartite,
     MakerWinsChromaticGameGreedily(usize),
+    HasSeymourVertex,
     Debug,
 }
 
@@ -163,6 +164,7 @@ impl BoolOperation {
                     "chi_cg_win" => Some(MakerWinsConnectedChromaticGame(args[0].parse().unwrap())),
                     "is_bipartite" | "is_bip" => Some(IsBipartite),
                     "alice_greedy_win" => Some(MakerWinsChromaticGameGreedily(args[0].parse().unwrap())),
+                    "seymour" => Some(HasSeymourVertex),
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -275,6 +277,7 @@ impl fmt::Display for BoolOperation {
             MakerWinsChromaticGameGreedily(k) => {
                 format!("Whether Maker wins chromatic game with {} colours playing greedily", k)
             }
+            HasSeymourVertex => "Has a Seymour vertex under some random orientations".to_owned(),
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };
         write!(f, "{}", name)

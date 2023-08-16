@@ -9,6 +9,7 @@ mod operation;
 mod constructor;
 mod pattern;
 mod annotations;
+mod digraph;
 
 use controller::*;
 

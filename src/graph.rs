@@ -3,7 +3,7 @@ use crate::constructor::*;
 use Constructor::*;
 use RawConstructor::*;
 
-use rand::{thread_rng};
+use rand::thread_rng;
 use queues::*;
 
 mod flood_fill;

@@ -22,6 +22,7 @@ mod bunkbed_reduced;
 mod chromatic_linear;
 mod grundy;
 mod marking_game;
+mod seymour;
 
 use std::collections::HashMap;
 
@@ -204,6 +205,7 @@ impl Operator {
                     MakerWinsConnectedChromaticGame(k) => chromatic::maker_wins_chromatic_game(&self.g, ann, *k, true, false),
                     IsBipartite => chromatic::is_bipartite(&self.g),
                     MakerWinsChromaticGameGreedily(k) => chromatic::alice_greedy_wins_chromatic_game(&self.g, ann, *k),
+                    HasSeymourVertex => seymour::has_seymour_vertex(&self.g),
                     Debug => debug::debug(&self.g),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);
