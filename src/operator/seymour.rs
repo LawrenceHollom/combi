@@ -108,6 +108,8 @@ pub fn has_seymour_vertex(g: &Graph) -> bool {
         for _i in 0..NUM_TESTS {
             if let Some(d) = construct_candidate_orientation(g) {
                 if !does_digraph_have_seymour_vertex(&d) {
+                    println!("FOUND COUNTEREXAMPLE!");
+                    d.print();
                     return false
                 }
             }

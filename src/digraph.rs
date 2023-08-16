@@ -77,4 +77,18 @@ impl Digraph {
     pub fn iter_verts(&self) -> impl Iterator<Item = Vertex> {
         self.n.iter_verts()
     }
+
+    pub fn print(&self) {
+        println!("n: {}", self.n);
+        println!("out degs: {:?}", self.out_deg.iter().map(|x| x.to_usize()).collect::<Vec<usize>>());
+        for i in self.n.iter_verts() {
+            if self.out_deg[i].at_least(1) {
+                print!("{} ~ ", i);
+                for j in self.out_adj_list[i].iter() {
+                    print!("{} ", j);
+                }
+                println!();
+            }
+        }
+    }
 }
