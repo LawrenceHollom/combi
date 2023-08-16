@@ -51,7 +51,7 @@ impl Digraph {
             self.in_adj_list[y].remove(sta);
 
             self.out_adj_list[y].push(x);
-            self.in_adj_list[x].push(x);
+            self.in_adj_list[x].push(y);
             self.out_deg[x].decr_inplace();
             self.in_deg[x].incr_inplace();
             self.out_deg[y].incr_inplace();
@@ -80,6 +80,7 @@ impl Digraph {
 
     pub fn print(&self) {
         println!("n: {}", self.n);
+        println!("in degs: {:?}", self.in_deg.iter().map(|x| x.to_usize()).collect::<Vec<usize>>());
         println!("out degs: {:?}", self.out_deg.iter().map(|x| x.to_usize()).collect::<Vec<usize>>());
         for i in self.n.iter_verts() {
             if self.out_deg[i].at_least(1) {

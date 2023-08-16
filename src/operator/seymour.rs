@@ -2,12 +2,12 @@ use rand::Rng;
 use rand::rngs::ThreadRng;
 use rand::thread_rng;
 
-use utilities::{vertex_tools::*, edge_tools::*};
+use utilities::{*, vertex_tools::*, edge_tools::*};
 
 use crate::graph::*;
 use crate::digraph::*;
 
-const MAX_ATTEMPTS_MULT: usize = 10;
+const MAX_ATTEMPTS_MULT: usize = 1;
 const NUM_TESTS: usize = 100;
 
 fn must_trivially_have_seymour_vertex(g: &Graph) -> bool {
@@ -19,39 +19,43 @@ fn must_trivially_have_seymour_vertex(g: &Graph) -> bool {
     false
 }
 
-fn fix_vertex(d: &mut Digraph, rng: &mut ThreadRng, v: Vertex, avoid: Option<Vertex>, depth: usize) {
+fn fix_vertex(d: &mut Digraph, rng: &mut ThreadRng, v: Vertex, avoid: Option<Vertex>, max_in_deg: usize, depth: usize) {
     let mut flip_to = None;
     let mut recurse = false;
     if depth > 100 {
         panic!("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
     }
     'find_good_flipper: for u in d.in_adj_list[v].iter() {
-        if d.out_deg[*u].at_least(4) && avoid.map_or(true, |x| x != *u) {
+        if d.in_deg[*u].at_most(max_in_deg - 1) && avoid.map_or(true, |x| x != *u) {
             // We can use u
             flip_to = Some(*u);
             break 'find_good_flipper;
         }
     }
     if flip_to.is_none() {
-        // Maybe should target bigger-out-deg vertices?
-        let mut u;
-        'find_random_flipper: loop {
-            u = d.in_adj_list[v][rng.gen_range(0..d.in_deg[v].to_usize())];
-            if avoid.map_or(true, |x| x != u) {
-                break 'find_random_flipper;
+        if d.in_deg[v].at_most(1) && avoid.is_some() {
+            flip_to = avoid;
+        } else {
+            // Maybe should target bigger-out-deg vertices?
+            let mut u;
+            'find_random_flipper: loop {
+                u = d.in_adj_list[v][rng.gen_range(0..d.in_deg[v].to_usize())];
+                if avoid.map_or(true, |x| x != u) {
+                    break 'find_random_flipper;
+                }
             }
+            recurse = true;
+            flip_to = Some(u);
         }
-        recurse = true;
-        flip_to = Some(u);
     }
     let u = flip_to.unwrap();
     d.reverse_edge(Edge::of_pair(u, v));
     if recurse {
-        fix_vertex(d, rng, u, Some(v), depth+1)
+        fix_vertex(d, rng, u, Some(v), max_in_deg, depth+1)
     }
 }
 
-fn construct_candidate_orientation(g: &Graph) -> Option<Digraph> {
+fn construct_candidate_orientation(g: &Graph, max_in_deg: usize) -> Option<Digraph> {
     let mut d = Digraph::random_orientation(g);
     let n = g.n;
     let mut is_good = false;
@@ -62,10 +66,10 @@ fn construct_candidate_orientation(g: &Graph) -> Option<Digraph> {
         let mut all_good = true;
 
         for v in n.iter_verts() {
-            if d.out_deg[v].less_than(3) {
+            if d.in_deg[v].more_than(max_in_deg) {
                 // This needs fixing.
                 all_good = false;
-                fix_vertex(&mut d, &mut rng, v, None, 0);
+                fix_vertex(&mut d, &mut rng, v, None, max_in_deg, 0);
             }
         }
         if all_good {
@@ -105,8 +109,10 @@ fn does_digraph_have_seymour_vertex(d: &Digraph) -> bool {
 
 pub fn has_seymour_vertex(g: &Graph) -> bool {
     if !must_trivially_have_seymour_vertex(g) {
+        let delta = g.deg.max(&Degree::ZERO, Degree::cmp).unwrap();
+        let max_in_deg = (1 + delta.to_usize()) / 2;
         for _i in 0..NUM_TESTS {
-            if let Some(d) = construct_candidate_orientation(g) {
+            if let Some(d) = construct_candidate_orientation(g, max_in_deg) {
                 if !does_digraph_have_seymour_vertex(&d) {
                     println!("FOUND COUNTEREXAMPLE!");
                     d.print();
