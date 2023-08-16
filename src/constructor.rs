@@ -39,6 +39,7 @@ pub enum RandomConstructor {
     PlanarConditioned(Order, Option<Degree>, Option<usize>),
     Bowties(usize, Degree),
     Regular(Order, Degree),
+    RegularIsh(Order, Degree),
     DegreeSequence(Vec<Degree>),
     PlanarGons(Order, usize),
     VertexStructured(VertexPattern, usize),
@@ -156,6 +157,10 @@ impl Constructor {
                 let degree = Degree::of_string(args[1]);
                 Random(Regular(Order::of_string(args[0]), degree))
             }
+            "regularish" => {
+                let degree = Degree::of_string(args[1]);
+                Random(RegularIsh(Order::of_string(args[0]), degree))
+            }
             "sequence" | "seq" => {
                 let mut deg_seq: Vec<Degree> = vec![];
                 for (d_minus_one, count) in args.iter().enumerate() {
@@ -247,6 +252,7 @@ impl Constructor {
             Random(PlanarGons(order, k)) => random_planar::k_gon_gluing(*order, *k),
             Random(Bowties(scale, degree)) => bowties::new_bowties(*scale, *degree),
             Random(Regular(order, degree)) => regular::new_regular(order, degree),
+            Random(RegularIsh(order, degree)) => regular::new_approximately_regular(order, degree),
             Random(DegreeSequence(deg_seq)) => regular::new_from_degree_sequence(deg_seq, false),
             Random(VertexStructured(pattern, num)) => pattern.new_graph(*num),
             Random(EdgeStructured(pattern, num)) => pattern.new_graph(*num),
@@ -351,6 +357,9 @@ impl fmt::Display for RandomConstructor {
             }
             Regular(order, degree) => {
                 write!(f, "Random regular graph of order {} and degree {}", *order, *degree)
+            }
+            RegularIsh(order, degree) => {
+                write!(f, "Approximately random regular graph of order {} and degree {}", *order, *degree)
             }
             DegreeSequence(seq) => {
                 write!(f, "Random graph with degree sequence {:?}", seq)

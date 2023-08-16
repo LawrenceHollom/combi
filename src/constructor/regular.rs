@@ -1,3 +1,4 @@
+use rand::Rng;
 use utilities::*;
 use rand::{prelude::SliceRandom, thread_rng};
 
@@ -57,4 +58,39 @@ pub fn new_regular(order: &Order, degree: &Degree) -> Graph {
     let n = order.to_usize();
     let deg_seq = vec![*degree; n];
     self::new_from_degree_sequence(&deg_seq, true)
+}
+pub fn new_approximately_regular(n: &Order, degree: &Degree) -> Graph {
+    let mut rng = thread_rng();
+    let mut adj = VertexVec::new(*n, &VertexVec::new(*n, &false));
+    let mut deg = VertexVec::new(*n, &Degree::ZERO);
+
+    let mut subdeg_verts: Vec<Vertex> = n.iter_verts().collect();
+
+    let mut attempts_since_success = 0;
+    while attempts_since_success < 50 && subdeg_verts.len() > 1 {
+        let l = subdeg_verts.len();
+        let i1 = rng.gen_range(0..l);
+        let mut i2 = rng.gen_range(0..(l-1));
+        if i2 >= i1 {
+            i2 += 1;
+        }
+        let x = subdeg_verts[i1];
+        let y = subdeg_verts[i2];
+        if x != y && !adj[x][y] {
+            attempts_since_success = 0;
+            adj[x][y] = true;
+            adj[y][x] = true;
+            deg[x].incr_inplace();
+            deg[y].incr_inplace();
+            for w in [x, y] {
+                if deg[w] >= *degree {
+                    subdeg_verts.swap_remove(subdeg_verts.iter().position(|z| *z == w).unwrap());
+                }
+            }
+        } else {
+            attempts_since_success += 1;
+        }
+    }
+
+    Graph::of_matrix(adj, Random(RandomConstructor::RegularIsh(*n, *degree)))
 }
