@@ -359,6 +359,16 @@ impl VertexSet {
         }
     }
 
+    pub fn to_vec(&self) -> VertexVec<bool> {
+        let mut out = VertexVec::new(self.n, &false);
+        for v in self.n.iter_verts() {
+            if self.has_vert(v) {
+                out[v] = true
+            }
+        }
+        out
+    }
+
     pub fn iter(&self) -> VertexSetIterator {
         VertexSetIterator::new(*self)
     }
