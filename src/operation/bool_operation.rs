@@ -166,7 +166,7 @@ impl BoolOperation {
                     "is_bipartite" | "is_bip" => Some(IsBipartite),
                     "alice_greedy_win" => Some(MakerWinsChromaticGameGreedily(args[0].parse().unwrap())),
                     "seymour" => Some(HasSeymourVertex),
-                    "bob_grabbing_win" => Some(CanBobWinGraphGrabbing),
+                    "bob_grabbing_win" | "bgw" => Some(CanBobWinGraphGrabbing),
                     "debug" => Some(Debug),
                     &_ => None,
                 }
