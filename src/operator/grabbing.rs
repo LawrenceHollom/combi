@@ -50,48 +50,53 @@ impl Grabbed {
     }
 }
 
-fn get_random_weighting(g: &Graph, rng: &mut ThreadRng) -> VertexVec<Weight> {
+fn get_random_weighting(g: &Graph, rng: &mut ThreadRng, max_weight: u32) -> VertexVec<Weight> {
     let mut w = VertexVec::new(g.n, &Weight(0));
     for v in g.iter_verts() {
-        w[v] = Weight(rng.gen_range(0..g.n.to_usize()) as u32);
+        w[v] = Weight(rng.gen_range(0..max_weight));
     }
     w
 }
 
-fn get_random_good_weighting(g: &Graph, rng: &mut ThreadRng) -> VertexVec<Weight> {
-    loop {
-        let w = get_random_weighting(g, rng);
-        let mut playable = VertexVec::new(g.n, &false);
-        let mut parent: VertexVec<Option<Vertex>> = VertexVec::new(g.n, &None);
-        let mut max_playable_weight = Weight(0);
-        for v in g.iter_verts() {
-            if is_complement_connected(g, VertexSet::new(g.n).add_vert_immutable(v)) {
-                // The vertex is playable.
-                playable[v] = true;
-                max_playable_weight = max_playable_weight.max(w[v]);
-                if g.deg[v].equals(1) {
-                    parent[v] = Some(g.adj_list[v][0]);
-                }
+fn is_weighting_inductable(g: &Graph, w: &VertexVec<Weight>) -> bool {
+    let mut playable = VertexVec::new(g.n, &false);
+    let mut parent: VertexVec<Option<Vertex>> = VertexVec::new(g.n, &None);
+    let mut max_playable_weight = Weight(0);
+    for v in g.iter_verts() {
+        if is_complement_connected(g, VertexSet::new(g.n).add_vert_immutable(v)) {
+            // The vertex is playable.
+            playable[v] = true;
+            max_playable_weight = max_playable_weight.max(w[v]);
+            if g.deg[v].equals(1) {
+                parent[v] = Some(g.adj_list[v][0]);
             }
         }
+    }
 
-        let mut is_inductable = true;
+    let mut is_inductable = true;
 
-        'test_verts: for v in g.iter_verts() {
-            if playable[v] && w[v] == max_playable_weight {
-                if let Some(u) = parent[v] {
-                    if w[u] <= w[v] {
-                        is_inductable = false;
-                        break 'test_verts;
-                    }
-                } else {
+    'test_verts: for v in g.iter_verts() {
+        if playable[v] && w[v] == max_playable_weight {
+            if let Some(u) = parent[v] {
+                if w[u] <= w[v] {
                     is_inductable = false;
                     break 'test_verts;
                 }
+            } else {
+                is_inductable = false;
+                break 'test_verts;
             }
         }
+    }
 
-        if is_inductable {
+    is_inductable
+}
+
+fn get_random_good_weighting(g: &Graph, rng: &mut ThreadRng, max_weight: u32) -> VertexVec<Weight> {
+    loop {
+        let w = get_random_weighting(g, rng, max_weight);
+        
+        if is_weighting_inductable(g, &w) {
             return w
         }
     }
@@ -153,7 +158,7 @@ pub fn can_bob_win_graph_grabbing(g: &Graph) -> bool {
     let mut rng = thread_rng();
     let mut found_good_weighting = false;
     'rep: for i in 0..REPS {
-        let w = get_random_good_weighting(g, &mut rng);
+        let w = get_random_good_weighting(g, &mut rng, g.n.to_usize() as u32);
         let total = sum(&w);
         let played = VertexSet::new(g.n);
         let debug = false;
@@ -164,6 +169,20 @@ pub fn can_bob_win_graph_grabbing(g: &Graph) -> bool {
         }
     }
     found_good_weighting
+}
+
+pub fn print_bob_win_weighting(g: &Graph) {
+    let mut max_weight = g.n.to_usize() as u32;
+    let mut rng = thread_rng();
+    loop {
+        let w = get_random_good_weighting(g, &mut rng, max_weight);
+        let total = sum(&w);
+        let played = VertexSet::new(g.n);
+        if !grabbing_game_rec(g, &w, played, 0, Grabbed::ZERO, total, false) {
+            println!("Weighting (max_weight = {}): {:?}", max_weight, w);
+            max_weight -= 1;
+        }
+    }
 }
 
 fn has_corona_like_structure(g: &Graph, set: VertexSet) -> bool {
