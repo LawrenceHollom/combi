@@ -126,3 +126,77 @@ pub fn can_bob_win_graph_grabbing(g: &Graph) -> bool {
     }
     found_good_weighting
 }
+
+fn has_corona_like_structure(g: &Graph, set: VertexSet) -> bool {
+    let mut is_corona_like = true;
+    'test_degs: for v in set.iter() {
+        let mut d = 0;
+        'test_nbrs: for u in g.adj_list[v].iter() {
+            if set.has_vert(*u) {
+                d += 1;
+                if d >= 4 {
+                    break 'test_nbrs;
+                }
+            }
+        }
+        if d != 1 && d != 3 {
+            is_corona_like = false;
+            break 'test_degs;
+        }
+    }
+
+    if is_corona_like {
+        // We actually need to test it properly now.
+        let mut internal_adj_list = VertexVec::new(g.n, &vec![]);
+        let mut num_one = 0;
+        let mut num_three = 0;
+        for v in set.iter() {
+            let mut d = 0;
+            for u in g.adj_list[v].iter() {
+                if set.has_vert(*u) {
+                    d += 1;
+                    internal_adj_list[v].push(*u);
+                }
+            }
+            if d == 1 {
+                num_one += 1;
+            } else {
+                num_three += 1;
+            }
+        }
+        if num_one == num_three {
+            'test_cyclicity: for v in set.iter() {
+                if internal_adj_list[v].len() == 3 {
+                    let mut num_deg_three_nbrs = 0;
+                    for u in internal_adj_list[v].iter() {
+                        if internal_adj_list[*u].len() == 3 {
+                            num_deg_three_nbrs += 1;
+                        }
+                    }
+                    if num_deg_three_nbrs != 2 {
+                        is_corona_like = false;
+                        break 'test_cyclicity;
+                    }
+                }
+            }
+        } else {
+            is_corona_like = false
+        }
+    }
+
+    is_corona_like
+}
+
+pub fn has_induced_odd_cycle_corona(g: &Graph) -> bool {
+    let mut found_corona = false;
+    'search_sets: for set in g.iter_vertex_subsets() {
+        let size = set.size();
+        if size >= 6 && size % 4 == 2 {
+            if has_corona_like_structure(g, set) {
+                found_corona = true;
+                break 'search_sets;
+            }
+        }
+    }
+    found_corona
+}

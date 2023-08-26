@@ -34,6 +34,12 @@ pub struct VertexPairIterator {
     n: Order,
 }
 
+pub struct VertexSubsetIterator {
+    curr: u128,
+    max: u128,
+    n: Order,
+}
+
 impl Vertex {
     pub const ZERO: Vertex = Vertex(0);
 
@@ -433,6 +439,26 @@ impl Iterator for VertexSetIterator {
             let out = self.i;
             self.i.incr_inplace();
             Some(out)
+        }
+    }
+}
+
+impl VertexSubsetIterator {
+    pub fn new(n: Order) -> VertexSubsetIterator {
+        VertexSubsetIterator { curr: 0, max: 1_u128 << n.to_usize(), n }
+    }
+}
+
+impl Iterator for VertexSubsetIterator {
+    type Item = VertexSet;
+
+    fn next(&mut self) -> Option<VertexSet> {
+        if self.curr < self.max {
+            let out = VertexSet::of_int(self.curr, self.n);
+            self.curr += 1;
+            Some(out)
+        } else {
+            None
         }
     }
 }
