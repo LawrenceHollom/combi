@@ -7,7 +7,7 @@ use utilities::vertex_tools::*;
 
 const REPS: usize = 100;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 struct Weight(u32);
 
 #[derive(Clone, Copy, Debug)]
@@ -50,15 +50,51 @@ impl Grabbed {
     }
 }
 
-/**
- * TODO: make the weighting smart so there's no immediately-inductable Alice play.
- */
 fn get_random_weighting(g: &Graph, rng: &mut ThreadRng) -> VertexVec<Weight> {
     let mut w = VertexVec::new(g.n, &Weight(0));
     for v in g.iter_verts() {
         w[v] = Weight(rng.gen_range(0..g.n.to_usize()) as u32);
     }
     w
+}
+
+fn get_random_good_weighting(g: &Graph, rng: &mut ThreadRng) -> VertexVec<Weight> {
+    loop {
+        let w = get_random_weighting(g, rng);
+        let mut playable = VertexVec::new(g.n, &false);
+        let mut parent: VertexVec<Option<Vertex>> = VertexVec::new(g.n, &None);
+        let mut max_playable_weight = Weight(0);
+        for v in g.iter_verts() {
+            if is_complement_connected(g, VertexSet::new(g.n).add_vert_immutable(v)) {
+                // The vertex is playable.
+                playable[v] = true;
+                max_playable_weight = max_playable_weight.max(w[v]);
+                if g.deg[v].equals(1) {
+                    parent[v] = Some(g.adj_list[v][0]);
+                }
+            }
+        }
+
+        let mut is_inductable = true;
+
+        'test_verts: for v in g.iter_verts() {
+            if playable[v] && w[v] == max_playable_weight {
+                if let Some(u) = parent[v] {
+                    if w[u] <= w[v] {
+                        is_inductable = false;
+                        break 'test_verts;
+                    }
+                } else {
+                    is_inductable = false;
+                    break 'test_verts;
+                }
+            }
+        }
+
+        if is_inductable {
+            return w
+        }
+    }
 }
 
 fn is_complement_connected(g: &Graph, played: VertexSet) -> bool {
@@ -111,18 +147,21 @@ fn sum(w: &VertexVec<Weight>) -> Weight {
 }
 
 pub fn can_bob_win_graph_grabbing(g: &Graph) -> bool {
+    if g.min_degree().at_least(2) {
+        return false;
+    }
     let mut rng = thread_rng();
     let mut found_good_weighting = false;
-    'rep: for _i in 0..REPS {
-        let w = get_random_weighting(g, &mut rng);
+    'rep: for i in 0..REPS {
+        let w = get_random_good_weighting(g, &mut rng);
         let total = sum(&w);
         let played = VertexSet::new(g.n);
         let debug = false;
         if !grabbing_game_rec(g, &w, played, 0, Grabbed::ZERO, total, debug) {
             found_good_weighting = true;
+            println!("Found Bob-friendly weighting after {} steps", i);
             break 'rep
         }
-        println!("Rep complete: w = {:?}, total = {:?}, Alice won.", w, total);
     }
     found_good_weighting
 }
