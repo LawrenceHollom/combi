@@ -294,8 +294,16 @@ impl<T: Debug + Copy> EdgeVec<T> {
         self.vec.iter()
     }
 
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
+        self.vec.iter_mut()
+    }
+
     pub fn iter_enum(&self) -> impl Iterator<Item = (Edge, &T)> {
         self.vec.iter().enumerate().map(|(i, t)| (self.indexer.invert(i), t))
+    }
+
+    pub fn iter_mut_enum(&mut self) -> impl Iterator<Item = (Edge, &mut T)> {
+        self.vec.iter_mut().enumerate().map(|(i, t)| (self.indexer.invert(i), t))
     }
 
     fn n(&self) -> usize {
