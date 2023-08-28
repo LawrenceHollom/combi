@@ -155,7 +155,6 @@ pub fn can_bob_win_graph_grabbing(g: &Graph, max_weight: Option<usize>) -> bool 
     if g.min_degree().at_least(2) {
         return false;
     }
-    g.print();
     let mut rng = thread_rng();
     let mut found_good_weighting = false;
     let max_weight = max_weight.unwrap_or(g.n.to_usize()) as u32;
