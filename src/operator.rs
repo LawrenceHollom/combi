@@ -207,7 +207,7 @@ impl Operator {
                     IsBipartite => chromatic::is_bipartite(&self.g),
                     MakerWinsChromaticGameGreedily(k) => chromatic::alice_greedy_wins_chromatic_game(&self.g, ann, *k),
                     HasSeymourVertex => seymour::has_seymour_vertex(&self.g),
-                    CanBobWinGraphGrabbing => grabbing::can_bob_win_graph_grabbing(&self.g),
+                    CanBobWinGraphGrabbing(max_weight) => grabbing::can_bob_win_graph_grabbing(&self.g, *max_weight),
                     IsOddCoronaFree => !grabbing::has_induced_odd_cycle_corona(&self.g),
                     Debug => debug::debug(&self.g),
                 };

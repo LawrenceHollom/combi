@@ -53,7 +53,7 @@ impl Grabbed {
 fn get_random_weighting(g: &Graph, rng: &mut ThreadRng, max_weight: u32) -> VertexVec<Weight> {
     let mut w = VertexVec::new(g.n, &Weight(0));
     for v in g.iter_verts() {
-        w[v] = Weight(rng.gen_range(0..max_weight));
+        w[v] = Weight(rng.gen_range(0..=max_weight));
     }
     w
 }
@@ -151,14 +151,16 @@ fn sum(w: &VertexVec<Weight>) -> Weight {
     sum
 }
 
-pub fn can_bob_win_graph_grabbing(g: &Graph) -> bool {
+pub fn can_bob_win_graph_grabbing(g: &Graph, max_weight: Option<usize>) -> bool {
     if g.min_degree().at_least(2) {
         return false;
     }
+    g.print();
     let mut rng = thread_rng();
     let mut found_good_weighting = false;
+    let max_weight = max_weight.unwrap_or(g.n.to_usize()) as u32;
     'rep: for i in 0..REPS {
-        let w = get_random_good_weighting(g, &mut rng, g.n.to_usize() as u32);
+        let w = get_random_good_weighting(g, &mut rng, max_weight);
         let total = sum(&w);
         let played = VertexSet::new(g.n);
         let debug = false;
