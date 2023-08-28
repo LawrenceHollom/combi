@@ -572,6 +572,10 @@ impl Graph {
         cycles::is_filtered_acyclic(self, filter, indexer)
     }
 
+    pub fn iter_vertex_subsets(&self) -> VertexSubsetIterator {
+        VertexSubsetIterator::new(self.n)
+    }
+
     pub fn iter_edge_sets(&self) -> EdgeSetIterator {
         EdgeSetIterator::new(&self.adj_list)
     }

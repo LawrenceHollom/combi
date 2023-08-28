@@ -22,6 +22,7 @@ pub enum UnitOperation {
     BunkbedPostRemoval,
     PrintMarkingGameStrat,
     PrintConnectedMarkingGameStrat,
+    PrintBobWinGrabbingWeighting,
     Signature,
     Unit,
 }
@@ -52,6 +53,7 @@ impl UnitOperation {
             "signature" | "sig" => Some(Signature),
             "mark_strat" => Some(PrintMarkingGameStrat),
             "mark_c_strat" => Some(PrintConnectedMarkingGameStrat),
+            "print_bgw" => Some(PrintBobWinGrabbingWeighting),
             "()" | "(" => Some(Unit),
             &_ => None,
         }
@@ -90,6 +92,7 @@ impl fmt::Display for UnitOperation {
             Signature => "Print a bunch of graph invariants",
             PrintMarkingGameStrat => "Print marking game strategy",
             PrintConnectedMarkingGameStrat => "Print connected marking game strategy",
+            PrintBobWinGrabbingWeighting => "Print a weighting with which Bob wins the graph grabbing game",
             Unit => "Do nothing",
         };
         write!(f, "{}", name)

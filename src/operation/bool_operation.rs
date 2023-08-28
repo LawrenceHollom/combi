@@ -57,6 +57,8 @@ pub enum BoolOperation {
     IsBipartite,
     MakerWinsChromaticGameGreedily(usize),
     HasSeymourVertex,
+    CanBobWinGraphGrabbing,
+    IsOddCoronaFree,
     Debug,
 }
 
@@ -165,6 +167,8 @@ impl BoolOperation {
                     "is_bipartite" | "is_bip" => Some(IsBipartite),
                     "alice_greedy_win" => Some(MakerWinsChromaticGameGreedily(args[0].parse().unwrap())),
                     "seymour" => Some(HasSeymourVertex),
+                    "bob_grabbing_win" | "bgw" => Some(CanBobWinGraphGrabbing),
+                    "odd_corona_free" => Some(IsOddCoronaFree),
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -278,6 +282,8 @@ impl fmt::Display for BoolOperation {
                 format!("Whether Maker wins chromatic game with {} colours playing greedily", k)
             }
             HasSeymourVertex => "Has a Seymour vertex under some random orientations".to_owned(),
+            CanBobWinGraphGrabbing => "Can Bob with the graph grabbing game".to_owned(),
+            IsOddCoronaFree => "Has no induced corona product of an odd cycle and a point".to_owned(),
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };
         write!(f, "{}", name)
