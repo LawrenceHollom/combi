@@ -3,6 +3,7 @@ use std::ops::{Add, AddAssign};
 use crate::graph::*;
 
 use rand::{rngs::ThreadRng, thread_rng, Rng};
+use utilities::*;
 use utilities::vertex_tools::*;
 
 const REPS: usize = 100;
@@ -160,6 +161,58 @@ fn sum(w: &VertexVec<Weight>) -> Weight {
     sum
 }
 
+// score_difference = Alice - Bob
+fn grabbing_game_scores(g: &Graph, w: &VertexVec<Weight>, debug: bool) -> (Weight, Weight) {
+    let mut score = VertexSetVec::new(g.n, &(false, (Weight(0), Weight(0))));
+    let nbhds = g.get_open_nbhds();
+
+    for (i, s) in g.iter_vertex_subsets().enumerate() {
+        let (reached, (alice_score, bob_score)) = score[s];
+        if i == 0 || reached {
+            if debug {
+                println!("From {:?}", s.to_vec());   
+            }
+            let mut nbhd = VertexSet::new(g.n);
+            let mut cosize = g.n.to_usize();
+            if i == 0 {
+                nbhd = VertexSet::everything(g.n)
+            } else {
+                for v in s.iter() {
+                    cosize -= 1;
+                    nbhd.add_all(nbhds[v]);
+                }
+                nbhd.remove_all(s);
+            }
+            for v in nbhd.iter() {
+                // These are the vertices that can be added while retaining connectivity
+                let new_set = s.add_vert_immutable(v);
+                if cosize % 2 == 0 {
+                    // Bob's turn
+                    let new_score = (alice_score, bob_score + w[v]);
+                    if !score[new_set].0 || new_score.1 > score[new_set].1.1 {
+                        // This is better for Bob than old strat, so overwrite.
+                        score[new_set] = (true, new_score);
+                        if debug {
+                            println!("Bob better for set {:?}: {:?}", new_set.to_vec(), new_score);
+                        }
+                    }
+                } else {
+                    // Alice's turn
+                    let new_score = (alice_score + w[v], bob_score);
+                    if !score[new_set].0 || new_score.0 > score[new_set].1.0 {
+                        score[new_set] = (true, new_score);
+                        if debug {
+                            println!("Alice better for set {:?}: {:?}", new_set.to_vec(), new_score);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    score[VertexSet::everything(g.n)].1
+}
+
 pub fn can_bob_win_graph_grabbing(g: &Graph, max_weight: Option<usize>) -> bool {
     if g.min_degree().at_least(2) {
         return false;
@@ -172,7 +225,12 @@ pub fn can_bob_win_graph_grabbing(g: &Graph, max_weight: Option<usize>) -> bool 
         let total = sum(&w);
         let played = VertexSet::new(g.n);
         let debug = false;
-        if !grabbing_game_rec(g, &w, played, 0, Grabbed::ZERO, total, debug) {
+//        let old_res = grabbing_game_rec(g, &w, played, 0, Grabbed::ZERO, total, debug);
+        let scores = grabbing_game_scores(g, &w, false);
+        let new_res = scores.0 >= scores.1;
+//        if old_res != new_res {
+//            panic!("EEEEEEEE");
+        if !new_res {
             found_good_weighting = true;
             println!("Found Bob-friendly weighting after {} steps", i);
             break 'rep
@@ -180,7 +238,6 @@ pub fn can_bob_win_graph_grabbing(g: &Graph, max_weight: Option<usize>) -> bool 
     }
     found_good_weighting
 }
-
 pub fn print_bob_win_weighting(g: &Graph) {
     let mut max_weight = g.n.to_usize() as u32;
     let mut rng = thread_rng();
@@ -190,6 +247,7 @@ pub fn print_bob_win_weighting(g: &Graph) {
         let played = VertexSet::new(g.n);
         if !grabbing_game_rec(g, &w, played, 0, Grabbed::ZERO, total, false) {
             println!("Weighting (max_weight = {}): {:?}", max_weight, w);
+            println!("  Scores: {:?}", grabbing_game_scores(g, &w, false));
             max_weight -= 1;
         }
     }

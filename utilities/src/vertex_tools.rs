@@ -381,14 +381,18 @@ impl VertexSet {
     }
 
     pub fn remove_vert_immutable(&self, v: Vertex) -> VertexSet {
-	VertexSet{
-	    verts: self.verts & (VertexSet::everything(self.n).verts - (1 << v.0)),
-	    n: self.n
-	}
+        VertexSet{
+            verts: self.verts & (VertexSet::everything(self.n).verts - (1 << v.0)),
+            n: self.n
+        }
     }
 
     pub fn add_all(&mut self, vs: VertexSet) {
         self.verts |= vs.verts;
+    }
+
+    pub fn remove_all(&mut self, vs: VertexSet) {
+        self.verts &= !vs.verts;
     }
 
     pub fn union(&self, other: &VertexSet) -> VertexSet {
