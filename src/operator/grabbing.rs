@@ -112,28 +112,36 @@ fn grabbing_game_rec(g: &Graph, w: &VertexVec<Weight>, played: VertexSet, num_gr
         grabbed: Grabbed, total: Weight, debug: bool) -> bool {
     let is_alice_turn = num_grabbed % 2 == 0;
     let mut does_alice_win = !is_alice_turn;
-    'test_verts: for v in g.iter_verts() {
+    let mut playables = vec![];
+
+    for v in g.iter_verts() {
         if !played.has_vert(v) {
             let new_played = played.add_vert_immutable(v);
             if is_complement_connected(g, new_played) {
                 // The play is valid.
-                let new_grabbed = grabbed.add_immutable(w[v], is_alice_turn);
-                if new_grabbed.has_won(total, is_alice_turn) {
-                    // The player has grabbed enough to win
-                    if debug { 
-                        println!("Auto-win; is_alice_turn = {}", is_alice_turn);
-                    }
-                    does_alice_win = is_alice_turn;
-                    break 'test_verts;
-                } else {
-                    // We need to go deeper.
-                    let this_alice_win = grabbing_game_rec(g, w, new_played, num_grabbed + 1, new_grabbed, total, debug);
-                    if this_alice_win == is_alice_turn {
-                        // This is a winning move for the current player
-                        does_alice_win = this_alice_win;
-                        break 'test_verts;
-                    }
-                }
+                playables.push(v)
+            }
+        }
+    }
+    playables.sort_by(|u, v| w[*v].cmp(&w[*u]));
+
+    'test_verts: for v in playables.iter() {
+        let new_played = played.add_vert_immutable(*v);
+        let new_grabbed = grabbed.add_immutable(w[*v], is_alice_turn);
+        if new_grabbed.has_won(total, is_alice_turn) {
+            // The player has grabbed enough to win
+            if debug { 
+                println!("Auto-win; is_alice_turn = {}", is_alice_turn);
+            }
+            does_alice_win = is_alice_turn;
+            break 'test_verts;
+        } else {
+            // We need to go deeper.
+            let this_alice_win = grabbing_game_rec(g, w, new_played, num_grabbed + 1, new_grabbed, total, debug);
+            if this_alice_win == is_alice_turn {
+                // This is a winning move for the current player
+                does_alice_win = this_alice_win;
+                break 'test_verts;
             }
         }
     }
