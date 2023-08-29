@@ -29,6 +29,12 @@ pub struct VertexSetIterator {
     i: Vertex,
 }
 
+#[derive(Clone, Debug)]
+pub struct VertexSetVec<T: Debug + Clone> {
+    vec: Vec<T>,
+    n: Order
+}
+
 pub struct VertexPairIterator {
     curr: (Vertex, Vertex),
     n: Order,
@@ -256,6 +262,79 @@ impl <T: Debug + Clone> VertexVec<T> {
     }
 }
 
+impl <T: Debug + Clone> VertexSetVec<T> {
+    pub fn new(n: Order, t: &T) -> VertexSetVec<T> {
+        VertexSetVec { vec: vec![t.to_owned(); 1 << n.to_usize()], n }
+    }
+
+    pub fn set(&mut self, v: VertexSet, value: T) {
+        self.vec[v.to_usize()] = value;
+    }
+
+    pub fn get(&self, v: VertexSet) -> &T {
+        &self.vec[v.to_usize()]
+    }
+
+    pub fn arg_max(&self, min: &T, cmp: fn(&T, &T) -> Ordering) -> Option<VertexSet> {
+        let mut best_set = None;
+        let mut max = min;
+
+        for (i, val) in self.vec.iter().enumerate() {
+            if cmp(val, &max) == Ordering::Greater {
+                max = val;
+                best_set = Some(VertexSet::of_int(i as u128, self.n));
+            }
+        }
+
+        best_set
+    }
+
+    pub fn max(&self, min: &T, cmp: fn(&T, &T) -> Ordering) -> Option<&T> {
+        self.arg_max(min, cmp).map(|x| &self[x])
+    }
+
+    pub fn iter(&self) -> Iter<T> {
+        self.vec.iter()
+    }
+
+    pub fn iter_enum(&self) -> impl Iterator<Item = (VertexSet, &T)> {
+        self.vec.iter().enumerate().map(|(i, v)| (VertexSet::of_int(i as u128, self.n), v))
+    }
+
+    pub fn iter_mut(&mut self) -> IterMut<T> {
+        self.vec.iter_mut()
+    }
+
+    pub fn iter_mut_enum(&mut self) -> impl Iterator<Item = (VertexSet, &mut T)>{
+        self.vec.iter_mut().enumerate().map(|(i, t)| (VertexSet::of_int(i as u128, self.n), t))
+    }
+
+    pub fn shuffle(&mut self, rng: &mut ThreadRng) {
+        self.vec.shuffle(rng)
+    }
+
+    pub fn sort(&mut self, compare: fn(&T, &T) -> Ordering) {
+        self.vec.sort_by(compare);
+    }
+
+    pub fn contains(&self, other: &T, eq: fn(&T, &T) -> bool) -> bool {
+        for t in self.vec.iter() {
+            if eq(t, other) {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn drop_vertices(&self) -> &Vec<T> {
+        &self.vec
+    }
+
+    pub fn println(&self) {
+        println!("{:?}", self.vec);
+    }
+}
+
 impl <T: Debug + Clone> FromIterator<T> for VertexVec<T> {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         let mut vec = vec![];
@@ -287,6 +366,10 @@ impl VertexSet {
 
     pub fn to_int(&self) -> u128 {
         self.verts
+    }
+
+    pub fn to_usize(&self) -> usize {
+        self.verts as usize
     }
 
     pub fn add_vert(&mut self, v: Vertex) {
@@ -417,6 +500,20 @@ impl<T: Debug + Clone> Index<Vertex> for VertexVec<T> {
 impl<T: Debug + Clone> IndexMut<Vertex> for VertexVec<T> {
     fn index_mut(&mut self, index: Vertex) -> &mut Self::Output {
         &mut self.vec[index.0]
+    }
+}
+
+impl<T: Debug + Clone> Index<VertexSet> for VertexSetVec<T> {
+    type Output = T;
+
+    fn index(&self, index: VertexSet) -> &Self::Output {
+        &self.vec[index.to_usize()]
+    }
+}
+
+impl<T: Debug + Clone> IndexMut<VertexSet> for VertexSetVec<T> {
+    fn index_mut(&mut self, index: VertexSet) -> &mut Self::Output {
+        &mut self.vec[index.to_usize()]
     }
 }
 
