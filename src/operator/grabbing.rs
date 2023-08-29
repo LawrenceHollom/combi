@@ -123,6 +123,7 @@ fn grabbing_game_rec(g: &Graph, w: &VertexVec<Weight>, played: VertexSet, num_gr
             }
         }
     }
+    // Sort into decreasing order of weight
     playables.sort_by(|u, v| w[*v].cmp(&w[*u]));
 
     'test_verts: for v in playables.iter() {
