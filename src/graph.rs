@@ -572,6 +572,40 @@ impl Graph {
         cycles::is_filtered_acyclic(self, filter, indexer)
     }
 
+    pub fn open_nbhd(&self, v: Vertex) -> VertexSet {
+        let mut nbhd = VertexSet::new(self.n);
+        for u in self.adj_list[v].iter() {
+            nbhd.add_vert(*u);
+        }
+        nbhd
+    }
+
+    pub fn closed_nbhd(&self, v: Vertex) -> VertexSet {
+        self.open_nbhd(v).add_vert_immutable(v)
+    }
+
+    /**
+     * Returns a VertexVec of the nbhds of each point
+     */
+    pub fn get_open_nbhds(&self) -> VertexVec<VertexSet> {
+        let mut nbhds = VertexVec::new(self.n, &VertexSet::new(self.n));
+        for (v, nbhd) in nbhds.iter_mut_enum() {
+            *nbhd = self.open_nbhd(v)
+        }
+        nbhds
+    }
+
+    /**
+     * Returns a VertexVec of the nbhds of each point
+     */
+    pub fn get_closed_nbhds(&self) -> VertexVec<VertexSet> {
+        let mut nbhds = VertexVec::new(self.n, &VertexSet::new(self.n));
+        for (v, nbhd) in nbhds.iter_mut_enum() {
+            *nbhd = self.closed_nbhd(v)
+        }
+        nbhds
+    }
+
     pub fn iter_vertex_subsets(&self) -> VertexSubsetIterator {
         VertexSubsetIterator::new(self.n)
     }
