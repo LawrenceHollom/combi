@@ -245,9 +245,19 @@ fn get_coleaf_weighting(g: &Graph) -> VertexVec<Weight> {
 }
 
 pub fn coleaf_weighted_score_difference(g_in: &Graph) -> Rational {
-    use crate::constructor::*;
-    let g = Constructor::Recursive(RecursiveConstructor::CoronaProduct(Box::new(g_in.constructor.to_owned()), 
-        Box::new(Constructor::of_string("k(1)")))).new_graph();
+    let mut adj_list = VertexVec::new(g_in.n.times(2), &vec![]);
+    for (u, v) in g_in.iter_pairs() {
+        if g_in.adj[u][v] {
+            adj_list[u].push(v);
+            adj_list[v].push(u);
+        }
+    }
+    for u in g_in.iter_verts() {
+        let v = u.incr_by_order(g_in.n);
+        adj_list[u].push(v);
+        adj_list[v].push(u);
+    }
+    let g = Graph::of_adj_list(adj_list, crate::constructor::Constructor::Special);
     let w = get_coleaf_weighting(&g);
     let scores = grabbing_game_scores(&g, &w, false, false);
     Rational::new((scores.0.0 as i64) - (scores.1.0 as i64))
