@@ -14,6 +14,7 @@ fn gcd(x: u64, y: u64) -> u64 {
 
 fn gcd_iu(x: i64, y: u64) -> u64 { gcd(x.abs() as u64, y) }
 
+#[derive(Clone, Copy)]
 pub struct Rational {
     numerator: i64,
     denominator: u64

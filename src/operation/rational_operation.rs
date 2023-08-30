@@ -54,6 +54,14 @@ impl RationalOperation {
             }
         }
     }
+
+    pub fn is_recursive(&self) -> bool {
+        use RationalOperation::*;
+        match self {
+            OfInt(_) | OfBool(_) | Arithmetic(..) => true,
+            _ => false,
+        }
+    }
 }
 
 impl fmt::Display for ArithmeticOperation {

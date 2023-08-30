@@ -43,6 +43,7 @@ pub struct Operator {
     g: Graph,
     previous_int_values: HashMap<IntOperation, u32>,
     previous_bool_values: HashMap<BoolOperation, bool>,
+    previous_rational_values: HashMap<RationalOperation, Rational>,
 }
 
 pub struct AnnotationsBox(Option<Annotations>);
@@ -220,24 +221,31 @@ impl Operator {
 
     pub fn operate_rational(&mut self, ann: &mut AnnotationsBox, operation: &RationalOperation) -> Rational {
         use RationalOperation::*;
-        match operation {
-            OfBool(operation) => 
-                if self.operate_bool(ann, operation) { Rational::ONE } else { Rational::ZERO },
-            OfInt(operation) =>
-                Rational::new(self.operate_int(ann, operation) as i64),
-            Arithmetic(arith, op1, op2) => {
-                let par1 = self.operate_rational(ann, op1);
-                let par2 = self.operate_rational(ann, op2);
-                use ArithmeticOperation::*;
-                match arith {
-                    Sum => par1 + par2,
-                    Difference => par1 - par2,
-                    Product => par1 * par2,
-                    Ratio => par1 / par2,
-                }
+        match self.previous_rational_values.get(operation) {
+            Some(value) => *value,
+            None => {
+                let value = match operation {
+                    OfBool(operation) => 
+                        if self.operate_bool(ann, operation) { Rational::ONE } else { Rational::ZERO },
+                    OfInt(operation) =>
+                        Rational::new(self.operate_int(ann, operation) as i64),
+                    Arithmetic(arith, op1, op2) => {
+                        let par1 = self.operate_rational(ann, op1);
+                        let par2 = self.operate_rational(ann, op2);
+                        use ArithmeticOperation::*;
+                        match arith {
+                            Sum => par1 + par2,
+                            Difference => par1 - par2,
+                            Product => par1 * par2,
+                            Ratio => par1 / par2,
+                        }
+                    }
+                    DominationRedundancy => domination::domination_redundancy(&self.g),
+                    GrabbingColeafWeightedDifference => grabbing::coleaf_weighted_score_difference(&self.g),
+                };
+                self.previous_rational_values.insert(operation.to_owned(), value);
+                value
             }
-            DominationRedundancy => domination::domination_redundancy(&self.g),
-            GrabbingColeafWeightedDifference => grabbing::coleaf_weighted_score_difference(&self.g),
         }
     }
 
@@ -284,13 +292,23 @@ impl Operator {
         let mut bool_keys: Vec<&BoolOperation> = self.previous_bool_values.keys().collect();
         bool_keys.sort();
         for key in bool_keys.iter() {
-            print!("({}: {}) ", *key, self.previous_bool_values.get(key).unwrap());
+            if !key.is_recursive() {
+                print!("({}: {}) ", *key, self.previous_bool_values.get(key).unwrap());
+            }
         }
 
         let mut int_keys: Vec<&IntOperation> = self.previous_int_values.keys().collect();
         int_keys.sort();
         for key in int_keys.iter() {
             print!("({}: {}) ", *key, self.previous_int_values.get(key).unwrap());
+        }
+
+        let mut rational_keys: Vec<&RationalOperation> = self.previous_rational_values.keys().collect();
+        rational_keys.sort();
+        for key in rational_keys.iter() {
+            if !key.is_recursive() {
+                print!("({}: {}) ", *key, self.previous_rational_values.get(key).unwrap())
+            }
         }
         println!();
     }
@@ -308,6 +326,7 @@ impl Operator {
             g,
             previous_int_values: HashMap::new(),
             previous_bool_values: HashMap::new(),
+            previous_rational_values: HashMap::new(),
         }
     }
 }

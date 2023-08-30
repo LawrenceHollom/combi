@@ -181,6 +181,14 @@ impl BoolOperation {
             }
         }
     }
+
+    pub fn is_recursive(&self) -> bool {
+        use BoolOperation::*;
+        match self {
+            IntInfix(..) | FloatInfix(..) | BoolInfix(..) | Not(..) | Const(..) => true,
+            _ => false,
+        }
+    }
 }
 
 impl fmt::Display for NumToBoolInfix {
