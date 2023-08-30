@@ -380,9 +380,13 @@ impl VertexSet {
         VertexSet{ verts: self.verts | 1 << v.0, n: self.n }
     }
 
+    pub fn remove_vert(&mut self, v: Vertex) {
+        self.verts &= !(1 << v.0)
+    }
+
     pub fn remove_vert_immutable(&self, v: Vertex) -> VertexSet {
         VertexSet{
-            verts: self.verts & (VertexSet::everything(self.n).verts - (1 << v.0)),
+            verts: self.verts & !(1 << v.0),
             n: self.n
         }
     }

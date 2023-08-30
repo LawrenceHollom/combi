@@ -108,10 +108,7 @@ fn is_complement_connected(g: &Graph, played: VertexSet) -> bool {
     g.num_filtered_components(filter) <= 1
 }
 
-fn grabbing_game_rec(g: &Graph, w: &VertexVec<Weight>, played: VertexSet, num_grabbed: usize, 
-        grabbed: Grabbed, total: Weight, debug: bool) -> bool {
-    let is_alice_turn = num_grabbed % 2 == 0;
-    let mut does_alice_win = !is_alice_turn;
+fn get_playables(g: &Graph, w: &VertexVec<Weight>, played: VertexSet) -> Vec<Vertex> {
     let mut playables = vec![];
 
     for v in g.iter_verts() {
@@ -125,8 +122,15 @@ fn grabbing_game_rec(g: &Graph, w: &VertexVec<Weight>, played: VertexSet, num_gr
     }
     // Sort into decreasing order of weight
     playables.sort_by(|u, v| w[*v].cmp(&w[*u]));
+    playables
+}
 
-    'test_verts: for v in playables.iter() {
+fn grabbing_game_rec(g: &Graph, w: &VertexVec<Weight>, played: VertexSet, num_grabbed: usize, 
+        grabbed: Grabbed, total: Weight, debug: bool) -> bool {
+    let is_alice_turn = num_grabbed % 2 == 0;
+    let mut does_alice_win = !is_alice_turn;
+
+    'test_verts: for v in get_playables(g, w, played).iter() {
         let new_played = played.add_vert_immutable(*v);
         let new_grabbed = grabbed.add_immutable(w[*v], is_alice_turn);
         if new_grabbed.has_won(total, is_alice_turn) {
@@ -161,19 +165,18 @@ fn sum(w: &VertexVec<Weight>) -> Weight {
 }
 
 // score_difference = Alice - Bob
-fn grabbing_game_scores(g: &Graph, w: &VertexVec<Weight>, debug: bool) -> (Weight, Weight) {
-    let mut score = VertexSetVec::new(g.n, &(false, (Weight(0), Weight(0))));
+fn grabbing_game_scores(g: &Graph, w: &VertexVec<Weight>, debug: bool, print_strat: bool) -> (Weight, Weight) {
+    let mut score = VertexSetVec::new(g.n, &(None, (Weight(0), Weight(0))));
     let nbhds = g.get_open_nbhds();
 
-    for (i, s) in g.iter_vertex_subsets().enumerate() {
-        let (reached, (alice_score, bob_score)) = score[s];
-        if i == 0 || reached {
-            if debug {
-                println!("From {:?}", s.to_vec());   
-            }
+    // NB: s is the set of *ungrabbed* vertices, and we move backwards in time.
+    for s in g.iter_vertex_subsets() {
+        let (back_vertex, (alice_score, bob_score)) = score[s];
+        if back_vertex.is_some() || s.to_int() == 0 {
+            let mut printed_debug_intro = false;
             let mut nbhd = VertexSet::new(g.n);
             let mut cosize = g.n.to_usize();
-            if i == 0 {
+            if s.to_int() == 0 {
                 nbhd = VertexSet::everything(g.n)
             } else {
                 for v in s.iter() {
@@ -183,24 +186,32 @@ fn grabbing_game_scores(g: &Graph, w: &VertexVec<Weight>, debug: bool) -> (Weigh
                 nbhd.remove_all(s);
             }
             for v in nbhd.iter() {
-                // These are the vertices that can be added while retaining connectivity
+                // These are the vertices that can be ungrabbed while retaining connectivity of ungrabbed set
                 let new_set = s.add_vert_immutable(v);
                 if cosize % 2 == 0 {
                     // Bob's turn
                     let new_score = (alice_score, bob_score + w[v]);
-                    if !score[new_set].0 || new_score.1 > score[new_set].1.1 {
+                    if score[new_set].0.is_none() || new_score.1 > score[new_set].1.1 {
                         // This is better for Bob than old strat, so overwrite.
-                        score[new_set] = (true, new_score);
-                        if debug {
+                        score[new_set] = (Some(v), new_score);
+                        if debug && s.to_int() < 300 {
+                            if !printed_debug_intro {
+                                printed_debug_intro = true;
+                                println!("From {} {:?}", s.to_int(), s.to_vec());
+                            }
                             println!("Bob better for set {:?}: {:?}", new_set.to_vec(), new_score);
                         }
                     }
                 } else {
                     // Alice's turn
                     let new_score = (alice_score + w[v], bob_score);
-                    if !score[new_set].0 || new_score.0 > score[new_set].1.0 {
-                        score[new_set] = (true, new_score);
-                        if debug {
+                    if score[new_set].0.is_none() || new_score.0 > score[new_set].1.0 {
+                        score[new_set] = (Some(v), new_score);
+                        if debug && s.to_int() < 300  {
+                            if !printed_debug_intro {
+                                printed_debug_intro = true;
+                                println!("From {} {:?}", s.to_int(), s.to_vec());
+                            }
                             println!("Alice better for set {:?}: {:?}", new_set.to_vec(), new_score);
                         }
                     }
@@ -209,17 +220,33 @@ fn grabbing_game_scores(g: &Graph, w: &VertexVec<Weight>, debug: bool) -> (Weigh
         }
     }
 
+    if print_strat {
+        println!("Strategy, in forwards order:");
+        let mut s = VertexSet::everything(g.n);
+        let mut player = 0;
+        while let Some(v) = score[s].0 {
+            println!("{} plays {} for {:?}", if player == 0 { "Alice" } else { "Bob" }, v, w[v]);
+            player = (player + 1) % 2;
+            s.remove_vert(v);
+        }
+    }
+
     score[VertexSet::everything(g.n)].1
 }
 
-pub fn coleaf_weighted_score_difference(g: &Graph) -> Rational {
+fn get_coleaf_weighting(g: &Graph) -> VertexVec<Weight> {
     let mut w = VertexVec::new(g.n, &Weight(0));
     for (v, d) in g.deg.iter_enum() {
         if d.more_than(1) {
             w[v] = Weight(1);
         }
     }
-    let scores = grabbing_game_scores(g, &w, false);
+    w
+}
+
+pub fn coleaf_weighted_score_difference(g: &Graph) -> Rational {
+    let w = get_coleaf_weighting(g);
+    let scores = grabbing_game_scores(g, &w, true, true);
     Rational::new((scores.0.0 as i64) - (scores.1.0 as i64))
 }
 
@@ -233,8 +260,9 @@ pub fn can_bob_win_graph_grabbing(g: &Graph, max_weight: Option<usize>) -> bool 
     'rep: for i in 0..REPS {
         let w = get_random_good_weighting(g, &mut rng, max_weight);
         let debug = false;
-        let scores = grabbing_game_scores(g, &w, debug);
-        if scores.1 > scores.0 {
+        //let scores = grabbing_game_scores(g, &w, debug, false);
+        //if scores.1 > scores.0 {
+        if grabbing_game_rec(g, &w, VertexSet::new(g.n), 0, Grabbed::ZERO, sum(&w), debug) {
             found_good_weighting = true;
             println!("Found Bob-friendly weighting after {} steps", i);
             break 'rep
@@ -246,15 +274,19 @@ pub fn can_bob_win_graph_grabbing(g: &Graph, max_weight: Option<usize>) -> bool 
 pub fn print_bob_win_weighting(g: &Graph) {
     let mut max_weight = g.n.to_usize() as u32;
     let mut rng = thread_rng();
+    let mut w = get_coleaf_weighting(g);
+    let mut debug = true;
     loop {
-        let w = get_random_good_weighting(g, &mut rng, max_weight);
         let total = sum(&w);
         let played = VertexSet::new(g.n);
-        if !grabbing_game_rec(g, &w, played, 0, Grabbed::ZERO, total, false) {
+        if !grabbing_game_rec(g, &w, played, 0, Grabbed::ZERO, total, debug) {
             println!("Weighting (max_weight = {}): {:?}", max_weight, w);
-            println!("  Scores: {:?}", grabbing_game_scores(g, &w, false));
+            println!("  Scores: {:?}", grabbing_game_scores(g, &w, false, false));
             max_weight -= 1;
         }
+        println!("Fail with weighting {:?}", w);
+        w = get_random_good_weighting(g, &mut rng, max_weight);
+        debug = false;
     }
 }
 
@@ -350,14 +382,14 @@ mod tests {
     fn test_grabbing_p3() {
         let g = Graph::new_path(Order::of_usize(3));
         let weights = weight(vec![1, 3, 1]);
-        assert_eq!(grabbing_game_scores(&g, &weights, false), (w(2), w(3)));
+        assert_eq!(grabbing_game_scores(&g, &weights, false, false), (w(2), w(3)));
     }
 
     #[test]
     fn test_grabbing_p4() {
         let g = Graph::new_path(Order::of_usize(4));
         let weights = weight(vec![0, 2, 3, 1]);
-        assert_eq!(grabbing_game_scores(&g, &weights, false), (w(3), w(3)));
+        assert_eq!(grabbing_game_scores(&g, &weights, false, false), (w(3), w(3)));
     }
 
     #[test]
@@ -370,5 +402,18 @@ mod tests {
     fn test_coleaf_weighted_c5_corona() {
         let g = Constructor::of_string("corona(c(5),k(1))").new_graph();
         assert_eq!(coleaf_weighted_score_difference(&g), Rational::new(-1));
+    }
+
+    #[test]
+    fn test_coleaf_weighted_c4_corona() {
+        let g = Constructor::of_string("corona(c(4),k(1))").new_graph();
+        assert_eq!(coleaf_weighted_score_difference(&g), Rational::new(0));
+    }
+
+    #[test]
+    fn test_corona_counterexample() {
+        let g = Constructor::of_string("corona(c(5),k(1))").new_graph();
+        let weights = weight(vec![1, 2, 1, 0, 0, 0, 1, 0, 0, 0]);
+        assert_eq!(grabbing_game_scores(&g, &weights, false, false), (w(2), w(3)));
     }
 }
