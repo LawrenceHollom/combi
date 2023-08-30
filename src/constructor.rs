@@ -15,6 +15,7 @@ mod raw;
 mod bowties;
 mod regular;
 mod semiregular;
+mod corona;
 
 #[derive(Clone)]
 pub enum ProductConstructor {
@@ -67,10 +68,16 @@ pub enum RawConstructor {
 }
 
 #[derive(Clone)]
+pub enum RecursiveConstructor {
+    CoronaProduct(Box<Constructor>, Box<Constructor>)
+}
+
+#[derive(Clone)]
 pub enum Constructor {
     Product(ProductConstructor, Box<Constructor>, Box<Constructor>),
     Random(RandomConstructor),
     Raw(RawConstructor),
+    Recursive(RecursiveConstructor),
     RootedTree(Vec<usize>),
     File(String),
     Special,
@@ -84,6 +91,7 @@ impl Constructor {
         use ProductConstructor::*;
         use RawConstructor::*;
         use RandomConstructor::*;
+        use RecursiveConstructor::*;
         
         match func.to_lowercase().as_str() {
             "cartesian" | "box" => {
@@ -222,6 +230,10 @@ impl Constructor {
             "octahedron" | "Eu6" => Raw(Octahedron),
             "icosahedron" | "Eu12" => Raw(Icosahedron),
             "dodecahedron" | "Eu20" => Raw(Dodecahedron),
+            "corona" => {
+                Recursive(CoronaProduct(Box::new(Self::of_string(args[0])), 
+                    Box::new(Self::of_string(args[1]))))
+            }
             str => File(str.to_owned()),
         }
     }
@@ -230,6 +242,7 @@ impl Constructor {
         use Constructor::*;
         use RandomConstructor::*;
         use RawConstructor::*;
+        use RecursiveConstructor::*;
 
         match self {
             Product(product, c1, c2) => {
@@ -272,6 +285,9 @@ impl Constructor {
             Raw(Octahedron) => raw::new_octahedron(),
             Raw(Icosahedron) => raw::new_icosahedron(),
             Raw(Dodecahedron) => raw::new_dodecahedron(),
+            Recursive(CoronaProduct(c1, c2)) => {
+                corona::new_corona_product(self, &c1.new_graph(), &c2.new_graph())
+            }
             File(filename) => from_file::new_graph(filename),
             Special => panic!("Cannot directly construct Special graph!"),
         }
@@ -295,6 +311,7 @@ impl fmt::Display for Constructor {
             },
             Random(constr) => write!(f, "Random({})", constr),
             Raw(constr) => write!(f, "{}", constr),
+            Recursive(constr) => write!(f, "{}", constr),
             RootedTree(parents) => {
                 write!(f, "Rooted tree with parent pattern {:?}", parents)
             },
@@ -416,6 +433,17 @@ impl fmt::Display for RawConstructor {
             Octahedron => write!(f, "The Octahedron"),
             Icosahedron => write!(f, "The Icosahedron"),
             Dodecahedron => write!(f, "The Dodecahedron"),
+        }
+    }
+}
+
+impl fmt::Display for RecursiveConstructor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use RecursiveConstructor::*;
+        match self {
+            CoronaProduct(c1, c2) => {
+                write!(f, "Corona product of ({}) and ({})", c1, c2)
+            }
         }
     }
 }
