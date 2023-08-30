@@ -110,3 +110,9 @@ impl fmt::Display for Rational {
         write!(f, "{} / {}", self.numerator, self.denominator)
     }
 }
+
+impl fmt::Debug for Rational {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} / {}", self.numerator, self.denominator)
+    }
+}

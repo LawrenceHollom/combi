@@ -213,7 +213,14 @@ fn grabbing_game_scores(g: &Graph, w: &VertexVec<Weight>, debug: bool) -> (Weigh
 }
 
 pub fn coleaf_weighted_score_difference(g: &Graph) -> Rational {
-    Rational::ZERO
+    let mut w = VertexVec::new(g.n, &Weight(0));
+    for (v, d) in g.deg.iter_enum() {
+        if d.more_than(1) {
+            w[v] = Weight(1);
+        }
+    }
+    let scores = grabbing_game_scores(g, &w, false);
+    Rational::new((scores.0.0 as i64) - (scores.1.0 as i64))
 }
 
 pub fn can_bob_win_graph_grabbing(g: &Graph, max_weight: Option<usize>) -> bool {
@@ -235,6 +242,7 @@ pub fn can_bob_win_graph_grabbing(g: &Graph, max_weight: Option<usize>) -> bool 
     }
     found_good_weighting
 }
+
 pub fn print_bob_win_weighting(g: &Graph) {
     let mut max_weight = g.n.to_usize() as u32;
     let mut rng = thread_rng();
@@ -328,6 +336,7 @@ pub fn has_induced_odd_cycle_corona(g: &Graph) -> bool {
 mod tests {
     use super::*;
     use utilities::*;
+    use crate::constructor::*;
 
     fn w(x: u32) -> Weight {
         Weight(x)
@@ -349,5 +358,17 @@ mod tests {
         let g = Graph::new_path(Order::of_usize(4));
         let weights = weight(vec![0, 2, 3, 1]);
         assert_eq!(grabbing_game_scores(&g, &weights, false), (w(3), w(3)));
+    }
+
+    #[test]
+    fn test_coleaf_weighted_p3() {
+        let g = Graph::new_path(Order::of_usize(3));
+        assert_eq!(coleaf_weighted_score_difference(&g), Rational::new(-1));
+    }
+
+    #[test]
+    fn test_coleaf_weighted_c5_corona() {
+        let g = Constructor::of_string("corona(c(5),k(1))").new_graph();
+        assert_eq!(coleaf_weighted_score_difference(&g), Rational::new(-1));
     }
 }
