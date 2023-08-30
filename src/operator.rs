@@ -110,6 +110,7 @@ impl Operator {
                     MarkingGameNumber => marking_game::marking_game_number(&self.g, false),
                     ConnectedGameChromaticNumber => chromatic::connected_game_chromatic_number(&self.g, ann),
                     ConnectedMarkingGameNumber => marking_game::marking_game_number(&self.g, true),
+                    BipartiteSideDifference => chromatic::bipartite_side_difference(&self.g),
                     Number(k) => *k,
                 };
                 self.previous_int_values.insert(*operation, value);

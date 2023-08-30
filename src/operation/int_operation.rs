@@ -39,6 +39,7 @@ pub enum IntOperation {
     MarkingGameNumber,
     ConnectedGameChromaticNumber,
     ConnectedMarkingGameNumber,
+    BipartiteSideDifference,
     Number(u32),
 }
 
@@ -88,6 +89,7 @@ impl IntOperation {
             "marking_game_number" | "mark" => Some(MarkingGameNumber),
             "connected_game_chromatic_number" | "chi_cg" => Some(ConnectedGameChromaticNumber),
             "connected_marking_game_numner" | "mark_c" => Some(ConnectedMarkingGameNumber),
+            "bip_side_diff" | "bip_diff" => Some(BipartiteSideDifference),
             str => str.parse().ok().map(Number),
         }
     }
@@ -133,6 +135,7 @@ impl fmt::Display for IntOperation {
             MarkingGameNumber => "marking game number",
             ConnectedGameChromaticNumber => "Connected game chromatic number",
             ConnectedMarkingGameNumber => "Connected marking game number",
+            BipartiteSideDifference => "Difference between side sizes in bipartition",
             Number(n) => {
                 sta = n.to_string();
                 sta.as_str()

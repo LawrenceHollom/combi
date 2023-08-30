@@ -244,9 +244,12 @@ fn get_coleaf_weighting(g: &Graph) -> VertexVec<Weight> {
     w
 }
 
-pub fn coleaf_weighted_score_difference(g: &Graph) -> Rational {
-    let w = get_coleaf_weighting(g);
-    let scores = grabbing_game_scores(g, &w, false, false);
+pub fn coleaf_weighted_score_difference(g_in: &Graph) -> Rational {
+    use crate::constructor::*;
+    let g = Constructor::Recursive(RecursiveConstructor::CoronaProduct(Box::new(g_in.constructor.to_owned()), 
+        Box::new(Constructor::of_string("k(1)")))).new_graph();
+    let w = get_coleaf_weighting(&g);
+    let scores = grabbing_game_scores(&g, &w, false, false);
     Rational::new((scores.0.0 as i64) - (scores.1.0 as i64))
 }
 
@@ -393,20 +396,14 @@ mod tests {
     }
 
     #[test]
-    fn test_coleaf_weighted_p3() {
-        let g = Graph::new_path(Order::of_usize(3));
-        assert_eq!(coleaf_weighted_score_difference(&g), Rational::new(-1));
-    }
-
-    #[test]
     fn test_coleaf_weighted_c5_corona() {
-        let g = Constructor::of_string("corona(c(5),k(1))").new_graph();
+        let g = Constructor::of_string("c(5)").new_graph();
         assert_eq!(coleaf_weighted_score_difference(&g), Rational::new(-1));
     }
 
     #[test]
     fn test_coleaf_weighted_c4_corona() {
-        let g = Constructor::of_string("corona(c(4),k(1))").new_graph();
+        let g = Constructor::of_string("c(4)").new_graph();
         assert_eq!(coleaf_weighted_score_difference(&g), Rational::new(0));
     }
 

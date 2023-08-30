@@ -58,6 +58,28 @@ pub fn chromatic_number(g: &Graph) -> u32 {
     num_colours as u32
 }
 
+pub fn bipartite_side_difference(g: &Graph) -> u32 {
+    if !is_bipartite(g) {
+        panic!("G must be bipartite to apply BipartiteSideDifference!")
+    } else if !g.is_connected() {
+        panic!("G must be connected to apply BipartiteSideDifference!")
+    } else {
+        let mut colour = VertexVec::new(g.n, &None);
+        colour[Vertex::ZERO] = Some(0);
+        can_be_coloured_rec(g, 2, 0, &mut colour, Vertex::ZERO.incr());
+        let mut num_red: i32 = 0;
+        let mut num_blue: i32 = 0;
+        for v in g.iter_verts() {
+            match colour[v] {
+                Some(0) => num_red += 1,
+                Some(1) => num_blue += 1,
+                Some(_) | None => panic!("It's all gone wrong!")
+            }
+        }
+        (num_red - num_blue).abs() as u32
+    }
+}
+
 /**
  * k: number of colours
  * fast_mode: stop the simulation as soon as we know that a player has won.
