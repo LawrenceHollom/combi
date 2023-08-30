@@ -236,6 +236,7 @@ impl Operator {
                 }
             }
             DominationRedundancy => domination::domination_redundancy(&self.g),
+            GrabbingColeafWeightedDifference => grabbing::coleaf_weighted_score_difference(&self.g),
         }
     }
 

@@ -19,6 +19,7 @@ pub enum RationalOperation {
     OfBool(Box<BoolOperation>),
     Arithmetic(ArithmeticOperation, Box<RationalOperation>, Box<RationalOperation>),
     DominationRedundancy,
+    GrabbingColeafWeightedDifference,
 }
 
 impl RationalOperation {
@@ -47,6 +48,7 @@ impl RationalOperation {
                 use RationalOperation::*;
                 match text {
                     "domination_redundancy" | "gamma_red" => Some(DominationRedundancy),
+                    "grabbing_coleaf_difference" | "gcwd" => Some(GrabbingColeafWeightedDifference),
                     &_ => IntOperation::of_string_result(text).map(OfInt),
                 }
             }
@@ -75,6 +77,7 @@ impl fmt::Display for RationalOperation {
             OfInt(op) => format!("{}", op),
             Arithmetic(arith, op1, op2) => format!("({}) {} ({})", *op1, arith, *op2),
             DominationRedundancy => "Domination redundancy ratio".to_owned(),
+            GrabbingColeafWeightedDifference => "Grabbing game score diff with coleaf weights".to_owned(),
         };
         write!(f, "{}", name)
     }

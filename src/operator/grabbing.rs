@@ -3,7 +3,7 @@ use std::ops::{Add, AddAssign};
 use crate::graph::*;
 
 use rand::{rngs::ThreadRng, thread_rng, Rng};
-use utilities::vertex_tools::*;
+use utilities::{vertex_tools::*, rational::Rational};
 
 const REPS: usize = 100;
 
@@ -210,6 +210,10 @@ fn grabbing_game_scores(g: &Graph, w: &VertexVec<Weight>, debug: bool) -> (Weigh
     }
 
     score[VertexSet::everything(g.n)].1
+}
+
+pub fn coleaf_weighted_score_difference(g: &Graph) -> Rational {
+    Rational::ZERO
 }
 
 pub fn can_bob_win_graph_grabbing(g: &Graph, max_weight: Option<usize>) -> bool {
