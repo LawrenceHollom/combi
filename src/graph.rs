@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use utilities::{*, edge_tools::*, vertex_tools::*, component_tools::*};
 use crate::constructor::*;
 use Constructor::*;

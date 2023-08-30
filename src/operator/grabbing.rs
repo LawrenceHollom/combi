@@ -319,3 +319,31 @@ pub fn has_induced_odd_cycle_corona(g: &Graph) -> bool {
     }
     found_corona
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use utilities::*;
+
+    fn w(x: u32) -> Weight {
+        Weight(x)
+    }
+
+    fn weight(v: Vec<u32>) -> VertexVec<Weight> {
+        VertexVec::of_vec(v.iter().map(|x| w(*x)).collect::<Vec<Weight>>())
+    }
+
+    #[test]
+    fn test_grabbing_p3() {
+        let g = Graph::new_path(Order::of_usize(3));
+        let weights = weight(vec![1, 3, 1]);
+        assert_eq!(grabbing_game_scores(&g, &weights, false), (w(2), w(3)));
+    }
+
+    #[test]
+    fn test_grabbing_p4() {
+        let g = Graph::new_path(Order::of_usize(4));
+        let weights = weight(vec![0, 2, 3, 1]);
+        assert_eq!(grabbing_game_scores(&g, &weights, false), (w(3), w(3)));
+    }
+}
