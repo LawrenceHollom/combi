@@ -8,9 +8,7 @@ pub fn new_corona_product(constructor: &Constructor, g: &Graph, h: &Graph) -> Gr
     let hn = h.n.to_usize();
     let order = Order::of_usize(gn * (1 + hn));
     let mut adj_list = VertexVec::new(order, &vec![]);
-
-    g.print();
-
+    
     // Edges within G
     for (u, v) in g.iter_pairs() {
         if g.adj[u][v] {
