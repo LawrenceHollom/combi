@@ -246,7 +246,7 @@ fn get_coleaf_weighting(g: &Graph) -> VertexVec<Weight> {
 
 pub fn coleaf_weighted_score_difference(g: &Graph) -> Rational {
     let w = get_coleaf_weighting(g);
-    let scores = grabbing_game_scores(g, &w, true, true);
+    let scores = grabbing_game_scores(g, &w, false, false);
     Rational::new((scores.0.0 as i64) - (scores.1.0 as i64))
 }
 
