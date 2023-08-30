@@ -3,7 +3,6 @@ use std::ops::{Add, AddAssign};
 use crate::graph::*;
 
 use rand::{rngs::ThreadRng, thread_rng, Rng};
-use utilities::*;
 use utilities::vertex_tools::*;
 
 const REPS: usize = 100;
@@ -222,15 +221,9 @@ pub fn can_bob_win_graph_grabbing(g: &Graph, max_weight: Option<usize>) -> bool 
     let max_weight = max_weight.unwrap_or(g.n.to_usize()) as u32;
     'rep: for i in 0..REPS {
         let w = get_random_good_weighting(g, &mut rng, max_weight);
-        let total = sum(&w);
-        let played = VertexSet::new(g.n);
         let debug = false;
-//        let old_res = grabbing_game_rec(g, &w, played, 0, Grabbed::ZERO, total, debug);
-        let scores = grabbing_game_scores(g, &w, false);
-        let new_res = scores.0 >= scores.1;
-//        if old_res != new_res {
-//            panic!("EEEEEEEE");
-        if !new_res {
+        let scores = grabbing_game_scores(g, &w, debug);
+        if scores.1 > scores.0 {
             found_good_weighting = true;
             println!("Found Bob-friendly weighting after {} steps", i);
             break 'rep
