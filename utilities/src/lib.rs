@@ -177,19 +177,25 @@ pub fn split_list(text: &str) -> Vec<&str> {
             depth += 1;
         } else if *c == ')' as u8 {
             depth -= 1;
+            if depth < 0 {
+                panic!("The parens depth is < 0!")
+            }
         } else if *c == ',' as u8 && depth == 0 {
             args.push(&text[last_index..i]);
             last_index = i + 1;
         }
     }
-    args.push(&text[last_index..text.len()].trim_end_matches(')'));
+    args.push(&text[last_index..text.len()]);
     args
 }
 
 pub fn parse_function_like(text: &str) -> (&str, Vec<&str>) {
     match text.split_once('(') {
         Some((func, args_string)) => {
-            (func, split_list(args_string))
+            match args_string.rsplit_once(')') {
+                Some((args_string, _other)) => (func, split_list(args_string)),
+                None => (text, vec![]),
+            }
         }
         None => (text, vec![]),
     }
