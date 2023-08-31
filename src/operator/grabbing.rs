@@ -304,6 +304,7 @@ pub fn hypothesis_testing(g_in: &Graph) {
         }
     }
     if panic {
+        g_in.print();
         println!("Standard score difference: {}", scores.diff());
         for (v, score) in rooted_scores.iter_enum() {
             println!("When rooted at {}:\t{}", v, score);
