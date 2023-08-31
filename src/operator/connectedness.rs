@@ -67,6 +67,21 @@ pub fn connectedness(g: &Graph) -> u32 {
     }
     (k - 1) as u32
 }
+
+pub fn num_cutvertices(g: &Graph) -> u32 {
+    let mut num_cutvertices = 0;
+    let mut filter = VertexVec::new(g.n, &true);
+    for v in g.iter_verts() {
+        filter[v] = true;
+        let nc = g.num_filtered_components(Some(&filter));
+        if nc > 1 {
+            num_cutvertices += 1;
+        }
+        filter[v] = false;
+    }
+    num_cutvertices
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -90,5 +105,25 @@ mod tests {
     #[test]
     fn test_connectedness_k10() {
         assert_eq!(connectedness(&Graph::new_complete(Order::of_usize(10))), 9);
+    }
+    
+    #[test]
+    fn test_num_cutvertices_1() {
+        assert_eq!(num_cutvertices(&Graph::test_graph(1)), 3);
+    }
+    
+    #[test]
+    fn test_num_cutvertices_3() {
+        assert_eq!(num_cutvertices(&Graph::test_graph(2)), 0);
+    }
+    
+    #[test]
+    fn test_num_cutvertices_p10() {
+        assert_eq!(num_cutvertices(&Graph::new_path(Order::of_usize(10))), 8);
+    }
+    
+    #[test]
+    fn test_num_cutvertices_k10() {
+        assert_eq!(num_cutvertices(&Graph::new_complete(Order::of_usize(10))), 0);
     }
 }

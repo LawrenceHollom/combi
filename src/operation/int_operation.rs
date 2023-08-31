@@ -40,6 +40,7 @@ pub enum IntOperation {
     ConnectedGameChromaticNumber,
     ConnectedMarkingGameNumber,
     BipartiteSideDifference,
+    NumCutvertices,
     Number(u32),
 }
 
@@ -90,6 +91,7 @@ impl IntOperation {
             "connected_game_chromatic_number" | "chi_cg" => Some(ConnectedGameChromaticNumber),
             "connected_marking_game_numner" | "mark_c" => Some(ConnectedMarkingGameNumber),
             "bip_side_diff" | "bip_diff" => Some(BipartiteSideDifference),
+            "num_cutvertices" | "num_cut" => Some(NumCutvertices),
             str => str.parse().ok().map(Number),
         }
     }
@@ -136,6 +138,7 @@ impl fmt::Display for IntOperation {
             ConnectedGameChromaticNumber => "Connected game chromatic number",
             ConnectedMarkingGameNumber => "Connected marking game number",
             BipartiteSideDifference => "Difference between side sizes in bipartition",
+            NumCutvertices => "Number of cutvertices",
             Number(n) => {
                 sta = n.to_string();
                 sta.as_str()
