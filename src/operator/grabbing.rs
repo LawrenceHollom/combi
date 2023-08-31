@@ -67,6 +67,14 @@ impl Grabbed {
     }
 }
 
+fn print_weighting(w: &VertexVec<Weight>) {
+    print!("Weighting: ");
+    for weight in w.iter() {
+        print!("{} ", weight.0);
+    }
+    println!();
+}
+
 fn get_random_weighting(g: &Graph, rng: &mut ThreadRng, max_weight: u32) -> VertexVec<Weight> {
     let mut w = VertexVec::new(g.n, &Weight(0));
     for v in g.iter_verts() {
@@ -309,11 +317,7 @@ pub fn hypothesis_testing(g_in: &Graph) {
         for (v, score) in rooted_scores.iter_enum() {
             println!("When rooted at {}:\t{}", v, score);
         }
-        print!("Weighting: ");
-        for weight in w.iter() {
-            print!("{} ", weight.0);
-        }
-        println!();
+        print_weighting(&w);
         panic!("Some rooting is preferable to a non-rooting!");
     }
 }
@@ -330,9 +334,10 @@ pub fn can_bob_win_graph_grabbing(g: &Graph, max_weight: Option<usize>) -> bool 
         let debug = false;
         //let scores = grabbing_game_scores(g, &w, debug, false);
         //if scores.1 > scores.0 {
-        if grabbing_game_rec(g, &w, VertexSet::new(g.n), 0, Grabbed::ZERO, sum(&w), debug) {
+        if !grabbing_game_rec(g, &w, VertexSet::new(g.n), 0, Grabbed::ZERO, sum(&w), debug) {
             found_good_weighting = true;
             println!("Found Bob-friendly weighting after {} steps", i);
+            print_weighting(&w);
             break 'rep
         }
     }
@@ -340,10 +345,10 @@ pub fn can_bob_win_graph_grabbing(g: &Graph, max_weight: Option<usize>) -> bool 
 }
 
 pub fn print_bob_win_weighting(g: &Graph) {
-    let mut max_weight = g.n.to_usize() as u32;
+    let mut max_weight = 3;//g.n.to_usize() as u32;
     let mut rng = thread_rng();
     let mut w = get_coleaf_weighting(g, None);
-    let mut debug = true;
+    let mut debug = false;
     loop {
         let total = sum(&w);
         let played = VertexSet::new(g.n);
@@ -352,7 +357,7 @@ pub fn print_bob_win_weighting(g: &Graph) {
             println!("  Scores: {:?}", grabbing_game_scores(g, &w, None, false, false));
             max_weight -= 1;
         }
-        println!("Fail with weighting {:?}", w);
+        //println!("Fail with weighting {:?}", w);
         w = get_random_good_weighting(g, &mut rng, max_weight);
         debug = false;
     }
