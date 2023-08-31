@@ -234,14 +234,41 @@ fn grabbing_game_scores(g: &Graph, w: &VertexVec<Weight>, debug: bool, print_str
     score[VertexSet::everything(g.n)].1
 }
 
-fn get_coleaf_weighting(g: &Graph) -> VertexVec<Weight> {
+/**
+ * filter (if Some) is true if a vertex should take 0 or 1 weight randomly.
+ */
+fn get_coleaf_weighting(g: &Graph, filter: Option<&VertexVec<bool>>) -> VertexVec<Weight> {
+    let mut rng = thread_rng();
     let mut w = VertexVec::new(g.n, &Weight(0));
     for (v, d) in g.deg.iter_enum() {
-        if d.more_than(1) {
+        if filter.map_or(false, |f| f[v]) {
+            if rng.gen_bool(0.5) {
+                w[v] = Weight(1);
+            }
+        } else if d.more_than(1) {
             w[v] = Weight(1);
         }
     }
     w
+}
+
+fn get_bip_side_weighting_difference_rec(g: &Graph, w: &VertexVec<Weight>, v: Vertex, sign: i32, visited: VertexSet, diff: &mut i32) -> VertexSet {
+    let mut set = visited;
+    for u in g.adj_list[v].iter() {
+        if !set.has_vert(*u) {
+            *diff += sign * (w[*u].0 as i32);
+            set.add_vert(*u);
+            set = get_bip_side_weighting_difference_rec(g, w, *u, -sign, set, diff);
+        }
+    }
+    set
+}
+
+fn get_bip_side_weighting_difference(g: &Graph, w: &VertexVec<Weight>) -> i32 {
+    let mut diff = 0;
+    let visited = VertexSet::new(g.n);
+    let _ = get_bip_side_weighting_difference_rec(g, w, Vertex::ZERO, 1, visited, &mut diff);
+    diff
 }
 
 pub fn coleaf_weighted_score_difference(g_in: &Graph) -> Rational {
@@ -258,8 +285,32 @@ pub fn coleaf_weighted_score_difference(g_in: &Graph) -> Rational {
         adj_list[v].push(u);
     }
     let g = Graph::of_adj_list(adj_list, crate::constructor::Constructor::Special);
-    let w = get_coleaf_weighting(&g);
+    let mut is_cutvertex = VertexVec::new(g.n, &false);
+    let mut filter = VertexVec::new(g_in.n, &true);
+    for v in g_in.iter_verts() {
+        filter[v] = false;
+        if g_in.num_filtered_components(Some(&filter)) > 1 {
+            is_cutvertex[v] = true;
+        }
+        filter[v] = true;
+    }
+    let w = get_coleaf_weighting(&g, Some(&is_cutvertex));
     let scores = grabbing_game_scores(&g, &w, false, false);
+    
+    // tmp stuff for hypothesis testing:
+    let diff = get_bip_side_weighting_difference(&g, &w);
+    let score_diff = (scores.0.0 as i64) - (scores.1.0 as i64);
+    let note = if diff.abs() != score_diff as i32 { "!!!!" } else { "" };
+    println!("side score diff:\t{}\t; Alice winning margin:\t{}\t{}", diff, score_diff, note);
+    if diff.abs() != score_diff as i32 {
+        g_in.print();
+        print!("Weights: [");
+        for v in g_in.iter_verts() {
+            print!("{} ", w[v].0);
+        }
+        println!("]")
+    }
+
     Rational::new((scores.0.0 as i64) - (scores.1.0 as i64))
 }
 
@@ -287,7 +338,7 @@ pub fn can_bob_win_graph_grabbing(g: &Graph, max_weight: Option<usize>) -> bool 
 pub fn print_bob_win_weighting(g: &Graph) {
     let mut max_weight = g.n.to_usize() as u32;
     let mut rng = thread_rng();
-    let mut w = get_coleaf_weighting(g);
+    let mut w = get_coleaf_weighting(g, None);
     let mut debug = true;
     loop {
         let total = sum(&w);
