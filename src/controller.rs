@@ -30,6 +30,7 @@ pub enum Controller {
     Repeat(Constructor, usize),
     Tabulate(Tabulation),
     Until(Constructor, Vec<BoolOperation>),
+    Forever(Constructor, Vec<BoolOperation>),
     SearchTrees(usize, BoolOperation, Degree),
     KitchenSink(Vec<BoolOperation>),
     KitchenSinkAll(Vec<BoolOperation>),
@@ -75,6 +76,10 @@ impl Controller {
             },
             "until" => {
                 Until(Constructor::of_string(args[0]), 
+                    args.iter().skip(1).map(|arg| BoolOperation::of_string_result(arg).unwrap()).collect())
+            },
+            "forever" => {
+                Forever(Constructor::of_string(args[0]), 
                     args.iter().skip(1).map(|arg| BoolOperation::of_string_result(arg).unwrap()).collect())
             },
             "search_trees" | "trees" => {
@@ -125,6 +130,9 @@ impl fmt::Display for Controller {
             },
             Until(constr, conditions) => {
                 write!(f, "Repeat ({}) until ({:?})", constr, conditions)
+            },
+            Forever(constr, conditions) => {
+                write!(f, "Repeat ({}) forever, processing whenever ({:?})", constr, conditions)
             },
             Single(constr) => {
                 write!(f, "{}", constr)
@@ -406,13 +414,13 @@ impl Instruction {
         }
     }
 
-    fn execute_until(&self, constr: &Constructor, conditions: &[BoolOperation]) {
+    fn execute_until(&self, constr: &Constructor, conditions: &[BoolOperation], forever: bool) {
         let mut satisfied = false;
         let mut rep = 0;
         let mut lines_printed = 0;
         let mut checkpoint_time = SystemTime::now();
         let mut required_steps = 0;
-        while !satisfied {
+        while !satisfied || forever {
             if lines_printed >= 30 {
                 if checkpoint_time.elapsed().unwrap().as_secs() < 10 {
                     required_steps += 1;
@@ -706,7 +714,8 @@ impl Instruction {
             Single(constr) => self.execute_single(constr),
             Repeat(constr, reps) => self.execute_reps(constr, *reps),
             Tabulate(tabulation) => self.execute_tabulate(tabulation),
-            Until(constr, conditions) => self.execute_until(constr, conditions),
+            Until(constr, conditions) => self.execute_until(constr, conditions, false),
+            Forever(constr, conditions) => self.execute_until(constr, conditions, true),
             SearchTrees(n, condition, max_degree) => self.search_trees(*n, condition, max_degree),
             KitchenSink(conditions) => self.execute_kitchen_sink(conditions, false),
             KitchenSinkAll(conditions) => self.execute_kitchen_sink(conditions, true),
