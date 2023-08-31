@@ -465,9 +465,11 @@ impl Instruction {
                 lines_printed += 1;
             }
             if all_satisfied {
-                println!("All conditions satisfied! {:?}", conditions);
-                println!("Graph: ");
-                operator.print_graph();
+                if !forever {
+                    println!("All conditions satisfied! {:?}", conditions);
+                    println!("Graph: ");
+                    operator.print_graph();
+                }
                 self.compute_and_print(&mut operator, &mut ann);
                 satisfied = true;
             }
