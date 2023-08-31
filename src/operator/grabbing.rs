@@ -37,7 +37,7 @@ impl Grabbed {
     fn new(alice: Weight, bob: Weight) -> Grabbed {
         Grabbed { alice, bob }
     }
-    
+
     fn add_immutable(&self, w: Weight, is_alice_turn: bool) -> Grabbed {
         if is_alice_turn {
             Grabbed { alice: self.alice + w, bob: self.bob }
@@ -182,7 +182,7 @@ fn sum(w: &VertexVec<Weight>) -> Weight {
 }
 
 // score_difference = Alice - Bob
-fn grabbing_game_scores(g: &Graph, w: &VertexVec<Weight>, debug: bool, print_strat: bool) -> Grabbed {
+fn grabbing_game_scores(g: &Graph, w: &VertexVec<Weight>, root: Option<Vertex>, debug: bool, print_strat: bool) -> Grabbed {
     let mut score = VertexSetVec::new(g.n, &(None, Grabbed::ZERO));
     let nbhds = g.get_open_nbhds();
 
@@ -194,7 +194,11 @@ fn grabbing_game_scores(g: &Graph, w: &VertexVec<Weight>, debug: bool, print_str
             let mut nbhd = VertexSet::new(g.n);
             let mut cosize = g.n.to_usize();
             if s.to_int() == 0 {
-                nbhd = VertexSet::everything(g.n)
+                if let Some(root) = root {
+                    nbhd = VertexSet::new(g.n).add_vert_immutable(root)
+                } else {
+                    nbhd = VertexSet::everything(g.n)
+                }
             } else {
                 for v in s.iter() {
                     cosize -= 1;
@@ -257,7 +261,7 @@ fn get_coleaf_weighting(g: &Graph, filter: Option<&VertexVec<bool>>) -> VertexVe
 
 pub fn coleaf_weighted_score_difference(g: &Graph) -> Rational {
     let w = get_coleaf_weighting(g, None);
-    let scores = grabbing_game_scores(g, &w, false, false);
+    let scores = grabbing_game_scores(g, &w, None, false, false);
     
     Rational::new(scores.diff())
 }
@@ -277,19 +281,39 @@ pub fn hypothesis_testing(g_in: &Graph) {
     }
     let g = Graph::of_adj_list(adj_list, crate::constructor::Constructor::Special);
 
-    for _i in 0..10 {
-        let mut is_cutvertex = VertexVec::new(g.n, &false);
-        let mut filter = VertexVec::new(g_in.n, &true);
-        for v in g_in.iter_verts() {
-            filter[v] = false;
-            if g_in.num_filtered_components(Some(&filter)) > 1 {
-                is_cutvertex[v] = true;
-            }
-            filter[v] = true;
+    let mut is_cutvertex = VertexVec::new(g.n, &false);
+    let mut filter = VertexVec::new(g_in.n, &true);
+    for v in g_in.iter_verts() {
+        filter[v] = false;
+        if g_in.num_filtered_components(Some(&filter)) > 1 {
+            is_cutvertex[v] = true;
         }
-        let w = get_coleaf_weighting(&g, Some(&is_cutvertex));
-        let scores = grabbing_game_scores(&g, &w, false, false);
-        println!("Standard score difference: {}", scores.diff())
+        filter[v] = true;
+    }
+    let w = get_coleaf_weighting(&g, Some(&is_cutvertex));
+    let scores = grabbing_game_scores(&g, &w, None, false, false);
+    let mut panic = false;
+    let mut rooted_scores = VertexVec::new(g.n, &0);
+
+    for v in g.iter_verts() {
+        // Try rooting at v
+        let rooted_score = grabbing_game_scores(&g, &w, Some(v), false, false);
+        rooted_scores[v] = rooted_score.diff();
+        if rooted_score.diff() > scores.diff() {
+            panic = true;
+        }
+    }
+    if panic {
+        println!("Standard score difference: {}", scores.diff());
+        for (v, score) in rooted_scores.iter_enum() {
+            println!("When rooted at {}:\t{}", v, score);
+        }
+        print!("Weighting: ");
+        for weight in w.iter() {
+            print!("{} ", weight.0);
+        }
+        println!();
+        panic!("Some rooting is preferable to a non-rooting!");
     }
 }
 
@@ -324,7 +348,7 @@ pub fn print_bob_win_weighting(g: &Graph) {
         let played = VertexSet::new(g.n);
         if !grabbing_game_rec(g, &w, played, 0, Grabbed::ZERO, total, debug) {
             println!("Weighting (max_weight = {}): {:?}", max_weight, w);
-            println!("  Scores: {:?}", grabbing_game_scores(g, &w, false, false));
+            println!("  Scores: {:?}", grabbing_game_scores(g, &w, None, false, false));
             max_weight -= 1;
         }
         println!("Fail with weighting {:?}", w);
@@ -425,14 +449,14 @@ mod tests {
     fn test_grabbing_p3() {
         let g = Graph::new_path(Order::of_usize(3));
         let weights = weight(vec![1, 3, 1]);
-        assert_eq!(grabbing_game_scores(&g, &weights, false, false), grab(2, 3));
+        assert_eq!(grabbing_game_scores(&g, &weights, None, false, false), grab(2, 3));
     }
 
     #[test]
     fn test_grabbing_p4() {
         let g = Graph::new_path(Order::of_usize(4));
         let weights = weight(vec![0, 2, 3, 1]);
-        assert_eq!(grabbing_game_scores(&g, &weights, false, false), grab(3, 3));
+        assert_eq!(grabbing_game_scores(&g, &weights, None, false, false), grab(3, 3));
     }
 
     #[test]
@@ -451,6 +475,6 @@ mod tests {
     fn test_corona_counterexample() {
         let g = Constructor::of_string("corona(c(5),k(1))").new_graph();
         let weights = weight(vec![1, 2, 1, 0, 0, 0, 1, 0, 0, 0]);
-        assert_eq!(grabbing_game_scores(&g, &weights, false, false), grab(2, 3));
+        assert_eq!(grabbing_game_scores(&g, &weights, None, false, false), grab(2, 3));
     }
 }
