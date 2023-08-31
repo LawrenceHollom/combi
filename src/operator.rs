@@ -272,6 +272,7 @@ impl Operator {
             PrintMarkingGameStrat => marking_game::print_marking_game_strat(&self.g, false),
             PrintConnectedMarkingGameStrat => marking_game::print_marking_game_strat(&self.g, true),
             PrintBobWinGrabbingWeighting => grabbing::print_bob_win_weighting(&self.g),
+            GrabbingHypothesisTest => grabbing::hypothesis_testing(&self.g),
             Unit => (),
         }
     }

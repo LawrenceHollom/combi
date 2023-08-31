@@ -271,7 +271,14 @@ fn get_bip_side_weighting_difference(g: &Graph, w: &VertexVec<Weight>) -> i32 {
     diff
 }
 
-pub fn coleaf_weighted_score_difference(g_in: &Graph) -> Rational {
+pub fn coleaf_weighted_score_difference(g: &Graph) -> Rational {
+    let w = get_coleaf_weighting(g, None);
+    let scores = grabbing_game_scores(g, &w, false, false);
+    
+    Rational::new((scores.0.0 as i64) - (scores.1.0 as i64))
+}
+
+pub fn hypothesis_testing(g_in: &Graph) {
     let mut adj_list = VertexVec::new(g_in.n.times(2), &vec![]);
     for (u, v) in g_in.iter_pairs() {
         if g_in.adj[u][v] {
@@ -285,6 +292,7 @@ pub fn coleaf_weighted_score_difference(g_in: &Graph) -> Rational {
         adj_list[v].push(u);
     }
     let g = Graph::of_adj_list(adj_list, crate::constructor::Constructor::Special);
+    
     let mut is_cutvertex = VertexVec::new(g.n, &false);
     let mut filter = VertexVec::new(g_in.n, &true);
     for v in g_in.iter_verts() {
@@ -296,8 +304,7 @@ pub fn coleaf_weighted_score_difference(g_in: &Graph) -> Rational {
     }
     let w = get_coleaf_weighting(&g, Some(&is_cutvertex));
     let scores = grabbing_game_scores(&g, &w, false, false);
-    
-    // tmp stuff for hypothesis testing:
+
     let diff = get_bip_side_weighting_difference(&g, &w);
     let score_diff = (scores.0.0 as i64) - (scores.1.0 as i64);
     let note = if diff.abs() != score_diff as i32 { "!!!!" } else { "" };
@@ -310,8 +317,6 @@ pub fn coleaf_weighted_score_difference(g_in: &Graph) -> Rational {
         }
         println!("]")
     }
-
-    Rational::new((scores.0.0 as i64) - (scores.1.0 as i64))
 }
 
 pub fn can_bob_win_graph_grabbing(g: &Graph, max_weight: Option<usize>) -> bool {
