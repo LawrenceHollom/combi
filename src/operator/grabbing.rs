@@ -292,30 +292,45 @@ pub fn hypothesis_testing(g_in: &Graph) {
         adj_list[v].push(u);
     }
     let g = Graph::of_adj_list(adj_list, crate::constructor::Constructor::Special);
-    
-    let mut is_cutvertex = VertexVec::new(g.n, &false);
-    let mut filter = VertexVec::new(g_in.n, &true);
-    for v in g_in.iter_verts() {
-        filter[v] = false;
-        if g_in.num_filtered_components(Some(&filter)) > 1 {
-            is_cutvertex[v] = true;
-        }
-        filter[v] = true;
-    }
-    let w = get_coleaf_weighting(&g, Some(&is_cutvertex));
-    let scores = grabbing_game_scores(&g, &w, false, false);
 
-    let diff = get_bip_side_weighting_difference(&g, &w);
-    let score_diff = (scores.0.0 as i64) - (scores.1.0 as i64);
-    let note = if diff.abs() != score_diff as i32 { "!!!!" } else { "" };
-    println!("side score diff:\t{}\t; Alice winning margin:\t{}\t{}", diff, score_diff, note);
-    if diff.abs() != score_diff as i32 {
-        g_in.print();
-        print!("Weights: [");
+    let mut last_diff_diff = None;
+    let mut last_weighting: Option<VertexVec<Weight>> = None;
+    for _i in 0..10 {
+        let mut is_cutvertex = VertexVec::new(g.n, &false);
+        let mut filter = VertexVec::new(g_in.n, &true);
         for v in g_in.iter_verts() {
-            print!("{} ", w[v].0);
+            filter[v] = false;
+            if g_in.num_filtered_components(Some(&filter)) > 1 {
+                is_cutvertex[v] = true;
+            }
+            filter[v] = true;
         }
-        println!("]")
+        let w = get_coleaf_weighting(&g, Some(&is_cutvertex));
+        let scores = grabbing_game_scores(&g, &w, false, false);
+
+        let side_diff = get_bip_side_weighting_difference(&g, &w);
+        let score_diff = (scores.0.0 as i32) - (scores.1.0 as i32);
+        let diff_diff = score_diff.abs() - side_diff.abs();
+        if let Some(last_diff_diff) = last_diff_diff {
+            if diff_diff != last_diff_diff {
+                g_in.print();
+                print!("First weighting: ");
+                for x in last_weighting.unwrap().iter() {
+                    print!("{} ", x.0);
+                }
+                println!("; diff_diff = {}", last_diff_diff);
+                print!("Second weighting: ");
+                for x in w.iter() {
+                    print!("{} ", x.0);
+                }
+                println!("; diff_diff = {}", diff_diff);
+
+                panic!("Different diff_diffs depending on the weighting!")
+            }
+        } else {
+            last_diff_diff = Some(diff_diff);
+            last_weighting = Some(w.to_owned());
+        }
     }
 }
 
