@@ -2,6 +2,8 @@ use std::fmt;
 use std::time::*;
 use std::io::*;
 
+use rand::Rng;
+use rand::rngs::ThreadRng;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use utilities::*;
@@ -35,6 +37,7 @@ pub enum Controller {
     KitchenSink(Vec<BoolOperation>),
     KitchenSinkAll(Vec<BoolOperation>),
     Process(Order),
+    BipartiteProcess(Order),
     ProcessUntil(Order, Vec<BoolOperation>),
     ProcessUntilDecreasing(Order, IntOperation, Vec<BoolOperation>),
     SearchAll(Order, Vec<BoolOperation>),
@@ -98,6 +101,9 @@ impl Controller {
             "process" | "proc" => {
                 Process(Order::of_string(args[0]))
             }
+            "bip_process" | "bip_proc" => {
+                BipartiteProcess(Order::of_string(args[0]))
+            }
             "process_until" | "proc_until" => {
                 ProcessUntil(Order::of_string(args[0]),
                     args.iter().skip(1).map(|arg| BoolOperation::of_string_result(*arg).unwrap()).collect())
@@ -148,6 +154,9 @@ impl fmt::Display for Controller {
             }
             Process(order) => {
                 write!(f, "Random graph process of order {}", order)
+            }
+            BipartiteProcess(order) => {
+                write!(f, "Random bipartite graph process of order {}", order)
             }
             ProcessUntil(order, conditions) => {
                 write!(f, "Run graph processes of order {} until {:?}", order, conditions)
@@ -258,19 +267,19 @@ impl Instruction {
         }
     }
 
-    fn get_shuffled_edges(&self, order: Order) -> Vec<Edge> {
+    fn get_shuffled_edges(&self, order: Order, rng: &mut ThreadRng) -> Vec<Edge> {
         let mut edges = vec![];
         for (u, v) in order.iter_pairs() {
             edges.push(Edge::of_pair(u, v));
         }
-        let mut rng = thread_rng();
-        edges.shuffle(&mut rng);
+        edges.shuffle(rng);
         edges
     }
 
     fn execute_process(&self, order: Order) {
         // Add the edges one by one, and run on each graph from empty to complete.
-        let edges = self.get_shuffled_edges(order);
+        let mut rng = thread_rng();
+        let edges = self.get_shuffled_edges(order, &mut rng);
         println!("Edges: {:?}", edges);
         let mut adj_list: VertexVec<Vec<Vertex>> = VertexVec::new(order, &vec![]);
 
@@ -282,6 +291,38 @@ impl Instruction {
             let mut operator = Operator::new(g);
             print!("[{} / {}]: ", i+1, edges.len());
             self.compute_and_print(&mut operator, &mut ann);
+        }
+    }
+
+    fn execute_bipartite_process(&self, order: Order) {
+        // Add the edges one by one, and run on each graph from empty to complete.
+        let mut rng = thread_rng();
+        let mut part = VertexVec::new(order, &false);
+        let mut part_size = 0;
+        let mut copart_size = order.to_usize();
+        for v in order.iter_verts() {
+            if rng.gen_bool(0.5) {
+                part[v] = true;
+                part_size += 1;
+                copart_size -= 1;
+            }
+        }
+        let edges = self.get_shuffled_edges(order, &mut rng);
+        println!("Edges: {:?}", edges);
+        let mut adj_list: VertexVec<Vec<Vertex>> = VertexVec::new(order, &vec![]);
+        let mut count = 0;
+
+        for e in edges.iter() {
+            if part[e.fst()] != part[e.snd()] {
+                adj_list[e.fst()].push(e.snd());
+                adj_list[e.snd()].push(e.fst());
+                let g = Graph::of_adj_list(adj_list.to_owned(), Constructor::Special);
+                let mut ann = AnnotationsBox::new();
+                let mut operator = Operator::new(g);
+                count += 1;
+                print!("[{} / {}]: ", count, part_size * copart_size);
+                self.compute_and_print(&mut operator, &mut ann);
+            }
         }
     }
 
@@ -303,10 +344,11 @@ impl Instruction {
     }
 
     fn execute_process_until(&self, order: Order, conditions: &[BoolOperation]) {
+        let mut rng = thread_rng();
         let mut rep = 0;
         let start_time = SystemTime::now();
         'test_procs: loop {
-            let edges = self.get_shuffled_edges(order);
+            let edges = self.get_shuffled_edges(order, &mut rng);
             let mut adj_list: VertexVec<Vec<Vertex>> = VertexVec::new(order, &vec![]);
 
             for e in edges.iter() {
@@ -328,10 +370,11 @@ impl Instruction {
     }
 
     fn execute_process_until_decreasing(&self, order: Order, int_op: &IntOperation, conditions: &[BoolOperation]) {
+        let mut rng = thread_rng();
         let mut rep = 0;
         let start_time = SystemTime::now();
         'test_procs: loop {
-            let edges = self.get_shuffled_edges(order);
+            let edges = self.get_shuffled_edges(order, &mut rng);
             let mut adj_list: VertexVec<Vec<Vertex>> = VertexVec::new(order, &vec![]);
             let mut last_value_opn = None;
 
@@ -722,6 +765,7 @@ impl Instruction {
             KitchenSink(conditions) => self.execute_kitchen_sink(conditions, false),
             KitchenSinkAll(conditions) => self.execute_kitchen_sink(conditions, true),
             Process(order) => self.execute_process(*order),
+            BipartiteProcess(order) => self.execute_bipartite_process(*order),
             ProcessUntil(order, conditions) => self.execute_process_until(*order, conditions),
             ProcessUntilDecreasing(order, int_op, conditions) => {
                 self.execute_process_until_decreasing(*order, int_op, conditions)
