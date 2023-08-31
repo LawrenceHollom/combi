@@ -72,12 +72,12 @@ pub fn num_cutvertices(g: &Graph) -> u32 {
     let mut num_cutvertices = 0;
     let mut filter = VertexVec::new(g.n, &true);
     for v in g.iter_verts() {
-        filter[v] = true;
+        filter[v] = false;
         let nc = g.num_filtered_components(Some(&filter));
         if nc > 1 {
             num_cutvertices += 1;
         }
-        filter[v] = false;
+        filter[v] = true;
     }
     num_cutvertices
 }
@@ -114,7 +114,7 @@ mod tests {
     
     #[test]
     fn test_num_cutvertices_3() {
-        assert_eq!(num_cutvertices(&Graph::test_graph(2)), 0);
+        assert_eq!(num_cutvertices(&Graph::test_graph(3)), 0);
     }
     
     #[test]
