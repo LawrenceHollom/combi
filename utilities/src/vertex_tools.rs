@@ -198,8 +198,8 @@ impl <T: Debug + Clone> VertexVec<T> {
         self.vec[v.0] = value;
     }
 
-    pub fn get(&self, v: Vertex) -> &T {
-        &self.vec[v.0]
+    pub fn get(&self, v: Vertex) -> Option<&T> {
+        self.vec.get(v.0)
     }
 
     pub fn arg_max(&self, min: &T, cmp: fn(&T, &T) -> Ordering) -> Option<Vertex> {
@@ -251,6 +251,10 @@ impl <T: Debug + Clone> VertexVec<T> {
             }
         }
         false
+    }
+
+    pub fn push(&mut self, t: T) {
+        self.vec.push(t)
     }
 
     pub fn drop_vertices(&self) -> &Vec<T> {

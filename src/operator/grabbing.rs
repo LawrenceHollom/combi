@@ -256,7 +256,7 @@ fn get_coleaf_weighting(g: &Graph, filter: Option<&VertexVec<bool>>) -> VertexVe
     let mut rng = thread_rng();
     let mut w = VertexVec::new(g.n, &Weight(0));
     for (v, d) in g.deg.iter_enum() {
-        if filter.map_or(false, |f| f[v]) {
+        if filter.map_or(false, |f| *f.get(v).unwrap_or(&false)) {
             if rng.gen_bool(0.5) {
                 w[v] = Weight(1);
             }
@@ -275,21 +275,15 @@ pub fn coleaf_weighted_score_difference(g: &Graph) -> Rational {
 }
 
 pub fn hypothesis_testing(g_in: &Graph) {
-    let mut adj_list = VertexVec::new(g_in.n.times(2), &vec![]);
+    let mut adj_list = VertexVec::new(g_in.n, &vec![]);
     for (u, v) in g_in.iter_pairs() {
         if g_in.adj[u][v] {
             adj_list[u].push(v);
             adj_list[v].push(u);
         }
     }
-    for u in g_in.iter_verts() {
-        let v = u.incr_by_order(g_in.n);
-        adj_list[u].push(v);
-        adj_list[v].push(u);
-    }
-    let g = Graph::of_adj_list(adj_list, crate::constructor::Constructor::Special);
 
-    let mut is_cutvertex = VertexVec::new(g.n, &false);
+    let mut is_cutvertex = VertexVec::new(g_in.n, &false);
     let mut filter = VertexVec::new(g_in.n, &true);
     for v in g_in.iter_verts() {
         filter[v] = false;
@@ -298,27 +292,32 @@ pub fn hypothesis_testing(g_in: &Graph) {
         }
         filter[v] = true;
     }
-    let w = get_coleaf_weighting(&g, Some(&is_cutvertex));
-    let scores = grabbing_game_scores(&g, &w, None, false, false);
-    let mut panic = false;
-    let mut rooted_scores = VertexVec::new(g.n, &0);
 
-    for v in g.iter_verts() {
-        // Try rooting at v
-        let rooted_score = grabbing_game_scores(&g, &w, Some(v), false, false);
-        rooted_scores[v] = rooted_score.diff();
-        if rooted_score.diff() > scores.diff() {
-            panic = true;
+    let mut v = Vertex::of_usize(g_in.n.to_usize());
+    let mut order = g_in.n.to_usize();
+    for u in g_in.iter_verts() {
+        if !is_cutvertex[u] {
+            adj_list.push(vec![]);
+            adj_list[u].push(v);
+            adj_list[v].push(u);
+            v.incr_inplace();
+            order += 1;
         }
     }
-    if panic {
-        g_in.print();
-        println!("Standard score difference: {}", scores.diff());
-        for (v, score) in rooted_scores.iter_enum() {
-            println!("When rooted at {}:\t{}", v, score);
+    if order % 2 == 0 {
+        let g = Graph::of_adj_list(adj_list, crate::constructor::Constructor::Special);
+        let w = get_coleaf_weighting(&g, Some(&is_cutvertex));
+        let scores = grabbing_game_scores(&g, &w, None, false, false);
+        if scores.diff() < 0 {
+            println!("g_in:");
+            g_in.print();
+            println!("g:");
+            g.print();
+            print_weighting(&w);
+            panic!("Bob won! Bob won!")
+        } else {
+            println!("|g|={}. Alice won by {}", g.n, scores.diff())
         }
-        print_weighting(&w);
-        panic!("Some rooting is preferable to a non-rooting!");
     }
 }
 
