@@ -3,9 +3,10 @@ use std::ops::{Add, AddAssign};
 use crate::graph::*;
 
 use rand::{rngs::ThreadRng, thread_rng, Rng};
-use utilities::{vertex_tools::*, rational::Rational};
+use utilities::{vertex_tools::*, rational::Rational, component_tools::ComponentVec};
 
-const REPS: usize = 100;
+const REPS: usize = 10;
+const GREEDINESS: usize = 2;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 struct Weight(u32);
@@ -145,8 +146,63 @@ fn get_playables(g: &Graph, w: &VertexVec<Weight>, played: VertexSet) -> Vec<Ver
             }
         }
     }
-    // Sort into decreasing order of weight
-    playables.sort_by(|u, v| w[*v].cmp(&w[*u]));
+
+    if GREEDINESS == 1 {
+        // Sort into decreasing order of weight
+        playables.sort_by(|u, v| w[*v].cmp(&w[*u]));
+    } else if GREEDINESS == 2 {
+        let base = g.n.to_usize() as u32;
+        let mut goodness = VertexVec::new(g.n, &0);
+        
+        // precept 1: score points.
+        for (v, w) in w.iter_enum() {
+            goodness[v] += 2 * base * base * w.0;
+        }
+
+        let mut coleaves = VertexSet::new(g.n);
+        let mut parent = VertexVec::new(g.n, &None);
+        for v in g.iter_verts() {
+            if g.deg[v].equals(1) {
+                parent[v] = Some(g.adj_list[v][0]);
+            } else {
+                coleaves.add_vert(v);
+            }
+        }
+        let is_coleaf_cocutvertex = get_cocutvertices(g, coleaves);
+        for v in g.iter_verts() {
+            if let Some(u) = parent[v] {
+                // precept 2: don't lose points, and play in pairs.
+                if w[v] == Weight(0) && w[u] == Weight(0) && is_coleaf_cocutvertex[u] {
+                    goodness[v] += base * base;
+                }
+                // precept 3a: throw the parity with leaves.
+                if w[v] == Weight(0) && !is_coleaf_cocutvertex[u] {
+                    goodness[v] += 2 * base;
+                }
+            } else {
+                // precept 3b: throw the parity with coleaves.
+                goodness[v] += 2 * base;
+            }
+        }
+
+        // precept 4: play in the minimal coleaf block.
+        /*let comps = g.filtered_components(Some(&is_coleaf_cocutvertex));
+        let mut comp_sizes = ComponentVec::new(g.n, &0);
+        for v in g.iter_verts() {
+            if !coleaves.has_vert(v) {
+                comp_sizes[comps[parent[v].unwrap()]] += 1;
+            } else if is_coleaf_cocutvertex[v] {
+                comp_sizes[comps[v]] += 1;
+            }
+        }
+        for v in g.iter_verts() {
+            if let Some(u) = parent[v] {
+                goodness[u] += base / comp_sizes[comps[u]];
+            }
+        }*/
+        playables.sort_by(|u, v| goodness[*v].cmp(&goodness[*u]));
+    }
+
     playables
 }
 
@@ -252,29 +308,59 @@ fn grabbing_game_scores(g: &Graph, w: &VertexVec<Weight>, root: Option<Vertex>, 
 /**
  * filter (if Some) is true if a vertex should take 0 or 1 weight randomly.
  */
-fn get_coleaf_weighting(g: &Graph, filter: Option<&VertexVec<bool>>) -> VertexVec<Weight> {
-    let mut rng = thread_rng();
+fn get_coleaf_weighting(g: &Graph, filter: Option<&VertexVec<bool>>, max_weight: Weight, rng: &mut ThreadRng) -> VertexVec<Weight> {
     let mut w = VertexVec::new(g.n, &Weight(0));
     for (v, d) in g.deg.iter_enum() {
         if filter.map_or(false, |f| *f.get(v).unwrap_or(&false)) {
-            if rng.gen_bool(0.5) {
-                w[v] = Weight(1);
-            }
+            w[v] = Weight(rng.gen_range(0..=max_weight.0));
         } else if d.more_than(1) {
-            w[v] = Weight(1);
+            w[v] = Weight(rng.gen_range(1..=max_weight.0));
         }
     }
     w
 }
 
 pub fn coleaf_weighted_score_difference(g: &Graph) -> Rational {
-    let w = get_coleaf_weighting(g, None);
+    let mut rng = thread_rng();
+    let w = get_coleaf_weighting(g, None, Weight(1), &mut rng);
     let scores = grabbing_game_scores(g, &w, None, false, false);
     
     Rational::new(scores.diff())
 }
 
+fn get_cutvertices_general(g: &Graph, verts: VertexSet, is_standard_cut: bool) -> VertexVec<bool> {
+    let mut out = VertexVec::new(g.n, &false);
+    let mut filter = verts.to_vec();
+    for v in g.iter_verts() {
+        if filter[v] {
+            filter[v] = false;
+            if g.num_filtered_components(Some(&filter)) > 1 {
+                // This is a cutvertex
+                if is_standard_cut {
+                    out[v] = true;
+                }
+            } else {
+                // This is a cocutvertex
+                if !is_standard_cut {
+                    out[v] = true;
+                }
+            }
+            filter[v] = true;
+        }
+    }
+    out
+}
+
+fn get_cutvertices(g: &Graph, verts: VertexSet) -> VertexVec<bool> {
+    get_cutvertices_general(g, verts, true)
+}
+
+fn get_cocutvertices(g: &Graph, verts: VertexSet) -> VertexVec<bool> {
+    get_cutvertices_general(g, verts, false)
+}
+
 pub fn hypothesis_testing(g_in: &Graph) {
+    let mut rng = thread_rng();
     let mut adj_list = VertexVec::new(g_in.n, &vec![]);
     for (u, v) in g_in.iter_pairs() {
         if g_in.adj[u][v] {
@@ -283,15 +369,7 @@ pub fn hypothesis_testing(g_in: &Graph) {
         }
     }
 
-    let mut is_cutvertex = VertexVec::new(g_in.n, &false);
-    let mut filter = VertexVec::new(g_in.n, &true);
-    for v in g_in.iter_verts() {
-        filter[v] = false;
-        if g_in.num_filtered_components(Some(&filter)) > 1 {
-            is_cutvertex[v] = true;
-        }
-        filter[v] = true;
-    }
+    let is_cutvertex = get_cutvertices(g_in, VertexSet::everything(g_in.n));
 
     let mut v = Vertex::of_usize(g_in.n.to_usize());
     let mut order = g_in.n.to_usize();
@@ -306,7 +384,7 @@ pub fn hypothesis_testing(g_in: &Graph) {
     }
     if order % 2 == 0 {
         let g = Graph::of_adj_list(adj_list, crate::constructor::Constructor::Special);
-        let w = get_coleaf_weighting(&g, Some(&is_cutvertex));
+        let w = get_coleaf_weighting(&g, Some(&is_cutvertex), Weight(1), &mut rng);
         let scores = grabbing_game_scores(&g, &w, None, false, false);
         if scores.diff() < 0 {
             println!("g_in:");
@@ -329,10 +407,9 @@ pub fn can_bob_win_graph_grabbing(g: &Graph, max_weight: Option<usize>) -> bool 
     let mut found_good_weighting = false;
     let max_weight = max_weight.unwrap_or(g.n.to_usize()) as u32;
     'rep: for i in 0..REPS {
-        let w = get_random_good_weighting(g, &mut rng, max_weight);
+        let w = get_coleaf_weighting(g, None, Weight(1), &mut rng);
         let debug = false;
-        //let scores = grabbing_game_scores(g, &w, debug, false);
-        //if scores.1 > scores.0 {
+        
         if !grabbing_game_rec(g, &w, VertexSet::new(g.n), 0, Grabbed::ZERO, sum(&w), debug) {
             found_good_weighting = true;
             println!("Found Bob-friendly weighting after {} steps", i);
@@ -346,7 +423,7 @@ pub fn can_bob_win_graph_grabbing(g: &Graph, max_weight: Option<usize>) -> bool 
 pub fn print_bob_win_weighting(g: &Graph) {
     let mut max_weight = 3;//g.n.to_usize() as u32;
     let mut rng = thread_rng();
-    let mut w = get_coleaf_weighting(g, None);
+    let mut w = get_coleaf_weighting(g, None, Weight(1), &mut rng);
     let mut debug = false;
     loop {
         let total = sum(&w);
