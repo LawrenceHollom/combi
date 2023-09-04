@@ -3,7 +3,7 @@ use std::ops::{Add, AddAssign};
 use crate::graph::*;
 
 use rand::{rngs::ThreadRng, thread_rng, Rng};
-use utilities::{vertex_tools::*, rational::Rational, component_tools::ComponentVec};
+use utilities::{vertex_tools::*, rational::Rational};
 
 const REPS: usize = 10;
 const GREEDINESS: usize = 2;
@@ -394,7 +394,19 @@ pub fn hypothesis_testing(g_in: &Graph) {
             print_weighting(&w);
             panic!("Bob won! Bob won!")
         } else {
-            println!("|g|={}. Alice won by {}", g.n, scores.diff())
+            for v in g.iter_verts() {
+                if g.deg[v].equals(1) {
+                    // v is a leaf. Try rooting at v
+                    let rooted_score = grabbing_game_scores(&g, &w, Some(v), false, false);
+                    if rooted_score.diff() > scores.diff() {
+                        println!("Alice prefers leaf-rooted game to original! v = {}", v);
+                        println!("g:");
+                        g.print();
+                        print_weighting(&w);
+                        panic!("Hypothesis disproved!");
+                    }
+                }
+            }
         }
     }
 }
@@ -407,7 +419,7 @@ pub fn can_bob_win_graph_grabbing(g: &Graph, max_weight: Option<usize>) -> bool 
     let mut found_good_weighting = false;
     let max_weight = max_weight.unwrap_or(g.n.to_usize()) as u32;
     'rep: for i in 0..REPS {
-        let w = get_coleaf_weighting(g, None, Weight(1), &mut rng);
+        let w = get_coleaf_weighting(g, None, Weight(max_weight), &mut rng);
         let debug = false;
         
         if !grabbing_game_rec(g, &w, VertexSet::new(g.n), 0, Grabbed::ZERO, sum(&w), debug) {
