@@ -5,7 +5,7 @@ use crate::graph::*;
 use rand::{rngs::ThreadRng, thread_rng, Rng};
 use utilities::{vertex_tools::*, rational::Rational};
 
-const REPS: usize = 10;
+const REPS: usize = 100;
 const GREEDINESS: usize = 2;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -419,7 +419,7 @@ pub fn can_bob_win_graph_grabbing(g: &Graph, max_weight: Option<usize>) -> bool 
     let mut found_good_weighting = false;
     let max_weight = max_weight.unwrap_or(g.n.to_usize()) as u32;
     'rep: for i in 0..REPS {
-        let w = get_coleaf_weighting(g, None, Weight(max_weight), &mut rng);
+        let w = get_random_good_weighting(g, &mut rng, max_weight);
         let debug = false;
         
         if !grabbing_game_rec(g, &w, VertexSet::new(g.n), 0, Grabbed::ZERO, sum(&w), debug) {
@@ -451,60 +451,119 @@ pub fn print_bob_win_weighting(g: &Graph) {
     }
 }
 
-fn has_corona_like_structure(g: &Graph, set: VertexSet) -> bool {
-    let mut is_corona_like = true;
+fn test_num_degs(g: &Graph, set: VertexSet, target_nums: &[usize]) -> bool {
+    let mut is_good = true;
+    let mut nums = vec![0; target_nums.len()];
     'test_degs: for v in set.iter() {
         let mut d = 0;
-        'test_nbrs: for u in g.adj_list[v].iter() {
+        for u in g.adj_list[v].iter() {
             if set.has_vert(*u) {
                 d += 1;
                 if d >= 4 {
-                    break 'test_nbrs;
+                    is_good = false;
+                    break 'test_degs;
                 }
             }
         }
-        if d != 1 && d != 3 {
-            is_corona_like = false;
-            break 'test_degs;
+        if d < target_nums.len() {
+            nums[d] += 1;
         }
     }
 
-    if is_corona_like {
-        // We actually need to test it properly now.
-        let mut internal_adj_list = VertexVec::new(g.n, &vec![]);
-        let mut num_one = 0;
-        let mut num_three = 0;
-        for v in set.iter() {
-            let mut d = 0;
-            for u in g.adj_list[v].iter() {
-                if set.has_vert(*u) {
-                    d += 1;
-                    internal_adj_list[v].push(*u);
-                }
-            }
-            if d == 1 {
-                num_one += 1;
-            } else {
-                num_three += 1;
+    for (i, target) in target_nums.iter().enumerate() {
+        if nums[i] != *target {
+            is_good = false;
+        }
+    }
+    is_good
+}
+
+fn get_internal_adj_list(g: &Graph, set: VertexSet) -> VertexVec<Vec<Vertex>> {
+    let mut internal_adj_list = VertexVec::new(g.n, &vec![]);
+    for v in set.iter() {
+        for u in g.adj_list[v].iter() {
+            if set.has_vert(*u) {
+                internal_adj_list[v].push(*u);
             }
         }
-        if num_one == num_three {
-            'test_cyclicity: for v in set.iter() {
-                if internal_adj_list[v].len() == 3 {
-                    let mut num_deg_three_nbrs = 0;
-                    for u in internal_adj_list[v].iter() {
-                        if internal_adj_list[*u].len() == 3 {
-                            num_deg_three_nbrs += 1;
-                        }
-                    }
-                    if num_deg_three_nbrs != 2 {
-                        is_corona_like = false;
-                        break 'test_cyclicity;
+    }
+    internal_adj_list
+}
+
+fn has_corona_like_structure(g: &Graph, set: VertexSet) -> bool {
+    let order = set.size();
+    let mut is_corona_like = test_num_degs(g, set, &[0, order / 2, 0, order / 2]);
+    
+    if is_corona_like {
+        // We actually need to test it properly now.
+        let internal_adj_list = get_internal_adj_list(g, set);
+        'test_cyclicity: for v in set.iter() {
+            if internal_adj_list[v].len() == 3 {
+                let mut num_deg_three_nbrs = 0;
+                for u in internal_adj_list[v].iter() {
+                    if internal_adj_list[*u].len() == 3 {
+                        num_deg_three_nbrs += 1;
                     }
                 }
+                if num_deg_three_nbrs != 2 {
+                    is_corona_like = false;
+                    break 'test_cyclicity;
+                }
             }
-        } else {
-            is_corona_like = false
+        }
+    }
+
+    is_corona_like
+}
+
+fn has_semicorona_like_structure(g: &Graph, set: VertexSet) -> bool {
+    let order = set.size();
+    let mut is_corona_like = test_num_degs(g, set, &[0, 3, order - 6, 3]);
+    
+    if is_corona_like {
+        // STP that each vtx of deg 3 has nbrs of degs 1 and 3, and that it's connected.
+        let internal_adj_list = get_internal_adj_list(g, set);
+        let mut start_verts = None;
+        'test_verts: for v in set.iter() {
+            if internal_adj_list[v].len() == 3 {
+                let mut has_leaf = false;
+                let mut has_cubic = false;
+                for u in internal_adj_list[v].iter() {
+                    if internal_adj_list[*u].len() == 1 {
+                        has_leaf = true;
+                    } else if internal_adj_list[*u].len() == 3 {
+                        has_cubic = true;
+                    } else {
+                        start_verts = Some((*u, v));
+                    }
+                }
+                if !(has_leaf && has_cubic) {
+                    is_corona_like = false;
+                    break 'test_verts;
+                }
+            }
+        }
+        if is_corona_like {
+            if let Some((x, y)) = start_verts {
+                let mut len = 3;
+                let mut v = x;
+                let mut prev = y;
+                while internal_adj_list[v].len() == 2 {
+                    if internal_adj_list[v][0] == prev {
+                        prev = v;
+                        v = internal_adj_list[v][1];
+                    } else {
+                        prev = v;
+                        v = internal_adj_list[v][0];
+                    }
+                    len += 1;
+                }
+                if len % 2 == 0 {
+                    is_corona_like = false;
+                }
+            } else {
+                is_corona_like = false;
+            }
         }
     }
 
@@ -517,6 +576,20 @@ pub fn has_induced_odd_cycle_corona(g: &Graph) -> bool {
         let size = set.size();
         if size >= 6 && size % 4 == 2 {
             if has_corona_like_structure(g, set) {
+                found_corona = true;
+                break 'search_sets;
+            }
+        }
+    }
+    found_corona
+}
+
+pub fn has_induced_odd_cycle_semicorona(g: &Graph) -> bool {
+    let mut found_corona = false;
+    'search_sets: for set in g.iter_vertex_subsets() {
+        let size = set.size();
+        if size >= 6 && size % 2 == 0 {
+            if has_semicorona_like_structure(g, set) {
                 found_corona = true;
                 break 'search_sets;
             }

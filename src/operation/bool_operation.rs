@@ -59,6 +59,7 @@ pub enum BoolOperation {
     HasSeymourVertex,
     CanBobWinGraphGrabbing(Option<usize>),
     IsOddCoronaFree,
+    IsOddSemicoronaFree,
     Debug,
 }
 
@@ -175,6 +176,7 @@ impl BoolOperation {
                         }
                     }
                     "odd_corona_free" => Some(IsOddCoronaFree),
+                    "odd_semicorona_free" => Some(IsOddSemicoronaFree),
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -300,6 +302,7 @@ impl fmt::Display for BoolOperation {
                 format!("Can Bob with the graph grabbing game with max_weight {:?}", max_weight)
             }
             IsOddCoronaFree => "Has no induced corona product of an odd cycle and a point".to_owned(),
+            IsOddSemicoronaFree => "Has no induced odd semicorona".to_owned(),
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };
         write!(f, "{}", name)
