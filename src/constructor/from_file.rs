@@ -21,9 +21,11 @@ pub fn new_graph(filename: &String) -> Graph {
                 for line in lines.iter().skip(1) {
                     let pars: Vec<&str> = line.split('~').collect();
                     let u: Vertex = Vertex::of_string(pars[0]);
-                    let v: Vertex = Vertex::of_string(pars[1]);
-                    adj_list[u].push(v);
-                    adj_list[v].push(u);
+                    for v_str in pars[1].split(',') {
+                        let v: Vertex = Vertex::of_string(v_str);
+                        adj_list[u].push(v);
+                        adj_list[v].push(u);
+                    }
                 }
             } else {
                 for (i, line) in lines.iter().skip(1).enumerate() {

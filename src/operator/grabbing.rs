@@ -459,7 +459,7 @@ fn test_num_degs(g: &Graph, set: VertexSet, target_nums: &[usize]) -> bool {
         for u in g.adj_list[v].iter() {
             if set.has_vert(*u) {
                 d += 1;
-                if d >= 4 {
+                if d >= target_nums.len() {
                     is_good = false;
                     break 'test_degs;
                 }
@@ -467,6 +467,9 @@ fn test_num_degs(g: &Graph, set: VertexSet, target_nums: &[usize]) -> bool {
         }
         if d < target_nums.len() {
             nums[d] += 1;
+            if nums[d] > target_nums[d] {
+                return false;
+            }
         }
     }
 

@@ -407,13 +407,14 @@ impl Graph {
     }
 
     pub fn print(&self) {
-        println!("n: {}", self.n);
         println!("degs: {:?}", self.deg.iter().map(|x| x.to_usize()).collect::<Vec<usize>>());
+        println!("{}", self.n);
         for i in self.n.iter_verts() {
             if self.deg[i].at_least(1) {
-                print!("{} ~", i);
-                for j in self.adj_list[i].iter() {
-                    print!(" {}", j);
+                print!("{} ~ ", i);
+                print!("{}", self.adj_list[i][0]);
+                for j in self.adj_list[i].iter().skip(1) {
+                    print!(", {}", j);
                 }
                 println!();
             }
