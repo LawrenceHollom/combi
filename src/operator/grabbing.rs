@@ -450,7 +450,7 @@ pub fn print_bob_win_weighting(g: &Graph) {
     }
 }
 
-fn test_num_degs(g: &Graph, set: VertexSet, target_nums: &[usize]) -> bool {
+fn test_num_degs(g: &Graph, set: VertexSet, target_nums: &[usize], allow_bigger: bool) -> bool {
     let mut is_good = true;
     let mut nums = vec![0; target_nums.len()];
     'test_degs: for v in set.iter() {
@@ -458,7 +458,7 @@ fn test_num_degs(g: &Graph, set: VertexSet, target_nums: &[usize]) -> bool {
         for u in g.adj_list[v].iter() {
             if set.has_vert(*u) {
                 d += 1;
-                if d >= target_nums.len() {
+                if d >= target_nums.len() && !allow_bigger {
                     is_good = false;
                     break 'test_degs;
                 }
@@ -494,7 +494,7 @@ fn get_internal_adj_list(g: &Graph, set: VertexSet) -> VertexVec<Vec<Vertex>> {
 
 fn has_corona_like_structure(g: &Graph, set: VertexSet) -> bool {
     let order = set.size();
-    let mut is_corona_like = test_num_degs(g, set, &[0, order / 2, 0, order / 2]);
+    let mut is_corona_like = test_num_degs(g, set, &[0, order / 2, 0, order / 2], false);
     
     if is_corona_like {
         // We actually need to test it properly now.
@@ -520,7 +520,7 @@ fn has_corona_like_structure(g: &Graph, set: VertexSet) -> bool {
 
 fn has_semicorona_like_structure(g: &Graph, set: VertexSet) -> bool {
     let order = set.size();
-    let mut is_corona_like = test_num_degs(g, set, &[0, 3, order - 6, 3]);
+    let mut is_corona_like = test_num_degs(g, set, &[0, 3, order - 6, 3], false);
     
     if is_corona_like {
         // STP that each vtx of deg 3 has nbrs of degs 1 and 3, and that it's connected.
@@ -572,6 +572,45 @@ fn has_semicorona_like_structure(g: &Graph, set: VertexSet) -> bool {
     is_corona_like
 }
 
+fn has_filled_semicorona_like_structure(g: &Graph, set: VertexSet) -> bool {
+    let order = set.size();
+    let mut is_corona_like = test_num_degs(g, set, &[0, 3, 0, order - 4], true);
+    
+    if is_corona_like {
+        // STP that is non-cutvtx of deg = (order - 3), all of whose nbrs bar one have deg 3.
+        let internal_adj_list = get_internal_adj_list(g, set);
+        let mut big = None;
+        'test_verts: for v in set.iter() {
+            if internal_adj_list[v].len() == order - 3 {
+                big = Some(v);
+                let mut found_leaf = false;
+                for u in internal_adj_list[v].iter() {
+                    if internal_adj_list[*u].len() == 1 {
+                        if found_leaf {
+                            is_corona_like = false;
+                            break 'test_verts;
+                        }
+                        found_leaf = true;
+                    }
+                }
+            }
+        }
+
+        if is_corona_like {
+            if let Some(big) = big {
+                let num_comps = g.num_filtered_components(Some(&set.remove_vert_immutable(big).to_vec()));
+                if num_comps != 1 {
+                    is_corona_like = false;
+                }
+            } else {
+                is_corona_like = false;
+            }
+        }
+    }
+
+    is_corona_like
+}
+
 pub fn has_induced_odd_cycle_corona(g: &Graph) -> bool {
     let mut found_corona = false;
     'search_sets: for set in g.iter_vertex_subsets() {
@@ -591,7 +630,7 @@ pub fn has_induced_odd_cycle_semicorona(g: &Graph) -> bool {
     'search_sets: for set in g.iter_vertex_subsets() {
         let size = set.size();
         if size >= 6 && size % 2 == 0 {
-            if has_semicorona_like_structure(g, set) {
+            if has_semicorona_like_structure(g, set) || has_filled_semicorona_like_structure(g, set) {
                 found_corona = true;
                 break 'search_sets;
             }
