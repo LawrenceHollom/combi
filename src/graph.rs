@@ -420,7 +420,7 @@ impl Graph {
         }
     }
 
-    pub fn print_matrix(&self) {
+    pub fn print_matrix(&self, should_print_commas: bool) {
         println!("n: {}, m: {}", self.n, self.size());
         for i in self.n.iter_verts() {
             for j in self.n.iter_verts() {
@@ -428,6 +428,9 @@ impl Graph {
                     print!("1");
                 } else {
                     print!("0");
+                }
+                if should_print_commas {
+                    print!(", ");
                 }
             }
             println!();

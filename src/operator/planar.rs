@@ -125,7 +125,7 @@ fn dmp_rec(g: &Graph, coprime: &mut VertexVec<bool>, prime_edges: &mut VertexVec
         faces: &mut HashSet<Vec<Vertex>>, depth: u32) -> bool {
     if depth > 10000 {
         println!("TOO DEEP!");
-        g.print_matrix();
+        g.print_matrix(false);
         println!("Prime edges: {:?}", prime_edges);
         println!("Faces: {:?}", faces);
         println!("Coprime: {:?}", coprime);

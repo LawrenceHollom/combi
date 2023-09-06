@@ -6,6 +6,7 @@ use utilities::vertex_tools::*;
 #[derive(Copy, Clone)]
 pub enum UnitOperation {
     Print,
+    PrintMatrix,
     RawBunkbed,
     BunkbedPosts,
     BunkbedSimulation,
@@ -34,6 +35,7 @@ impl UnitOperation {
         let (func, args) = parse_function_like(text);
         match func.trim().to_lowercase().as_str() {
             "print" => Some(Print),
+            "print_matrix" | "matrix" => Some(PrintMatrix),
             "bunkbed" => Some(RawBunkbed),
             "bunkbed_posts" | "posts" => Some(BunkbedPosts),
             "bunkbed_sim" => Some(BunkbedSimulation),
@@ -68,6 +70,7 @@ impl fmt::Display for UnitOperation {
         let str: String;
         let name = match self {
             Print => "Print",
+            PrintMatrix => "Print adjacency matrix",
             RawBunkbed => "Raw bunkbed",
             BunkbedPosts => "Bunkbed posts",
             BunkbedSimulation => "Bunkbed simulation",

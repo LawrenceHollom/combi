@@ -254,6 +254,7 @@ impl Operator {
         use UnitOperation::*;
         match operation {
             Print => self.g.print(),
+            PrintMatrix => self.g.print_matrix(true),
             RawBunkbed => bunkbed::print_polynomials(&self.g),
             BunkbedPosts => bunkbed_posts::print_polynomials(&self.g),
             BunkbedSimulation => bunkbed::simulate(&self.g),
