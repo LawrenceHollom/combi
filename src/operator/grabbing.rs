@@ -564,7 +564,7 @@ fn has_semicorona_like_structure(g: &Graph, set: VertexSet) -> bool {
                 if len % 2 == 0 {
                     is_corona_like = false;
                 }
-            } else {
+            } else if order > 6 {
                 is_corona_like = false;
             }
         }
