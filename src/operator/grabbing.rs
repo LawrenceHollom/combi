@@ -84,7 +84,7 @@ fn get_random_weighting(g: &Graph, rng: &mut ThreadRng, max_weight: u32) -> Vert
     w
 }
 
-fn is_weighting_inductable(g: &Graph, w: &VertexVec<Weight>) -> bool {
+fn is_weighting_reducable(g: &Graph, w: &VertexVec<Weight>) -> bool {
     let mut playable = VertexVec::new(g.n, &false);
     let mut parent: VertexVec<Option<Vertex>> = VertexVec::new(g.n, &None);
     let mut max_playable_weight = Weight(0);
@@ -99,30 +99,30 @@ fn is_weighting_inductable(g: &Graph, w: &VertexVec<Weight>) -> bool {
         }
     }
 
-    let mut is_inductable = true;
+    let mut is_reducable = false;
 
     'test_verts: for v in g.iter_verts() {
         if playable[v] && w[v] == max_playable_weight {
             if let Some(u) = parent[v] {
                 if w[u] <= w[v] {
-                    is_inductable = false;
+                    is_reducable = true;
                     break 'test_verts;
                 }
             } else {
-                is_inductable = false;
+                is_reducable = true;
                 break 'test_verts;
             }
         }
     }
 
-    is_inductable
+    is_reducable
 }
 
 fn get_random_good_weighting(g: &Graph, rng: &mut ThreadRng, max_weight: u32) -> VertexVec<Weight> {
     loop {
         let w = get_random_weighting(g, rng, max_weight);
         
-        if is_weighting_inductable(g, &w) {
+        if !is_weighting_reducable(g, &w) {
             return w
         }
     }
@@ -433,7 +433,7 @@ pub fn can_bob_win_graph_grabbing(g: &Graph, max_weight: Option<usize>) -> bool 
 }
 
 pub fn print_bob_win_weighting(g: &Graph) {
-    let mut max_weight = 3;//g.n.to_usize() as u32;
+    let mut max_weight = g.n.to_usize() as u32;
     let mut rng = thread_rng();
     let mut w = get_coleaf_weighting(g, None, Weight(1), &mut rng);
     let mut debug = false;
@@ -445,7 +445,6 @@ pub fn print_bob_win_weighting(g: &Graph) {
             println!("  Scores: {:?}", grabbing_game_scores(g, &w, None, false, false));
             max_weight -= 1;
         }
-        //println!("Fail with weighting {:?}", w);
         w = get_random_good_weighting(g, &mut rng, max_weight);
         debug = false;
     }
