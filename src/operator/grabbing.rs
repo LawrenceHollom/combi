@@ -1,4 +1,4 @@
-use std::ops::{Add, AddAssign};
+use std::{ops::{Add, AddAssign}, io::Write};
 
 use crate::graph::*;
 
@@ -437,10 +437,20 @@ pub fn print_bob_win_weighting(g: &Graph) {
     let mut rng = thread_rng();
     let mut w = get_coleaf_weighting(g, None, Weight(1), &mut rng);
     let mut debug = false;
+    let mut count = 0;
     loop {
+        count += 1;
+        if count < 200_000 && count % 1000 == 0 {
+            print!("{}k ", count / 1000);
+            std::io::stdout().flush().unwrap();
+        } else if count % 100_000 == 0 {
+            print!("{}.{}M ", count / 1_000_000, (count / 100_000) % 10);
+            std::io::stdout().flush().unwrap();
+        }
         let total = sum(&w);
         let played = VertexSet::new(g.n);
         if !grabbing_game_rec(g, &w, played, 0, Grabbed::ZERO, total, debug) {
+            max_weight = w.max(&Weight(0), Weight::cmp).unwrap().0;
             println!("Weighting (max_weight = {}): {:?}", max_weight, w);
             println!("  Scores: {:?}", grabbing_game_scores(g, &w, None, false, false));
             max_weight -= 1;
@@ -580,25 +590,26 @@ fn has_filled_semicorona_like_structure(g: &Graph, set: VertexSet) -> bool {
         // STP that is non-cutvtx of deg = (order - 3), all of whose nbrs bar one have deg 3.
         let internal_adj_list = get_internal_adj_list(g, set);
         let mut big = None;
+        let mut leaf = None;
         'test_verts: for v in set.iter() {
             if internal_adj_list[v].len() == order - 3 {
                 big = Some(v);
-                let mut found_leaf = false;
                 for u in internal_adj_list[v].iter() {
                     if internal_adj_list[*u].len() == 1 {
-                        if found_leaf {
+                        if leaf.is_some() {
                             is_corona_like = false;
                             break 'test_verts;
                         }
-                        found_leaf = true;
+                        leaf = Some(*u);
                     }
                 }
             }
         }
 
         if is_corona_like {
-            if let Some(big) = big {
-                let num_comps = g.num_filtered_components(Some(&set.remove_vert_immutable(big).to_vec()));
+            if let (Some(big), Some(leaf)) = (big, leaf) {
+                let supposed_path = set.remove_vert_immutable(big).remove_vert_immutable(leaf);
+                let num_comps = g.num_filtered_components(Some(&supposed_path.to_vec()));
                 if num_comps != 1 {
                     is_corona_like = false;
                 }
