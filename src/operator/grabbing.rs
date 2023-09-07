@@ -6,7 +6,7 @@ use rand::{rngs::ThreadRng, thread_rng, Rng};
 use utilities::{vertex_tools::*, rational::Rational};
 
 const REPS: usize = 100;
-const GREEDINESS: usize = 2;
+const GREEDINESS: usize = 1;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 struct Weight(u32);
