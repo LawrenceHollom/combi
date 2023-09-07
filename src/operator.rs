@@ -213,6 +213,7 @@ impl Operator {
                     CanBobWinGraphGrabbing(max_weight) => grabbing::can_bob_win_graph_grabbing(&self.g, *max_weight),
                     IsOddCoronaFree => !grabbing::has_induced_odd_cycle_corona(&self.g),
                     IsOddSemicoronaFree => !grabbing::has_induced_odd_cycle_semicorona(&self.g),
+                    IsForkFree => !grabbing::has_induced_fork(&self.g),
                     Debug => debug::debug(&self.g),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);

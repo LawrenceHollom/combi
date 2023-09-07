@@ -638,6 +638,53 @@ fn has_filled_semicorona_like_structure(g: &Graph, set: VertexSet) -> bool {
     is_corona_like
 }
 
+// set contains 6 vertices.
+fn is_induced_fork(g: &Graph, set: VertexSet) -> bool {
+    let mut deg3s = vec![];
+    let mut deg2s = vec![];
+    let mut leaves = vec![];
+    let mut is_fork_like = true;
+    let internal_adj_list = get_internal_adj_list(g, set);
+    'find_degs: for v in set.iter() {
+        if internal_adj_list[v].len() == 1 {
+            leaves.push(v)
+        } else if internal_adj_list[v].len() == 2 {
+            deg2s.push(v)
+        } else if internal_adj_list[v].len() == 3 {
+            deg3s.push(v)
+        } else {
+            is_fork_like = false;
+            break 'find_degs;
+        }
+    }
+
+    if deg3s.len() == 1 && deg2s.len() == 2 && leaves.len() == 3 {
+        'check_deg_2s: for v in deg2s.iter() {
+            let mut nbr_deg_sum = 0;
+            for u in internal_adj_list[*v].iter() {
+                nbr_deg_sum += internal_adj_list[*u].len()
+            }
+            if nbr_deg_sum != 4 {
+                is_fork_like = false;
+                break 'check_deg_2s;
+            }
+        }
+    } else if deg3s.len() == 3 && leaves.len() == 3 {
+        'check_deg_3s: for v in deg3s.iter() {
+            let mut nbr_deg_sum = 0;
+            for u in internal_adj_list[*v].iter() {
+                nbr_deg_sum += internal_adj_list[*u].len()
+            }
+            if nbr_deg_sum != 7 {
+                is_fork_like = false;
+                break 'check_deg_3s;
+            }
+        }
+    }
+
+    is_fork_like
+}
+
 pub fn has_induced_odd_cycle_corona(g: &Graph) -> bool {
     let mut found_corona = false;
     'search_sets: for set in g.iter_vertex_subsets() {
@@ -664,6 +711,20 @@ pub fn has_induced_odd_cycle_semicorona(g: &Graph) -> bool {
         }
     }
     found_corona
+}
+
+pub fn has_induced_fork(g: &Graph) -> bool {
+    let mut found_fork = false;
+    'search_sets: for set in g.iter_vertex_subsets() {
+        let size = set.size();
+        if size == 6 {
+            if is_induced_fork(g, set) {
+                found_fork = true;
+                break 'search_sets;
+            }
+        }
+    }
+    found_fork
 }
 
 #[cfg(test)]

@@ -60,6 +60,7 @@ pub enum BoolOperation {
     CanBobWinGraphGrabbing(Option<usize>),
     IsOddCoronaFree,
     IsOddSemicoronaFree,
+    IsForkFree,
     Debug,
 }
 
@@ -177,6 +178,7 @@ impl BoolOperation {
                     }
                     "odd_corona_free" => Some(IsOddCoronaFree),
                     "odd_semicorona_free" => Some(IsOddSemicoronaFree),
+                    "fork_free" => Some(IsForkFree),
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -303,6 +305,7 @@ impl fmt::Display for BoolOperation {
             }
             IsOddCoronaFree => "Has no induced corona product of an odd cycle and a point".to_owned(),
             IsOddSemicoronaFree => "Has no induced odd semicorona".to_owned(),
+            IsForkFree => "Has no induced fork or 3-corona".to_owned(),
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };
         write!(f, "{}", name)
