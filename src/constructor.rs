@@ -33,6 +33,7 @@ pub enum ProductConstructor {
 pub enum RandomConstructor {
     Biregular(Order, Degree, Degree),
     ErdosRenyi(Order, f64),
+    BasedErdosRenyi(Order, f64, Box<Constructor>),
     RandomBipartite(Order, f64),
     RandomSubgraph(Box<Constructor>, f64),
     Triangulation(Order),
@@ -129,7 +130,13 @@ impl Constructor {
                     Degree::of_string(right_deg)))
             }
             "erdos_renyi" | "er" | "g" => {
-                Random(ErdosRenyi(Order::of_string(args[0]), args[1].parse().unwrap()))
+                let n = Order::of_string(args[0]);
+                let p: f64 = args[1].parse().unwrap();
+                if args.len() == 3 {
+                    Random(BasedErdosRenyi(n, p, Box::new(Constructor::of_string(args[2]))))
+                } else {
+                    Random(ErdosRenyi(n, p))
+                }
             },
             "random_bipartite" | "b" => {
                 Random(RandomBipartite(Order::of_string(args[0]), args[1].parse().unwrap()))
@@ -253,6 +260,7 @@ impl Constructor {
                 random_regular_bipartite::new_biregular(*order, *left_deg, *right_deg)
             }
             Random(ErdosRenyi(order, p)) => erdos_renyi::new(*order, *p),
+            Random(BasedErdosRenyi(order, p, base)) => erdos_renyi::new_based(*order, *p, base),
             Random(RandomBipartite(order, p)) => erdos_renyi::new_bipartite(*order, *p),
             Random(RandomSubgraph(constructor, p)) => {
                 erdos_renyi::new_random_subgraph(constructor, *p)
@@ -349,6 +357,9 @@ impl fmt::Display for RandomConstructor {
             ErdosRenyi(order, p) => {
                 write!(f, "Erdos-Renyi graph of order {} with probability {}", order, p)
             },
+            BasedErdosRenyi(order, p, base) => {
+                write!(f, "Erdos-Renyi graph of order {} with prob {} on top of {}", order, p, *base)
+            }
             RandomBipartite(order, p) => {
                 write!(f, "Random bipartite graph of order {} and probability {}", order, p)
             }
