@@ -34,6 +34,7 @@ pub enum RandomConstructor {
     Biregular(Order, Degree, Degree),
     ErdosRenyi(Order, f64),
     BasedErdosRenyi(Order, f64, Box<Constructor>),
+    InducedErdosRenyi(Order, f64, Box<Constructor>),
     RandomBipartite(Order, f64),
     RandomSubgraph(Box<Constructor>, f64),
     Triangulation(Order),
@@ -138,6 +139,10 @@ impl Constructor {
                     Random(ErdosRenyi(n, p))
                 }
             },
+            "g_ind" => {
+                Random(InducedErdosRenyi(Order::of_string(args[0]), args[1].parse().unwrap(), 
+                    Box::new(Constructor::of_string(args[2]))))
+            }
             "random_bipartite" | "b" => {
                 Random(RandomBipartite(Order::of_string(args[0]), args[1].parse().unwrap()))
             }
@@ -261,6 +266,7 @@ impl Constructor {
             }
             Random(ErdosRenyi(order, p)) => erdos_renyi::new(*order, *p),
             Random(BasedErdosRenyi(order, p, base)) => erdos_renyi::new_based(*order, *p, base),
+            Random(InducedErdosRenyi(order, p, base)) => erdos_renyi::new_induced(*order, *p, base),
             Random(RandomBipartite(order, p)) => erdos_renyi::new_bipartite(*order, *p),
             Random(RandomSubgraph(constructor, p)) => {
                 erdos_renyi::new_random_subgraph(constructor, *p)
@@ -359,6 +365,9 @@ impl fmt::Display for RandomConstructor {
             },
             BasedErdosRenyi(order, p, base) => {
                 write!(f, "Erdos-Renyi graph of order {} with prob {} on top of {}", order, p, *base)
+            },
+            InducedErdosRenyi(order, p, base) => {
+                write!(f, "Erdos-Renyi graph of order {} with prob {} with induced {}", order, p, *base)
             }
             RandomBipartite(order, p) => {
                 write!(f, "Random bipartite graph of order {} and probability {}", order, p)

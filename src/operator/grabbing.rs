@@ -76,30 +76,25 @@ fn print_weighting(w: &VertexVec<Weight>) {
     println!();
 }
 
-fn get_random_weighting(g: &Graph, rng: &mut ThreadRng, max_weight: u32) -> VertexVec<Weight> {
+fn get_random_weighting(g: &Graph, rng: &mut ThreadRng, max_weight: u32, zeroes: Option<&VertexVec<bool>>) -> VertexVec<Weight> {
     let mut w = VertexVec::new(g.n, &Weight(0));
     for v in g.iter_verts() {
-        w[v] = Weight(rng.gen_range(0..=max_weight));
+        if zeroes.map_or(true, |zs| !zs[v]) {
+            w[v] = Weight(rng.gen_range(0..=max_weight));
+        }
     }
     w
 }
 
-fn is_weighting_reducable(g: &Graph, w: &VertexVec<Weight>) -> bool {
-    let mut playable = VertexVec::new(g.n, &false);
-    let mut parent: VertexVec<Option<Vertex>> = VertexVec::new(g.n, &None);
+fn is_weighting_reducable(g: &Graph, w: &VertexVec<Weight>, playable: &VertexVec<bool>, parent: &VertexVec<Option<Vertex>>) -> bool {
     let mut max_playable_weight = Weight(0);
+    let mut is_reducable = false;
+
     for v in g.iter_verts() {
-        if is_complement_connected(g, VertexSet::new(g.n).add_vert_immutable(v)) {
-            // The vertex is playable.
-            playable[v] = true;
+        if playable[v] {
             max_playable_weight = max_playable_weight.max(w[v]);
-            if g.deg[v].equals(1) {
-                parent[v] = Some(g.adj_list[v][0]);
-            }
         }
     }
-
-    let mut is_reducable = false;
 
     'test_verts: for v in g.iter_verts() {
         if playable[v] && w[v] == max_playable_weight {
@@ -119,10 +114,31 @@ fn is_weighting_reducable(g: &Graph, w: &VertexVec<Weight>) -> bool {
 }
 
 fn get_random_good_weighting(g: &Graph, rng: &mut ThreadRng, max_weight: u32) -> VertexVec<Weight> {
+    let mut playable = VertexVec::new(g.n, &false);
+    let mut parent: VertexVec<Option<Vertex>> = VertexVec::new(g.n, &None);
+    let mut cocut_coleaf = VertexVec::new(g.n, &false);
+    for v in g.iter_verts() {
+        if is_complement_connected(g, VertexSet::new(g.n).add_vert_immutable(v)) {
+            // The vertex is playable.
+            playable[v] = true;
+            if g.deg[v].equals(1) {
+                parent[v] = Some(g.adj_list[v][0]);
+            } else {
+                cocut_coleaf[v] = true;
+            }
+        }
+    }
+
     loop {
-        let w = get_random_weighting(g, rng, max_weight);
+        let max_weight = if max_weight <= 1 { 1 } else { rng.gen_range(2..=max_weight) };
+        let w = if rng.gen_bool(0.5) {
+                get_random_weighting(g, rng, max_weight, None)
+            } else {
+                // Give cocut non-leaf vertices weight 0.
+                get_random_weighting(g, rng, max_weight, Some(&cocut_coleaf))
+            };
         
-        if !is_weighting_reducable(g, &w) {
+        if !is_weighting_reducable(g, &w, &playable, &parent) {
             return w
         }
     }
