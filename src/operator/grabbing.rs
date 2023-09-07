@@ -680,6 +680,8 @@ fn is_induced_fork(g: &Graph, set: VertexSet) -> bool {
                 break 'check_deg_3s;
             }
         }
+    } else {
+        is_fork_like = false;
     }
 
     is_fork_like
