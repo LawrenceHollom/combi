@@ -96,6 +96,8 @@ fn is_weighting_reducable(g: &Graph, w: &VertexVec<Weight>, playable: &VertexVec
         }
     }
 
+    //println!("max_playable_weight: {:?}", max_playable_weight);
+
     'test_verts: for v in g.iter_verts() {
         if playable[v] && w[v] == max_playable_weight {
             if let Some(u) = parent[v] {
@@ -133,6 +135,9 @@ fn get_random_good_weighting(g: &Graph, rng: &mut ThreadRng, max_weight: u32) ->
         let max_weight = if max_weight <= 1 { 1 } else { rng.gen_range(2..=max_weight) };
         let w = if rng.gen_bool(0.5) {
                 get_random_weighting(g, rng, max_weight, None)
+            } else if rng.gen_bool(0.1) {
+                // Give everything immediately playable weight 0.
+                get_random_weighting(g, rng, max_weight, Some(&playable))    
             } else {
                 // Give cocut non-leaf vertices weight 0.
                 get_random_weighting(g, rng, max_weight, Some(&cocut_coleaf))
@@ -140,7 +145,17 @@ fn get_random_good_weighting(g: &Graph, rng: &mut ThreadRng, max_weight: u32) ->
         
         if !is_weighting_reducable(g, &w, &playable, &parent) {
             return w
-        }
+        }/* else {
+            let w2 = playable.iter().map(|play| if *play { Weight(0) });
+            if is_weighting_reducable(g, &w2, &playable, &parent) {
+                g.print();
+                g.print_matrix(true);
+                print_weighting(&w2);
+                println!("parents: {:?}", parent);
+                println!("playables: {:?}", playable);
+                panic!("AAAAAAAAAAAAA")
+            }
+        }*/
     }
 }
 
@@ -638,6 +653,114 @@ fn has_filled_semicorona_like_structure(g: &Graph, set: VertexSet) -> bool {
     is_corona_like
 }
 
+fn has_partially_filled_semicorona_like_structure(g: &Graph, set: VertexSet) -> bool {
+    let order = set.size();
+    let internal_adj_list = get_internal_adj_list(g, set);
+    if let Some(centre) = internal_adj_list.arg_max(&vec![], |l1, l2| l1.len().cmp(&l2.len())) {
+        if internal_adj_list[centre].len() <= 3 {
+            return false;
+        }
+        let mut leaf = None;
+        let mut prongs = vec![];
+        let mut prong_leaves = vec![];
+        let mut is_corona_like = true;
+        let mut num_leaves = 0;
+        for v in set.iter() {
+            if v != centre && internal_adj_list[v].len() >= 4 {
+                return false;
+            } else if internal_adj_list[v].len() == 1 {
+                num_leaves += 1;
+            }
+        }
+        if num_leaves != 3 {
+            return false;
+        }
+        'test_nbrs: for v in internal_adj_list[centre].iter() {
+            if internal_adj_list[*v].len() == 1 {
+                if leaf.is_none() {
+                    leaf = Some(*v);
+                } else {
+                    is_corona_like = false;
+                    break 'test_nbrs;
+                }
+            } else if internal_adj_list[*v].len() == 3 {
+                let mut leaf = None;
+                for u in internal_adj_list[*v].iter() {
+                    if internal_adj_list[*u].len() == 1 {
+                        if leaf.is_none() {
+                            leaf = Some(*u);
+                        } else {
+                            is_corona_like = false;
+                            break 'test_nbrs;
+                        }
+                    }
+                }
+                if let Some(leaf) = leaf {
+                    prongs.push(*v);
+                    prong_leaves.push(leaf);
+                } else {
+                    is_corona_like = false;
+                    break 'test_nbrs;
+                }
+            } else {
+                is_corona_like = false;
+                break 'test_nbrs;
+            }
+        }
+        if let Some(_) = leaf {
+            if prongs.len() == 2 {
+                // Prongs are adjacent to precisely one leaf and the centre.
+                let mut cycle_len = 2;
+                let mut v = prongs[0];
+                let mut prev = prong_leaves[0];
+                'go_round_loop: while v != prongs[1] {
+                    let nbrs = &internal_adj_list[v];
+                    let mut next = None;
+                    if nbrs.len() == 3 {
+                        // should be adj to prev and centre and next
+                        if (nbrs[0], nbrs[1]) == (prev, centre) || (nbrs[0], nbrs[1]) == (centre, prev) {
+                            next = Some(nbrs[2])
+                        } else if (nbrs[1], nbrs[2]) == (prev, centre) || (nbrs[1], nbrs[2]) == (centre, prev) {
+                            next = Some(nbrs[0])
+                        } else if (nbrs[0], nbrs[2]) == (prev, centre) || (nbrs[0], nbrs[2]) == (centre, prev) {
+                            next = Some(nbrs[1])
+                        }
+                    } else if nbrs.len() == 2 {
+                        // should be adj to only prev and next
+                        if nbrs[0] == prev && nbrs[1] != centre {
+                            next = Some(nbrs[1])
+                        } else if nbrs[0] != centre && nbrs[1] == prev {
+                            next = Some(nbrs[0])
+                        }
+                    }
+                    if let Some(next) = next {
+                        prev = v;
+                        v = next;
+                        cycle_len += 1;
+                    } else {
+                        is_corona_like = false;
+                        break 'go_round_loop;
+                    }
+                }
+                if cycle_len != order - 3 {
+                    is_corona_like = false;
+                }
+            } else {
+                is_corona_like = false
+            }
+        } else {
+            is_corona_like = false
+        }
+        if is_corona_like {
+            print!("Found one! Set = ");
+            set.print();
+        }
+        is_corona_like
+    } else {
+        false
+    }
+}
+
 // set contains 6 vertices.
 fn is_induced_fork(g: &Graph, set: VertexSet) -> bool {
     let mut deg3s = vec![];
@@ -706,7 +829,7 @@ pub fn has_induced_odd_cycle_semicorona(g: &Graph) -> bool {
     'search_sets: for set in g.iter_vertex_subsets() {
         let size = set.size();
         if size >= 6 && size % 2 == 0 {
-            if has_semicorona_like_structure(g, set) || has_filled_semicorona_like_structure(g, set) {
+            if has_semicorona_like_structure(g, set) || has_filled_semicorona_like_structure(g, set) || has_partially_filled_semicorona_like_structure(g, set) {
                 found_corona = true;
                 break 'search_sets;
             }
