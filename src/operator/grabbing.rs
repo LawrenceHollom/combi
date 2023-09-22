@@ -698,9 +698,6 @@ fn has_partially_filled_semicorona_like_structure(g: &Graph, set: VertexSet) -> 
                 if let Some(leaf) = leaf {
                     prongs.push(*v);
                     prong_leaves.push(leaf);
-                } else {
-                    is_corona_like = false;
-                    break 'test_nbrs;
                 }
             } else {
                 is_corona_like = false;
@@ -750,10 +747,6 @@ fn has_partially_filled_semicorona_like_structure(g: &Graph, set: VertexSet) -> 
             }
         } else {
             is_corona_like = false
-        }
-        if is_corona_like {
-            print!("Found one! Set = ");
-            set.print();
         }
         is_corona_like
     } else {
