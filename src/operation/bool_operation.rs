@@ -61,6 +61,7 @@ pub enum BoolOperation {
     IsOddCoronaFree,
     IsOddSemicoronaFree,
     IsForkFree,
+    BunkbedSiteHasBadConditioning,
     Debug,
 }
 
@@ -179,6 +180,7 @@ impl BoolOperation {
                     "odd_corona_free" => Some(IsOddCoronaFree),
                     "odd_semicorona_free" => Some(IsOddSemicoronaFree),
                     "fork_free" => Some(IsForkFree),
+                    "bunkbed_sites_conditioning" | "bb_sites_cond" => Some(BunkbedSiteHasBadConditioning),
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -306,6 +308,7 @@ impl fmt::Display for BoolOperation {
             IsOddCoronaFree => "Has no induced corona product of an odd cycle and a point".to_owned(),
             IsOddSemicoronaFree => "Has no induced odd semicorona".to_owned(),
             IsForkFree => "Has no induced fork or 3-corona".to_owned(),
+            BunkbedSiteHasBadConditioning => "Is bunkbed sites conditioning bad".to_owned(),
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };
         write!(f, "{}", name)

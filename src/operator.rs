@@ -215,6 +215,7 @@ impl Operator {
                     IsOddCoronaFree => !grabbing::has_induced_odd_cycle_corona(&self.g),
                     IsOddSemicoronaFree => !grabbing::has_induced_odd_cycle_semicorona(&self.g),
                     IsForkFree => !grabbing::has_induced_fork(&self.g),
+                    BunkbedSiteHasBadConditioning => bunkbed_sites::has_bad_conditioning(&self.g),
                     Debug => debug::debug(&self.g),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);
