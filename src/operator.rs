@@ -24,6 +24,7 @@ mod grundy;
 mod marking_game;
 mod seymour;
 mod grabbing;
+mod bunkbed_sites;
 
 use std::collections::HashMap;
 
@@ -276,6 +277,7 @@ impl Operator {
             PrintConnectedMarkingGameStrat => marking_game::print_marking_game_strat(&self.g, true),
             PrintBobWinGrabbingWeighting => grabbing::print_bob_win_weighting(&self.g),
             GrabbingHypothesisTest => grabbing::hypothesis_testing(&self.g),
+            BunkbedSiteCOunts => bunkbed_sites::print_counts(&self.g),
             Unit => (),
         }
     }
