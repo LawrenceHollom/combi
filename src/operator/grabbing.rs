@@ -406,7 +406,6 @@ pub fn hypothesis_testing(g_in: &Graph) {
     let mut order = g_in.n.to_usize();
     for u in g_in.iter_verts() {
         if !is_cutvertex[u] {
-            adj_list.push(vec![]);
             adj_list[u].push(v);
             adj_list[v].push(u);
             v.incr_inplace();

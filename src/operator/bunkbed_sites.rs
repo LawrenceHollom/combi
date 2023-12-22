@@ -140,3 +140,50 @@ pub fn has_bad_conditioning(g: &Graph) -> bool {
     }
     false
 }
+
+/**
+ * This prints the bunkbed signatures of the graph: assuming that 
+ * zero is the start point, this is the hypercube of which configs
+ * lead to a particular vertex being reachable.
+ * For the proof of the conjecture, there needs to be a closed,
+ * symmetric space of such hypercube subsets which can be inducted
+ * with.
+ */
+pub fn print_signatures(g: &Graph) {
+    // we need to store, for each vtx, precisely which configs lead
+    // to it being reachable
+    let pow = 1_usize << (g.n.to_usize() - 1);
+    let mut reachable = VertexVec::new(g.n, &vec![false; pow]);
+    // TODO: make the posts not well dumb.
+    let is_post = VertexVec::new(g.n, &false);
+    // Iterate through configs. s is the set of down vertices
+    for s in g.iter_vertex_subsets() {
+        // Look upon my hacks, ye mighty, and despair!
+        if !s.has_vert(Vertex::of_usize(0)) {
+            // We need to check what is reachable in this configuration.
+            let mut flood = VertexVec::new(g.n, &false);
+            let mut q = queue![Vertex::of_usize(0)];
+            flood[Vertex::of_usize(0)] = true;
+            while let Ok(v) = q.remove() {
+                // flood from v.
+                for u in g.adj_list[v].iter() {
+                    if !flood[*u] && (s.has_vert(*u) == s.has_vert(v) || is_post[*u]) {
+                        flood[*u] = true;
+                        let _ = q.add(*u);
+                    }
+                }
+            }
+            for v in g.iter_verts() {
+                reachable[v][s.to_usize() / 2] = flood[v];
+            }
+        }
+    }
+
+    // Now we have the signatures, so it is time to print.
+    for v in g.iter_verts() {
+        for b in reachable[v].iter() {
+            print!("{}", if *b { 1 } else { 0 })
+        }
+        println!();
+    }
+}
