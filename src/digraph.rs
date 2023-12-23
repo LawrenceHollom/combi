@@ -59,6 +59,24 @@ impl Digraph {
         }
     }
 
+    pub fn random_semiorientation(g: &Graph, bidirectional_prob: f64) -> Digraph {
+        let mut rng = thread_rng();   
+        let mut adj = VertexVec::new(g.n, &VertexVec::new(g.n, &false));
+        for (i, j) in g.iter_pairs() {
+            if g.adj[i][j] {
+                if rng.gen_bool(bidirectional_prob) {
+                    adj[i][j] = true;
+                    adj[j][i] = true;
+                } else if rng.gen_bool(0.5) {
+                    adj[i][j] = true;
+                } else {
+                    adj[j][i] = true;
+                }
+            }
+        }
+        Digraph::of_matrix(adj)
+    }
+
     pub fn random_orientation(g: &Graph) -> Digraph {
         let mut rng = thread_rng();   
         let mut adj = VertexVec::new(g.n, &VertexVec::new(g.n, &false));

@@ -1,4 +1,4 @@
-use crate::graph::*;
+use crate::{graph::*, digraph::Digraph};
 
 use rand::{thread_rng, Rng};
 use utilities::vertex_tools::*;
@@ -157,11 +157,38 @@ pub fn signatures(g: &Graph) -> Vec<String> {
     let mut reachable = VertexVec::new(g.n, &vec![false; pow]);
     let mut is_post = VertexVec::new(g.n, &false);
     let mut rng = thread_rng();
+    let b = Digraph::random_semiorientation(&g, 0.3333);
     for v in g.iter_verts() {
         if rng.gen_bool(0.3) {
             is_post[v] = true;
         }
     }
+
+    // make a list of relevant permutations in advance
+    let mut sigma = VertexVec::new_fn(g.n, |v| v);
+    let mut all_permutations = vec![sigma.clone()];
+    while sigma[Vertex::ZERO] == Vertex::ZERO {
+        let mut v = g.n.to_max_vertex().decr();
+        while sigma[v].is_max_less_one(g.n) {
+            sigma[v] = Vertex::ZERO.incr();
+            v.decr_inplace();
+        }
+        sigma[v].incr_inplace();
+        // is it a genuine permutation?
+        let mut is_good_perm = true;
+        let mut found = VertexVec::new(g.n, &false);
+        'test_perm: for u in sigma.iter() {
+            if found[*u] {
+                is_good_perm = false;
+                break 'test_perm;
+            }
+            found[*u] = true;
+        }
+        if is_good_perm {
+            all_permutations.push(sigma.clone());
+        }
+    }
+
     // Iterate through configs. s is the set of down vertices
     for s in g.iter_vertex_subsets() {
         // Look upon my hacks, ye mighty, and despair! (0 is always down)
@@ -172,7 +199,7 @@ pub fn signatures(g: &Graph) -> Vec<String> {
             flood[Vertex::of_usize(0)] = true;
             while let Ok(v) = q.remove() {
                 // flood from v.
-                for u in g.adj_list[v].iter() {
+                for u in b.out_adj_list[v].iter() {
                     if !flood[*u] && (s.has_vert(*u) == s.has_vert(v) || is_post[*u]) {
                         flood[*u] = true;
                         let _ = q.add(*u);
@@ -181,7 +208,8 @@ pub fn signatures(g: &Graph) -> Vec<String> {
             }
             for v in g.iter_verts() {
                 // We need to permute stuff around so that v is the last vertex.
-                reachable[v][s.swap(v, g.n.to_max_vertex()).to_usize() / 2] = flood[v];
+                let s_fixed = s.swap(v, g.n.to_max_vertex());
+                reachable[v][s_fixed.to_usize() / 2] = flood[v];
             }
         }
     }
@@ -189,11 +217,32 @@ pub fn signatures(g: &Graph) -> Vec<String> {
     // Now we have the signatures, so it is time to print.
     let mut out = vec![];
     for v in g.iter_verts().skip(1) {
-        let mut line = vec![];
-        for b in reachable[v].iter() {
-            line.push(if *b { '1' } else { '0' });
+        let mut best_sigma = VertexVec::new_fn(g.n, |v| v);
+        let mut best_code = u128::MAX;
+        // Now get the lexicographically first permutation of the middle.
+
+        for sigma in all_permutations.iter() {
+            let mut new_code: u128 = 0;
+            for (s_code, b) in reachable[v].iter().enumerate() {
+                if *b {
+                    let s = VertexSet::of_int(s_code as u128, g.n).permute(&sigma);
+                    new_code += 1 << s.to_usize();
+                }
+            }
+            if new_code < best_code {
+                best_code = new_code;
+                best_sigma = sigma.to_owned();
+            }
         }
-        out.push(line.into_iter().collect::<String>())
+
+        let mut line = vec!['0'; reachable[v].len()];
+        for (s_code, b) in reachable[v].iter().enumerate() {
+            if *b {
+                let s = VertexSet::of_int(s_code as u128, g.n).permute(&best_sigma);
+                line[s.to_usize()] = '1';
+            }
+        }
+        out.push(line.iter().collect());
     }
     out
 }

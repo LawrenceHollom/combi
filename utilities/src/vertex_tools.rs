@@ -449,6 +449,19 @@ impl VertexSet {
         }
     }
 
+    /**
+     * Apply a permutation of the vertices.
+     */
+    pub fn permute(&self, sigma: &VertexVec<Vertex>) -> VertexSet {
+        let mut out = VertexSet::new(self.n);
+        for v in self.n.iter_verts() {
+            if self.has_vert(v) {
+                out.add_vert(sigma[v])
+            }
+        }
+        out
+    }
+
     pub fn size(&self) -> usize {
         let mut sta = self.verts;
         let mut size = 0;

@@ -10,7 +10,7 @@ pub enum StringListOperation {
 impl StringListOperation {
     pub fn of_string_result(text: &str) -> Option<StringListOperation> {
         use StringListOperation::*;
-        let (func, args) = parse_function_like(text);
+        let (func, _args) = parse_function_like(text);
         match func.trim().to_lowercase().as_str() {
             "bbss" => Some(BunkbedSiteSignatures),
             &_ => None,
