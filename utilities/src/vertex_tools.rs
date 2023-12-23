@@ -436,6 +436,19 @@ impl VertexSet {
         (self.verts >> v.0) % 2 == 1
     }
 
+    /** 
+     * Swap whether vertices u and v are in the set.
+     */
+    pub fn swap(&self, u: Vertex, v: Vertex) -> VertexSet {
+        if self.has_vert(u) == self.has_vert(v) {
+            *self
+        } else if self.has_vert(u) {
+            self.remove_vert_immutable(u).add_vert_immutable(v)
+        } else {
+            self.remove_vert_immutable(v).add_vert_immutable(u)
+        }
+    }
+
     pub fn size(&self) -> usize {
         let mut sta = self.verts;
         let mut size = 0;

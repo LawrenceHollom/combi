@@ -471,11 +471,15 @@ impl Instruction {
 
     fn execute_collate(&self, constr: &Constructor, op: &StringListOperation, reps: usize) {
         let mut vals: HashSet<String> = HashSet::new();
-        for _i in 0..reps {
+        let mut last_index_of_change = 0;
+        for i in 0..reps {
             let mut operator = Operator::new(constr.new_graph());
             let mut ann_box = AnnotationsBox::new();
             for line in operator.operate_string_list(&mut ann_box, op) {
-                vals.insert(line);
+                if vals.insert(line) {
+                    // i.e. if the line wasn't there before
+                    last_index_of_change = i;
+                }
             }
         }
         let mut i = 0;
@@ -485,7 +489,7 @@ impl Instruction {
             i += 1;
             println!("{}", line)
         }
-        println!("{} distinct values found!", i);
+        println!("{} distinct values found! Last index of change: {}", i, last_index_of_change);
     }
 
     fn execute_until(&self, constr: &Constructor, conditions: &[BoolOperation], forever: bool) {

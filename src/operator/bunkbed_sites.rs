@@ -164,7 +164,7 @@ pub fn signatures(g: &Graph) -> Vec<String> {
     }
     // Iterate through configs. s is the set of down vertices
     for s in g.iter_vertex_subsets() {
-        // Look upon my hacks, ye mighty, and despair!
+        // Look upon my hacks, ye mighty, and despair! (0 is always down)
         if !s.has_vert(Vertex::of_usize(0)) {
             // We need to check what is reachable in this configuration.
             let mut flood = VertexVec::new(g.n, &false);
@@ -180,14 +180,15 @@ pub fn signatures(g: &Graph) -> Vec<String> {
                 }
             }
             for v in g.iter_verts() {
-                reachable[v][s.to_usize() / 2] = flood[v];
+                // We need to permute stuff around so that v is the last vertex.
+                reachable[v][s.swap(v, g.n.to_max_vertex()).to_usize() / 2] = flood[v];
             }
         }
     }
 
     // Now we have the signatures, so it is time to print.
     let mut out = vec![];
-    for v in g.iter_verts() {
+    for v in g.iter_verts().skip(1) {
         let mut line = vec![];
         for b in reachable[v].iter() {
             line.push(if *b { '1' } else { '0' });
