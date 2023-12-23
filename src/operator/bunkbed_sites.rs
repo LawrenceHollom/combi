@@ -1,5 +1,6 @@
 use crate::graph::*;
 
+use rand::{thread_rng, Rng};
 use utilities::vertex_tools::*;
 
 use queues::*;
@@ -142,20 +143,25 @@ pub fn has_bad_conditioning(g: &Graph) -> bool {
 }
 
 /**
- * This prints the bunkbed signatures of the graph: assuming that 
+ * This returns the bunkbed signatures of the graph: assuming that 
  * zero is the start point, this is the hypercube of which configs
  * lead to a particular vertex being reachable.
  * For the proof of the conjecture, there needs to be a closed,
  * symmetric space of such hypercube subsets which can be inducted
  * with.
  */
-pub fn print_signatures(g: &Graph) {
+pub fn signatures(g: &Graph) -> Vec<String> {
     // we need to store, for each vtx, precisely which configs lead
     // to it being reachable
     let pow = 1_usize << (g.n.to_usize() - 1);
     let mut reachable = VertexVec::new(g.n, &vec![false; pow]);
-    // TODO: make the posts not well dumb.
-    let is_post = VertexVec::new(g.n, &false);
+    let mut is_post = VertexVec::new(g.n, &false);
+    let mut rng = thread_rng();
+    for v in g.iter_verts() {
+        if rng.gen_bool(0.3) {
+            is_post[v] = true;
+        }
+    }
     // Iterate through configs. s is the set of down vertices
     for s in g.iter_vertex_subsets() {
         // Look upon my hacks, ye mighty, and despair!
@@ -180,10 +186,13 @@ pub fn print_signatures(g: &Graph) {
     }
 
     // Now we have the signatures, so it is time to print.
+    let mut out = vec![];
     for v in g.iter_verts() {
+        let mut line = vec![];
         for b in reachable[v].iter() {
-            print!("{}", if *b { 1 } else { 0 })
+            line.push(if *b { '1' } else { '0' });
         }
-        println!();
+        out.push(line.into_iter().collect::<String>())
     }
+    out
 }

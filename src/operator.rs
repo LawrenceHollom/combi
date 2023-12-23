@@ -38,6 +38,7 @@ use crate::graph::*;
 use crate::operation::bool_operation::*;
 use crate::operation::rational_operation::*;
 use crate::operation::int_operation::*;
+use crate::operation::string_list_operation::*;
 use crate::operation::unit_operation::*;
 
 pub struct Operator {
@@ -279,8 +280,14 @@ impl Operator {
             PrintBobWinGrabbingWeighting => grabbing::print_bob_win_weighting(&self.g),
             GrabbingHypothesisTest => grabbing::hypothesis_testing(&self.g),
             BunkbedSiteCOunts => bunkbed_sites::print_counts(&self.g),
-            PrintBunkbedSiteSignatures => bunkbed_sites::print_signatures(&self.g),
             Unit => (),
+        }
+    }
+
+    pub fn operate_string_list(&mut self, _ann: &mut AnnotationsBox, operation: &StringListOperation) -> Vec<String> {
+        use StringListOperation::*;
+        match operation {
+            BunkbedSiteSignatures => bunkbed_sites::signatures(&self.g),
         }
     }
 
@@ -294,6 +301,7 @@ impl Operator {
                 self.operate_unit(ann, op);
                 "()".to_owned()
             }
+            StringList(op) => format!("{:?}", self.operate_string_list(ann, op)),
         }
     }
 

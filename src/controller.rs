@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fmt;
 use std::time::*;
 use std::io::*;
@@ -12,6 +13,7 @@ use utilities::vertex_tools::*;
 
 use crate::constructor::*;
 use crate::operation::int_operation::IntOperation;
+use crate::operation::string_list_operation::StringListOperation;
 use crate::operator::AnnotationsBox;
 use crate::operator::Operator;
 use crate::graph::Graph;
@@ -41,6 +43,7 @@ pub enum Controller {
     ProcessUntil(Order, Vec<BoolOperation>),
     ProcessUntilDecreasing(Order, IntOperation, Vec<BoolOperation>),
     SearchAll(Order, Vec<BoolOperation>),
+    Collate(Constructor, usize, StringListOperation),
     Help,
 }
 
@@ -116,6 +119,10 @@ impl Controller {
                 SearchAll(Order::of_string(args[0]),
                     args.iter().skip(1).map(|arg| BoolOperation::of_string_result(*arg).unwrap()).collect())
             }
+            "collate" => {
+                Collate(Constructor::of_string(args[0]), args[1].parse().unwrap(),
+                    StringListOperation::of_string_result(args[2]).unwrap())
+            }
             "help" | "h" => Help,
             &_ => {
                 Single(Constructor::of_string(text))
@@ -167,6 +174,9 @@ impl fmt::Display for Controller {
             }
             SearchAll(order, conditions) => {
                 write!(f, "Search all graphs of order {} until {:?}", order, conditions)
+            }
+            Collate(constr, reps, op) => {
+                write!(f, "Collate {} values of ({}) over {} reps", op, constr, reps)
             }
             Help => write!(f, "Print help text"),
         }
@@ -233,13 +243,15 @@ impl Instruction {
     fn execute_tabulate(&self, tab: &Tabulation) {
         let reps = 100;
         let propn = f64::round((tab.end - tab.start) / tab.step) as usize;
+        use Operation::*;
         let operators: Vec<RationalOperation> = self.operations
             .iter()
             .filter_map(|x| match x {
-                Operation::Int(op) => Some(RationalOperation::OfInt(*op)),
-                Operation::Bool(op) => Some(RationalOperation::OfBool(Box::new(op.to_owned()))),
-                Operation::Rational(op) => Some(op.to_owned()),
-                Operation::Unit(_op) => None,
+                Int(op) => Some(RationalOperation::OfInt(*op)),
+                Bool(op) => Some(RationalOperation::OfBool(Box::new(op.to_owned()))),
+                Rational(op) => Some(op.to_owned()),
+                Unit(_op) => None,
+                StringList(_op) => None,
             })
             .collect();
         let mut rows = vec![];
@@ -455,6 +467,25 @@ impl Instruction {
         if !found_graph {
             println!("No graph found.");
         }
+    }
+
+    fn execute_collate(&self, constr: &Constructor, op: &StringListOperation, reps: usize) {
+        let mut vals: HashSet<String> = HashSet::new();
+        for _i in 0..reps {
+            let mut operator = Operator::new(constr.new_graph());
+            let mut ann_box = AnnotationsBox::new();
+            for line in operator.operate_string_list(&mut ann_box, op) {
+                vals.insert(line);
+            }
+        }
+        let mut i = 0;
+        let mut lines: Vec<&String> = vals.iter().collect();
+        lines.sort();
+        for line in lines.iter() {
+            i += 1;
+            println!("{}", line)
+        }
+        println!("{} distinct values found!", i);
     }
 
     fn execute_until(&self, constr: &Constructor, conditions: &[BoolOperation], forever: bool) {
@@ -771,6 +802,7 @@ impl Instruction {
                 self.execute_process_until_decreasing(*order, int_op, conditions)
             }
             SearchAll(order, conditions) => self.execute_search_all(*order, conditions),
+            Collate(constr, reps, op) => self.execute_collate(constr, op, *reps),
             Help => Self::print_help(),
         }
     }

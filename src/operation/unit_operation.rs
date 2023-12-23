@@ -26,7 +26,6 @@ pub enum UnitOperation {
     PrintBobWinGrabbingWeighting,
     GrabbingHypothesisTest,
     BunkbedSiteCOunts,
-    PrintBunkbedSiteSignatures,
     Signature,
     Unit,
 }
@@ -61,7 +60,6 @@ impl UnitOperation {
             "print_bgw" => Some(PrintBobWinGrabbingWeighting),
             "grabby" => Some(GrabbingHypothesisTest),
             "bunkbed_sites" | "bb_sites" => Some(BunkbedSiteCOunts),
-            "bb_site_sigs" | "bbss" => Some(PrintBunkbedSiteSignatures),
             "()" | "(" => Some(Unit),
             &_ => None,
         }
@@ -104,7 +102,6 @@ impl fmt::Display for UnitOperation {
             PrintBobWinGrabbingWeighting => "Print a weighting with which Bob wins the graph grabbing game",
             GrabbingHypothesisTest => "Test whatever the current hypothesis is for graph grabbing",
             BunkbedSiteCOunts => "Print percolation counts for bunkbed sites",
-            PrintBunkbedSiteSignatures => "Print bunkbed site reachability signatures",
             Unit => "Do nothing",
         };
         write!(f, "{}", name)
