@@ -90,10 +90,12 @@ fn process_config(g: &Graph, states: &VertexVec<VertexState>, counts: &mut Verte
 fn get_counts_conditional(g: &Graph, unreachable: VertexSet) -> VertexVec<Counts> {
     use VertexState::*;
     // could read posts from user input?
-    let posts = vec![Vertex::of_usize(1), Vertex::of_usize(4)];
+    let posts = vec![Vertex::of_usize(1), Vertex::of_usize(4), Vertex::of_usize(7)];
     let mut states = VertexVec::new(g.n, &DOWN);
     for post in posts.iter() {
-        states[*post] = POST;
+        if post.less_than(g.n) {
+            states[*post] = POST;
+        }
     }
 
     let mut counts = VertexVec::new(g.n, &Counts::ZERO);
@@ -127,6 +129,10 @@ pub fn print_counts(g: &Graph) {
     }
 }
 
+/**
+ * Returns true if it can find a vertex set s which, conditioned upon s
+ * being unreachable, we find that some vertex is in fact bad.
+ */
 pub fn has_bad_conditioning(g: &Graph) -> bool {
     for s in g.iter_vertex_subsets() {
         if !s.has_vert(Vertex::ZERO) {
@@ -134,6 +140,8 @@ pub fn has_bad_conditioning(g: &Graph) -> bool {
 
             for count in counts.iter() {
                 if count.is_bad() {
+                    println!("Found bad count! s = {:?}", s.to_vec());
+                    println!("Counts: {:?}", counts);
                     return true;
                 }
             }
@@ -245,4 +253,12 @@ pub fn signatures(g: &Graph) -> Vec<String> {
         out.push(line.iter().collect());
     }
     out
+}
+
+pub fn contradicts_bb_site_conjecture(g: &Graph) -> bool {
+    let counts = get_counts_conditional(g, VertexSet::new(g.n));
+    // No hacks to see here.
+    let c = counts[Vertex::of_usize(8)];
+    println!("Counts at 8: {:?}", c);
+    c.is_bad()
 }
