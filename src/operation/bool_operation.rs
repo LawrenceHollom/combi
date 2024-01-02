@@ -63,6 +63,7 @@ pub enum BoolOperation {
     IsForkFree,
     BunkbedSiteHasBadConditioning,
     ContradictsBunkbedSiteConjecture,
+    ContradictsReducedBunkbedConjecture,
     Debug,
 }
 
@@ -183,6 +184,7 @@ impl BoolOperation {
                     "fork_free" => Some(IsForkFree),
                     "bunkbed_sites_conditioning" | "bb_sites_cond" => Some(BunkbedSiteHasBadConditioning),
                     "contradicts_bb_sites" | "cbbs" => Some(ContradictsBunkbedSiteConjecture),
+                    "contradicts_reduced_bb" | "crbb" => Some(ContradictsReducedBunkbedConjecture),
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -312,6 +314,7 @@ impl fmt::Display for BoolOperation {
             IsForkFree => "Has no induced fork or 3-corona".to_owned(),
             BunkbedSiteHasBadConditioning => "Is bunkbed sites conditioning bad".to_owned(),
             ContradictsBunkbedSiteConjecture => "Does this contradict the bunkbed sites conjecture".to_owned(),
+            ContradictsReducedBunkbedConjecture => "Does this contradict the reduced bunkbed conjecture".to_owned(),
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };
         write!(f, "{}", name)

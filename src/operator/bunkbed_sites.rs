@@ -5,6 +5,10 @@ use utilities::vertex_tools::*;
 
 use queues::*;
 
+/**
+ * n.b. the bunkbed site conjecture is FALSE!
+ */
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum VertexState {
     DOWN,
@@ -257,8 +261,13 @@ pub fn signatures(g: &Graph) -> Vec<String> {
 
 pub fn contradicts_bb_site_conjecture(g: &Graph) -> bool {
     let counts = get_counts_conditional(g, VertexSet::new(g.n));
-    // No hacks to see here.
-    let c = counts[Vertex::of_usize(8)];
-    println!("Counts at 8: {:?}", c);
-    c.is_bad()
+    let mut is_bad = false;
+    'test_verts: for (v, c) in counts.iter_enum() {
+        if c.is_bad() {
+            is_bad = true;
+            println!("Bad at {} (counts = {:?}", v, c);
+            break 'test_verts;
+        }
+    }
+    is_bad
 }

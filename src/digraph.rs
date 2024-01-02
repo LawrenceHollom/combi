@@ -59,6 +59,10 @@ impl Digraph {
         }
     }
 
+    /**
+     * Randomly orient edges, with a set probability that an edge is in
+     * fact bidirectional
+     */
     pub fn random_semiorientation(g: &Graph, bidirectional_prob: f64) -> Digraph {
         let mut rng = thread_rng();   
         let mut adj = VertexVec::new(g.n, &VertexVec::new(g.n, &false));

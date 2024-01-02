@@ -368,12 +368,30 @@ impl VertexSet {
         VertexSet{ verts: 1 << v.0, n }
     }
 
+    pub fn of_vec(n: Order, vs: &Vec<Vertex>) -> VertexSet {
+        let mut set = VertexSet::new(n);
+        for v in vs.iter() {
+            set.add_vert(*v)
+        }
+        set
+    }
+
     pub fn to_int(&self) -> u128 {
         self.verts
     }
 
     pub fn to_usize(&self) -> usize {
         self.verts as usize
+    }
+
+    pub fn to_vec(&self) -> VertexVec<bool> {
+        let mut out = VertexVec::new(self.n, &false);
+        for v in self.n.iter_verts() {
+            if self.has_vert(v) {
+                out[v] = true
+            }
+        }
+        out
     }
 
     pub fn add_vert(&mut self, v: Vertex) {
@@ -484,16 +502,6 @@ impl VertexSet {
             }
             Some(vert)
         }
-    }
-
-    pub fn to_vec(&self) -> VertexVec<bool> {
-        let mut out = VertexVec::new(self.n, &false);
-        for v in self.n.iter_verts() {
-            if self.has_vert(v) {
-                out[v] = true
-            }
-        }
-        out
     }
 
     pub fn iter(&self) -> VertexSetIterator {
