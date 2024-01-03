@@ -208,27 +208,33 @@ fn get_posts(g: &Graph) -> VertexSet {
 
 pub fn contradicts_reduced_bunkbed_conjecture(g: &Graph) -> bool {
 	// Put in some posts, test if the conj is true.
-	let mut num_flat = VertexVec::new(g.n, &0);
-	let mut num_cross = VertexVec::new(g.n, &0);
+	let mut num_flat_avoiding = VertexVec::new(g.n, &VertexVec::new(g.n, &0));
+	let mut num_cross_avoiding = VertexVec::new(g.n, &VertexVec::new(g.n, &0));
 	let posts = get_posts(g);
 	let targets = get_target_vertices(g, posts);
 	let indexer = EdgeIndexer::new(&g.adj_list);
 	for config in g.iter_edge_sets() {
 		let connections = get_connections(g, &config, &indexer, &posts);
-		for (v, conns) in connections.iter_enum() {
-			if conns[0] {
-				num_flat[v] += 1;
-			}
-			if conns[1] {
-				num_cross[v] += 1;
+		for (v, v_conns) in connections.iter_enum() {
+			for (u, u_conns) in connections.iter_enum() {
+				if u == v || (!u_conns[0] && !u_conns[1]) {
+					if v_conns[0] {
+						num_flat_avoiding[v][u] += 1;
+					}
+					if v_conns[1] {
+						num_cross_avoiding[v][u] += 1;
+					}
+				}
 			}
 		}
 	}
 
 	let mut is_contra = false;
 	for target in targets {
-		if num_cross[target] > num_flat[target] {
-			is_contra = true
+		for u in g.iter_verts() {
+			if num_cross_avoiding[target][u] > num_flat_avoiding[target][u] {
+				is_contra = true
+			}
 		}
 	}
 	is_contra
