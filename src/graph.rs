@@ -233,6 +233,9 @@ impl Graph {
         isomorphisms::is_isomorphic_to(self, g)
     }
 
+    /**
+     * Only consider vertices for which filter[v] == true
+     */
     pub fn filtered_components(&self, filter: Option<&VertexVec<bool>>) -> VertexVec<Component> {
         flood_fill::filtered_components(self, filter)
     }

@@ -30,7 +30,6 @@ pub struct EdgeSetIterator {
     edges: u128,
 }
 
-
 #[derive(Clone)]
 pub struct EdgeVec<T: Debug + Copy> {
     indexer: EdgeIndexer,

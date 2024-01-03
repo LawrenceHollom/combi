@@ -64,6 +64,7 @@ pub enum BoolOperation {
     BunkbedSiteHasBadConditioning,
     ContradictsBunkbedSiteConjecture,
     ContradictsReducedBunkbedConjecture,
+    ApproxContradictsReducedBunkbedConjecture,
     Debug,
 }
 
@@ -185,6 +186,7 @@ impl BoolOperation {
                     "bunkbed_sites_conditioning" | "bb_sites_cond" => Some(BunkbedSiteHasBadConditioning),
                     "contradicts_bb_sites" | "cbbs" => Some(ContradictsBunkbedSiteConjecture),
                     "contradicts_reduced_bb" | "crbb" => Some(ContradictsReducedBunkbedConjecture),
+                    "acrbb" => Some(ApproxContradictsReducedBunkbedConjecture),
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -315,6 +317,7 @@ impl fmt::Display for BoolOperation {
             BunkbedSiteHasBadConditioning => "Is bunkbed sites conditioning bad".to_owned(),
             ContradictsBunkbedSiteConjecture => "Does this contradict the bunkbed sites conjecture".to_owned(),
             ContradictsReducedBunkbedConjecture => "Does this contradict the reduced bunkbed conjecture".to_owned(),
+            ApproxContradictsReducedBunkbedConjecture => "Approx contradicts the reduced bunkbed conjecture".to_owned(),
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };
         write!(f, "{}", name)

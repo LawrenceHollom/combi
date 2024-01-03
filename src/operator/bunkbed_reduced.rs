@@ -1,5 +1,7 @@
 use crate::graph::*;
 
+use rand::Rng;
+use rand::thread_rng;
 use utilities::vertex_tools::*;
 use utilities::edge_tools::*;
 
@@ -126,9 +128,64 @@ pub fn is_post_removal_induction_always_good(g: &Graph) -> bool {
     post_removal_induction_internal(g, false)
 }
 
-pub fn contradicts_reduced_bunkbed_conjecture(g: &Graph) -> bool {
-	// Put in some posts, test if the conj is true.
-	let indexer = EdgeIndexer::new(&g.adj_list);
+/**
+ * config has an edge if that edge is down.
+ * Returns a VertexVec of items otf [is down-connected to 0, is up-connected to 0]
+ */
+fn get_connections(g: &Graph, config: &EdgeSet, indexer: &EdgeIndexer, posts: &VertexSet) -> VertexVec<Vec<bool>> {
+    let mut q = queue![(Vertex::ZERO, 0)];
+    let mut visited = VertexVec::new(g.n, &vec![false, false]);
+	visited[Vertex::ZERO][0] = true;
+	while let Ok((v, layer)) = q.remove() {
+		if posts.has_vert(v) && !visited[v][1 - layer] {
+			visited[v][1 - layer] = true;
+			let _ = q.add((v, 1 - layer));
+		}
+		for u in g.adj_list[v].iter() {
+			if !visited[*u][layer] && config.has_edge(Edge::of_pair(v, *u), indexer) == (layer == 0) {
+				visited[*u][layer] = true;
+				let _ = q.add((*u, layer));
+			}
+		}
+	}
+	visited
+}
+
+/**
+ * Returns a list of vertices that could be counterexamples to the bunkbed conjecture
+ * They must be:
+ * - suitably far away from zero
+ * - not behind a post-wall.
+ * - not itself a post
+ */
+fn get_target_vertices(g: &Graph, posts: VertexSet) -> Vec<Vertex> {
+	let mut targets = vec![];
+	let mut post_filter = VertexVec::new(g.n, &true);
+	for post in posts.iter() {
+		post_filter[post] = false;
+	}
+	let postless_components = g.filtered_components(Some(&post_filter));
+	let base_component = postless_components[Vertex::ZERO];
+	let dists = g.flood_fill_dist(Vertex::ZERO);
+	let mut max_dist = 0;
+	for v in g.iter_verts() {
+		if let Some(d) = dists[v] {
+			if d > max_dist {
+				max_dist = d;
+			}
+		}
+	}
+	for v in g.iter_verts().skip(1) {
+		if !posts.has_vert(v) 
+				&& dists[v].map_or(false, |d| d >= max_dist - 1) 
+				&& postless_components[v] == base_component {
+			targets.push(v);
+		}
+	}
+	targets
+}
+
+fn get_posts(g: &Graph) -> VertexSet {
 	let mut posts = VertexSet::new(g.n);
 	let mut num_posts = 0;
 	let mut reached = VertexVec::new(g.n, &false);
@@ -146,20 +203,82 @@ pub fn contradicts_reduced_bunkbed_conjecture(g: &Graph) -> bool {
 			}
 		}
 	}
-	if num_posts < 3 {
-		return false;
-	}
-	let u = Vertex::of_usize(0);
-	let v = g.n.to_max_vertex();
-	let mut flat_count = 0;
-	let mut cross_count = 0;
+	posts
+}
+
+pub fn contradicts_reduced_bunkbed_conjecture(g: &Graph) -> bool {
+	// Put in some posts, test if the conj is true.
+	let mut num_flat = VertexVec::new(g.n, &0);
+	let mut num_cross = VertexVec::new(g.n, &0);
+	let posts = get_posts(g);
+	let targets = get_target_vertices(g, posts);
+	let indexer = EdgeIndexer::new(&g.adj_list);
 	for config in g.iter_edge_sets() {
-		if are_connected(g, u, false, v, false, posts, &config, &indexer) {
-			flat_count += 1;
-		}
-		if are_connected(g, u, false, v, false, posts, &config, &indexer) {
-			cross_count += 1;
+		let connections = get_connections(g, &config, &indexer, &posts);
+		for (v, conns) in connections.iter_enum() {
+			if conns[0] {
+				num_flat[v] += 1;
+			}
+			if conns[1] {
+				num_cross[v] += 1;
+			}
 		}
 	}
-	cross_count > flat_count
+
+	let mut is_contra = false;
+	for target in targets {
+		if num_cross[target] > num_flat[target] {
+			is_contra = true
+		}
+	}
+	is_contra
+}
+
+const NUM_SAMPLES: usize = 1000;
+
+pub fn approx_contradicts_reduced_bunkbed_conjecture(g: &Graph) -> bool {
+	let mut num_flat = VertexVec::new(g.n, &0);
+	let mut num_cross = VertexVec::new(g.n, &0);
+	let posts = get_posts(g);
+	let targets = get_target_vertices(g, posts);
+	let mut rng = thread_rng();
+	let indexer = EdgeIndexer::new(&g.adj_list);
+	let mut edges = vec![];
+	for u in g.iter_verts() {
+		for v in g.adj_list[u].iter() {
+			if *v > u {
+				edges.push(Edge::of_pair(u, *v));
+			}
+		}
+	}
+	for _i in 0..NUM_SAMPLES {
+		// Generate a random config.
+		let mut config = EdgeSet::new(&indexer);
+		for e in edges.iter() {
+			if rng.gen_bool(0.5) {
+				config.add_edge(*e, &indexer);
+			}
+		}
+		let connections = get_connections(g, &config, &indexer, &posts);
+		for (v, conns) in connections.iter_enum() {
+			if conns[0] {
+				num_flat[v] += 1;
+			}
+			if conns[1] {
+				num_cross[v] += 1;
+			}
+		}
+	}
+	/*println!("Approxes completed! Posts: {:?}", posts.to_vec());
+	g.print();
+	println!("Num flat: {:?}", num_flat);
+	println!("Num cross: {:?}", num_cross);
+	println!("Targets: {:?}", targets);*/
+	let mut is_contra = false;
+	for target in targets {
+		if num_cross[target] >= num_flat[target] {
+			is_contra = true
+		}
+	}
+	is_contra
 }
