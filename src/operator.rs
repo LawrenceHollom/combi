@@ -219,7 +219,8 @@ impl Operator {
                     BunkbedSiteHasBadConditioning => bunkbed_sites::has_bad_conditioning(&self.g),
                     ContradictsBunkbedSiteConjecture => bunkbed_sites::contradicts_bb_site_conjecture(&self.g),
                     ContradictsReducedBunkbedConjecture => bunkbed_reduced::contradicts_reduced_bunkbed_conjecture(&self.g),
-                    ApproxContradictsReducedBunkbedConjecture => bunkbed_reduced::approx_contradicts_reduced_bunkbed_conjecture(&self.g),
+                    ApproxContradictsReducedBunkbedConjecture(samples) => bunkbed_reduced::approx_contradicts_reduced_bunkbed_conjecture(&self.g, *samples),
+                    ContradictsReducedConditionedBunkbedConjecture => bunkbed_reduced::contradicts_reduced_conditioned_bunkbed_conjecture(&self.g),
                     Debug => debug::debug(&self.g),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);

@@ -206,8 +206,8 @@ fn get_posts(g: &Graph) -> VertexSet {
 	posts
 }
 
-pub fn contradicts_reduced_bunkbed_conjecture(g: &Graph) -> bool {
-	// Put in some posts, test if the conj is true.
+pub fn contradicts_reduced_conditioned_bunkbed_conjecture(g: &Graph) -> bool {
+	// Put in some posts, test if the conj is true conditioned on some vertex being unreachable.
 	let mut num_flat_avoiding = VertexVec::new(g.n, &VertexVec::new(g.n, &0));
 	let mut num_cross_avoiding = VertexVec::new(g.n, &VertexVec::new(g.n, &0));
 	let posts = get_posts(g);
@@ -240,9 +240,40 @@ pub fn contradicts_reduced_bunkbed_conjecture(g: &Graph) -> bool {
 	is_contra
 }
 
-const NUM_SAMPLES: usize = 1000;
+pub fn contradicts_reduced_bunkbed_conjecture(g: &Graph) -> bool {
+	// Put in some posts, test if the conj is true.
+	let mut num_flat = VertexVec::new(g.n, &0);
+	let mut num_cross = VertexVec::new(g.n, &0);
+	let posts = get_posts(g);
+	let targets = get_target_vertices(g, posts);
+	let indexer = EdgeIndexer::new(&g.adj_list);
+	for config in g.iter_edge_sets() {
+		let connections = get_connections(g, &config, &indexer, &posts);
+		for (v, conns) in connections.iter_enum() {
+			if conns[0] {
+				num_flat[v] += 1;
+			}
+			if conns[1] {
+				num_cross[v] += 1;
+			}
+		}
+	}
 
-pub fn approx_contradicts_reduced_bunkbed_conjecture(g: &Graph) -> bool {
+	println!("Precise completed! Posts: {:?}", posts.to_vec());
+	println!("Num flat: {:?}", num_flat);
+	println!("Num cross: {:?}", num_cross);
+	println!("Targets: {:?}", targets);
+
+	let mut is_contra = false;
+	for target in targets {
+		if num_cross[target] > num_flat[target] {
+			is_contra = true
+		}
+	}
+	is_contra
+}
+
+pub fn approx_contradicts_reduced_bunkbed_conjecture(g: &Graph, samples: usize) -> bool {
 	let mut num_flat = VertexVec::new(g.n, &0);
 	let mut num_cross = VertexVec::new(g.n, &0);
 	let posts = get_posts(g);
@@ -257,7 +288,7 @@ pub fn approx_contradicts_reduced_bunkbed_conjecture(g: &Graph) -> bool {
 			}
 		}
 	}
-	for _i in 0..NUM_SAMPLES {
+	for _i in 0..samples {
 		// Generate a random config.
 		let mut config = EdgeSet::new(&indexer);
 		for e in edges.iter() {
@@ -276,7 +307,6 @@ pub fn approx_contradicts_reduced_bunkbed_conjecture(g: &Graph) -> bool {
 		}
 	}
 	/*println!("Approxes completed! Posts: {:?}", posts.to_vec());
-	g.print();
 	println!("Num flat: {:?}", num_flat);
 	println!("Num cross: {:?}", num_cross);
 	println!("Targets: {:?}", targets);*/
