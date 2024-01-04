@@ -132,9 +132,9 @@ pub fn is_post_removal_induction_always_good(g: &Graph) -> bool {
  * config has an edge if that edge is down.
  * Returns a VertexVec of items otf [is down-connected to 0, is up-connected to 0]
  */
-fn get_connections(g: &Graph, config: &EdgeSet, indexer: &EdgeIndexer, posts: &VertexSet) -> VertexVec<Vec<bool>> {
+fn get_connections(g: &Graph, config: &EdgeSet, indexer: &EdgeIndexer, posts: &VertexSet) -> VertexVec<[bool; 2]> {
     let mut q = queue![(Vertex::ZERO, 0)];
-    let mut visited = VertexVec::new(g.n, &vec![false, false]);
+    let mut visited = VertexVec::new(g.n, &[false, false]);
 	visited[Vertex::ZERO][0] = true;
 	while let Ok((v, layer)) = q.remove() {
 		if posts.has_vert(v) && !visited[v][1 - layer] {
@@ -202,7 +202,7 @@ fn get_posts(g: &Graph) -> VertexSet {
 	let mut reached = VertexVec::new(g.n, &false);
 	reached[Vertex::ZERO] = true;
 	let mut x = Vertex::ZERO;
-	while num_posts < 3 && !x.is_n(g.n){
+	while num_posts < 4 && !x.is_n(g.n){
 		if reached[x] {
 			x.incr_inplace()
 		} else {
@@ -258,6 +258,10 @@ pub fn contradicts_reduced_bunkbed_conjecture(g: &Graph) -> bool {
 	let posts = get_posts(g);
 	let targets = get_target_vertices(g, posts);
 	let indexer = EdgeIndexer::new(&g.adj_list);
+
+	println!();
+	g.print();
+
 	for config in g.iter_edge_sets() {
 		let connections = get_connections(g, &config, &indexer, &posts);
 		for (v, conns) in connections.iter_enum() {
@@ -343,13 +347,46 @@ pub fn is_bunkbed_reducible(g: &Graph) -> bool {
 	} else if !targets.contains(&g.n.to_max_vertex()) {
 		true
 	} else { // n-1 is a target.
+		// currently the only reduction we have is that min_deg >= 3
 		let mut is_reducible = false;
 		'test_degrees: for v in g.iter_verts() {
-			if !posts.has_vert(v) && g.deg[v].equals(2) {
+			if g.deg[v].equals(2) {
 				is_reducible = true;
 				break 'test_degrees;
 			}
 		}
 		is_reducible
 	}
+}
+
+enum ConnectionTypes {
+	Empty,
+	Flat,
+	Cross,
+	DoubleFlat,
+	DoubleCross,
+	LeftPost,
+	RightPost,
+	LeftTriangle,
+	RightTriangle,
+	DoublePost,
+	Complete,
+}
+
+struct ConnectionCounts {
+	counts: [usize; 11],
+}
+
+impl ConnectionCounts {
+	pub fn new() -> ConnectionCounts {
+		ConnectionCounts { counts : [0; 11] }
+	}
+
+	pub fn add(&mut self, down_conns: &[bool; 2], up_conns: &[bool; 2], left_post: bool, right_post: bool) {
+		smash loads of cases in here.
+	}
+}
+
+pub fn print_connection_counts(g: &Graph) {
+	// We only need to count the first half of the configs
 }
