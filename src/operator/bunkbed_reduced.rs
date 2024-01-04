@@ -270,9 +270,8 @@ pub fn contradicts_reduced_bunkbed_conjecture(g: &Graph) -> bool {
 		}
 	}
 
-	println!("Precise completed! Posts: {:?}", posts.to_vec());
-	println!("Num flat: {:?}", num_flat);
-	println!("Num cross: {:?}", num_cross);
+	println!("Precise completed!");
+	print_table(vec![("posts", posts.to_vec().to_vec_of_strings()), ("flat", num_flat.to_vec_of_strings()), ("cross", num_cross.to_vec_of_strings())]);
 	println!("Targets: {:?}", targets);
 
 	let mut is_contra = false;

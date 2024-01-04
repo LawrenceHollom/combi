@@ -264,6 +264,43 @@ impl <T: Debug + Clone> VertexVec<T> {
     pub fn println(&self) {
         println!("{:?}", self.vec);
     }
+
+    pub fn to_vec_of_strings(&self) -> VertexVec<String> {
+        self.iter().map(|x| format!("{:?}", x)).collect::<VertexVec<String>>()
+    }
+}
+
+pub fn print_table(rows: Vec<(&str, VertexVec<String>)>) {
+    let n = rows[0].1.len();
+    let mut widths = VertexVec::new(n, &0);
+    let mut name_width = 6;
+    for (name, data) in rows.iter() {
+        for (v, datum) in data.iter_enum() {
+            if datum.len() > widths[v] {
+                widths[v] = datum.len()
+            }
+        }
+        if name.len() >= name_width {
+            name_width = name.len() + 1;
+        }
+    }
+    print!("{:^width$}", " name ", width = name_width);
+    for v in n.iter_verts() {
+        print!("|{:^width$}", v.to_string(), width = widths[v]);
+    }
+    println!();
+    print!("{:->width$}", "-", width = name_width);
+    for v in n.iter_verts() {
+        print!("+{:->width$}", "-", width = widths[v]);
+    }
+    println!();
+    for (name, data) in rows.iter() {
+        print!("{:>width$}", name, width = name_width);
+        for (v, datum) in data.iter_enum() {
+            print!("|{:^width$}", datum, width = widths[v]);
+        }
+        println!();
+    }
 }
 
 impl <T: Debug + Clone> VertexSetVec<T> {
