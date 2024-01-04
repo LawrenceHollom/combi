@@ -359,7 +359,7 @@ pub fn is_bunkbed_reducible(g: &Graph) -> bool {
 	}
 }
 
-enum ConnectionTypes {
+enum ConnectionType {
 	Empty,
 	Flat,
 	Cross,
@@ -367,10 +367,30 @@ enum ConnectionTypes {
 	DoubleCross,
 	LeftPost,
 	RightPost,
-	LeftTriangle,
-	RightTriangle,
+	LeftTriangle, // |>
+	RightTriangle, // <|
 	DoublePost,
 	Complete,
+}
+
+impl ConnectionType {
+	pub fn get_from_conns(down_conns: &[bool; 2], up_conns: &[bool; 2], left_post: bool, right_post: bool) -> ConnectionType {
+		use ConnectionType::*;
+		match (down_conns, up_conns, left_post, right_post) {
+			([false, false], [false, false], false, false) => Empty,
+			([true, false], [false, false], false, false) | ([false, false], [false, true], false, false) => Flat,
+			([false, true], [false, false], false, false) | ([false, false], [true, false], false, false) => Cross,
+			([true, false], [false, true], false, false) => DoubleFlat,
+			([false, true], [true, false], false, false) => DoubleCross,
+			([false, false], [false, false], true, false) => LeftPost,
+			([false, false], [false, false], false, true) => RightPost,
+			([true, false], [true, false], true, false) | ([false, true], [false, true], true, false) => LeftTriangle,
+			([true, false], [true, false], false, true) | ([false, true], [false, true], false, true) => RightTriangle,
+			([false, false], [false, false], true, true) => DoublePost,
+			([true, true], [true, true], true, true) => Complete,
+			_ => panic!("This should be impossible!")
+		}
+	}
 }
 
 struct ConnectionCounts {
@@ -383,7 +403,7 @@ impl ConnectionCounts {
 	}
 
 	pub fn add(&mut self, down_conns: &[bool; 2], up_conns: &[bool; 2], left_post: bool, right_post: bool) {
-		smash loads of cases in here.
+		let conn = ConnectionType::get_from_conns(down_conns, up_conns, left_post, right_post);
 	}
 }
 
