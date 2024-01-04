@@ -242,3 +242,18 @@ pub fn parse_infix_like(text: &str) -> Option<(&str, &str, &str)> {
     let infix_symbols = vec!['+', '-', '/', '*', '>', '<', '=', '&', '|', '^'];
     parse_infix_like_restricted(text, infix_symbols)
 }
+
+pub fn pretty_print_int(x: usize, end: &str) {
+    if x < 10_000 {
+        print!("{}", x)
+    } else if x < 100_000 {
+        print!("{}k{}", x / 1_000, (x % 1_000) / 100)
+    } else if x < 1_000_000 {
+        print!("{}k", x / 1_000)
+    } else if x < 100_000_000 {
+        print!("{}m{}", x / 1_000_000, (x % 1_000_000) / 100_000)
+    } else {
+        print!("{}m", x / 1_000_000)
+    }
+    print!("{}", end)
+}

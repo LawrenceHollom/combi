@@ -496,21 +496,39 @@ impl Instruction {
         let mut satisfied = false;
         let mut rep = 0;
         let mut lines_printed = 0;
+        let mut round_lines_printed = 0;
         let mut checkpoint_time = SystemTime::now();
         let mut required_steps = 0;
+        let mut regular_rep_printing = 1000;
         while !satisfied || forever {
+            let mut checkpointed = false;
             if lines_printed >= 30 {
                 if checkpoint_time.elapsed().unwrap().as_secs() < 10 {
                     required_steps += 1;
                     println!("Cutting verbosity!");
                 }
+                checkpointed = true;
+            } else if round_lines_printed >= 5 {
+                if checkpoint_time.elapsed().unwrap().as_secs() < 10 {
+                    regular_rep_printing *= 10;
+                    println!("Cutting round-number verbosity! {} {}", rep, regular_rep_printing );
+                }
+                checkpointed = true;
+            }
+            if checkpointed {
                 lines_printed = 0;
+                round_lines_printed = 0;
                 checkpoint_time = SystemTime::now();
             }
             let mut printed_number = false;
-            if required_steps == 0 || rep % 10000 == 0 {
-                print!("{}: ", rep);
+            if required_steps == 0 || rep % regular_rep_printing == 0 {
+                pretty_print_int(rep, ": ");
                 printed_number = true;
+                if rep % regular_rep_printing == 0 {
+                    round_lines_printed += 1;
+                } else {
+                    lines_printed += 1;
+                }
             }
             rep += 1;
             let g = constr.new_graph();
@@ -523,11 +541,12 @@ impl Instruction {
                     num_satisfied += 1;
                     if num_satisfied >= required_steps {
                         if !printed_number {
-                            print!("{}: ", rep);
+                            pretty_print_int(rep, ": ");
                             for _i in 0..(required_steps - 1) {
                                 print!("X ");
                             }
                             printed_number = true;
+                            lines_printed += 1;
                         }
                         print!("X ");
                         std::io::stdout().flush().unwrap();
@@ -540,7 +559,6 @@ impl Instruction {
             }
             if printed_number {
                 operator.print_all();
-                lines_printed += 1;
             }
             if all_satisfied {
                 if !forever {
