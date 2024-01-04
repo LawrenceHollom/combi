@@ -175,16 +175,27 @@ fn get_target_vertices(g: &Graph, posts: VertexSet) -> Vec<Vertex> {
 			}
 		}
 	}
-	for v in g.iter_verts().skip(1) {
+	/*for v in g.iter_verts().skip(1) {
 		if !posts.has_vert(v) 
 				&& dists[v].map_or(false, |d| d >= max_dist - 1) 
 				&& postless_components[v] == base_component {
 			targets.push(v);
 		}
+	}*/
+	// Hack so that we only target n-1:
+	let v = g.n.to_max_vertex();
+	if !posts.has_vert(v) 
+			&& dists[v].map_or(false, |d| d >= max_dist - 1) 
+			&& postless_components[v] == base_component {
+		targets.push(v);
 	}
 	targets
 }
 
+/**
+ * Returns a set of vertices which will be the posts of g
+ * n.b. it is assumed that this function is deterministic!
+ */
 fn get_posts(g: &Graph) -> VertexSet {
 	let mut posts = VertexSet::new(g.n);
 	let mut num_posts = 0;
@@ -317,4 +328,29 @@ pub fn approx_contradicts_reduced_bunkbed_conjecture(g: &Graph, samples: usize) 
 		}
 	}
 	is_contra
+}
+
+/**
+ * Returns true if g has some subgraph which can be bunkbed-reduced, and so g
+ * cannot be a minimal counterexample to the bunkbed conjecture.
+ * e.g. has a non-start, non-end, non-post vertex of degree 2
+ * We're implicitly kinda assuming that the target vertex is n-1.
+ */
+pub fn is_bunkbed_reducible(g: &Graph) -> bool {
+	let posts = get_posts(g);
+	let targets = get_target_vertices(g, posts);
+	if targets.is_empty() {
+		true
+	} else if !targets.contains(&g.n.to_max_vertex()) {
+		true
+	} else { // n-1 is a target.
+		let mut is_reducible = false;
+		'test_degrees: for v in g.iter_verts() {
+			if !posts.has_vert(v) && g.deg[v].equals(2) {
+				is_reducible = true;
+				break 'test_degrees;
+			}
+		}
+		is_reducible
+	}
 }
