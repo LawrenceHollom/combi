@@ -2,10 +2,12 @@ use crate::graph::*;
 
 use rand::Rng;
 use rand::thread_rng;
+use utilities::*;
 use utilities::vertex_tools::*;
 use utilities::edge_tools::*;
 
 use queues::*;
+use strum::*;
 
 /**
  * This file deals with the version of the conjecture wherein we have
@@ -132,10 +134,10 @@ pub fn is_post_removal_induction_always_good(g: &Graph) -> bool {
  * config has an edge if that edge is down.
  * Returns a VertexVec of items otf [is down-connected to 0, is up-connected to 0]
  */
-fn get_connections(g: &Graph, config: &EdgeSet, indexer: &EdgeIndexer, posts: &VertexSet) -> VertexVec<[bool; 2]> {
-    let mut q = queue![(Vertex::ZERO, 0)];
+fn get_connections(g: &Graph, u: Vertex, config: &EdgeSet, indexer: &EdgeIndexer, posts: &VertexSet) -> VertexVec<[bool; 2]> {
+    let mut q = queue![(u, 0)];
     let mut visited = VertexVec::new(g.n, &[false, false]);
-	visited[Vertex::ZERO][0] = true;
+	visited[u][0] = true;
 	while let Ok((v, layer)) = q.remove() {
 		if posts.has_vert(v) && !visited[v][1 - layer] {
 			visited[v][1 - layer] = true;
@@ -202,7 +204,7 @@ fn get_posts(g: &Graph) -> VertexSet {
 	let mut reached = VertexVec::new(g.n, &false);
 	reached[Vertex::ZERO] = true;
 	let mut x = Vertex::ZERO;
-	while num_posts < 4 && !x.is_n(g.n){
+	while num_posts < 4 && !x.incr().is_n(g.n){
 		if reached[x] {
 			x.incr_inplace()
 		} else {
@@ -225,7 +227,7 @@ pub fn contradicts_reduced_conditioned_bunkbed_conjecture(g: &Graph) -> bool {
 	let targets = get_target_vertices(g, posts);
 	let indexer = EdgeIndexer::new(&g.adj_list);
 	for config in g.iter_edge_sets() {
-		let connections = get_connections(g, &config, &indexer, &posts);
+		let connections = get_connections(g, Vertex::ZERO, &config, &indexer, &posts);
 		for (v, v_conns) in connections.iter_enum() {
 			for (u, u_conns) in connections.iter_enum() {
 				if u == v || (!u_conns[0] && !u_conns[1]) {
@@ -263,7 +265,7 @@ pub fn contradicts_reduced_bunkbed_conjecture(g: &Graph) -> bool {
 	g.print();
 
 	for config in g.iter_edge_sets() {
-		let connections = get_connections(g, &config, &indexer, &posts);
+		let connections = get_connections(g, Vertex::ZERO, &config, &indexer, &posts);
 		for (v, conns) in connections.iter_enum() {
 			if conns[0] {
 				num_flat[v] += 1;
@@ -275,7 +277,7 @@ pub fn contradicts_reduced_bunkbed_conjecture(g: &Graph) -> bool {
 	}
 
 	println!("Precise completed!");
-	print_table(vec![("posts", posts.to_vec().to_vec_of_strings()), ("flat", num_flat.to_vec_of_strings()), ("cross", num_cross.to_vec_of_strings())]);
+	print_vertex_table(vec![("posts", posts.to_vec().to_vec_of_strings()), ("flat", num_flat.to_vec_of_strings()), ("cross", num_cross.to_vec_of_strings())]);
 	println!("Targets: {:?}", targets);
 
 	let mut is_contra = false;
@@ -310,7 +312,7 @@ pub fn approx_contradicts_reduced_bunkbed_conjecture(g: &Graph, samples: usize) 
 				config.add_edge(*e, &indexer);
 			}
 		}
-		let connections = get_connections(g, &config, &indexer, &posts);
+		let connections = get_connections(g, Vertex::ZERO, &config, &indexer, &posts);
 		for (v, conns) in connections.iter_enum() {
 			if conns[0] {
 				num_flat[v] += 1;
@@ -359,6 +361,7 @@ pub fn is_bunkbed_reducible(g: &Graph) -> bool {
 	}
 }
 
+#[derive(Debug, EnumIter, ToString, EnumCount)]
 enum ConnectionType {
 	Empty,
 	Flat,
@@ -371,6 +374,7 @@ enum ConnectionType {
 	RightTriangle, // <|
 	DoublePost,
 	Complete,
+	AAAAAAAAAAAAA,
 }
 
 impl ConnectionType {
@@ -385,28 +389,55 @@ impl ConnectionType {
 			([false, false], [false, false], true, false) => LeftPost,
 			([false, false], [false, false], false, true) => RightPost,
 			([true, false], [true, false], true, false) | ([false, true], [false, true], true, false) => LeftTriangle,
-			([true, false], [true, false], false, true) | ([false, true], [false, true], false, true) => RightTriangle,
+			([true, true], [false, false], false, true) | ([false, false], [true, true], false, true) => RightTriangle,
 			([false, false], [false, false], true, true) => DoublePost,
 			([true, true], [true, true], true, true) => Complete,
-			_ => panic!("This should be impossible!")
+			_ => {
+				println!("Bad conns! {:?}", (down_conns, up_conns, left_post, right_post));
+				AAAAAAAAAAAAA
+			} //panic!("This should be impossible! {:?}", (down_conns, up_conns, left_post, right_post))
 		}
 	}
 }
 
 struct ConnectionCounts {
-	counts: [usize; 11],
+	counts: [usize; ConnectionType::COUNT],
 }
 
 impl ConnectionCounts {
 	pub fn new() -> ConnectionCounts {
-		ConnectionCounts { counts : [0; 11] }
+		ConnectionCounts { counts : [0; ConnectionType::COUNT] }
 	}
 
 	pub fn add(&mut self, down_conns: &[bool; 2], up_conns: &[bool; 2], left_post: bool, right_post: bool) {
 		let conn = ConnectionType::get_from_conns(down_conns, up_conns, left_post, right_post);
+		self.counts[conn as usize] += 1;
+	}
+
+	pub fn print(&self) {
+		let rows = ConnectionType::iter().enumerate()
+			.map(|(i, c)| (c.to_string(), vec![self.counts[i].to_string()]))
+			.collect::<Vec<(String, Vec<String>)>>();
+		print_table(vec!["count".to_string()], rows)
 	}
 }
 
 pub fn print_connection_counts(g: &Graph) {
 	// We only need to count the first half of the configs
+	let mut counts = ConnectionCounts::new();
+	let posts = get_posts(g);
+	let indexer = EdgeIndexer::new(&g.adj_list);
+	let v = g.n.to_max_vertex();
+
+	for config in g.iter_edge_sets() {
+		let zero_conns = get_connections(g, Vertex::ZERO, &config, &indexer, &posts);
+		let down_conns = zero_conns[v];
+		let left_post = zero_conns[Vertex::ZERO][1];
+		let up_conns = get_connections(g, Vertex::ZERO, &config.inverse(&indexer), &indexer, &posts)[v];
+		let up_conns = [up_conns[1], up_conns[0]];
+		let right_post = get_connections(g, v, &config, &indexer, &posts)[v][1];
+		counts.add(&down_conns, &up_conns, left_post, right_post)
+	}
+
+	counts.print();
 }

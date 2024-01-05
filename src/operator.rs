@@ -285,6 +285,7 @@ impl Operator {
             PrintBobWinGrabbingWeighting => grabbing::print_bob_win_weighting(&self.g),
             GrabbingHypothesisTest => grabbing::hypothesis_testing(&self.g),
             BunkbedSiteCOunts => bunkbed_sites::print_counts(&self.g),
+            BunkbedReducedConnectionCounts => bunkbed_reduced::print_connection_counts(&self.g),
             Unit => (),
         }
     }

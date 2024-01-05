@@ -202,6 +202,9 @@ impl EdgeSet {
         self.edges ^= 1 << indexer[e].unwrap();
     }
 
+    /**
+     * Returns the edge set with the exact opposite edges in.
+     */
     pub fn inverse(&self, indexer: &EdgeIndexer) -> EdgeSet {
         self.check_indexer(indexer);
         let mut set = self.to_owned();

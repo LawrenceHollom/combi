@@ -257,3 +257,39 @@ pub fn pretty_print_int(x: usize, end: &str) {
     }
     print!("{}", end)
 }
+
+pub fn print_table(titles: Vec<String>, rows: Vec<(String, Vec<String>)>) {
+    let n = rows[0].1.len();
+    let mut widths = vec![0; n];
+    for (i, title) in titles.iter().enumerate() {
+        widths[i] = title.len()
+    }
+    let mut name_width = 6;
+    for (name, data) in rows.iter() {
+        for (i, datum) in data.iter().enumerate() {
+            if datum.len() > widths[i] {
+                widths[i] = datum.len()
+            }
+        }
+        if name.len() >= name_width {
+            name_width = name.len() + 1;
+        }
+    }
+    print!("{:^width$}", " name ", width = name_width);
+    for i in 0..n {
+        print!("|{:^width$}", titles[i], width = widths[i]);
+    }
+    println!();
+    print!("{:->width$}", "-", width = name_width);
+    for i in 0..n {
+        print!("+{:->width$}", "-", width = widths[i]);
+    }
+    println!();
+    for (name, data) in rows.iter() {
+        print!("{:>width$}", name, width = name_width);
+        for (i, datum) in data.iter().enumerate() {
+            print!("|{:^width$}", datum, width = widths[i]);
+        }
+        println!();
+    }
+}
