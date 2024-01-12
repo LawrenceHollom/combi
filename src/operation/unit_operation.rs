@@ -27,6 +27,7 @@ pub enum UnitOperation {
     GrabbingHypothesisTest,
     BunkbedSiteCOunts,
     BunkbedReducedConnectionCounts,
+    BunkbedReducedConnectionSimulation(usize),
     Signature,
     Unit,
 }
@@ -62,6 +63,7 @@ impl UnitOperation {
             "grabby" => Some(GrabbingHypothesisTest),
             "bunkbed_sites" | "bb_sites" => Some(BunkbedSiteCOunts),
             "bunkbed_connections" | "bbrcc" => Some(BunkbedReducedConnectionCounts),
+            "bunkbed_connection_sims" | "bbcs" => Some(BunkbedReducedConnectionSimulation(args[0].parse().unwrap())),
             "()" | "(" => Some(Unit),
             &_ => None,
         }
@@ -105,6 +107,10 @@ impl fmt::Display for UnitOperation {
             GrabbingHypothesisTest => "Test whatever the current hypothesis is for graph grabbing",
             BunkbedSiteCOunts => "Print percolation counts for bunkbed sites",
             BunkbedReducedConnectionCounts => "Print bunkbed connection counts",
+            BunkbedReducedConnectionSimulation(reps) => {
+                str = format!("Simulate bunkbed connection counts {} times and print max ratios", reps);
+                &str
+            }
             Unit => "Do nothing",
         };
         write!(f, "{}", name)

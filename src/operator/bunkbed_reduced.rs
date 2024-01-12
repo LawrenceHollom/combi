@@ -1,8 +1,13 @@
+use std::collections::HashMap;
+use std::hash::*;
+use std::fmt::*;
+
 use crate::graph::*;
 
 use rand::Rng;
 use rand::thread_rng;
 use utilities::*;
+use utilities::component_tools::*;
 use utilities::vertex_tools::*;
 use utilities::edge_tools::*;
 
@@ -422,9 +427,101 @@ impl ConnectionCounts {
 	}
 }
 
+#[derive(Clone)]
+struct EquivalenceRelation {
+	components: VertexVec<Component>,
+}
+
+impl PartialEq for EquivalenceRelation {
+    fn eq(&self, other: &Self) -> bool {
+        for (i, c) in self.components.iter_enum() {
+			if *c != other.components[i] {
+				return false;
+			}
+		}
+		true
+    }
+}
+
+impl Eq for EquivalenceRelation {}
+
+impl Hash for EquivalenceRelation {
+	fn hash<H: Hasher>(&self, state: &mut H) {
+        for c in self.components.iter() {
+			c.hash(state)
+		}
+    }
+}
+
+impl EquivalenceRelation {
+	pub fn new(g: &Graph, config: &EdgeSet, indexer: &EdgeIndexer, posts: &VertexSet, vertices: VertexSet) -> EquivalenceRelation {
+		fn pack_vertex(n: Order, x: Vertex, level: bool) -> Vertex {
+			if level {
+				x.incr_by_order(n)
+			} else {
+				x
+			}
+		}
+		let mut union = UnionFind::new(g.n.times(2));
+		for v in vertices.iter() {
+			let down_conns = get_connections(g, v, config, indexer, posts);
+			let up_conns = get_connections(g, v, &config.inverse(indexer), indexer, posts);
+			for u in vertices.iter() {
+				if down_conns[u][0] {
+					union.merge(pack_vertex(g.n, u, false), pack_vertex(g.n, v, false))
+				}
+				if down_conns[u][1] {
+					union.merge(pack_vertex(g.n, u, true), pack_vertex(g.n, v, false))
+				}
+				if up_conns[u][0] {
+					union.merge(pack_vertex(g.n, u, true), pack_vertex(g.n, v, true))
+				}
+				if up_conns[u][1] {
+					union.merge(pack_vertex(g.n, u, false), pack_vertex(g.n, v, true))
+				}
+			}
+		}
+		EquivalenceRelation { components : union.to_canonical_component_vec() }
+	}
+
+	pub fn to_string(&self) -> String {
+		format!("{:?}", self.components.iter().map(|c| c.to_vertex().to_string()).collect::<Vec<String>>())
+	}
+}
+
+impl Debug for EquivalenceRelation {
+	find a better way to print this thing
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "{:?}", self.components.iter().map(|c| c.to_vertex().to_string()).collect::<Vec<String>>())
+    }
+}
+
+struct EquivalenceCounts {
+	counts: HashMap<EquivalenceRelation, usize>
+}
+
+impl EquivalenceCounts {
+	pub fn new() -> EquivalenceCounts {
+		EquivalenceCounts { counts : HashMap::new() }
+	}
+
+	pub fn add(&mut self, g: &Graph, config: &EdgeSet, indexer: &EdgeIndexer, posts: &VertexSet, vertices: VertexSet) {
+		let conn = EquivalenceRelation::new(g, config, indexer, posts, vertices);
+		self.counts.entry(conn).and_modify(|x| *x += 1).or_insert(1);
+	}
+
+	pub fn print(&self) {
+		let rows = self.counts.iter()
+			.map(|(rel, c)| (rel.to_string(), vec![c.to_string()]))
+			.collect::<Vec<(String, Vec<String>)>>();
+		print_table(vec!["count".to_string()], rows)
+	}
+}
+
 pub fn print_connection_counts(g: &Graph) {
 	// We only need to count the first half of the configs
 	let mut counts = ConnectionCounts::new();
+	let mut new_counts = EquivalenceCounts::new();
 	let posts = get_posts(g);
 	let indexer = EdgeIndexer::new(&g.adj_list);
 	let v = g.n.to_max_vertex();
@@ -436,8 +533,39 @@ pub fn print_connection_counts(g: &Graph) {
 		let up_conns = get_connections(g, Vertex::ZERO, &config.inverse(&indexer), &indexer, &posts)[v];
 		let up_conns = [up_conns[1], up_conns[0]];
 		let right_post = get_connections(g, v, &config, &indexer, &posts)[v][1];
-		counts.add(&down_conns, &up_conns, left_post, right_post)
+		counts.add(&down_conns, &up_conns, left_post, right_post);
+
+		new_counts.add(g, &config, &indexer, &posts, VertexSet::of_vec(g.n, &vec![Vertex::ZERO, v]));
 	}
 
+	println!("Counts:");
 	counts.print();
+	println!("New counts:");
+	new_counts.print();
+}
+
+pub fn simulate_connection_count_ratios(g: &Graph, num_reps: usize) {
+	let mut max_ratios: HashMap<(EquivalenceRelation, EquivalenceRelation), f64> = HashMap::new();
+	for _i in 0..num_reps {
+		let h = g.constructor.new_graph();
+		let posts = get_posts(&h);
+		let indexer = EdgeIndexer::new(&g.adj_list);
+		let v = g.n.to_max_vertex();
+		let mut counts = EquivalenceCounts::new();
+
+		for config in g.iter_edge_sets() {
+			counts.add(g, &config, &indexer, &posts, VertexSet::of_vec(g.n, &vec![Vertex::ZERO, v]));
+		}
+		for (rel1, count1) in counts.counts.iter() {
+			if *count1 != 0 {
+				for (rel2, count2) in counts.counts.iter() {
+					let ratio = (*count1 as f64) / (*count2 as f64);
+					max_ratios.entry((rel1.to_owned(), rel2.to_owned())).and_modify(|x| *x = x.max(ratio)).or_insert(ratio);
+				}
+			}
+		}
+	}
+	for (i, ((rel1, rel2), ratio)) in max_ratios.iter().enumerate() {
+		println!("{}: ({:?}, {:?}) {:.3}", i, rel1, rel2, ratio)
+	}
 }

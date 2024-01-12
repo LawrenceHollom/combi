@@ -8,7 +8,7 @@ use rand::rngs::ThreadRng;
 use crate::*;
 use crate::vertex_tools::*;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Component(Vertex);
 
 #[derive(Clone, Debug)]
@@ -147,6 +147,18 @@ impl UnionFind {
 
     pub fn to_component_vec(self) -> VertexVec<Component> {
         VertexVec::new_fn(self.vec.len(), |v| self.get_component(v))
+    }
+
+    pub fn to_canonical_component_vec(self) -> VertexVec<Component> {
+        let n = self.vec.len();
+        let mut reps = ComponentVec::new(n, &None);
+        for (v, comp_v) in self.vec.iter_enum() {
+            let comp = Component::of_vertex(*comp_v);
+            if reps[comp].is_none() {
+                reps[comp] = Some(v)
+            }
+        }
+        VertexVec::new_fn(n, |v| Component::of_vertex(reps[self.get_component(v)].unwrap()))
     }
 
     pub fn get_representatives(&self) -> VertexSet {
