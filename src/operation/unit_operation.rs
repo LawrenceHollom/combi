@@ -26,7 +26,7 @@ pub enum UnitOperation {
     PrintBobWinGrabbingWeighting,
     GrabbingHypothesisTest,
     BunkbedSiteCOunts,
-    BunkbedReducedConnectionCounts,
+    BunkbedReducedConnectionCounts(usize),
     BunkbedReducedConnectionSimulation(usize),
     Signature,
     Unit,
@@ -62,7 +62,7 @@ impl UnitOperation {
             "print_bgw" => Some(PrintBobWinGrabbingWeighting),
             "grabby" => Some(GrabbingHypothesisTest),
             "bunkbed_sites" | "bb_sites" => Some(BunkbedSiteCOunts),
-            "bunkbed_connections" | "bbrcc" => Some(BunkbedReducedConnectionCounts),
+            "bunkbed_connections" | "bbrcc" => Some(BunkbedReducedConnectionCounts(args[0].parse().unwrap())),
             "bunkbed_connection_sims" | "bbcs" => Some(BunkbedReducedConnectionSimulation(args[0].parse().unwrap())),
             "()" | "(" => Some(Unit),
             &_ => None,
@@ -106,7 +106,10 @@ impl fmt::Display for UnitOperation {
             PrintBobWinGrabbingWeighting => "Print a weighting with which Bob wins the graph grabbing game",
             GrabbingHypothesisTest => "Test whatever the current hypothesis is for graph grabbing",
             BunkbedSiteCOunts => "Print percolation counts for bunkbed sites",
-            BunkbedReducedConnectionCounts => "Print bunkbed connection counts",
+            BunkbedReducedConnectionCounts(k) => {
+                str = format!("Print bunkbed connection counts for {}-gons", *k);
+                &str
+            }
             BunkbedReducedConnectionSimulation(reps) => {
                 str = format!("Simulate bunkbed connection counts {} times and print max ratios", reps);
                 &str
