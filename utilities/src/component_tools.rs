@@ -35,6 +35,10 @@ impl Component {
     pub fn is_vertex(&self, v: Vertex) -> bool {
         self.0 == v
     }
+
+    pub fn incr_inplace(&mut self) {
+        self.0.incr_inplace()
+    }
 }
 
 impl <T: Debug + Clone> ComponentVec<T> {

@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::hash::*;
 use std::fmt::*;
+use std::io::Write;
 
 use crate::graph::*;
 
@@ -436,44 +437,6 @@ struct EquivalenceRelation {
 	vertices: VertexSet,
 }
 
-impl PartialEq for EquivalenceRelation {
-    fn eq(&self, other: &Self) -> bool {
-        for (i, c) in self.components.iter_enum() {
-			if *c != other.components[i] {
-				return false;
-			}
-		}
-		true
-    }
-}
-
-impl Eq for EquivalenceRelation {}
-
-impl Ord for EquivalenceRelation {
-    fn cmp(&self, other: &Self) -> Ordering {
-        for v in self.vertices.iter() {
-			if self.components[v].cmp(&other.components[v]) != Ordering::Equal {
-				return self.components[v].cmp(&other.components[v])
-			}
-		}
-		Ordering::Equal
-    }
-}
-
-impl PartialOrd for EquivalenceRelation {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Hash for EquivalenceRelation {
-	fn hash<H: Hasher>(&self, state: &mut H) {
-        for c in self.components.iter() {
-			c.hash(state)
-		}
-    }
-}
-
 impl EquivalenceRelation {
 	pub fn new(g: &Graph, config: &EdgeSet, indexer: &EdgeIndexer, posts: &VertexSet, vertices: VertexSet) -> EquivalenceRelation {
 		fn pack_vertex(n: Order, x: Vertex, level: bool) -> Vertex {
@@ -508,10 +471,6 @@ impl EquivalenceRelation {
 			vertices
 		 }
 	}
-
-	pub fn to_string(&self) -> String {
-		format!("{:?}", self)
-	}
 }
 
 impl Debug for EquivalenceRelation {
@@ -528,8 +487,128 @@ impl Debug for EquivalenceRelation {
     }
 }
 
+#[derive(Clone)]
+struct ReducedEquivalenceRelation {
+	down: Vec<Component>,
+	up: Vec<Component>,
+}
+
+impl PartialEq for ReducedEquivalenceRelation {
+    fn eq(&self, other: &Self) -> bool {
+        for (i, c) in self.down.iter().enumerate() {
+			if *c != other.down[i] {
+				return false;
+			}
+		}
+		for (i, c) in self.up.iter().enumerate() {
+			if *c != other.up[i] {
+				return false;
+			}
+		}
+		true
+    }
+}
+
+impl Eq for ReducedEquivalenceRelation {}
+
+impl Ord for ReducedEquivalenceRelation {
+    fn cmp(&self, other: &Self) -> Ordering {
+        for (i, c) in self.down.iter().enumerate() {
+			if c.cmp(&other.down[i]) != Ordering::Equal {
+				return c.cmp(&other.down[i])
+			}
+		}
+		for (i, c) in self.up.iter().enumerate() {
+			if c.cmp(&other.up[i]) != Ordering::Equal {
+				return c.cmp(&other.up[i])
+			}
+		}
+		Ordering::Equal
+    }
+}
+
+impl PartialOrd for ReducedEquivalenceRelation {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Hash for ReducedEquivalenceRelation {
+	fn hash<H: Hasher>(&self, state: &mut H) {
+        for c in self.down.iter() {
+			c.hash(state)
+		}
+		for c in self.up.iter() {
+			c.hash(state)
+		}
+    }
+}
+
+impl Debug for ReducedEquivalenceRelation {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+		let _ = write!(f, "[ ");
+		for c in self.down.iter() {
+			let _ = write!(f, "{} ", c.to_vertex().to_string());
+		}
+		let _ = write!(f, "/ ");
+		for c in self.up.iter() {
+			let _ = write!(f, "{} ", c.to_vertex().to_string());
+		}
+        write!(f, "]")
+    }
+}
+
+impl ReducedEquivalenceRelation {
+	pub fn of_equiv_rel(rel: EquivalenceRelation) -> ReducedEquivalenceRelation {
+		let mut new_labels_flat = ComponentVec::new(rel.n.times(2), &None);
+		let mut new_labels_cross = ComponentVec::new(rel.n.times(2), &None);
+		let mut c_flat = Component::ZERO;
+		let mut c_cross = Component::ZERO;
+		fn check_label(labels: &mut ComponentVec<Option<Component>>, c: &mut Component, comp: Component) {
+			if labels[comp].is_none() {
+				labels[comp] = Some(*c);
+				c.incr_inplace()
+			}
+		}
+		for v in rel.vertices.iter() {
+			check_label(&mut new_labels_flat, &mut c_flat, rel.components[v]);
+			check_label(&mut new_labels_flat, &mut c_flat, rel.components[v.incr_by_order(rel.n)]);
+			check_label(&mut new_labels_cross, &mut c_cross, rel.components[v.incr_by_order(rel.n)]);
+			check_label(&mut new_labels_cross, &mut c_cross, rel.components[v]);
+		}
+		let mut down_flat = vec![];
+		let mut up_flat = vec![];
+		let mut down_cross = vec![];
+		let mut up_cross = vec![];
+		for v in rel.vertices.iter() {
+			down_flat.push(new_labels_flat[rel.components[v]].unwrap());
+			up_flat.push(new_labels_flat[rel.components[v.incr_by_order(rel.n)]].unwrap());
+			down_cross.push(new_labels_cross[rel.components[v.incr_by_order(rel.n)]].unwrap());
+			up_cross.push(new_labels_cross[rel.components[v]].unwrap());
+		}
+		let mut is_flat_before_cross = true;
+		'test_ordering: for (i, comp) in down_flat.iter().enumerate() {
+			if *comp < down_cross[i] {
+				break 'test_ordering;
+			} else if *comp > down_cross[i] {
+				is_flat_before_cross = false;
+				break 'test_ordering;
+			}
+		}
+		if is_flat_before_cross {
+			ReducedEquivalenceRelation { down: down_flat, up: up_flat }
+		} else {
+			ReducedEquivalenceRelation { down: down_cross, up: up_cross }
+		}
+	}
+
+	pub fn to_string(&self) -> String {
+		format!("{:?}", self)
+	}
+}
+
 struct EquivalenceCounts {
-	counts: HashMap<EquivalenceRelation, usize>
+	counts: HashMap<ReducedEquivalenceRelation, usize>
 }
 
 impl EquivalenceCounts {
@@ -539,7 +618,8 @@ impl EquivalenceCounts {
 
 	pub fn add(&mut self, g: &Graph, config: &EdgeSet, indexer: &EdgeIndexer, posts: &VertexSet, vertices: VertexSet) {
 		let conn = EquivalenceRelation::new(g, config, indexer, posts, vertices);
-		self.counts.entry(conn).and_modify(|x| *x += 1).or_insert(1);
+		let reduced_conn = ReducedEquivalenceRelation::of_equiv_rel(conn);
+		self.counts.entry(reduced_conn).and_modify(|x| *x += 1).or_insert(1);
 	}
 
 	pub fn print(&self) {
@@ -586,19 +666,21 @@ pub fn print_connection_counts(g: &Graph, k: usize) {
 	counts.print();
 }
 
-pub fn simulate_connection_count_ratios(g: &Graph, num_reps: usize) {
-	let mut max_ratios: HashMap<(EquivalenceRelation, EquivalenceRelation), f64> = HashMap::new();
+pub fn simulate_connection_count_ratios(h: &Graph, num_reps: usize) {
+	let mut max_ratios: HashMap<(ReducedEquivalenceRelation, ReducedEquivalenceRelation), f64> = HashMap::new();
 	println!("Beginning! num_reps: {}", num_reps);
-	let mut all_rels : HashSet<EquivalenceRelation> = HashSet::new();
-	for _i in 0..num_reps {
-		let h = g.constructor.new_graph();
-		let posts = get_posts(&h);
+	let mut all_rels : HashSet<ReducedEquivalenceRelation> = HashSet::new();
+	for rep in 0..num_reps {
+		print!("{} ", rep);
+		std::io::stdout().flush().unwrap();
+		let g = h.constructor.new_graph();
+		let posts = get_posts(&g);
 		let indexer = EdgeIndexer::new(&g.adj_list);
 		let v = g.n.to_max_vertex();
 		let mut counts = EquivalenceCounts::new();
 
 		for config in g.iter_edge_sets() {
-			counts.add(g, &config, &indexer, &posts, VertexSet::of_vec(g.n, &vec![Vertex::ZERO, v]));
+			counts.add(&g, &config, &indexer, &posts, VertexSet::of_vec(g.n, &vec![Vertex::ZERO, v]));
 		}
 		for (rel1, count1) in counts.counts.iter() {
 			all_rels.insert(rel1.to_owned());
@@ -610,7 +692,7 @@ pub fn simulate_connection_count_ratios(g: &Graph, num_reps: usize) {
 			}
 		}
 	}
-	let mut rels_ordered = all_rels.iter().map(|x| x.to_owned()).collect::<Vec<EquivalenceRelation>>();
+	let mut rels_ordered = all_rels.iter().map(|x| x.to_owned()).collect::<Vec<ReducedEquivalenceRelation>>();
 	rels_ordered.sort();
 
 	println!("All equivalence relations");
@@ -621,8 +703,18 @@ pub fn simulate_connection_count_ratios(g: &Graph, num_reps: usize) {
 	let mut i = 0;
 	for rel1 in rels_ordered.iter() {
 		for rel2 in rels_ordered.iter() {
-			println!("{}: ({:?}, {:?}) {:.3}", i, rel1, rel2, max_ratios.get(&(rel1.to_owned(), rel2.to_owned())).unwrap());
-			i += 1
+			if rel1 != rel2 {
+				if let Some(ratio) = max_ratios.get(&(rel1.to_owned(), rel2.to_owned())) {
+					if *ratio > 10.0 {
+						println!("{}: ({:?}, {:?}) big", i, rel1, rel2);	
+					} else {
+						println!("{}: ({:?}, {:?}) {:.3}", i, rel1, rel2, ratio);
+					}
+				} else {
+					println!("{}: ({:?}, {:?}) fails due to unwrapping error", i, rel1, rel2);
+				}
+				i += 1
+			}
 		}
 	}
 }
