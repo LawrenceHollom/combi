@@ -605,6 +605,23 @@ impl ReducedEquivalenceRelation {
 	pub fn to_string(&self) -> String {
 		format!("{:?}", self)
 	}
+
+	pub fn print_fancy_pair(&self, denom: &ReducedEquivalenceRelation, ratio: f64) {
+		fn print_row(row: &Vec<Component>) {
+			for c in row.iter() {
+				print!(" {}", c.to_colored_string())
+			}
+		}
+		print!("(");
+		print_row(&self.up);
+		print!("  /");
+		print_row(&denom.up);
+		print!(" )\n(");
+		print_row(&self.down);
+		print!(" / ");
+		print_row(&denom.down);
+		println!(" ) : {:.3}", ratio)
+	}
 }
 
 struct EquivalenceCounts {
@@ -701,6 +718,7 @@ pub fn simulate_connection_count_ratios(h: &Graph, num_reps: usize) {
 	}
 
 	let mut i = 0;
+	let mut ratio_1_pairs = vec![];
 	for rel1 in rels_ordered.iter() {
 		for rel2 in rels_ordered.iter() {
 			if rel1 != rel2 {
@@ -708,6 +726,9 @@ pub fn simulate_connection_count_ratios(h: &Graph, num_reps: usize) {
 					if *ratio > 10.0 {
 						println!("{}: ({:?}, {:?}) big", i, rel1, rel2);	
 					} else {
+						if *ratio >= 0.9999 && *ratio <= 1.00001 {
+							ratio_1_pairs.push((rel1.to_owned(), rel2.to_owned()))
+						}
 						println!("{}: ({:?}, {:?}) {:.3}", i, rel1, rel2, ratio);
 					}
 				} else {
@@ -716,5 +737,11 @@ pub fn simulate_connection_count_ratios(h: &Graph, num_reps: usize) {
 				i += 1
 			}
 		}
+	}
+
+	println!("Ratio 1 pairs:");
+	for (rel1, rel2) in ratio_1_pairs.iter() {
+		rel1.print_fancy_pair(rel2, 1.0);
+		println!();
 	}
 }
