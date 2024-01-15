@@ -697,7 +697,7 @@ pub fn simulate_connection_count_ratios(h: &Graph, num_reps: usize) {
 		let mut counts = EquivalenceCounts::new();
 
 		for config in g.iter_edge_sets() {
-			counts.add(&g, &config, &indexer, &posts, VertexSet::of_vec(g.n, &vec![Vertex::ZERO, v]));
+			counts.add(&g, &config, &indexer, &posts, VertexSet::of_vec(g.n, &vec![Vertex::ZERO, v, v.decr()]));
 		}
 		for (rel1, count1) in counts.counts.iter() {
 			all_rels.insert(rel1.to_owned());
@@ -744,4 +744,5 @@ pub fn simulate_connection_count_ratios(h: &Graph, num_reps: usize) {
 		rel1.print_fancy_pair(rel2, 1.0);
 		println!();
 	}
+	println!("{} pairs have a ratio of precisely 1.000", ratio_1_pairs.len())
 }
