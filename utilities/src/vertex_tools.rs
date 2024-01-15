@@ -4,6 +4,7 @@ use std::fmt::Debug;
 use std::ops::*;
 use std::slice::*;
 
+use colored::*;
 use rand::rngs::ThreadRng;
 use rand::seq::SliceRandom;
 
@@ -148,6 +149,18 @@ impl Vertex {
 
     pub fn num_verts_after(&self, n: Order) -> usize {
         n.to_usize() - self.0 - 1
+    }
+
+    pub fn to_colored_string(&self) -> ColoredString {
+        match self.0 {
+            0 => "0".red(),
+            1 => "1".blue(),
+            2 => "2".green(),
+            3 => "3".yellow(),
+            4 => "4".magenta(),
+            5 => "5".cyan(),
+            _ => self.0.to_string().bold(),
+        }
     }
 }
 
