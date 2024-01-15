@@ -666,27 +666,43 @@ pub fn print_connection_counts(g: &Graph, k: usize) {
 	counts.print();
 }
 
-pub fn simulate_connection_count_ratios(h: &Graph, num_reps: usize) {
+pub fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize) {
 	let mut max_ratios: HashMap<(ReducedEquivalenceRelation, ReducedEquivalenceRelation), f64> = HashMap::new();
 	println!("Beginning! num_reps: {}", num_reps);
 	let mut all_rels : HashSet<ReducedEquivalenceRelation> = HashSet::new();
 	for rep in 0..num_reps {
+		let mut g: Graph;
+		'find_g: loop {
+			g = h.constructor.new_graph();
+			if g.size() <= 20 && g.is_connected() {
+				break 'find_g;
+			}
+		}
 		print!("{} ", rep);
 		std::io::stdout().flush().unwrap();
-		let g = h.constructor.new_graph();
 		let posts = get_posts(&g);
 		let indexer = EdgeIndexer::new(&g.adj_list);
-		let v = g.n.to_max_vertex();
 		let mut counts = EquivalenceCounts::new();
+		let mut vertices = VertexSet::of_vert(g.n, Vertex::ZERO);
+		for v in g.iter_verts().skip(g.n.to_usize() - k + 1) {
+			vertices.add_vert(v)
+		}
 
 		for config in g.iter_edge_sets() {
-			counts.add(&g, &config, &indexer, &posts, VertexSet::of_vec(g.n, &vec![Vertex::ZERO, v]));
+			counts.add(&g, &config, &indexer, &posts, vertices);
 		}
-		for (rel1, count1) in counts.counts.iter() {
-			all_rels.insert(rel1.to_owned());
-			if *count1 != 0 {
-				for (rel2, count2) in counts.counts.iter() {
-					let ratio = (*count1 as f64) / (*count2 as f64);
+
+		for rel in counts.counts.keys() {
+			if !all_rels.contains(rel) {
+				all_rels.insert(rel.to_owned());
+			}
+		}
+		for rel1 in all_rels.iter() {
+			let count1 = *counts.counts.get(rel1).unwrap_or(&0);
+			if count1 != 0 {
+				for rel2 in all_rels.iter() {
+					let count2 = *counts.counts.get(rel2).unwrap_or(&0);
+					let ratio = if count2 == 0 { f64::INFINITY } else { (count1 as f64) / (count2 as f64) };
 					max_ratios.entry((rel1.to_owned(), rel2.to_owned())).and_modify(|x| *x = x.max(ratio)).or_insert(ratio);
 				}
 			}
@@ -701,20 +717,30 @@ pub fn simulate_connection_count_ratios(h: &Graph, num_reps: usize) {
 	}
 
 	let mut i = 0;
+	let mut num_unwrapping_fails = 0;
+	let mut num_big = 0;
 	for rel1 in rels_ordered.iter() {
 		for rel2 in rels_ordered.iter() {
 			if rel1 != rel2 {
 				if let Some(ratio) = max_ratios.get(&(rel1.to_owned(), rel2.to_owned())) {
 					if *ratio > 10.0 {
-						println!("{}: ({:?}, {:?}) big", i, rel1, rel2);	
+						if k == 2 {
+							println!("{}: ({:?}, {:?}) big", i, rel1, rel2);	
+						}
+						num_big += 1;
 					} else {
 						println!("{}: ({:?}, {:?}) {:.3}", i, rel1, rel2, ratio);
 					}
 				} else {
-					println!("{}: ({:?}, {:?}) fails due to unwrapping error", i, rel1, rel2);
+					if k == 2 {
+						println!("{}: ({:?}, {:?}) fails due to unwrapping error", i, rel1, rel2);
+					}
+					num_unwrapping_fails += 1;
 				}
 				i += 1
 			}
 		}
 	}
+	println!("Num ratios bigger than 10: {}", num_big);
+	println!("Num ratios resulting in unwrapping errors: {}", num_unwrapping_fails);
 }
