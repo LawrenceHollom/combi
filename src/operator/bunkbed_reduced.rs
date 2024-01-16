@@ -8,6 +8,7 @@ use std::io::Write;
 use crate::graph::*;
 
 use rand::Rng;
+use rand::rngs::ThreadRng;
 use rand::thread_rng;
 use utilities::*;
 use utilities::component_tools::*;
@@ -206,13 +207,14 @@ fn get_target_vertices(g: &Graph, posts: VertexSet) -> Vec<Vertex> {
  * Returns a set of vertices which will be the posts of g
  * n.b. it is assumed that this function is deterministic!
  */
-fn get_posts(g: &Graph) -> VertexSet {
+fn get_posts(g: &Graph, max_num_posts: Option<usize>) -> VertexSet {
+	let max_num_posts = max_num_posts.unwrap_or(4);
 	let mut posts = VertexSet::new(g.n);
 	let mut num_posts = 0;
 	let mut reached = VertexVec::new(g.n, &false);
 	reached[Vertex::ZERO] = true;
 	let mut x = Vertex::ZERO;
-	while num_posts < 4 && !x.incr().is_n(g.n){
+	while num_posts < max_num_posts && !x.incr().is_n(g.n){
 		if reached[x] {
 			x.incr_inplace()
 		} else {
@@ -227,11 +229,24 @@ fn get_posts(g: &Graph) -> VertexSet {
 	posts
 }
 
+fn get_max_num_posts(rng: &mut ThreadRng) -> usize {
+	let p = rng.gen_range(0.0..1.0);
+	if p < 0.01 { 
+		0
+	} else if p < 0.2 {
+		1
+	} else if p < 0.95 {
+		4
+	} else {
+		100
+	}
+}
+
 pub fn contradicts_reduced_conditioned_bunkbed_conjecture(g: &Graph) -> bool {
 	// Put in some posts, test if the conj is true conditioned on some vertex being unreachable.
 	let mut num_flat_avoiding = VertexVec::new(g.n, &VertexVec::new(g.n, &0));
 	let mut num_cross_avoiding = VertexVec::new(g.n, &VertexVec::new(g.n, &0));
-	let posts = get_posts(g);
+	let posts = get_posts(g, None);
 	let targets = get_target_vertices(g, posts);
 	let indexer = EdgeIndexer::new(&g.adj_list);
 	for config in g.iter_edge_sets() {
@@ -265,7 +280,7 @@ pub fn contradicts_reduced_bunkbed_conjecture(g: &Graph) -> bool {
 	// Put in some posts, test if the conj is true.
 	let mut num_flat = VertexVec::new(g.n, &0);
 	let mut num_cross = VertexVec::new(g.n, &0);
-	let posts = get_posts(g);
+	let posts = get_posts(g, None);
 	let targets = get_target_vertices(g, posts);
 	let indexer = EdgeIndexer::new(&g.adj_list);
 
@@ -300,7 +315,7 @@ pub fn contradicts_reduced_bunkbed_conjecture(g: &Graph) -> bool {
 pub fn approx_contradicts_reduced_bunkbed_conjecture(g: &Graph, samples: usize) -> bool {
 	let mut num_flat = VertexVec::new(g.n, &0);
 	let mut num_cross = VertexVec::new(g.n, &0);
-	let posts = get_posts(g);
+	let posts = get_posts(g, None);
 	let targets = get_target_vertices(g, posts);
 	let mut rng = thread_rng();
 	let indexer = EdgeIndexer::new(&g.adj_list);
@@ -350,7 +365,7 @@ pub fn approx_contradicts_reduced_bunkbed_conjecture(g: &Graph, samples: usize) 
  * We're implicitly kinda assuming that the target vertex is n-1.
  */
 pub fn is_bunkbed_reducible(g: &Graph) -> bool {
-	let posts = get_posts(g);
+	let posts = get_posts(g, None);
 	let targets = get_target_vertices(g, posts);
 	if targets.is_empty() {
 		true
@@ -649,7 +664,7 @@ impl EquivalenceCounts {
 
 pub fn print_connection_counts(g: &Graph, k: usize) {
 	// We only need to count the first half of the configs
-	let posts = get_posts(g);
+	let posts = get_posts(g, None);
 	let indexer = EdgeIndexer::new(&g.adj_list);
 
 	if k == 2 {
@@ -687,11 +702,12 @@ pub fn simulate_connection_count_ratios(h: &Graph, num_reps: usize) {
 	let mut max_ratios: HashMap<(ReducedEquivalenceRelation, ReducedEquivalenceRelation), f64> = HashMap::new();
 	println!("Beginning! num_reps: {}", num_reps);
 	let mut all_rels : HashSet<ReducedEquivalenceRelation> = HashSet::new();
+	let mut rng = thread_rng();
 	for rep in 0..num_reps {
 		print!("{} ", rep);
 		std::io::stdout().flush().unwrap();
 		let g = h.constructor.new_graph();
-		let posts = get_posts(&g);
+		let posts = get_posts(&g, Some(get_max_num_posts(&mut rng)));
 		let indexer = EdgeIndexer::new(&g.adj_list);
 		let v = g.n.to_max_vertex();
 		let mut counts = EquivalenceCounts::new();
