@@ -27,7 +27,7 @@ pub enum UnitOperation {
     GrabbingHypothesisTest,
     BunkbedSiteCOunts,
     BunkbedReducedConnectionCounts(usize),
-    BunkbedReducedConnectionSimulation(usize),
+    BunkbedReducedConnectionSimulation(usize, usize),
     Signature,
     Unit,
 }
@@ -63,7 +63,10 @@ impl UnitOperation {
             "grabby" => Some(GrabbingHypothesisTest),
             "bunkbed_sites" | "bb_sites" => Some(BunkbedSiteCOunts),
             "bunkbed_connections" | "bbrcc" => Some(BunkbedReducedConnectionCounts(args[0].parse().unwrap())),
-            "bunkbed_connection_sims" | "bbcs" => Some(BunkbedReducedConnectionSimulation(args[0].parse().unwrap())),
+            "bunkbed_connection_sims" | "bbcs" => {
+                let k = args.get(1).map_or(2, |k| k.parse().unwrap());
+                Some(BunkbedReducedConnectionSimulation(args[0].parse().unwrap(), k))
+            },
             "()" | "(" => Some(Unit),
             &_ => None,
         }
@@ -110,8 +113,8 @@ impl fmt::Display for UnitOperation {
                 str = format!("Print bunkbed connection counts for {}-gons", *k);
                 &str
             }
-            BunkbedReducedConnectionSimulation(reps) => {
-                str = format!("Simulate bunkbed connection counts {} times and print max ratios", reps);
+            BunkbedReducedConnectionSimulation(reps, k) => {
+                str = format!("Simulate bunkbed {}-connection counts {} times and print max ratios", k, reps);
                 &str
             }
             Unit => "Do nothing",
