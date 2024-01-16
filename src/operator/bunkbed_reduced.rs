@@ -705,9 +705,10 @@ pub fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize) {
 	let mut rng = thread_rng();
 	for rep in 0..num_reps {
 		let mut g: Graph;
+		let should_be_connected = rng.gen_bool(0.8);
 		'find_g: loop {
 			g = h.constructor.new_graph();
-			if g.size() <= 20 && g.is_connected() {
+			if g.size() <= 19 && (!should_be_connected || g.is_connected()) {
 				break 'find_g;
 			}
 		}
@@ -749,10 +750,16 @@ pub fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize) {
 		println!("{:?}", rel)
 	}
 
+	fn is_approx(x: &f64, y: f64) -> bool {
+		*x >= y * 0.99999 && *x <= y * 1.000001
+	}
+
 	let mut i = 0;
 	let mut num_unwrapping_fails = 0;
 	let mut num_big = 0;
 	let mut ratio_1_pairs = vec![];
+	let mut num_ratio_half_pairs = 0;
+	let mut num_ratio_two_pairs = 0;
 	for rel1 in rels_ordered.iter() {
 		for rel2 in rels_ordered.iter() {
 			if rel1 != rel2 {
@@ -763,8 +770,12 @@ pub fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize) {
 						}
 						num_big += 1;
 					} else {
-						if *ratio >= 0.9999 && *ratio <= 1.00001 {
+						if is_approx(ratio, 1.0) {
 							ratio_1_pairs.push((rel1.to_owned(), rel2.to_owned()))
+						} else if is_approx(ratio, 0.5) {
+							num_ratio_half_pairs += 1;
+						} else if is_approx(ratio, 2.0) {
+							num_ratio_two_pairs += 1;
 						}
 						println!("{}: ({:?}, {:?}) {:.3}", i, rel1, rel2, ratio);
 					}
@@ -787,4 +798,6 @@ pub fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize) {
 	println!("{} pairs have a ratio of precisely 1.000", ratio_1_pairs.len());
 	println!("Num ratios bigger than 10: {}", num_big);
 	println!("Num ratios resulting in unwrapping errors: {}", num_unwrapping_fails);
+	println!("{} pairs have a ratio of precisely 0.500", num_ratio_half_pairs);
+	println!("{} pairs have a ratio of precisely 2.000", num_ratio_two_pairs);
 }
