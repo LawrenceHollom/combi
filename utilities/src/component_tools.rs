@@ -3,7 +3,6 @@ use std::fmt::Debug;
 use std::ops::*;
 use std::slice::*;
 
-use colored::*;
 use rand::rngs::ThreadRng;
 
 use crate::*;
@@ -39,10 +38,6 @@ impl Component {
 
     pub fn incr_inplace(&mut self) {
         self.0.incr_inplace()
-    }
-
-    pub fn to_colored_string(&self) -> ColoredString {
-        self.0.to_colored_string()
     }
 }
 

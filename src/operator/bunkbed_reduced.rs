@@ -18,6 +18,7 @@ use utilities::edge_tools::*;
 
 use queues::*;
 use strum::*;
+use colored::*;
 
 /**
  * This file deals with the version of the conjecture wherein we have
@@ -503,11 +504,36 @@ impl Debug for EquivalenceRelation {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+struct EquivalenceClass(usize);
+
+impl EquivalenceClass {
+	pub fn incr_inplace(&mut self) {
+		self.0 += 1
+	}
+
+	pub fn to_string(&self) -> String {
+		self.0.to_string()
+	}
+
+    pub fn to_colored_string(&self) -> ColoredString {
+        match self.0 {
+            0 => "0".red(),
+            1 => "1".blue(),
+            2 => "2".green(),
+            3 => "3".yellow(),
+            4 => "4".magenta(),
+            5 => "5".cyan(),
+            _ => self.0.to_string().bold(),
+        }
+    }
+}
+
 #[derive(Clone)]
 struct ReducedEquivalenceRelation {
 	k: usize,
-	down: Vec<Component>,
-	up: Vec<Component>,
+	down: Vec<EquivalenceClass>,
+	up: Vec<EquivalenceClass>,
 }
 
 impl PartialEq for ReducedEquivalenceRelation {
@@ -565,11 +591,11 @@ impl Debug for ReducedEquivalenceRelation {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
 		let _ = write!(f, "[ ");
 		for c in self.down.iter() {
-			let _ = write!(f, "{} ", c.to_vertex().to_string());
+			let _ = write!(f, "{} ", c.to_string());
 		}
 		let _ = write!(f, "/ ");
 		for c in self.up.iter() {
-			let _ = write!(f, "{} ", c.to_vertex().to_string());
+			let _ = write!(f, "{} ", c.to_string());
 		}
         write!(f, "]")
     }
@@ -579,21 +605,33 @@ impl ReducedEquivalenceRelation {
 	pub fn of_equiv_rel(rel: EquivalenceRelation) -> ReducedEquivalenceRelation {
 		let mut down = vec![];
 		let mut up = vec![];
+		let mut new_labels = ComponentVec::new(rel.n.times(2), &None);
+		let mut next_label = EquivalenceClass(0);
 		for v in rel.vertices.iter() {
-			down.push(rel.components[v]);
-			up.push(rel.components[v.incr_by_order(rel.n)])
+			let c = rel.components[v];
+			if new_labels[c].is_none() {
+				new_labels[c] = Some(next_label);
+				next_label.incr_inplace();
+			}
+			down.push(new_labels[c].unwrap());
+			let c = rel.components[v.incr_by_order(rel.n)];
+			if new_labels[c].is_none() {
+				new_labels[c] = Some(next_label);
+				next_label.incr_inplace();
+			}
+			up.push(new_labels[c].unwrap())
 		}
-		ReducedEquivalenceRelation { k: rel.vertices.size(), down, up }.reduce(rel.n)
+		ReducedEquivalenceRelation { k: rel.vertices.size(), down, up }.reduce()
 	}
 
-	fn reduce(&self, n: Order) -> ReducedEquivalenceRelation {
-		let mut new_labels_flat = ComponentVec::new(n.times(2), &None);
-		let mut new_labels_cross = ComponentVec::new(n.times(2), &None);
-		let mut c_flat = Component::ZERO;
-		let mut c_cross = Component::ZERO;
-		fn check_label(labels: &mut ComponentVec<Option<Component>>, c: &mut Component, comp: Component) {
-			if labels[comp].is_none() {
-				labels[comp] = Some(*c);
+	fn reduce(&self) -> ReducedEquivalenceRelation {
+		let mut new_labels_flat = vec![None; self.k * 2];
+		let mut new_labels_cross = vec![None; self.k * 2];
+		let mut c_flat = EquivalenceClass(0);
+		let mut c_cross = EquivalenceClass(0);
+		fn check_label(labels: &mut Vec<Option<EquivalenceClass>>, c: &mut EquivalenceClass, comp: EquivalenceClass) {
+			if labels[comp.0].is_none() {
+				labels[comp.0] = Some(*c);
 				c.incr_inplace()
 			}
 		}
@@ -608,10 +646,10 @@ impl ReducedEquivalenceRelation {
 		let mut down_cross = vec![];
 		let mut up_cross = vec![];
 		for v in 0..self.k {
-			down_flat.push(new_labels_flat[self.down[v]].unwrap());
-			up_flat.push(new_labels_flat[self.up[v]].unwrap());
-			down_cross.push(new_labels_cross[self.up[v]].unwrap());
-			up_cross.push(new_labels_cross[self.down[v]].unwrap());
+			down_flat.push(new_labels_flat[self.down[v].0].unwrap());
+			up_flat.push(new_labels_flat[self.up[v].0].unwrap());
+			down_cross.push(new_labels_cross[self.up[v].0].unwrap());
+			up_cross.push(new_labels_cross[self.down[v].0].unwrap());
 		}
 		let mut is_flat_before_cross = true;
 		'test_ordering: for (i, comp) in down_flat.iter().enumerate() {
@@ -646,7 +684,7 @@ impl ReducedEquivalenceRelation {
 				new_down.push(self.down[*i]);
 				new_up.push(self.up[*i]);
 			}
-			permutations.push(ReducedEquivalenceRelation { k: self.k, down: new_down, up: new_up}.reduce(Order::of_usize(self.k)))
+			permutations.push(ReducedEquivalenceRelation { k: self.k, down: new_down, up: new_up}.reduce())
 		}
 		permutations
 	}
@@ -655,7 +693,7 @@ impl ReducedEquivalenceRelation {
 		format!("{:?}", self)
 	}
 
-	fn print_row(row: &Vec<Component>) {
+	fn print_row(row: &Vec<EquivalenceClass>) {
 		for c in row.iter() {
 			print!(" {}", c.to_colored_string())
 		}
@@ -664,7 +702,7 @@ impl ReducedEquivalenceRelation {
 	pub fn print_fancy(&self, count: usize) {
 		print!("(");
 		Self::print_row(&self.up);
-		print!(" )\n(");
+		print!(" ) code = {}\n(", self.to_code());
 		Self::print_row(&self.down);
 		println!(" ) : [{}]", count);
 	}
@@ -674,11 +712,25 @@ impl ReducedEquivalenceRelation {
 		Self::print_row(&self.up);
 		print!("  /");
 		Self::print_row(&denom.up);
-		print!(" )\n(");
+		print!(" ) codes = ({}) / ({})\n(", self.to_code(), denom.to_code());
 		Self::print_row(&self.down);
 		print!(" / ");
 		Self::print_row(&denom.down);
 		println!(" ) : {:.3} [{}]", ratio, count)
+	}
+
+	pub fn to_code(&self) -> u128 {
+		let mut code = 0_u128;
+		let mut pow = 1_u128;
+		for x in self.down.iter() {
+			code += (x.0 as u128) * pow;
+			pow *= 2 * self.k as u128;
+		}
+		for x in self.up.iter() {
+			code += (x.0 as u128) * pow;
+			pow *= 2 * self.k as u128;
+		}
+		code
 	}
 }
 
@@ -814,6 +866,18 @@ pub fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize) {
 					max_ratios.entry((first_rel1.to_owned(), first_rel2.to_owned()))
 						.and_modify(|(x, count)| if ratio > *x { *x = ratio; *count = 1 } else if ratio == *x { *count += 1 } )	
 						.or_insert((ratio, 1));
+
+					if ((first_rel1.to_code() == 23622 && first_rel2.to_code() == 24696) 
+							|| (first_rel1.to_code() == 10446 && first_rel2.to_code() == 16890)) 
+							&& ratio > 0.5001 {
+						println!("FOUND ONE EXHIBITING CROSS OVER TRIANGLE > 0.5000 (ratio = {}):", ratio);
+						print_vertex_table(vec![("vertices", vertices.to_vec().to_vec_of_strings()), 
+										("posts", posts.to_vec().to_vec_of_strings())]);
+						g.print();
+						first_rel1.print_fancy(count1);
+						first_rel2.print_fancy(count2);
+						panic!("AAAAAAAAAA")
+					}
 				}
 			}
 		}
@@ -823,7 +887,7 @@ pub fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize) {
 
 	println!("All equivalence relations");
 	for rel in rels_ordered.iter() {
-		println!("{:?}", rel)
+		println!("{:?} : code = {}", rel, rel.to_code())
 	}
 
 	fn is_approx(x: &f64, y: f64) -> bool {
