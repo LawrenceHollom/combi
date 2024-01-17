@@ -4,6 +4,7 @@ use std::collections::HashSet;
 use std::hash::*;
 use std::fmt::*;
 use std::io::Write;
+use std::time::SystemTime;
 
 use crate::graph::*;
 
@@ -749,6 +750,7 @@ pub fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize) {
 	let mut permutations = HashMap::new();
 	let mut rng = thread_rng();
 	let mut rel_counts: HashMap<ReducedEquivalenceRelation, usize> = HashMap::new();
+	let mut time_of_last_print = SystemTime::now();
 	for rep in 0..num_reps {
 		let mut g: Graph;
 		let should_be_connected = rng.gen_bool(0.8);
@@ -758,8 +760,11 @@ pub fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize) {
 				break 'find_g;
 			}
 		}
-		print!("{} ", rep);
-		std::io::stdout().flush().unwrap();
+		if time_of_last_print.elapsed().unwrap().as_secs() >= 1 {
+			print!("{} ", rep);
+			std::io::stdout().flush().unwrap();
+			time_of_last_print = SystemTime::now();
+		}
 		let posts = get_posts(&g, Some(get_max_num_posts(&mut rng)));
 		let indexer = EdgeIndexer::new(&g.adj_list);
 		let mut counts = EquivalenceCounts::new();
