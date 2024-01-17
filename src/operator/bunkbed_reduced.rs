@@ -504,6 +504,7 @@ impl Debug for EquivalenceRelation {
 
 #[derive(Clone)]
 struct ReducedEquivalenceRelation {
+	k: usize,
 	down: Vec<Component>,
 	up: Vec<Component>,
 }
@@ -575,8 +576,18 @@ impl Debug for ReducedEquivalenceRelation {
 
 impl ReducedEquivalenceRelation {
 	pub fn of_equiv_rel(rel: EquivalenceRelation) -> ReducedEquivalenceRelation {
-		let mut new_labels_flat = ComponentVec::new(rel.n.times(2), &None);
-		let mut new_labels_cross = ComponentVec::new(rel.n.times(2), &None);
+		let mut down = vec![];
+		let mut up = vec![];
+		for v in rel.vertices.iter() {
+			down.push(rel.components[v]);
+			up.push(rel.components[v.incr_by_order(rel.n)])
+		}
+		ReducedEquivalenceRelation { k: rel.vertices.size(), down, up }.reduce(rel.n)
+	}
+
+	fn reduce(&self, n: Order) -> ReducedEquivalenceRelation {
+		let mut new_labels_flat = ComponentVec::new(n.times(2), &None);
+		let mut new_labels_cross = ComponentVec::new(n.times(2), &None);
 		let mut c_flat = Component::ZERO;
 		let mut c_cross = Component::ZERO;
 		fn check_label(labels: &mut ComponentVec<Option<Component>>, c: &mut Component, comp: Component) {
@@ -585,21 +596,21 @@ impl ReducedEquivalenceRelation {
 				c.incr_inplace()
 			}
 		}
-		for v in rel.vertices.iter() {
-			check_label(&mut new_labels_flat, &mut c_flat, rel.components[v]);
-			check_label(&mut new_labels_flat, &mut c_flat, rel.components[v.incr_by_order(rel.n)]);
-			check_label(&mut new_labels_cross, &mut c_cross, rel.components[v.incr_by_order(rel.n)]);
-			check_label(&mut new_labels_cross, &mut c_cross, rel.components[v]);
+		for v in 0..self.k {
+			check_label(&mut new_labels_flat, &mut c_flat, self.down[v]);
+			check_label(&mut new_labels_flat, &mut c_flat, self.up[v]);
+			check_label(&mut new_labels_cross, &mut c_cross, self.up[v]);
+			check_label(&mut new_labels_cross, &mut c_cross, self.down[v]);
 		}
 		let mut down_flat = vec![];
 		let mut up_flat = vec![];
 		let mut down_cross = vec![];
 		let mut up_cross = vec![];
-		for v in rel.vertices.iter() {
-			down_flat.push(new_labels_flat[rel.components[v]].unwrap());
-			up_flat.push(new_labels_flat[rel.components[v.incr_by_order(rel.n)]].unwrap());
-			down_cross.push(new_labels_cross[rel.components[v.incr_by_order(rel.n)]].unwrap());
-			up_cross.push(new_labels_cross[rel.components[v]].unwrap());
+		for v in 0..self.k {
+			down_flat.push(new_labels_flat[self.down[v]].unwrap());
+			up_flat.push(new_labels_flat[self.up[v]].unwrap());
+			down_cross.push(new_labels_cross[self.up[v]].unwrap());
+			up_cross.push(new_labels_cross[self.down[v]].unwrap());
 		}
 		let mut is_flat_before_cross = true;
 		'test_ordering: for (i, comp) in down_flat.iter().enumerate() {
@@ -611,31 +622,62 @@ impl ReducedEquivalenceRelation {
 			}
 		}
 		if is_flat_before_cross {
-			ReducedEquivalenceRelation { down: down_flat, up: up_flat }
+			ReducedEquivalenceRelation { k: self.k, down: down_flat, up: up_flat }
 		} else {
-			ReducedEquivalenceRelation { down: down_cross, up: up_cross }
+			ReducedEquivalenceRelation { k: self.k, down: down_cross, up: up_cross }
 		}
+	}
+
+	pub fn get_all_permutations(&self) -> Vec<ReducedEquivalenceRelation> {
+		let mut permutations = vec![];
+		// iterate through all the k! permutations, produce, reduce, and add.
+		let sigmas = if self.k == 2 {
+				vec![vec![0, 1], vec![1, 0]]
+			} else if self.k == 3 {
+				vec![vec![0, 1, 2], vec![0, 2, 1], vec![1, 0, 2], vec![1, 2, 0], vec![2, 0, 1], vec![2, 1, 0]]	
+			} else {
+				panic!("Guess what? It's time to fix this awful hack you put in!")
+			};
+		for sigma in sigmas.iter() {
+			let mut new_down = vec![];
+			let mut new_up = vec![];
+			for i in sigma.iter() {
+				new_down.push(self.down[*i]);
+				new_up.push(self.up[*i]);
+			}
+			permutations.push(ReducedEquivalenceRelation { k: self.k, down: new_down, up: new_up}.reduce(Order::of_usize(self.k)))
+		}
+		permutations
 	}
 
 	pub fn to_string(&self) -> String {
 		format!("{:?}", self)
 	}
 
-	pub fn print_fancy_pair(&self, denom: &ReducedEquivalenceRelation, ratio: f64) {
-		fn print_row(row: &Vec<Component>) {
-			for c in row.iter() {
-				print!(" {}", c.to_colored_string())
-			}
+	fn print_row(row: &Vec<Component>) {
+		for c in row.iter() {
+			print!(" {}", c.to_colored_string())
 		}
+	}
+
+	pub fn print_fancy(&self, count: usize) {
 		print!("(");
-		print_row(&self.up);
-		print!("  /");
-		print_row(&denom.up);
+		Self::print_row(&self.up);
 		print!(" )\n(");
-		print_row(&self.down);
+		Self::print_row(&self.down);
+		println!(" ) : [{}]", count);
+	}
+
+	pub fn print_fancy_pair(&self, denom: &ReducedEquivalenceRelation, ratio: f64, count: usize) {
+		print!("(");
+		Self::print_row(&self.up);
+		print!("  /");
+		Self::print_row(&denom.up);
+		print!(" )\n(");
+		Self::print_row(&self.down);
 		print!(" / ");
-		print_row(&denom.down);
-		println!(" ) : {:.3}", ratio)
+		Self::print_row(&denom.down);
+		println!(" ) : {:.3} [{}]", ratio, count)
 	}
 }
 
@@ -698,11 +740,15 @@ pub fn print_connection_counts(g: &Graph, k: usize) {
 	counts.print();
 }
 
+const BIG_CUTOFF: f64 = 5.999;
+
 pub fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize) {
-	let mut max_ratios: HashMap<(ReducedEquivalenceRelation, ReducedEquivalenceRelation), f64> = HashMap::new();
+	let mut max_ratios: HashMap<(ReducedEquivalenceRelation, ReducedEquivalenceRelation), (f64, usize)> = HashMap::new();
 	println!("Beginning! num_reps: {}", num_reps);
 	let mut all_rels : HashSet<ReducedEquivalenceRelation> = HashSet::new();
+	let mut permutations = HashMap::new();
 	let mut rng = thread_rng();
+	let mut rel_counts: HashMap<ReducedEquivalenceRelation, usize> = HashMap::new();
 	for rep in 0..num_reps {
 		let mut g: Graph;
 		let should_be_connected = rng.gen_bool(0.8);
@@ -717,11 +763,19 @@ pub fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize) {
 		let posts = get_posts(&g, Some(get_max_num_posts(&mut rng)));
 		let indexer = EdgeIndexer::new(&g.adj_list);
 		let mut counts = EquivalenceCounts::new();
-		let mut vertices = VertexSet::of_vert(g.n, Vertex::ZERO);
-		for v in g.iter_verts().skip(g.n.to_usize() - k + 1) {
-			vertices.add_vert(v)
+		let mut vertices = VertexSet::new(g.n);
+		if rng.gen_bool(0.3) {
+			vertices.add_vert(Vertex::ZERO);
+			for v in g.iter_verts().skip(g.n.to_usize() - k + 1) {
+				vertices.add_vert(v)
+			}
+		} else {
+			while vertices.size() < k {
+				vertices.add_vert(Vertex::of_usize(rng.gen_range(0..g.n.to_usize())))
+			}
 		}
 
+		// This here is the bottleneck.
 		for config in g.iter_edge_sets() {
 			counts.add(&g, &config, &indexer, &posts, vertices);
 		}
@@ -730,6 +784,10 @@ pub fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize) {
 			if !all_rels.contains(rel) {
 				all_rels.insert(rel.to_owned());
 			}
+			if !permutations.contains_key(rel) {
+				permutations.insert(rel.to_owned(), rel.get_all_permutations());
+			}
+			rel_counts.entry(rel.to_owned()).and_modify(|x| *x += 1).or_insert(1);
 		}
 		for rel1 in all_rels.iter() {
 			let count1 = *counts.counts.get(rel1).unwrap_or(&0);
@@ -737,7 +795,20 @@ pub fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize) {
 				for rel2 in all_rels.iter() {
 					let count2 = *counts.counts.get(rel2).unwrap_or(&0);
 					let ratio = if count2 == 0 { f64::INFINITY } else { (count1 as f64) / (count2 as f64) };
-					max_ratios.entry((rel1.to_owned(), rel2.to_owned())).and_modify(|x| *x = x.max(ratio)).or_insert(ratio);
+					// Now get the lexicographically first permutation of the pair (rel1, rel2).
+					let mut first_rel1 = rel1;
+					let mut first_rel2 = rel2;
+					for (i, permed_rel1) in permutations.get(rel1).unwrap().iter().enumerate() {
+						let permed_rel2 = &permutations.get(rel2).unwrap()[i];
+						if permed_rel1 < first_rel1 || (permed_rel1 == first_rel1 && permed_rel2 < first_rel2) {
+							first_rel1 = permed_rel1;
+							first_rel2 = permed_rel2;
+						}
+					}
+
+					max_ratios.entry((first_rel1.to_owned(), first_rel2.to_owned()))
+						.and_modify(|(x, count)| if ratio > *x { *x = ratio; *count = 1 } else if ratio == *x { *count += 1 } )	
+						.or_insert((ratio, 1));
 				}
 			}
 		}
@@ -757,27 +828,28 @@ pub fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize) {
 	let mut i = 0;
 	let mut num_unwrapping_fails = 0;
 	let mut num_big = 0;
-	let mut ratio_1_pairs = vec![];
+	let mut num_ratio_one_pairs = 0;
 	let mut num_ratio_half_pairs = 0;
 	let mut num_ratio_two_pairs = 0;
+	let mut good_pairs = vec![];
 	for rel1 in rels_ordered.iter() {
 		for rel2 in rels_ordered.iter() {
 			if rel1 != rel2 {
-				if let Some(ratio) = max_ratios.get(&(rel1.to_owned(), rel2.to_owned())) {
-					if *ratio > 10.0 {
+				if let Some((ratio, count)) = max_ratios.get(&(rel1.to_owned(), rel2.to_owned())) {
+					if *ratio > BIG_CUTOFF {
 						if k == 2 {
-							println!("{}: ({:?}, {:?}) big", i, rel1, rel2);	
+							println!("{}: ({:?}, {:?}) big [{}]", i, rel1, rel2, count);
 						}
 						num_big += 1;
 					} else {
 						if is_approx(ratio, 1.0) {
-							ratio_1_pairs.push((rel1.to_owned(), rel2.to_owned()))
+							num_ratio_one_pairs += 1;
 						} else if is_approx(ratio, 0.5) {
 							num_ratio_half_pairs += 1;
 						} else if is_approx(ratio, 2.0) {
 							num_ratio_two_pairs += 1;
 						}
-						println!("{}: ({:?}, {:?}) {:.3}", i, rel1, rel2, ratio);
+						good_pairs.push((rel1.to_owned(), rel2.to_owned(), *count, *ratio));
 					}
 				} else {
 					if k == 2 {
@@ -790,14 +862,34 @@ pub fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize) {
 		}
 	}
 
-	println!("Ratio 1 pairs:");
-	for (rel1, rel2) in ratio_1_pairs.iter() {
-		rel1.print_fancy_pair(rel2, 1.0);
+	fn cmp_pair(count1: usize, r1: f64, count2: usize, r2: f64) -> Ordering {
+		let r1u = (r1 * 100.0) as usize;
+		let r2u = (r2 * 100.0) as usize;
+		let ratio_compare = r1u.cmp(&r2u);
+		if ratio_compare.is_eq() {
+			count1.cmp(&count2)
+		} else {
+			ratio_compare
+		}
+	}
+
+	good_pairs.sort_by(|(_, _, count1, r1), (_, _, count2, r2)| cmp_pair(*count1, *r1, *count2, *r2));
+	let mut all_rel_counts = Vec::from_iter(rel_counts.iter());
+	all_rel_counts.sort_by(|(_, c1), (_, c2)| c1.cmp(c2));
+	println!("All ratios less than {}:", BIG_CUTOFF);
+	for (rel1, rel2, count, ratio) in good_pairs.iter() {
+		rel1.print_fancy_pair(rel2, *ratio, *count);
 		println!();
 	}
-	println!("{} pairs have a ratio of precisely 1.000", ratio_1_pairs.len());
-	println!("Num ratios bigger than 10: {}", num_big);
+	println!("Num ratios bigger than {}: {}", BIG_CUTOFF, num_big);
 	println!("Num ratios resulting in unwrapping errors: {}", num_unwrapping_fails);
 	println!("{} pairs have a ratio of precisely 0.500", num_ratio_half_pairs);
+	println!("{} pairs have a ratio of precisely 1.000", num_ratio_one_pairs);
 	println!("{} pairs have a ratio of precisely 2.000", num_ratio_two_pairs);
+	println!("There are {} different relations", all_rels.len());
+	println!("The three rarest configs are: ");
+	for (rel, count) in all_rel_counts.iter().take(3) {
+		rel.print_fancy(**count);
+		println!();
+	}
 }
