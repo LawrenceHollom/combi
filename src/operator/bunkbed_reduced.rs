@@ -866,18 +866,6 @@ pub fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize) {
 					max_ratios.entry((first_rel1.to_owned(), first_rel2.to_owned()))
 						.and_modify(|(x, count)| if ratio > *x { *x = ratio; *count = 1 } else if ratio == *x { *count += 1 } )	
 						.or_insert((ratio, 1));
-
-					if ((first_rel1.to_code() == 23622 && first_rel2.to_code() == 24696) 
-							|| (first_rel1.to_code() == 10446 && first_rel2.to_code() == 16890)) 
-							&& ratio > 0.5001 {
-						println!("FOUND ONE EXHIBITING CROSS OVER TRIANGLE > 0.5000 (ratio = {}):", ratio);
-						print_vertex_table(vec![("vertices", vertices.to_vec().to_vec_of_strings()), 
-										("posts", posts.to_vec().to_vec_of_strings())]);
-						g.print();
-						first_rel1.print_fancy(count1);
-						first_rel2.print_fancy(count2);
-						panic!("AAAAAAAAAA")
-					}
 				}
 			}
 		}
