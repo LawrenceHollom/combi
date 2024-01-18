@@ -286,7 +286,8 @@ impl Operator {
             GrabbingHypothesisTest => grabbing::hypothesis_testing(&self.g),
             BunkbedSiteCOunts => bunkbed_sites::print_counts(&self.g),
             BunkbedReducedConnectionCounts(k) => bunkbed_reduced::print_connection_counts(&self.g, *k),
-            BunkbedReducedConnectionSimulation(num_reps, k) => bunkbed_reduced::simulate_connection_count_ratios(&self.g, *num_reps, *k),
+            BunkbedReducedConnectionSimulation(num_reps, k) => bunkbed_reduced::simulate_connection_count_ratios_naive(&self.g, *num_reps, *k),
+            BunkbedReducedConnectionDP(num_reps, k) => bunkbed_reduced::bunkbed_connection_counts_dp(&self.g, *num_reps, *k),
             Unit => (),
         }
     }
