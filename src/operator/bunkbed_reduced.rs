@@ -534,6 +534,7 @@ struct ReducedEquivalenceRelation {
 	k: usize,
 	down: Vec<EquivalenceClass>,
 	up: Vec<EquivalenceClass>,
+	next_label: EquivalenceClass,
 }
 
 impl PartialEq for ReducedEquivalenceRelation {
@@ -621,13 +622,13 @@ impl ReducedEquivalenceRelation {
 			}
 			up.push(new_labels[c].unwrap())
 		}
-		ReducedEquivalenceRelation { k: rel.vertices.size(), down, up }.reduce()
+		ReducedEquivalenceRelation { k: rel.vertices.size(), down, up, next_label }.reduce()
 	}
 
 	pub fn empty(k: usize) -> ReducedEquivalenceRelation {
 		let down = (0..k).map(|x| EquivalenceClass(x)).collect::<Vec<EquivalenceClass>>();
 		let up = (k..(2 *k)).map(|x| EquivalenceClass(x)).collect::<Vec<EquivalenceClass>>();
-		ReducedEquivalenceRelation { k, down, up }.reduce()
+		ReducedEquivalenceRelation { k, down, up, next_label: EquivalenceClass(2 * k) }.reduce()
 	}
 
 	fn reduce(&self) -> ReducedEquivalenceRelation {
@@ -667,9 +668,9 @@ impl ReducedEquivalenceRelation {
 			}
 		}
 		if is_flat_before_cross {
-			ReducedEquivalenceRelation { k: self.k, down: down_flat, up: up_flat }
+			ReducedEquivalenceRelation { k: self.k, down: down_flat, up: up_flat, next_label: c_flat }
 		} else {
-			ReducedEquivalenceRelation { k: self.k, down: down_cross, up: up_cross }
+			ReducedEquivalenceRelation { k: self.k, down: down_cross, up: up_cross, next_label: c_cross }
 		}
 	}
 
@@ -690,9 +691,17 @@ impl ReducedEquivalenceRelation {
 				new_down.push(self.down[*i]);
 				new_up.push(self.up[*i]);
 			}
-			permutations.push(ReducedEquivalenceRelation { k: self.k, down: new_down, up: new_up}.reduce())
+			permutations.push(ReducedEquivalenceRelation { k: self.k, down: new_down, up: new_up, next_label: self.next_label }.reduce())
 		}
 		permutations
+	}
+
+	pub fn add_vertex(mut self) -> ReducedEquivalenceRelation {
+		self.down.push(self.next_label);
+		self.next_label.incr_inplace();
+		self.up.push(self.next_label);
+		self.next_label.incr_inplace();
+		self
 	}
 
 	pub fn to_string(&self) -> String {
@@ -759,6 +768,21 @@ impl EquivalenceCounts {
 		let conn = EquivalenceRelation::new(g, config, indexer, posts, vertices);
 		let reduced_conn = ReducedEquivalenceRelation::of_equiv_rel(conn);
 		self.counts.entry(reduced_conn).and_modify(|x| *x += 1).or_insert(1);
+	}
+
+	pub fn add_vertex(&mut self, is_post: bool) {
+		let mut new_counts = HashMap::new();
+		for (rel, count) in self.counts.drain() {
+			new_counts.insert(rel.add_vertex(), count);
+		}
+	}
+
+	pub fn amalgamate_edge(&mut self, x: usize, y: usize) {
+		todo!("Implement this function")
+	}
+
+	pub fn remove_vertex(&mut self, x: usize) {
+		todo!("Implement this function")
 	}
 
 	pub fn print(&self) {
@@ -961,7 +985,9 @@ fn get_ratios_naive(g: &Graph, data: &mut Data, rng: &mut ThreadRng, vertices: V
 fn get_ratios_dp(g: &Graph, data: &mut Data, rng: &mut ThreadRng, vertices: VertexSet) {
 	let posts = get_posts(&g, Some(get_max_num_posts(rng)));
 	let mut counts = EquivalenceCounts::new_singleton();
-	let mut active_verts = VertexSet::of_vert(g.n, Vertex::ZERO);
+	let mut vert_activity = VertexVec::new(g.n, &None);
+	let mut num_active_verts = 1;
+	vert_activity[Vertex::ZERO] = Some(0);
 	let mut max_connection = VertexVec::new(g.n, &Vertex::ZERO);
 	for v in g.iter_verts() {
 		for u in g.adj_list[v].iter() {
@@ -973,10 +999,36 @@ fn get_ratios_dp(g: &Graph, data: &mut Data, rng: &mut ThreadRng, vertices: Vert
 
 	for v in g.iter_verts().skip(1) {
 		// add room for this new vertex, and then add edges and remove unwanted old vertices.
-		active_verts.add_vert(v);
-		for u in active_verts.iter() {
-			if max_connection[u] == v {
-				// This vertex needs to get partialled out after the edge is added.
+		vert_activity[v] = Some(num_active_verts);
+		let v_index = num_active_verts;
+		num_active_verts += 1;
+		counts.add_vertex(posts.has_vert(v));
+
+		for u in g.iter_verts() {
+			// If it needs to be removed.
+			if max_connection[u] == v && !vertices.has_vert(u) {
+				if let Some(index) = vert_activity[u] {
+					// amalgamate in the edge
+					counts.amalgamate_edge(index, v_index);
+					// remove the vertex.
+					counts.remove_vertex(index);
+					// Now reduce all later indices to make up for this removal.
+					for index2 in vert_activity.iter_mut() {
+						if let Some(index2) = index2 {
+							if *index2 > index {
+								*index2 -= 1;
+							}
+						}
+					}
+				}
+			}
+		}
+		for u in g.iter_verts() {
+			if max_connection[u] > v && g.adj[u][v] {
+				if let Some(index) = vert_activity[u] {
+					// There's an edge we need to amalgamate in.
+					counts.amalgamate_edge(index, v_index)
+				}
 			}
 		}
 	}
