@@ -603,6 +603,24 @@ impl Debug for ReducedEquivalenceRelation {
 }
 
 impl ReducedEquivalenceRelation {
+	fn get_down_edge() -> ReducedEquivalenceRelation {
+		ReducedEquivalenceRelation {
+			k: 2,
+			down: vec![EquivalenceClass(1), EquivalenceClass(2)],
+			up: vec![EquivalenceClass(0), EquivalenceClass(0)],
+			next_label: EquivalenceClass(3),
+		}
+	}
+
+	fn get_up_edge() -> ReducedEquivalenceRelation {
+		ReducedEquivalenceRelation {
+			k: 2,
+			down: vec![EquivalenceClass(0), EquivalenceClass(0)],
+			up: vec![EquivalenceClass(1), EquivalenceClass(2)],
+			next_label: EquivalenceClass(3),
+		}
+	}
+
 	pub fn of_equiv_rel(rel: EquivalenceRelation) -> ReducedEquivalenceRelation {
 		let mut down = vec![];
 		let mut up = vec![];
@@ -696,12 +714,58 @@ impl ReducedEquivalenceRelation {
 		permutations
 	}
 
-	pub fn add_vertex(mut self) -> ReducedEquivalenceRelation {
+	pub fn add_vertex(mut self, is_post: bool) -> ReducedEquivalenceRelation {
 		self.down.push(self.next_label);
-		self.next_label.incr_inplace();
+		if !is_post {
+			self.next_label.incr_inplace();
+		}
 		self.up.push(self.next_label);
 		self.next_label.incr_inplace();
 		self
+	}
+
+	/** 
+	 * Blindly replace all d with c in the RER
+	 * will need reducing at a later date.
+	 */
+	fn merge_components(&mut self, c: EquivalenceClass, d: EquivalenceClass) {
+		for thing in self.down.iter_mut() {
+			if *thing == d {
+				*thing = c
+			}
+		}
+		for thing in self.up.iter_mut() {
+			if *thing == d {
+				*thing = c
+			}
+		}
+	}
+
+	pub fn amalgamate_edge(&mut self, new_edge: &ReducedEquivalenceRelation, x: usize, y: usize) {
+		// We currently do the silly, easy version, and move to the harder one later.
+		// Let's just case-bash it for now.
+		if new_edge.down[0] == new_edge.down[1] {
+			self.merge_components(self.down[x], self.down[y])
+		}
+		if new_edge.up[0] == new_edge.up[1] {
+			self.merge_components(self.up[x], self.up[y])
+		}
+		let verts = [x, y];
+		for i in 0..2 {
+			for j in 0..2 {
+				if new_edge.down[i] == new_edge.up[j] {
+					self.merge_components(self.down[verts[i]], self.up[verts[j]])
+				}
+			}
+		}
+		// Ouch
+		*self = self.reduce()
+	}
+
+	pub fn remove_vertex(mut self, x: usize) -> ReducedEquivalenceRelation {
+		self.down.remove(x);
+		self.up.remove(x);
+		self.reduce()
 	}
 
 	pub fn to_string(&self) -> String {
@@ -773,16 +837,34 @@ impl EquivalenceCounts {
 	pub fn add_vertex(&mut self, is_post: bool) {
 		let mut new_counts = HashMap::new();
 		for (rel, count) in self.counts.drain() {
-			new_counts.insert(rel.add_vertex(), count);
+			new_counts.insert(rel.add_vertex(is_post), count);
 		}
+		self.counts = new_counts
 	}
 
-	pub fn amalgamate_edge(&mut self, x: usize, y: usize) {
-		todo!("Implement this function")
+	pub fn amalgamate_edge(&mut self, edge: Vec<ReducedEquivalenceRelation>, x: usize, y: usize) {
+		let mut new_counts = HashMap::new();
+		for (rel, count) in self.counts.iter() {
+			for edge_rel in edge.iter() {
+				let mut new_rel = rel.to_owned();
+				new_rel.amalgamate_edge(edge_rel, x, y);
+				new_counts.entry(new_rel)
+						.and_modify(|x| *x += *count)
+						.or_insert(*count);
+			}
+		}
+		self.counts = new_counts
 	}
 
 	pub fn remove_vertex(&mut self, x: usize) {
-		todo!("Implement this function")
+		let mut new_counts = HashMap::new();
+		for (rel, count) in self.counts.drain() {
+			let new_rel = rel.remove_vertex(x);
+			new_counts.entry(new_rel)
+					.and_modify(|y| *y += count)
+					.or_insert(count);
+		}
+		self.counts = new_counts
 	}
 
 	pub fn print(&self) {
@@ -979,6 +1061,10 @@ fn get_ratios_naive(g: &Graph, data: &mut Data, rng: &mut ThreadRng, vertices: V
 	add_equivalence_counts(counts, data)
 }
 
+fn get_default_edge() -> Vec<ReducedEquivalenceRelation> {
+	vec![ReducedEquivalenceRelation::get_down_edge(), ReducedEquivalenceRelation::get_up_edge()]
+}
+
 /**
  * Use dynamic programming to compute the EquivalenceCounts between the given set of vertices.
  */
@@ -1009,7 +1095,7 @@ fn get_ratios_dp(g: &Graph, data: &mut Data, rng: &mut ThreadRng, vertices: Vert
 			if max_connection[u] == v && !vertices.has_vert(u) {
 				if let Some(index) = vert_activity[u] {
 					// amalgamate in the edge
-					counts.amalgamate_edge(index, v_index);
+					counts.amalgamate_edge(get_default_edge(), index, v_index);
 					// remove the vertex.
 					counts.remove_vertex(index);
 					// Now reduce all later indices to make up for this removal.
@@ -1027,7 +1113,7 @@ fn get_ratios_dp(g: &Graph, data: &mut Data, rng: &mut ThreadRng, vertices: Vert
 			if max_connection[u] > v && g.adj[u][v] {
 				if let Some(index) = vert_activity[u] {
 					// There's an edge we need to amalgamate in.
-					counts.amalgamate_edge(index, v_index)
+					counts.amalgamate_edge(get_default_edge(), index, v_index)
 				}
 			}
 		}
