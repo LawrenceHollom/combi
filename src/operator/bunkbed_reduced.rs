@@ -962,9 +962,23 @@ fn get_ratios_dp(g: &Graph, data: &mut Data, rng: &mut ThreadRng, vertices: Vert
 	let posts = get_posts(&g, Some(get_max_num_posts(rng)));
 	let mut counts = EquivalenceCounts::new_singleton();
 	let mut active_verts = VertexSet::of_vert(g.n, Vertex::ZERO);
+	let mut max_connection = VertexVec::new(g.n, &Vertex::ZERO);
+	for v in g.iter_verts() {
+		for u in g.adj_list[v].iter() {
+			if *u > max_connection[v] {
+				max_connection[v] = *u;
+			}
+		}
+	}
 
 	for v in g.iter_verts().skip(1) {
 		// add room for this new vertex, and then add edges and remove unwanted old vertices.
+		active_verts.add_vert(v);
+		for u in active_verts.iter() {
+			if max_connection[u] == v {
+				// This vertex needs to get partialled out after the edge is added.
+			}
+		}
 	}
 
 	add_equivalence_counts(counts, data);
