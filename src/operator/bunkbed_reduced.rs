@@ -714,14 +714,13 @@ impl ReducedEquivalenceRelation {
 		permutations
 	}
 
-	pub fn add_vertex(mut self, is_post: bool) -> ReducedEquivalenceRelation {
+	pub fn add_vertex(&mut self, is_post: bool) {
 		self.down.push(self.next_label);
 		if !is_post {
 			self.next_label.incr_inplace();
 		}
 		self.up.push(self.next_label);
 		self.next_label.incr_inplace();
-		self
 	}
 
 	/** 
@@ -765,6 +764,7 @@ impl ReducedEquivalenceRelation {
 	pub fn remove_vertex(mut self, x: usize) -> ReducedEquivalenceRelation {
 		self.down.remove(x);
 		self.up.remove(x);
+		self.k -= 1;
 		self.reduce()
 	}
 
@@ -836,8 +836,11 @@ impl EquivalenceCounts {
 
 	pub fn add_vertex(&mut self, is_post: bool) {
 		let mut new_counts = HashMap::new();
-		for (rel, count) in self.counts.drain() {
-			new_counts.insert(rel.add_vertex(is_post), count);
+		for (mut rel, count) in self.counts.drain() {
+			rel.print_fancy(8);
+			rel.add_vertex(is_post);
+			rel.print_fancy(9);
+			new_counts.insert(rel, count);
 		}
 		self.counts = new_counts
 	}
@@ -1085,18 +1088,25 @@ fn get_ratios_dp(g: &Graph, data: &mut Data, rng: &mut ThreadRng, vertices: Vert
 
 	for v in g.iter_verts().skip(1) {
 		// add room for this new vertex, and then add edges and remove unwanted old vertices.
+		println!("Starting on vertex {}", v);
 		vert_activity[v] = Some(num_active_verts);
 		let v_index = num_active_verts;
 		num_active_verts += 1;
 		counts.add_vertex(posts.has_vert(v));
 
+		counts.print();
+
 		for u in g.iter_verts() {
 			// If it needs to be removed.
 			if max_connection[u] == v && !vertices.has_vert(u) {
 				if let Some(index) = vert_activity[u] {
+					println!("Adding killer edge {}-{}", v, u);
+					println!("Activity: {:?}", vert_activity);
+					counts.print();
 					// amalgamate in the edge
 					counts.amalgamate_edge(get_default_edge(), index, v_index);
 					// remove the vertex.
+					println!("Removing vertex {} at index {}", u, index);
 					counts.remove_vertex(index);
 					// Now reduce all later indices to make up for this removal.
 					for index2 in vert_activity.iter_mut() {
@@ -1113,6 +1123,7 @@ fn get_ratios_dp(g: &Graph, data: &mut Data, rng: &mut ThreadRng, vertices: Vert
 			if max_connection[u] > v && g.adj[u][v] {
 				if let Some(index) = vert_activity[u] {
 					// There's an edge we need to amalgamate in.
+					println!("Adding standard edge {}-{}", v, u);
 					counts.amalgamate_edge(get_default_edge(), index, v_index)
 				}
 			}
