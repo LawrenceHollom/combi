@@ -721,6 +721,7 @@ impl ReducedEquivalenceRelation {
 		}
 		self.up.push(self.next_label);
 		self.next_label.incr_inplace();
+		self.k += 1;
 	}
 
 	/** 
@@ -1051,8 +1052,7 @@ fn add_equivalence_counts(counts: EquivalenceCounts, data: &mut Data) {
 	}
 }
 
-fn get_ratios_naive(g: &Graph, data: &mut Data, rng: &mut ThreadRng, vertices: VertexSet) {
-	let posts = get_posts(&g, Some(get_max_num_posts(rng)));
+fn get_ratios_naive(g: &Graph, posts: VertexSet, data: &mut Data, vertices: VertexSet) {
 	let indexer = EdgeIndexer::new(&g.adj_list);
 	let mut counts = EquivalenceCounts::new();
 
@@ -1071,8 +1071,7 @@ fn get_default_edge() -> Vec<ReducedEquivalenceRelation> {
 /**
  * Use dynamic programming to compute the EquivalenceCounts between the given set of vertices.
  */
-fn get_ratios_dp(g: &Graph, data: &mut Data, rng: &mut ThreadRng, vertices: VertexSet) {
-	let posts = get_posts(&g, Some(get_max_num_posts(rng)));
+fn get_ratios_dp(g: &Graph, posts: VertexSet, data: &mut Data, vertices: VertexSet) {
 	let mut counts = EquivalenceCounts::new_singleton();
 	let mut vert_activity = VertexVec::new(g.n, &None);
 	let mut num_active_verts = 1;
@@ -1085,6 +1084,7 @@ fn get_ratios_dp(g: &Graph, data: &mut Data, rng: &mut ThreadRng, vertices: Vert
 			}
 		}
 	}
+	counts.print();
 
 	for v in g.iter_verts().skip(1) {
 		// add room for this new vertex, and then add edges and remove unwanted old vertices.
@@ -1116,7 +1116,9 @@ fn get_ratios_dp(g: &Graph, data: &mut Data, rng: &mut ThreadRng, vertices: Vert
 							}
 						}
 					}
+					num_active_verts -= 1;
 				}
+				vert_activity[u] = None;
 			}
 		}
 		for u in g.iter_verts() {
@@ -1165,10 +1167,16 @@ fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, naive:
 			}
 		}
 
+		let posts = get_posts(&g, Some(get_max_num_posts(&mut rng)));
+
 		if naive {
-			get_ratios_naive(&g, &mut data, &mut rng, vertices);
+			get_ratios_naive(&g, posts, &mut data, vertices);
 		} else {
-			get_ratios_dp(&g, &mut data, &mut rng, vertices);
+			get_ratios_dp(&g, posts, &mut data, vertices);
+			data.print(k);
+			data = Data::new();
+			println!("And now naive:");
+			get_ratios_naive(&g, posts, &mut data, vertices);
 		}
 	}
 	data.print(k)
