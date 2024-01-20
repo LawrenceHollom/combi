@@ -640,56 +640,51 @@ impl ReducedEquivalenceRelation {
 			}
 			up.push(new_labels[c].unwrap())
 		}
-		ReducedEquivalenceRelation { k: rel.vertices.size(), down, up, next_label }.reduce()
+		ReducedEquivalenceRelation { k: rel.vertices.size(), down, up, next_label }.reduce_and_symmetrise()
 	}
 
 	pub fn empty(k: usize) -> ReducedEquivalenceRelation {
 		let down = (0..k).map(|x| EquivalenceClass(x)).collect::<Vec<EquivalenceClass>>();
 		let up = (k..(2 *k)).map(|x| EquivalenceClass(x)).collect::<Vec<EquivalenceClass>>();
-		ReducedEquivalenceRelation { k, down, up, next_label: EquivalenceClass(2 * k) }.reduce()
+		ReducedEquivalenceRelation { k, down, up, next_label: EquivalenceClass(2 * k) }.reduce_and_symmetrise()
 	}
 
-	fn reduce(&self) -> ReducedEquivalenceRelation {
-		let mut new_labels_flat = vec![None; self.k * 2];
-		let mut new_labels_cross = vec![None; self.k * 2];
-		let mut c_flat = EquivalenceClass(0);
-		let mut c_cross = EquivalenceClass(0);
-		fn check_label(labels: &mut Vec<Option<EquivalenceClass>>, c: &mut EquivalenceClass, comp: EquivalenceClass) {
+	fn reduce_no_symmetrise(&self, is_flat: bool) -> ReducedEquivalenceRelation {
+		let mut new_labels = vec![None; self.k * 2];
+		let mut next_label = EquivalenceClass(0);
+		fn check_label(labels: &mut Vec<Option<EquivalenceClass>>, next_label: &mut EquivalenceClass, comp: EquivalenceClass) {
 			if labels[comp.0].is_none() {
-				labels[comp.0] = Some(*c);
-				c.incr_inplace()
+				labels[comp.0] = Some(*next_label);
+				next_label.incr_inplace()
 			}
 		}
 		for v in 0..self.k {
-			check_label(&mut new_labels_flat, &mut c_flat, self.down[v]);
-			check_label(&mut new_labels_flat, &mut c_flat, self.up[v]);
-			check_label(&mut new_labels_cross, &mut c_cross, self.up[v]);
-			check_label(&mut new_labels_cross, &mut c_cross, self.down[v]);
-		}
-		let mut down_flat = vec![];
-		let mut up_flat = vec![];
-		let mut down_cross = vec![];
-		let mut up_cross = vec![];
-		for v in 0..self.k {
-			down_flat.push(new_labels_flat[self.down[v].0].unwrap());
-			up_flat.push(new_labels_flat[self.up[v].0].unwrap());
-			down_cross.push(new_labels_cross[self.up[v].0].unwrap());
-			up_cross.push(new_labels_cross[self.down[v].0].unwrap());
-		}
-		let mut is_flat_before_cross = true;
-		'test_ordering: for (i, comp) in down_flat.iter().enumerate() {
-			if *comp < down_cross[i] {
-				break 'test_ordering;
-			} else if *comp > down_cross[i] {
-				is_flat_before_cross = false;
-				break 'test_ordering;
+			if is_flat {
+				check_label(&mut new_labels, &mut next_label, self.down[v]);
+				check_label(&mut new_labels, &mut next_label, self.up[v]);
+			} else {
+				check_label(&mut new_labels, &mut next_label, self.up[v]);
+				check_label(&mut new_labels, &mut next_label, self.down[v]);
 			}
 		}
-		if is_flat_before_cross {
-			ReducedEquivalenceRelation { k: self.k, down: down_flat, up: up_flat, next_label: c_flat }
-		} else {
-			ReducedEquivalenceRelation { k: self.k, down: down_cross, up: up_cross, next_label: c_cross }
+		let mut new_down = vec![];
+		let mut new_up = vec![];
+		for v in 0..self.k {
+			if is_flat {
+				new_down.push(new_labels[self.down[v].0].unwrap());
+				new_up.push(new_labels[self.up[v].0].unwrap());
+			} else {
+				new_down.push(new_labels[self.up[v].0].unwrap());
+				new_up.push(new_labels[self.down[v].0].unwrap());
+			}
 		}
+		ReducedEquivalenceRelation { k: self.k, down: new_down, up: new_up, next_label }
+	}
+
+	fn reduce_and_symmetrise(&self) -> ReducedEquivalenceRelation {
+		let new_flat = self.reduce_no_symmetrise(true);
+		let new_cross = self.reduce_no_symmetrise(false);
+		new_flat.min(new_cross)
 	}
 
 	pub fn get_all_permutations(&self) -> Vec<ReducedEquivalenceRelation> {
@@ -709,7 +704,7 @@ impl ReducedEquivalenceRelation {
 				new_down.push(self.down[*i]);
 				new_up.push(self.up[*i]);
 			}
-			permutations.push(ReducedEquivalenceRelation { k: self.k, down: new_down, up: new_up, next_label: self.next_label }.reduce())
+			permutations.push(ReducedEquivalenceRelation { k: self.k, down: new_down, up: new_up, next_label: self.next_label }.reduce_and_symmetrise())
 		}
 		permutations
 	}
@@ -758,15 +753,14 @@ impl ReducedEquivalenceRelation {
 				}
 			}
 		}
-		// Ouch
-		*self = self.reduce()
+		*self = self.reduce_no_symmetrise(false)
 	}
 
 	pub fn remove_vertex(mut self, x: usize) -> ReducedEquivalenceRelation {
 		self.down.remove(x);
 		self.up.remove(x);
 		self.k -= 1;
-		self.reduce()
+		self.reduce_no_symmetrise(false)
 	}
 
 	pub fn to_string(&self) -> String {
@@ -1128,6 +1122,16 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, data: &mut Data, vertices: VertexS
 					println!("Adding standard edge {}-{}", v, u);
 					counts.amalgamate_edge(get_default_edge(), index, v_index)
 				}
+			}
+		}
+	}
+
+	// Finally, remove vertices not in the prescribed target set.
+	for v in g.iter_verts() {
+		if !vertices.has_vert(v) {
+			if let Some(index) = vert_activity[v] {
+				// This vertex needs to be removed.
+				counts.remove_vertex(index);
 			}
 		}
 	}
