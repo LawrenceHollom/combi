@@ -716,6 +716,7 @@ impl ReducedEquivalenceRelation {
 		}
 		self.up.push(self.next_label);
 		self.next_label.incr_inplace();
+		self.k += 1;
 	}
 
 	/** 
