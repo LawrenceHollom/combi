@@ -1084,10 +1084,11 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, data: &mut Data, vertices: VertexS
 		// add room for this new vertex, and then add edges and remove unwanted old vertices.
 		println!("Starting on vertex {}", v);
 		vert_activity[v] = Some(num_active_verts);
-		let v_index = num_active_verts;
+		let mut v_index = num_active_verts;
 		num_active_verts += 1;
 		counts.add_vertex(posts.has_vert(v));
 
+		println!("Added vertex {}", v);
 		counts.print();
 
 		for u in g.iter_verts() {
@@ -1096,12 +1097,13 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, data: &mut Data, vertices: VertexS
 				if let Some(index) = vert_activity[u] {
 					println!("Adding killer edge {}-{}", v, u);
 					println!("Activity: {:?}", vert_activity);
-					counts.print();
 					// amalgamate in the edge
 					counts.amalgamate_edge(get_default_edge(), index, v_index);
+					counts.print();
 					// remove the vertex.
 					println!("Removing vertex {} at index {}", u, index);
 					counts.remove_vertex(index);
+					counts.print();
 					// Now reduce all later indices to make up for this removal.
 					for index2 in vert_activity.iter_mut() {
 						if let Some(index2) = index2 {
@@ -1110,17 +1112,23 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, data: &mut Data, vertices: VertexS
 							}
 						}
 					}
+					if v_index > index {
+						v_index -= 1;
+					}
 					num_active_verts -= 1;
 				}
 				vert_activity[u] = None;
 			}
 		}
 		for u in g.iter_verts() {
-			if max_connection[u] > v && g.adj[u][v] {
+			if g.adj[u][v] {
+				// There's an edge here that we should probably do something about.
 				if let Some(index) = vert_activity[u] {
 					// There's an edge we need to amalgamate in.
+					println!("Vertex activity: {:?}", vert_activity);
 					println!("Adding standard edge {}-{}", v, u);
-					counts.amalgamate_edge(get_default_edge(), index, v_index)
+					counts.amalgamate_edge(get_default_edge(), index, v_index);
+					counts.print();
 				}
 			}
 		}
@@ -1176,6 +1184,10 @@ fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, naive:
 		if naive {
 			get_ratios_naive(&g, posts, &mut data, vertices);
 		} else {
+			print_vertex_table(vec![
+				("posts", posts.to_vec().to_vec_of_strings()),
+				("verts", vertices.to_vec().to_vec_of_strings())
+			]);
 			get_ratios_dp(&g, posts, &mut data, vertices);
 			data.print(k);
 			data = Data::new();
