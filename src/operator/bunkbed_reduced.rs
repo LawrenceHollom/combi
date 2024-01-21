@@ -17,7 +17,6 @@ use utilities::vertex_tools::*;
 use utilities::edge_tools::*;
 
 use queues::*;
-use strum::*;
 use colored::*;
 
 /**
@@ -383,67 +382,6 @@ pub fn is_bunkbed_reducible(g: &Graph) -> bool {
 			}
 		}
 		is_reducible
-	}
-}
-
-#[derive(Debug, EnumIter, ToString, EnumCount)]
-enum ConnectionType {
-	Empty,
-	Flat,
-	Cross,
-	DoubleFlat,
-	DoubleCross,
-	LeftPost,
-	RightPost,
-	LeftTriangle, // |>
-	RightTriangle, // <|
-	DoublePost,
-	Complete,
-	AAAAAAAAAAAAA,
-}
-
-impl ConnectionType {
-	pub fn get_from_conns(down_conns: &[bool; 2], up_conns: &[bool; 2], left_post: bool, right_post: bool) -> ConnectionType {
-		use ConnectionType::*;
-		match (down_conns, up_conns, left_post, right_post) {
-			([false, false], [false, false], false, false) => Empty,
-			([true, false], [false, false], false, false) | ([false, false], [false, true], false, false) => Flat,
-			([false, true], [false, false], false, false) | ([false, false], [true, false], false, false) => Cross,
-			([true, false], [false, true], false, false) => DoubleFlat,
-			([false, true], [true, false], false, false) => DoubleCross,
-			([false, false], [false, false], true, false) => LeftPost,
-			([false, false], [false, false], false, true) => RightPost,
-			([true, false], [true, false], true, false) | ([false, true], [false, true], true, false) => LeftTriangle,
-			([true, true], [false, false], false, true) | ([false, false], [true, true], false, true) => RightTriangle,
-			([false, false], [false, false], true, true) => DoublePost,
-			([true, true], [true, true], true, true) => Complete,
-			_ => {
-				println!("Bad conns! {:?}", (down_conns, up_conns, left_post, right_post));
-				AAAAAAAAAAAAA
-			} //panic!("This should be impossible! {:?}", (down_conns, up_conns, left_post, right_post))
-		}
-	}
-}
-
-struct ConnectionCounts {
-	counts: [usize; ConnectionType::COUNT],
-}
-
-impl ConnectionCounts {
-	pub fn new() -> ConnectionCounts {
-		ConnectionCounts { counts : [0; ConnectionType::COUNT] }
-	}
-
-	pub fn add(&mut self, down_conns: &[bool; 2], up_conns: &[bool; 2], left_post: bool, right_post: bool) {
-		let conn = ConnectionType::get_from_conns(down_conns, up_conns, left_post, right_post);
-		self.counts[conn as usize] += 1;
-	}
-
-	pub fn print(&self) {
-		let rows = ConnectionType::iter().enumerate()
-			.map(|(i, c)| (c.to_string(), vec![self.counts[i].to_string()]))
-			.collect::<Vec<(String, Vec<String>)>>();
-		print_table(vec!["count".to_string()], rows)
 	}
 }
 
@@ -888,25 +826,7 @@ impl EquivalenceCounts {
 pub fn print_connection_counts(g: &Graph, k: usize) {
 	// We only need to count the first half of the configs
 	let posts = get_posts(g, None);
-	let indexer = EdgeIndexer::new(&g.adj_list);
-
-	if k == 2 {
-		let v = g.n.to_max_vertex();
-		let mut counts = ConnectionCounts::new();
-
-		for config in g.iter_edge_sets() {
-			let zero_conns = get_connections(g, Vertex::ZERO, &config, &indexer, &posts);
-			let down_conns = zero_conns[v];
-			let left_post = zero_conns[Vertex::ZERO][1];
-			let up_conns = get_connections(g, Vertex::ZERO, &config.inverse(&indexer), &indexer, &posts)[v];
-			let up_conns = [up_conns[1], up_conns[0]];
-			let right_post = get_connections(g, v, &config, &indexer, &posts)[v][1];
-			counts.add(&down_conns, &up_conns, left_post, right_post);
-		}
-		println!("Old counts:");
-		counts.print();
-	}
-		
+	let indexer = EdgeIndexer::new(&g.adj_list);		
 	let mut counts = EquivalenceCounts::new();
 	let mut vertices = VertexSet::of_vert(g.n, Vertex::ZERO);
 	for v in g.iter_verts().skip(g.n.to_usize() - k + 1) {
