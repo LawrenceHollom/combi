@@ -1074,6 +1074,8 @@ fn get_default_edge() -> Vec<ReducedEquivalenceRelation> {
 	vec![ReducedEquivalenceRelation::get_down_edge(), ReducedEquivalenceRelation::get_up_edge()]
 }
 
+const PRINT_DEBUG: bool = false;
+
 /**
  * Use dynamic programming to compute the EquivalenceCounts between the given set of vertices.
  */
@@ -1082,14 +1084,7 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, data: &mut Data, vertices: VertexS
 	let mut vert_activity = VertexVec::new(g.n, &None);
 	let mut num_active_verts = 1;
 	vert_activity[Vertex::ZERO] = Some(0);
-	let mut max_connection = VertexVec::new(g.n, &Vertex::ZERO);
-	for v in g.iter_verts() {
-		for u in g.adj_list[v].iter() {
-			if *u > max_connection[v] {
-				max_connection[v] = *u;
-			}
-		}
-	}
+	let mut remaining_degree = g.deg.to_owned();
 
 	fn remove_vertex(index: usize, counts: &mut EquivalenceCounts, vert_activity: &mut VertexVec<Option<usize>>, num_active_verts: &mut usize) {
 		counts.remove_vertex(index);
@@ -1105,9 +1100,11 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, data: &mut Data, vertices: VertexS
 		*num_active_verts -= 1;
 	}
 
-	for v in g.iter_verts().skip(1) {
+	for v in g.iter_verts_dfs().skip(1) { //g.iter_verts().skip(1) {
 		// add room for this new vertex, and then add edges and remove unwanted old vertices.
-		//println!("Starting on vertex {}", v);
+		if PRINT_DEBUG {
+			println!("Starting on vertex {}", v);
+		}
 		vert_activity[v] = Some(num_active_verts);
 		let mut v_index = num_active_verts;
 		num_active_verts += 1;
@@ -1117,15 +1114,22 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, data: &mut Data, vertices: VertexS
 		//counts.print();
 
 		for u in g.iter_verts() {
-			// If it needs to be removed.
-			if max_connection[u] == v && !vertices.has_vert(u) {
+			// If it needs to be removed; all its edges will have been processed.
+			if u != v && remaining_degree[u].equals(1) && !vertices.has_vert(u) {
 				if let Some(index) = vert_activity[u] {
-					//println!("Adding killer edge {}-{}", v, u);
+					if PRINT_DEBUG {
+						println!("Adding killer edge {}-{}", v, u);
+					}
 					//println!("Activity: {:?}", vert_activity);
 					// amalgamate in the edge
 					counts.amalgamate_edge(get_default_edge(), index, v_index);
+					remaining_degree[v].decr_inplace();
+					remaining_degree[u].decr_inplace();
 					//counts.print();
 					// remove the vertex.
+					if PRINT_DEBUG {
+						println!("Remove the vertex!");
+					}
 					remove_vertex(index, &mut counts, &mut vert_activity, &mut num_active_verts);
 					if v_index > index {
 						v_index -= 1;
@@ -1135,31 +1139,48 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, data: &mut Data, vertices: VertexS
 			}
 		}
 		for u in g.iter_verts() {
-			if g.adj[u][v] {
+			if u != v && g.adj[u][v] {
 				// There's an edge here that we should probably do something about.
 				if let Some(index) = vert_activity[u] {
 					// There's an edge we need to amalgamate in.
 					//println!("Vertex activity: {:?}", vert_activity);
-					//println!("Adding standard edge {}-{}", v, u);
+					if PRINT_DEBUG {
+						println!("Adding standard edge {}-{}", v, u);
+					}
 					counts.amalgamate_edge(get_default_edge(), index, v_index);
+					remaining_degree[u].decr_inplace();
+					remaining_degree[v].decr_inplace();
 					//counts.print();
 				}
 			}
 		}
 	}
 
+	if PRINT_DEBUG {
+		counts.print();
+	}
+
 	// Finally, remove vertices not in the prescribed target set.
 	for v in g.iter_verts() {
 		if !vertices.has_vert(v) {
 			if let Some(index) = vert_activity[v] {
-				//println!("Removing vertex {} (in final steps)", v);
+				if PRINT_DEBUG {
+					println!("Removing vertex {} (in final steps)", v);
+				}
 				// This vertex needs to be removed.
 				remove_vertex(index, &mut counts, &mut vert_activity, &mut num_active_verts);
+				vert_activity[v] = None;
 			}
 		}
 	}
 
 	counts.reduce();
+
+	if PRINT_DEBUG {
+		println!("vertices: {:?}", vertices.to_vec());
+		println!("Activity: {:?}", vert_activity);
+		counts.print();
+	}
 
 	add_equivalence_counts(counts, data);
 }
@@ -1171,12 +1192,16 @@ fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, naive:
 	let mut time_of_last_print = SystemTime::now();
 	for rep in 0..num_reps {
 		let mut g: Graph;
-		let should_be_connected = rng.gen_bool(0.8);
-		'find_g: loop {
-			g = h.constructor.new_graph();
-			if g.size() <= 19 && (!should_be_connected || g.is_connected()) {
-				break 'find_g;
+		if h.constructor.is_random() {
+			let should_be_connected = rng.gen_bool(0.8);
+			'find_g: loop {
+				g = h.constructor.new_graph();
+				if !should_be_connected || g.is_connected() {
+					break 'find_g;
+				}
 			}
+		} else {
+			g = h.to_owned();	
 		}
 		if time_of_last_print.elapsed().unwrap().as_secs() >= 1 {
 			print!("{} ", rep);

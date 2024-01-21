@@ -625,6 +625,10 @@ impl Graph {
         EdgeSetIterator::new(&self.adj_list)
     }
 
+    pub fn iter_verts_dfs(&self) -> DFSIterator<'_> {
+        DFSIterator::new(self)
+    }
+
     #[allow(dead_code)]
     pub fn test_graph(index: usize) -> Graph {
         crate::constructor::from_file::new_graph(&format!("test_{}", index))
@@ -637,4 +641,51 @@ pub fn adj_list_of_manual(adj_list: Vec<Vec<usize>>) -> VertexVec<Vec<Vertex>> {
             .map(|x| Vertex::of_usize(*x))
             .collect())
         .collect()
+}
+
+pub struct DFSIterator<'a> {
+    q: Queue<Vertex>,
+    visited: VertexVec<bool>,
+    next_vert: Vertex,
+    g: &'a Graph,
+}
+
+impl DFSIterator<'_> {
+    pub fn new(g: &Graph) -> DFSIterator<'_> {
+        DFSIterator {
+            q: Queue::new(),
+            visited: VertexVec::new(g.n, &false),
+            next_vert: Vertex::ZERO,
+            g
+        }
+    }
+}
+
+impl Iterator for DFSIterator<'_> {
+    type Item = Vertex;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        fn process_v(iterator: &mut DFSIterator, v: Vertex) -> Option<Vertex> {
+            for u in iterator.g.adj_list[v].iter() {
+                if !iterator.visited[*u] {
+                    iterator.visited[*u] = true;
+                    let _ = iterator.q.add(*u);
+                }
+            }
+            Some(v)
+        }
+        if let Ok(v) = self.q.remove() {
+            process_v(self, v)
+        } else {
+            while !self.next_vert.is_n(self.g.n) && self.visited[self.next_vert] {
+                self.next_vert.incr_inplace()
+            }
+            if self.next_vert.is_n(self.g.n) {
+                None
+            } else {
+                self.visited[self.next_vert] = true;
+                process_v(self, self.next_vert)
+            }
+        }
+    }
 }

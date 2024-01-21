@@ -307,6 +307,19 @@ impl Constructor {
         }
     }
 
+    pub fn is_random(&self) -> bool {
+        use Constructor::*;
+        match self {
+            Product(_, c1, c2) => {
+                c1.is_random() || c2.is_random()
+            }
+            Recursive(RecursiveConstructor::CoronaProduct(c1, c2)) => {
+                c1.is_random() || c2.is_random()
+            }
+            RootedTree(_) | Raw(_) | File(_) | Special => false,
+            Random(_) => true,
+        }
+    }
 }
 
 impl ProductConstructor {
