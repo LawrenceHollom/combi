@@ -650,7 +650,7 @@ impl ReducedEquivalenceRelation {
 	}
 
 	fn reduce_no_symmetrise(&self, is_flat: bool) -> ReducedEquivalenceRelation {
-		let mut new_labels = vec![None; self.k * 2];
+		let mut new_labels = vec![None; (self.k + 1) * 2];
 		let mut next_label = EquivalenceClass(0);
 		fn check_label(labels: &mut Vec<Option<EquivalenceClass>>, next_label: &mut EquivalenceClass, comp: EquivalenceClass) {
 			if labels[comp.0].is_none() {
@@ -832,9 +832,7 @@ impl EquivalenceCounts {
 	pub fn add_vertex(&mut self, is_post: bool) {
 		let mut new_counts = HashMap::new();
 		for (mut rel, count) in self.counts.drain() {
-			rel.print_fancy(8);
 			rel.add_vertex(is_post);
-			rel.print_fancy(9);
 			new_counts.insert(rel, count);
 		}
 		self.counts = new_counts
@@ -865,11 +863,25 @@ impl EquivalenceCounts {
 		self.counts = new_counts
 	}
 
+	/**
+	 * Symmetrise the configs and all that.
+	 */
+	pub fn reduce(&mut self) {
+		let mut new_counts = HashMap::new();
+		for (rel, count) in self.counts.drain() {
+			let new_rel = rel.reduce_and_symmetrise();
+			new_counts.entry(new_rel)
+					.and_modify(|v| *v = count.max(*v))
+					.or_insert(count);
+		}
+		self.counts = new_counts
+	}
+
 	pub fn print(&self) {
 		let rows = self.counts.iter()
-			.map(|(rel, c)| (rel.to_string(), vec![c.to_string()]))
+			.map(|(rel, c)| (rel.to_string(), vec![c.to_string(), rel.k.to_string()]))
 			.collect::<Vec<(String, Vec<String>)>>();
-		print_table(vec!["count".to_string()], rows)
+		print_table(vec!["count".to_string(), "k".to_string()], rows)
 	}
 }
 
@@ -934,7 +946,7 @@ impl Data {
 	
 		println!("All equivalence relations");
 		for rel in rels_ordered.iter() {
-			println!("{:?} : code = {}", rel, rel.to_code())
+			println!("{:?} : code = {}, count = {}", rel, rel.to_code(), self.rel_counts.get(rel).unwrap())
 		}
 	
 		fn is_approx(x: &f64, y: f64) -> bool {
@@ -1078,44 +1090,46 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, data: &mut Data, vertices: VertexS
 			}
 		}
 	}
-	counts.print();
+
+	fn remove_vertex(index: usize, counts: &mut EquivalenceCounts, vert_activity: &mut VertexVec<Option<usize>>, num_active_verts: &mut usize) {
+		counts.remove_vertex(index);
+		//counts.print();
+		// Now reduce all later indices to make up for this removal.
+		for index2 in vert_activity.iter_mut() {
+			if let Some(index2) = index2 {
+				if *index2 > index {
+					*index2 -= 1;
+				}
+			}
+		}
+		*num_active_verts -= 1;
+	}
 
 	for v in g.iter_verts().skip(1) {
 		// add room for this new vertex, and then add edges and remove unwanted old vertices.
-		println!("Starting on vertex {}", v);
+		//println!("Starting on vertex {}", v);
 		vert_activity[v] = Some(num_active_verts);
 		let mut v_index = num_active_verts;
 		num_active_verts += 1;
 		counts.add_vertex(posts.has_vert(v));
 
-		println!("Added vertex {}", v);
-		counts.print();
+		//println!("Added vertex {}", v);
+		//counts.print();
 
 		for u in g.iter_verts() {
 			// If it needs to be removed.
 			if max_connection[u] == v && !vertices.has_vert(u) {
 				if let Some(index) = vert_activity[u] {
-					println!("Adding killer edge {}-{}", v, u);
-					println!("Activity: {:?}", vert_activity);
+					//println!("Adding killer edge {}-{}", v, u);
+					//println!("Activity: {:?}", vert_activity);
 					// amalgamate in the edge
 					counts.amalgamate_edge(get_default_edge(), index, v_index);
-					counts.print();
+					//counts.print();
 					// remove the vertex.
-					println!("Removing vertex {} at index {}", u, index);
-					counts.remove_vertex(index);
-					counts.print();
-					// Now reduce all later indices to make up for this removal.
-					for index2 in vert_activity.iter_mut() {
-						if let Some(index2) = index2 {
-							if *index2 > index {
-								*index2 -= 1;
-							}
-						}
-					}
+					remove_vertex(index, &mut counts, &mut vert_activity, &mut num_active_verts);
 					if v_index > index {
 						v_index -= 1;
 					}
-					num_active_verts -= 1;
 				}
 				vert_activity[u] = None;
 			}
@@ -1125,10 +1139,10 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, data: &mut Data, vertices: VertexS
 				// There's an edge here that we should probably do something about.
 				if let Some(index) = vert_activity[u] {
 					// There's an edge we need to amalgamate in.
-					println!("Vertex activity: {:?}", vert_activity);
-					println!("Adding standard edge {}-{}", v, u);
+					//println!("Vertex activity: {:?}", vert_activity);
+					//println!("Adding standard edge {}-{}", v, u);
 					counts.amalgamate_edge(get_default_edge(), index, v_index);
-					counts.print();
+					//counts.print();
 				}
 			}
 		}
@@ -1138,11 +1152,14 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, data: &mut Data, vertices: VertexS
 	for v in g.iter_verts() {
 		if !vertices.has_vert(v) {
 			if let Some(index) = vert_activity[v] {
+				//println!("Removing vertex {} (in final steps)", v);
 				// This vertex needs to be removed.
-				counts.remove_vertex(index);
+				remove_vertex(index, &mut counts, &mut vert_activity, &mut num_active_verts);
 			}
 		}
 	}
+
+	counts.reduce();
 
 	add_equivalence_counts(counts, data);
 }
@@ -1184,15 +1201,15 @@ fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, naive:
 		if naive {
 			get_ratios_naive(&g, posts, &mut data, vertices);
 		} else {
-			print_vertex_table(vec![
+			/*print_vertex_table(vec![
 				("posts", posts.to_vec().to_vec_of_strings()),
 				("verts", vertices.to_vec().to_vec_of_strings())
-			]);
+			]);*/
 			get_ratios_dp(&g, posts, &mut data, vertices);
-			data.print(k);
+			/*data.print(k);
 			data = Data::new();
 			println!("And now naive:");
-			get_ratios_naive(&g, posts, &mut data, vertices);
+			get_ratios_naive(&g, posts, &mut data, vertices);*/
 		}
 	}
 	data.print(k)
