@@ -467,6 +467,38 @@ impl EquivalenceClass {
     }
 }
 
+#[derive(Copy, Clone)]
+enum EdgeType {
+	Classic,
+	FiftyFifty,
+	Double,
+}
+
+impl EdgeType {
+	pub fn of_usize(edge_type: usize) -> EdgeType {
+		use EdgeType::*;
+		match edge_type {
+			0 => Classic,
+			1 => FiftyFifty,
+			2 => Double,
+			_ => FiftyFifty,
+		}
+	}
+	
+	pub fn to_rer_vec(&self) -> Vec<ReducedEquivalenceRelation> {
+		use EdgeType::*;
+		let raw_edges = match self {
+			Classic => vec![[[0, 0], [1, 2]], [[1, 2], [0, 0]], [[0, 1], [2, 3]], [[0, 0], [0, 0]]],
+			FiftyFifty => vec![[[0, 0], [1, 2]], [[1, 2], [0, 0]]],
+			Double => vec![[[0, 1], [1, 0]], [[0, 0], [1, 1]]],
+		};
+		raw_edges.iter()
+			.map(|raw| ReducedEquivalenceRelation::of_raw_vecs(raw)
+				.reduce_no_symmetrise(true))
+			.collect::<Vec<ReducedEquivalenceRelation>>()
+	}
+}
+
 #[derive(Clone)]
 struct ReducedEquivalenceRelation {
 	k: usize,
@@ -541,39 +573,11 @@ impl Debug for ReducedEquivalenceRelation {
 }
 
 impl ReducedEquivalenceRelation {
-	fn get_down_edge() -> ReducedEquivalenceRelation {
-		ReducedEquivalenceRelation {
-			k: 2,
-			down: vec![EquivalenceClass(1), EquivalenceClass(2)],
-			up: vec![EquivalenceClass(0), EquivalenceClass(0)],
-			next_label: EquivalenceClass(3),
-		}
-	}
-
-	fn get_up_edge() -> ReducedEquivalenceRelation {
-		ReducedEquivalenceRelation {
-			k: 2,
-			down: vec![EquivalenceClass(0), EquivalenceClass(0)],
-			up: vec![EquivalenceClass(1), EquivalenceClass(2)],
-			next_label: EquivalenceClass(3),
-		}
-	}
-	fn get_double_edge() -> ReducedEquivalenceRelation {
-		ReducedEquivalenceRelation {
-			k: 2,
-			down: vec![EquivalenceClass(1), EquivalenceClass(1)],
-			up: vec![EquivalenceClass(0), EquivalenceClass(0)],
-			next_label: EquivalenceClass(3),
-		}
-	}
-
-	fn get_double_cross_edge() -> ReducedEquivalenceRelation {
-		ReducedEquivalenceRelation {
-			k: 2,
-			down: vec![EquivalenceClass(0), EquivalenceClass(1)],
-			up: vec![EquivalenceClass(1), EquivalenceClass(0)],
-			next_label: EquivalenceClass(3),
-		}
+	fn of_raw_vecs(raw: &[[usize; 2]; 2]) -> ReducedEquivalenceRelation {
+		let down = raw[0].iter().map(|x| EquivalenceClass(*x)).collect::<Vec<EquivalenceClass>>();
+		let up = raw[1].iter().map(|x| EquivalenceClass(*x)).collect::<Vec<EquivalenceClass>>();
+		let next_label = EquivalenceClass(raw[0][0].max(raw[0][1]).max(raw[1][0]).max(raw[1][1]) + 1);
+		ReducedEquivalenceRelation { k: 2, down,	up,	next_label }
 	}
 
 	pub fn of_equiv_rel(rel: EquivalenceRelation) -> ReducedEquivalenceRelation {
@@ -793,7 +797,7 @@ impl EquivalenceCounts {
 		self.counts = new_counts
 	}
 
-	pub fn amalgamate_edge(&mut self, edge: Vec<ReducedEquivalenceRelation>, x: usize, y: usize) {
+	pub fn amalgamate_edge(&mut self, edge: &Vec<ReducedEquivalenceRelation>, x: usize, y: usize) {
 		let mut new_counts = HashMap::new();
 		for (rel, count) in self.counts.iter() {
 			for edge_rel in edge.iter() {
@@ -1007,23 +1011,18 @@ fn get_ratios_naive(g: &Graph, posts: VertexSet, data: &mut Data, vertices: Vert
 	add_equivalence_counts(counts, data)
 }
 
-fn get_default_edge() -> Vec<ReducedEquivalenceRelation> {
-	//vec![ReducedEquivalenceRelation::get_down_edge(), ReducedEquivalenceRelation::get_up_edge()]
-	vec![ReducedEquivalenceRelation::get_double_edge(), ReducedEquivalenceRelation::get_double_cross_edge(),
-	ReducedEquivalenceRelation::get_down_edge(), ReducedEquivalenceRelation::get_up_edge()]
-}
-
 const PRINT_DEBUG: bool = false;
 
 /**
  * Use dynamic programming to compute the EquivalenceCounts between the given set of vertices.
  */
-fn get_ratios_dp(g: &Graph, posts: VertexSet, data: &mut Data, vertices: VertexSet) {
+fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Data, vertices: VertexSet) {
 	let mut counts = EquivalenceCounts::new_singleton();
 	let mut vert_activity = VertexVec::new(g.n, &None);
 	let mut num_active_verts = 1;
 	vert_activity[Vertex::ZERO] = Some(0);
 	let mut remaining_degree = g.deg.to_owned();
+	let default_edge = edge_type.to_rer_vec();
 
 	fn remove_vertex(index: usize, counts: &mut EquivalenceCounts, vert_activity: &mut VertexVec<Option<usize>>, num_active_verts: &mut usize) {
 		counts.remove_vertex(index);
@@ -1061,7 +1060,7 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, data: &mut Data, vertices: VertexS
 					}
 					//println!("Activity: {:?}", vert_activity);
 					// amalgamate in the edge
-					counts.amalgamate_edge(get_default_edge(), index, v_index);
+					counts.amalgamate_edge(&default_edge, index, v_index);
 					remaining_degree[v].decr_inplace();
 					remaining_degree[u].decr_inplace();
 					//counts.print();
@@ -1086,7 +1085,7 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, data: &mut Data, vertices: VertexS
 					if PRINT_DEBUG {
 						println!("Adding standard edge {}-{}", v, u);
 					}
-					counts.amalgamate_edge(get_default_edge(), index, v_index);
+					counts.amalgamate_edge(&default_edge, index, v_index);
 					remaining_degree[u].decr_inplace();
 					remaining_degree[v].decr_inplace();
 					//counts.print();
@@ -1124,7 +1123,7 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, data: &mut Data, vertices: VertexS
 	add_equivalence_counts(counts, data);
 }
 
-fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, naive: bool) {
+fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, edge_type: Option<EdgeType>) {
 	println!("Beginning! num_reps: {}", num_reps);
 	let mut data = Data::new();
 	let mut rng = thread_rng();
@@ -1162,20 +1161,21 @@ fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, naive:
 
 		let posts = get_posts(&g, Some(get_max_num_posts(&mut rng)));
 
-		if naive {
+		if let Some(edge_type) = edge_type {
+			get_ratios_dp(&g, posts, edge_type, &mut data, vertices);
+		}
+		else {
 			get_ratios_naive(&g, posts, &mut data, vertices);
-		} else {
-			get_ratios_dp(&g, posts, &mut data, vertices);
 		}
 	}
 	data.print(k)
 }
 
 pub fn simulate_connection_count_ratios_naive(h: &Graph, num_reps: usize, k: usize) {
-	simulate_connection_count_ratios(h, num_reps, k, true);
+	simulate_connection_count_ratios(h, num_reps, k, None);
 }
 
 // It's time to get dynamic.
-pub fn bunkbed_connection_counts_dp(h: &Graph, num_reps: usize, k: usize) {
-	simulate_connection_count_ratios(h, num_reps, k, false);
+pub fn bunkbed_connection_counts_dp(h: &Graph, num_reps: usize, k: usize, edge_type: usize) {
+	simulate_connection_count_ratios(h, num_reps, k, Some(EdgeType::of_usize(edge_type)));
 }

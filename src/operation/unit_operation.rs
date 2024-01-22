@@ -28,7 +28,7 @@ pub enum UnitOperation {
     BunkbedSiteCOunts,
     BunkbedReducedConnectionCounts(usize),
     BunkbedReducedConnectionSimulation(usize, usize),
-    BunkbedReducedConnectionDP(usize, usize),
+    BunkbedReducedConnectionDP(usize, usize, usize),
     Signature,
     Unit,
 }
@@ -70,7 +70,8 @@ impl UnitOperation {
             },
             "bunkbed_connection_dp" | "bbcdp" => {
                 let k = args.get(1).map_or(2, |k| k.parse().unwrap());
-                Some(BunkbedReducedConnectionDP(args[0].parse().unwrap(), k))
+                let edges = args.get(2).map_or(0, |x| x.parse().unwrap());
+                Some(BunkbedReducedConnectionDP(args[0].parse().unwrap(), k, edges))
             },
             "()" | "(" => Some(Unit),
             &_ => None,
@@ -122,8 +123,8 @@ impl fmt::Display for UnitOperation {
                 str = format!("Simulate bunkbed {}-connection counts {} times and print max ratios", k, reps);
                 &str
             }
-            BunkbedReducedConnectionDP(reps, k) => {
-                str = format!("Simulate bunkbed {}-connection counts {} times and print max ratios using DP", k, reps);
+            BunkbedReducedConnectionDP(reps, k, edges) => {
+                str = format!("Simulate bunkbed {}-connection counts with type-{} edges {} times and print max ratios using DP", k, edges, reps);
                 &str
             }
             Unit => "Do nothing",
