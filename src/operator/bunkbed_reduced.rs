@@ -211,7 +211,7 @@ fn get_target_vertices(g: &Graph, posts: VertexSet) -> Vec<Vertex> {
  * n.b. it is assumed that this function is deterministic!
  */
 fn get_posts(g: &Graph, max_num_posts: Option<usize>) -> VertexSet {
-	let max_num_posts = max_num_posts.unwrap_or(4);
+	let max_num_posts = max_num_posts.unwrap_or(g.n.to_usize() / 4);
 	let mut posts = VertexSet::new(g.n);
 	let mut num_posts = 0;
 	let mut reached = VertexVec::new(g.n, &false);
