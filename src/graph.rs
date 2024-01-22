@@ -617,6 +617,16 @@ impl Graph {
         nbhds
     }
 
+    /** 
+     * Returns the bfs width of the graph; that is, the maximum queue size
+     * during a BFS
+     */
+    pub fn get_bfs_width(&self) -> usize {
+        let mut bfs_iterator = self.iter_verts_bfs();
+        while let Some(_) = bfs_iterator.next() { }
+        bfs_iterator.max_width
+    }
+
     pub fn iter_vertex_subsets(&self) -> VertexSubsetIterator {
         VertexSubsetIterator::new(self.n)
     }
@@ -648,6 +658,7 @@ pub struct BFSIterator<'a> {
     visited: VertexVec<bool>,
     next_vert: Vertex,
     g: &'a Graph,
+    max_width: usize,
 }
 
 impl BFSIterator<'_> {
@@ -656,7 +667,8 @@ impl BFSIterator<'_> {
             q: Queue::new(),
             visited: VertexVec::new(g.n, &false),
             next_vert: Vertex::ZERO,
-            g
+            g,
+            max_width: 0
         }
     }
 }
@@ -672,6 +684,7 @@ impl Iterator for BFSIterator<'_> {
                     let _ = iterator.q.add(*u);
                 }
             }
+            iterator.max_width = iterator.max_width.max(iterator.q.size());
             Some(v)
         }
         if let Ok(v) = self.q.remove() {

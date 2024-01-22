@@ -1013,7 +1013,7 @@ fn get_ratios_naive(g: &Graph, posts: VertexSet, data: &mut Data, vertices: Vert
 	add_equivalence_counts(counts, data)
 }
 
-const PRINT_DEBUG: bool = false;
+const PRINT_DEBUG_LEVEL: u8 = 0;
 
 /**
  * Use dynamic programming to compute the EquivalenceCounts between the given set of vertices.
@@ -1040,11 +1040,21 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Da
 		*num_active_verts -= 1;
 	}
 
-	if it is a bfs graph then we don't want to change order of iteration.
-	for v in g.iter_verts_bfs().skip(1) { //g.iter_verts().skip(1) {
+	if PRINT_DEBUG_LEVEL >= 1 {
+		println!("BFS width of g = {}", g.get_bfs_width());
+		println!("Target verts = {:?}", vertices.to_vec());
+	}
+
+	for v in g.iter_verts_bfs().skip(1) {
 		// add room for this new vertex, and then add edges and remove unwanted old vertices.
-		if PRINT_DEBUG {
-			println!("Starting on vertex {}", v);
+		if PRINT_DEBUG_LEVEL >= 1 {
+			print!("Starting on vertex {}; num_active_verts = {}; ", v, num_active_verts);
+			for w in g.iter_verts() {
+				if vert_activity[w].is_some() {
+					print!("{}({}) ", w, remaining_degree[w].to_usize());
+				}
+			}
+			println!();
 		}
 		vert_activity[v] = Some(num_active_verts);
 		let mut v_index = num_active_verts;
@@ -1054,21 +1064,21 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Da
 		//println!("Added vertex {}", v);
 		//counts.print();
 
-		for u in g.iter_verts() {
+		for u in g.adj_list[v].iter() {
 			// If it needs to be removed; all its edges will have been processed.
-			if u != v && remaining_degree[u].equals(1) && !vertices.has_vert(u) {
-				if let Some(index) = vert_activity[u] {
-					if PRINT_DEBUG {
+			if *u != v && remaining_degree[*u].equals(1) && !vertices.has_vert(*u) {
+				if let Some(index) = vert_activity[*u] {
+					if PRINT_DEBUG_LEVEL >= 2 {
 						println!("Adding killer edge {}-{}", v, u);
 					}
 					//println!("Activity: {:?}", vert_activity);
 					// amalgamate in the edge
 					counts.amalgamate_edge(&default_edge, index, v_index);
 					remaining_degree[v].decr_inplace();
-					remaining_degree[u].decr_inplace();
+					remaining_degree[*u].decr_inplace();
 					//counts.print();
 					// remove the vertex.
-					if PRINT_DEBUG {
+					if PRINT_DEBUG_LEVEL >= 2 {
 						println!("Remove the vertex!");
 					}
 					remove_vertex(index, &mut counts, &mut vert_activity, &mut num_active_verts);
@@ -1076,28 +1086,33 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Da
 						v_index -= 1;
 					}
 				}
-				vert_activity[u] = None;
+				vert_activity[*u] = None;
 			}
 		}
-		for u in g.iter_verts() {
-			if u != v && g.adj[u][v] {
+		for u in g.adj_list[v].iter() {
+			if *u != v {
 				// There's an edge here that we should probably do something about.
-				if let Some(index) = vert_activity[u] {
+				if let Some(index) = vert_activity[*u] {
 					// There's an edge we need to amalgamate in.
 					//println!("Vertex activity: {:?}", vert_activity);
-					if PRINT_DEBUG {
-						println!("Adding standard edge {}-{}", v, u);
+					if PRINT_DEBUG_LEVEL >= 2 {
+						println!("Adding standard edge {}-{}", v, *u);
 					}
 					counts.amalgamate_edge(&default_edge, index, v_index);
-					remaining_degree[u].decr_inplace();
+					remaining_degree[*u].decr_inplace();
 					remaining_degree[v].decr_inplace();
 					//counts.print();
 				}
 			}
 		}
+		if remaining_degree[v].equals(0) && !vertices.has_vert(v) {
+			// This one needs to be removed too!
+			remove_vertex(v_index, &mut counts, &mut vert_activity, &mut num_active_verts);
+			vert_activity[v] = None
+		}
 	}
 
-	if PRINT_DEBUG {
+	if PRINT_DEBUG_LEVEL >= 3 {
 		counts.print();
 	}
 
@@ -1105,7 +1120,7 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Da
 	for v in g.iter_verts() {
 		if !vertices.has_vert(v) {
 			if let Some(index) = vert_activity[v] {
-				if PRINT_DEBUG {
+				if PRINT_DEBUG_LEVEL >= 2 {
 					println!("Removing vertex {} (in final steps)", v);
 				}
 				// This vertex needs to be removed.
@@ -1117,9 +1132,9 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Da
 
 	counts.reduce();
 
-	if PRINT_DEBUG {
+	if PRINT_DEBUG_LEVEL >= 1 {
 		println!("vertices: {:?}", vertices.to_vec());
-		println!("Activity: {:?}", vert_activity);
+		println!("num_active = {}. Activity: {:?}", num_active_verts, vert_activity);
 		counts.print();
 	}
 
@@ -1151,7 +1166,7 @@ fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, edge_t
 		}
 
 		let mut vertices = VertexSet::new(g.n);
-		if rng.gen_bool(0.3) {
+		if rng.gen_bool(0.9) {
 			vertices.add_vert(Vertex::ZERO);
 			for v in g.iter_verts().skip(g.n.to_usize() - k + 1) {
 				vertices.add_vert(v)
@@ -1166,8 +1181,7 @@ fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, edge_t
 
 		if let Some(edge_type) = edge_type {
 			get_ratios_dp(&g, posts, edge_type, &mut data, vertices);
-		}
-		else {
+		} else {
 			get_ratios_naive(&g, posts, &mut data, vertices);
 		}
 	}

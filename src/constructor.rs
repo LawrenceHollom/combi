@@ -324,15 +324,6 @@ impl Constructor {
             Random(_) => true,
         }
     }
-
-    pub fn is_bfs(&self) -> bool {
-        use Constructor::*;
-        use RandomConstructor::*;
-        match self {
-            Random(BFSOptimal(_, _, _)) => true,
-            _ => false,
-        }
-    }
 }
 
 impl ProductConstructor {
