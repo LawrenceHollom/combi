@@ -558,6 +558,23 @@ impl ReducedEquivalenceRelation {
 			next_label: EquivalenceClass(3),
 		}
 	}
+	fn get_double_edge() -> ReducedEquivalenceRelation {
+		ReducedEquivalenceRelation {
+			k: 2,
+			down: vec![EquivalenceClass(1), EquivalenceClass(1)],
+			up: vec![EquivalenceClass(0), EquivalenceClass(0)],
+			next_label: EquivalenceClass(3),
+		}
+	}
+
+	fn get_double_cross_edge() -> ReducedEquivalenceRelation {
+		ReducedEquivalenceRelation {
+			k: 2,
+			down: vec![EquivalenceClass(0), EquivalenceClass(1)],
+			up: vec![EquivalenceClass(1), EquivalenceClass(0)],
+			next_label: EquivalenceClass(3),
+		}
+	}
 
 	pub fn of_equiv_rel(rel: EquivalenceRelation) -> ReducedEquivalenceRelation {
 		let mut down = vec![];
@@ -991,7 +1008,9 @@ fn get_ratios_naive(g: &Graph, posts: VertexSet, data: &mut Data, vertices: Vert
 }
 
 fn get_default_edge() -> Vec<ReducedEquivalenceRelation> {
-	vec![ReducedEquivalenceRelation::get_down_edge(), ReducedEquivalenceRelation::get_up_edge()]
+	//vec![ReducedEquivalenceRelation::get_down_edge(), ReducedEquivalenceRelation::get_up_edge()]
+	vec![ReducedEquivalenceRelation::get_double_edge(), ReducedEquivalenceRelation::get_double_cross_edge(),
+	ReducedEquivalenceRelation::get_down_edge(), ReducedEquivalenceRelation::get_up_edge()]
 }
 
 const PRINT_DEBUG: bool = false;
@@ -1146,15 +1165,7 @@ fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, naive:
 		if naive {
 			get_ratios_naive(&g, posts, &mut data, vertices);
 		} else {
-			/*print_vertex_table(vec![
-				("posts", posts.to_vec().to_vec_of_strings()),
-				("verts", vertices.to_vec().to_vec_of_strings())
-			]);*/
 			get_ratios_dp(&g, posts, &mut data, vertices);
-			/*data.print(k);
-			data = Data::new();
-			println!("And now naive:");
-			get_ratios_naive(&g, posts, &mut data, vertices);*/
 		}
 	}
 	data.print(k)
