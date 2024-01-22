@@ -1040,7 +1040,8 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Da
 		*num_active_verts -= 1;
 	}
 
-	for v in g.iter_verts_dfs().skip(1) { //g.iter_verts().skip(1) {
+	if it is a bfs graph then we don't want to change order of iteration.
+	for v in g.iter_verts_bfs().skip(1) { //g.iter_verts().skip(1) {
 		// add room for this new vertex, and then add edges and remove unwanted old vertices.
 		if PRINT_DEBUG {
 			println!("Starting on vertex {}", v);

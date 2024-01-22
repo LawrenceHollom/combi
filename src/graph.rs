@@ -625,8 +625,8 @@ impl Graph {
         EdgeSetIterator::new(&self.adj_list)
     }
 
-    pub fn iter_verts_dfs(&self) -> DFSIterator<'_> {
-        DFSIterator::new(self)
+    pub fn iter_verts_bfs(&self) -> BFSIterator<'_> {
+        BFSIterator::new(self)
     }
 
     #[allow(dead_code)]
@@ -643,16 +643,16 @@ pub fn adj_list_of_manual(adj_list: Vec<Vec<usize>>) -> VertexVec<Vec<Vertex>> {
         .collect()
 }
 
-pub struct DFSIterator<'a> {
+pub struct BFSIterator<'a> {
     q: Queue<Vertex>,
     visited: VertexVec<bool>,
     next_vert: Vertex,
     g: &'a Graph,
 }
 
-impl DFSIterator<'_> {
-    pub fn new(g: &Graph) -> DFSIterator<'_> {
-        DFSIterator {
+impl BFSIterator<'_> {
+    pub fn new(g: &Graph) -> BFSIterator<'_> {
+        BFSIterator {
             q: Queue::new(),
             visited: VertexVec::new(g.n, &false),
             next_vert: Vertex::ZERO,
@@ -661,11 +661,11 @@ impl DFSIterator<'_> {
     }
 }
 
-impl Iterator for DFSIterator<'_> {
+impl Iterator for BFSIterator<'_> {
     type Item = Vertex;
 
     fn next(&mut self) -> Option<Self::Item> {
-        fn process_v(iterator: &mut DFSIterator, v: Vertex) -> Option<Vertex> {
+        fn process_v(iterator: &mut BFSIterator, v: Vertex) -> Option<Vertex> {
             for u in iterator.g.adj_list[v].iter() {
                 if !iterator.visited[*u] {
                     iterator.visited[*u] = true;
