@@ -16,6 +16,7 @@ mod bowties;
 mod regular;
 mod semiregular;
 mod corona;
+mod random_bfs;
 
 #[derive(Clone)]
 pub enum ProductConstructor {
@@ -48,6 +49,7 @@ pub enum RandomConstructor {
     VertexStructured(VertexPattern, usize),
     EdgeStructured(EdgePattern, usize),
     ConnectedSemiregular(Order, f64, f64),
+    BFSOptimal(Order, usize, f64),
 }
 
 #[derive(Clone)]
@@ -210,6 +212,7 @@ impl Constructor {
                     };
                 Random(ConnectedSemiregular(Order::of_string(args[0]), args[1].parse().unwrap(), exponent))
             }
+            "bfs" => Random(BFSOptimal(Order::of_string(args[0]), args[1].parse().unwrap(), args[2].parse().unwrap())),
             "grid" => {
                 Raw(Grid(Order::of_string(args[0]), Order::of_string(args[1])))
             },
@@ -284,6 +287,7 @@ impl Constructor {
             Random(VertexStructured(pattern, num)) => pattern.new_graph(*num),
             Random(EdgeStructured(pattern, num)) => pattern.new_graph(*num),
             Random(ConnectedSemiregular(order, p, exp)) => semiregular::new_semiregular(*order, *p, *exp),
+            Random(BFSOptimal(order, width, density)) => random_bfs::new_bfs(*order, *width, *density),
             Raw(Grid(height, width)) => grid::new(height, width),
             Raw(Complete(order)) => Graph::new_complete(*order),
             Raw(CompleteBipartite(left, right)) => Graph::new_complete_bipartite(*left, *right),
@@ -422,6 +426,9 @@ impl fmt::Display for RandomConstructor {
             }
             ConnectedSemiregular(order, p, exp) => {
                 write!(f, "Connected semiregular graph of order {} and average degree {} with weighting exponent {}", order, p, exp)
+            }
+            BFSOptimal(order, width, density) => {
+                write!(f, "BFS optimised of order {}, edge-width {}, and edge-density {}", order, width, density)
             }
         }
     }

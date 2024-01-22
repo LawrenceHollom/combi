@@ -29,6 +29,7 @@ pub enum UnitOperation {
     BunkbedReducedConnectionCounts(usize),
     BunkbedReducedConnectionSimulation(usize, usize),
     BunkbedReducedConnectionDP(usize, usize, usize),
+    BunkbedCounterexampleSearch(usize),
     Signature,
     Unit,
 }
@@ -73,6 +74,7 @@ impl UnitOperation {
                 let edges = args.get(2).map_or(0, |x| x.parse().unwrap());
                 Some(BunkbedReducedConnectionDP(args[0].parse().unwrap(), k, edges))
             },
+            "bb_counterexample" => Some(BunkbedCounterexampleSearch(args.get(0).map_or(1, |x| x.parse().unwrap()))),
             "()" | "(" => Some(Unit),
             &_ => None,
         }
@@ -127,6 +129,7 @@ impl fmt::Display for UnitOperation {
                 str = format!("Simulate bunkbed {}-connection counts with type-{} edges {} times and print max ratios using DP", k, edges, reps);
                 &str
             }
+            BunkbedCounterexampleSearch(_) => "Search for a counterexample to the bunkbed conjecture",
             Unit => "Do nothing",
         };
         write!(f, "{}", name)

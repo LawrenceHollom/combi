@@ -19,6 +19,8 @@ use utilities::edge_tools::*;
 use queues::*;
 use colored::*;
 
+use super::connectedness;
+
 /**
  * This file deals with the version of the conjecture wherein we have
  * conditioned on the positions of the posts, and every horizontal
@@ -1178,4 +1180,41 @@ pub fn simulate_connection_count_ratios_naive(h: &Graph, num_reps: usize, k: usi
 // It's time to get dynamic.
 pub fn bunkbed_connection_counts_dp(h: &Graph, num_reps: usize, k: usize, edge_type: usize) {
 	simulate_connection_count_ratios(h, num_reps, k, Some(EdgeType::of_usize(edge_type)));
+}
+
+pub fn search_for_counterexample(h: &Graph, edge_type: usize) {
+	let mut g: Graph;
+	let edge_type = EdgeType::of_usize(edge_type);
+	let mut data = Data::new();
+	let mut num_loops = 0;
+	let mut num_trials = 0;
+	let mut time_of_last_print = SystemTime::now();
+
+	'search_for_counterexample: loop {
+		'find_good_g: loop {
+			g = h.constructor.new_graph();
+			if connectedness::is_k_connected(&g, 2) && !is_bunkbed_reducible(&g) && approx_contradicts_reduced_bunkbed_conjecture(&g, 5000) {
+				if approx_contradicts_reduced_bunkbed_conjecture(&g, 100_000) {
+					break 'find_good_g;
+				}
+			} else {
+				num_trials += 1;
+			}
+		}
+		let posts = get_posts(&g, None);
+		let vertices = VertexSet::of_vec(g.n, &vec![Vertex::ZERO, g.n.to_max_vertex()]);
+		get_ratios_dp(&g, posts, edge_type, &mut data, vertices);
+		num_loops += 1;
+		if num_loops > 1000 {
+			break 'search_for_counterexample;
+		}
+
+		if time_of_last_print.elapsed().unwrap().as_secs() >= 1 {
+			print!("{} ", num_loops);
+			std::io::stdout().flush().unwrap();
+			time_of_last_print = SystemTime::now();
+		}
+	}
+	data.print(2);
+	println!("Average num trials per graph: {}", num_trials / num_loops)
 }

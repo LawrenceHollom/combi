@@ -288,6 +288,7 @@ impl Operator {
             BunkbedReducedConnectionCounts(k) => bunkbed_reduced::print_connection_counts(&self.g, *k),
             BunkbedReducedConnectionSimulation(num_reps, k) => bunkbed_reduced::simulate_connection_count_ratios_naive(&self.g, *num_reps, *k),
             BunkbedReducedConnectionDP(num_reps, k, edge_type) => bunkbed_reduced::bunkbed_connection_counts_dp(&self.g, *num_reps, *k, *edge_type),
+            BunkbedCounterexampleSearch(edge_type) => bunkbed_reduced::search_for_counterexample(&self.g, *edge_type),
             Unit => (),
         }
     }
