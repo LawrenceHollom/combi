@@ -1220,6 +1220,7 @@ pub fn search_for_counterexample(h: &Graph, edge_type: usize) {
 				num_trials += 1;
 			}
 		}
+		do posts and targets separately if it's a spinal graph!
 		let posts = get_posts(&g, None);
 		let vertices = VertexSet::of_vec(g.n, &vec![Vertex::ZERO, g.n.to_max_vertex()]);
 		get_ratios_dp(&g, posts, edge_type, &mut data, vertices);

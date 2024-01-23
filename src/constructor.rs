@@ -215,7 +215,7 @@ impl Constructor {
             }
             "bfs" => Random(BFSOptimal(Order::of_string(args[0]), args[1].parse().unwrap(), args[2].parse().unwrap())),
             "spine" | "spinal" => {
-                let spine_proportion = args.get(1).map_or(0.666, |x| x.parse().unwrap());
+                let spine_proportion = args.get(1).map_or(0.667, |x| x.parse().unwrap());
                 let off_vert_degree = args.get(2).map_or(Degree::of_usize(3), |x| Degree::of_string(x));
                 Random(Spinal(Order::of_string(args[0]), spine_proportion, off_vert_degree))
             }
