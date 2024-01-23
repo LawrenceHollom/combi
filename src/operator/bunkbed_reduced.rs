@@ -838,6 +838,10 @@ impl EquivalenceCounts {
 		self.counts = new_counts
 	}
 
+	pub fn num_distinct_rers(&self) -> usize {
+		self.counts.keys().len()
+	}
+
 	pub fn print(&self) {
 		let rows = self.counts.iter()
 			.map(|(rel, c)| (rel.to_string(), vec![c.to_string(), rel.k.to_string()]))
@@ -1013,7 +1017,7 @@ fn get_ratios_naive(g: &Graph, posts: VertexSet, data: &mut Data, vertices: Vert
 	add_equivalence_counts(counts, data)
 }
 
-const PRINT_DEBUG_LEVEL: u8 = 0;
+const PRINT_DEBUG_LEVEL: u8 = 1;
 
 /**
  * Use dynamic programming to compute the EquivalenceCounts between the given set of vertices.
@@ -1048,7 +1052,7 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Da
 	for v in g.iter_verts_bfs().skip(1) {
 		// add room for this new vertex, and then add edges and remove unwanted old vertices.
 		if PRINT_DEBUG_LEVEL >= 1 {
-			print!("Starting on vertex {}; num_active_verts = {}; ", v, num_active_verts);
+			print!("Starting on vertex {}; num_active_verts = {}, num RERs = {}; ", v, num_active_verts, counts.num_distinct_rers());
 			for w in g.iter_verts() {
 				if vert_activity[w].is_some() {
 					print!("{}({}) ", w, remaining_degree[w].to_usize());
