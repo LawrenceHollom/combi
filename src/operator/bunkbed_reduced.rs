@@ -1017,7 +1017,7 @@ fn get_ratios_naive(g: &Graph, posts: VertexSet, data: &mut Data, vertices: Vert
 	add_equivalence_counts(counts, data)
 }
 
-const PRINT_DEBUG_LEVEL: u8 = 1;
+const PRINT_DEBUG_LEVEL: u8 = 0;
 
 /**
  * Use dynamic programming to compute the EquivalenceCounts between the given set of vertices.

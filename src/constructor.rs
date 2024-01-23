@@ -50,6 +50,7 @@ pub enum RandomConstructor {
     EdgeStructured(EdgePattern, usize),
     ConnectedSemiregular(Order, f64, f64),
     BFSOptimal(Order, usize, f64),
+    Spinal(Order, f64, Degree),
 }
 
 #[derive(Clone)]
@@ -213,6 +214,11 @@ impl Constructor {
                 Random(ConnectedSemiregular(Order::of_string(args[0]), args[1].parse().unwrap(), exponent))
             }
             "bfs" => Random(BFSOptimal(Order::of_string(args[0]), args[1].parse().unwrap(), args[2].parse().unwrap())),
+            "spine" | "spinal" => {
+                let spine_proportion = args.get(1).map_or(0.666, |x| x.parse().unwrap());
+                let off_vert_degree = args.get(2).map_or(Degree::of_usize(3), |x| Degree::of_string(x));
+                Random(Spinal(Order::of_string(args[0]), spine_proportion, off_vert_degree))
+            }
             "grid" => {
                 Raw(Grid(Order::of_string(args[0]), Order::of_string(args[1])))
             },
@@ -288,6 +294,7 @@ impl Constructor {
             Random(EdgeStructured(pattern, num)) => pattern.new_graph(*num),
             Random(ConnectedSemiregular(order, p, exp)) => semiregular::new_semiregular(*order, *p, *exp),
             Random(BFSOptimal(order, width, density)) => random_bfs::new_bfs(*order, *width, *density),
+            Random(Spinal(order, spine_propn, off_deg)) => random_bfs::new_spinal(*order, *spine_propn, off_deg),
             Raw(Grid(height, width)) => grid::new(height, width),
             Raw(Complete(order)) => Graph::new_complete(*order),
             Raw(CompleteBipartite(left, right)) => Graph::new_complete_bipartite(*left, *right),
@@ -429,6 +436,9 @@ impl fmt::Display for RandomConstructor {
             }
             BFSOptimal(order, width, density) => {
                 write!(f, "BFS optimised of order {}, edge-width {}, and edge-density {}", order, width, density)
+            }
+            Spinal(order, spine_propn, off_deg) => {
+                write!(f, "Spinal graph of order {}, with {:.3}-propn of edges in the spine. Off-spine degree = {}", order, spine_propn, off_deg)
             }
         }
     }
