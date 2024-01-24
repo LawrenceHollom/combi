@@ -232,6 +232,23 @@ fn get_posts(g: &Graph, max_num_posts: Option<usize>) -> VertexSet {
 	posts
 }
 
+/**
+ * g is guaranteed to be spinal. We return the set of all non-spinal vertices.
+ */
+fn get_spinal_posts(g: &Graph) -> VertexSet {
+	let mut posts = VertexSet::new(g.n);
+	let mut spinal_end = Vertex::ZERO;
+	while g.adj[spinal_end][spinal_end.incr()] {
+		spinal_end.incr_inplace();
+	}
+	let mut post = spinal_end.incr();
+	while !post.is_n(g.n) {
+		posts.add_vert(post);
+		post.incr_inplace();
+	}
+	posts
+}
+
 fn get_max_num_posts(rng: &mut ThreadRng) -> usize {
 	let p = rng.gen_range(0.0..1.0);
 	if p < 0.01 { 
@@ -1213,6 +1230,7 @@ pub fn search_for_counterexample(h: &Graph, edge_type: usize) {
 		'find_good_g: loop {
 			g = h.constructor.new_graph();
 			if connectedness::is_k_connected(&g, 2) && !is_bunkbed_reducible(&g) && approx_contradicts_reduced_bunkbed_conjecture(&g, 5000) {
+				println!("Inner!");
 				if approx_contradicts_reduced_bunkbed_conjecture(&g, 100_000) {
 					break 'find_good_g;
 				}
@@ -1220,9 +1238,21 @@ pub fn search_for_counterexample(h: &Graph, edge_type: usize) {
 				num_trials += 1;
 			}
 		}
-		do posts and targets separately if it's a spinal graph!
-		let posts = get_posts(&g, None);
-		let vertices = VertexSet::of_vec(g.n, &vec![Vertex::ZERO, g.n.to_max_vertex()]);
+		use crate::constructor::*;
+		let is_spinal = match g.constructor {
+				Constructor::Random(RandomConstructor::Spinal(_, _, _)) => true,
+				_ => false,
+			};
+		let posts = if is_spinal { get_spinal_posts(&g) } else { get_posts(&g, None) };
+		let vertices = if is_spinal {
+				let mut spine_end = Vertex::ZERO;
+				while g.adj[spine_end][spine_end.incr()] {
+					spine_end.incr_inplace();
+				}
+				VertexSet::of_vec(g.n, &vec![Vertex::ZERO, spine_end])
+			} else { 
+				VertexSet::of_vec(g.n, &vec![Vertex::ZERO, g.n.to_max_vertex()])
+			};
 		get_ratios_dp(&g, posts, edge_type, &mut data, vertices);
 		num_loops += 1;
 		if num_loops > 1000 {

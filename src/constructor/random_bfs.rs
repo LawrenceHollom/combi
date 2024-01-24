@@ -54,8 +54,6 @@ pub fn new_spinal(n: Order, spine_propn: f64, off_deg: &Degree) -> Graph {
     let mut adj = vec![vec![false; order]; order];
     let spine_len = (order as f64 * spine_propn) as usize;
 
-    println!("Spine len = {}, off_deg = {}", spine_len, off_deg.to_usize());
-
     if off_deg.at_least(spine_len) {
         panic!("The spine isn't long enough for the requested degree!")
     }
