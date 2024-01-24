@@ -1044,12 +1044,6 @@ fn add_equivalence_counts(counts: &EquivalenceCounts, data: &mut Data) {
 					data.max_ratios.entry((first_rel1.to_owned(), first_rel2.to_owned()))
 						.and_modify(|(x, count)| if ratio > *x { *x = ratio; *count = 1 } else if ratio == *x { *count += 1 } )	
 						.or_insert((ratio, 1));
-					if rel1.k == 2 {
-						println!("Added the 2-ratio: ({:?})", data.max_ratios.get(&(first_rel1.to_owned(), first_rel2.to_owned())));
-						rel1.print_fancy_pair(rel2, ratio, 1);
-						first_rel1.print_fancy_pair(first_rel2, ratio, 1)
-						there must be some bug in the printing now that k can vary.
-					}
 				}
 			}
 		}
@@ -1202,6 +1196,7 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Da
 	if vertices.size() >= 3 {
 		// Remove one vertex and add results to equivalence counts
 		remove_vertex(1, &mut counts, &mut vert_activity, &mut num_active_verts);
+		counts.reduce();
 		add_equivalence_counts(&counts, data);
 	}
 }
