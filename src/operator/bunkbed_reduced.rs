@@ -509,7 +509,7 @@ impl EdgeType {
 		let raw_edges = match self {
 			Classic => vec![[[0, 0], [1, 2]], [[1, 2], [0, 0]], [[0, 1], [2, 3]], [[0, 0], [0, 0]]],
 			FiftyFifty => vec![[[0, 0], [1, 2]], [[1, 2], [0, 0]]],
-			Double => vec![[[0, 1], [1, 0]], [[0, 0], [1, 1]]],
+			Double => vec![[[0, 1], [1, 0]], [[0, 0], [1, 1]]]
 		};
 		raw_edges.iter()
 			.map(|raw| ReducedEquivalenceRelation::of_raw_vecs(raw)
@@ -528,6 +528,9 @@ struct ReducedEquivalenceRelation {
 
 impl PartialEq for ReducedEquivalenceRelation {
     fn eq(&self, other: &Self) -> bool {
+		if self.k != other.k {
+			return false;
+		}
         for (i, c) in self.down.iter().enumerate() {
 			if *c != other.down[i] {
 				return false;
@@ -546,6 +549,9 @@ impl Eq for ReducedEquivalenceRelation {}
 
 impl Ord for ReducedEquivalenceRelation {
     fn cmp(&self, other: &Self) -> Ordering {
+		if self.k != other.k {
+			return self.k.cmp(&other.k);
+		}
         for (i, c) in self.down.iter().enumerate() {
 			if c.cmp(&other.down[i]) != Ordering::Equal {
 				return c.cmp(&other.down[i])
@@ -596,7 +602,7 @@ impl ReducedEquivalenceRelation {
 		let down = raw[0].iter().map(|x| EquivalenceClass(*x)).collect::<Vec<EquivalenceClass>>();
 		let up = raw[1].iter().map(|x| EquivalenceClass(*x)).collect::<Vec<EquivalenceClass>>();
 		let next_label = EquivalenceClass(raw[0][0].max(raw[0][1]).max(raw[1][0]).max(raw[1][1]) + 1);
-		ReducedEquivalenceRelation { k: 2, down,	up,	next_label }
+		ReducedEquivalenceRelation { k: 2, down, up, next_label }
 	}
 
 	pub fn of_equiv_rel(rel: EquivalenceRelation) -> ReducedEquivalenceRelation {
@@ -865,6 +871,26 @@ impl EquivalenceCounts {
 			.collect::<Vec<(String, Vec<String>)>>();
 		print_table(vec!["count".to_string(), "k".to_string()], rows)
 	}
+
+	pub fn print_summary(&self, g: &Graph) {
+		fn get_num(counts: &HashMap<ReducedEquivalenceRelation, u128>, raw: &[[usize; 2]; 2]) -> u128 {
+			let rel = ReducedEquivalenceRelation::of_raw_vecs(raw).reduce_and_symmetrise();
+			*counts.get(&rel).unwrap_or(&0)
+		}
+		let num_single_flat = get_num(&self.counts, &[[1, 2], [0, 0]]);
+		let num_single_cross = get_num(&self.counts, &[[1, 2], [0, 1]]);
+		let num_double_flat = get_num(&self.counts, &[[1, 1], [0, 0]]);
+		let num_double_cross = get_num(&self.counts, &[[1, 0], [0, 1]]);
+		let single_ratio = (num_single_cross as f64) / (num_single_flat as f64);
+		let double_ratio = (num_double_cross as f64) / (num_double_flat as f64);
+		println!("1-flat: {}, 1-cross: {}, ratio: {:.5} // 2-flat: {}, 2-cross: {}, ratio: {:.5}", 
+		num_single_flat, num_single_cross, single_ratio, num_double_flat, num_double_cross, double_ratio);
+		if num_single_flat < num_single_cross || num_double_flat < num_double_cross {
+			println!("Counterexample found!");
+			g.print();
+			panic!("SO IT HAS BEEN DONE!")
+		}
+	}
 }
 
 pub fn print_connection_counts(g: &Graph, k: usize) {
@@ -987,7 +1013,7 @@ impl Data {
 	}
 }
 
-fn add_equivalence_counts(counts: EquivalenceCounts, data: &mut Data) {
+fn add_equivalence_counts(counts: &EquivalenceCounts, data: &mut Data) {
 	for rel in counts.counts.keys() {
 		if !data.all_rels.contains(rel) {
 			data.all_rels.insert(rel.to_owned());
@@ -1001,22 +1027,30 @@ fn add_equivalence_counts(counts: EquivalenceCounts, data: &mut Data) {
 		let count1 = *counts.counts.get(rel1).unwrap_or(&0);
 		if count1 != 0 {
 			for rel2 in data.all_rels.iter() {
-				let count2 = *counts.counts.get(rel2).unwrap_or(&0);
-				let ratio = if count2 == 0 { f64::INFINITY } else { (count1 as f64) / (count2 as f64) };
-				// Now get the lexicographically first permutation of the pair (rel1, rel2).
-				let mut first_rel1 = rel1;
-				let mut first_rel2 = rel2;
-				for (i, permed_rel1) in data.permutations.get(rel1).unwrap().iter().enumerate() {
-					let permed_rel2 = &data.permutations.get(rel2).unwrap()[i];
-					if permed_rel1 < first_rel1 || (permed_rel1 == first_rel1 && permed_rel2 < first_rel2) {
-						first_rel1 = permed_rel1;
-						first_rel2 = permed_rel2;
+				if rel1.k == rel2.k {
+					let count2 = *counts.counts.get(rel2).unwrap_or(&0);
+					let ratio = if count2 == 0 { f64::INFINITY } else { (count1 as f64) / (count2 as f64) };
+					// Now get the lexicographically first permutation of the pair (rel1, rel2).
+					let mut first_rel1 = rel1;
+					let mut first_rel2 = rel2;
+					for (i, permed_rel1) in data.permutations.get(rel1).unwrap().iter().enumerate() {
+						let permed_rel2 = &data.permutations.get(rel2).unwrap()[i];
+						if permed_rel1 < first_rel1 || (permed_rel1 == first_rel1 && permed_rel2 < first_rel2) {
+							first_rel1 = permed_rel1;
+							first_rel2 = permed_rel2;
+						}
+					}
+
+					data.max_ratios.entry((first_rel1.to_owned(), first_rel2.to_owned()))
+						.and_modify(|(x, count)| if ratio > *x { *x = ratio; *count = 1 } else if ratio == *x { *count += 1 } )	
+						.or_insert((ratio, 1));
+					if rel1.k == 2 {
+						println!("Added the 2-ratio: ({:?})", data.max_ratios.get(&(first_rel1.to_owned(), first_rel2.to_owned())));
+						rel1.print_fancy_pair(rel2, ratio, 1);
+						first_rel1.print_fancy_pair(first_rel2, ratio, 1)
+						there must be some bug in the printing now that k can vary.
 					}
 				}
-
-				data.max_ratios.entry((first_rel1.to_owned(), first_rel2.to_owned()))
-					.and_modify(|(x, count)| if ratio > *x { *x = ratio; *count = 1 } else if ratio == *x { *count += 1 } )	
-					.or_insert((ratio, 1));
 			}
 		}
 	}
@@ -1031,7 +1065,7 @@ fn get_ratios_naive(g: &Graph, posts: VertexSet, data: &mut Data, vertices: Vert
 		counts.add(&g, &config, &indexer, &posts, vertices);
 	}
 
-	add_equivalence_counts(counts, data)
+	add_equivalence_counts(&counts, data)
 }
 
 const PRINT_DEBUG_LEVEL: u8 = 0;
@@ -1039,7 +1073,7 @@ const PRINT_DEBUG_LEVEL: u8 = 0;
 /**
  * Use dynamic programming to compute the EquivalenceCounts between the given set of vertices.
  */
-fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Data, vertices: VertexSet) {
+fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Data, vertices: VertexSet, print_summary: bool) {
 	let mut counts = EquivalenceCounts::new_singleton();
 	let mut vert_activity = VertexVec::new(g.n, &None);
 	let mut num_active_verts = 1;
@@ -1063,7 +1097,7 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Da
 
 	if PRINT_DEBUG_LEVEL >= 1 {
 		println!("BFS width of g = {}", g.get_bfs_width());
-		println!("Target verts = {:?}", vertices.to_vec());
+		print_vertex_table(vec![("posts", posts.to_vec().to_vec_of_strings()), ("targets", vertices.to_vec().to_vec_of_strings())]);
 	}
 
 	for v in g.iter_verts_bfs().skip(1) {
@@ -1159,7 +1193,33 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Da
 		counts.print();
 	}
 
-	add_equivalence_counts(counts, data);
+	if print_summary {
+		counts.print_summary(g);
+	}
+
+	add_equivalence_counts(&counts, data);
+
+	if vertices.size() >= 3 {
+		// Remove one vertex and add results to equivalence counts
+		remove_vertex(1, &mut counts, &mut vert_activity, &mut num_active_verts);
+		add_equivalence_counts(&counts, data);
+	}
+}
+
+fn is_spinal(g: &Graph) -> bool {
+	use crate::constructor::*;
+	match g.constructor {
+		Constructor::Random(RandomConstructor::Spinal(_, _, _)) => true,
+		_ => false,
+	}
+}
+
+fn get_spinal_vertices(g: &Graph) -> VertexSet {
+	let mut spine_end = Vertex::ZERO;
+	while g.adj[spine_end][spine_end.incr()] {
+		spine_end.incr_inplace();
+	}
+	VertexSet::of_vec(g.n, &vec![Vertex::ZERO, spine_end])
 }
 
 fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, edge_type: Option<EdgeType>) {
@@ -1187,7 +1247,9 @@ fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, edge_t
 		}
 
 		let mut vertices = VertexSet::new(g.n);
-		if rng.gen_bool(0.9) {
+		if is_spinal(&g) {
+			vertices = get_spinal_vertices(&g);
+		} else if rng.gen_bool(0.9) {
 			vertices.add_vert(Vertex::ZERO);
 			for v in g.iter_verts().skip(g.n.to_usize() - k + 1) {
 				vertices.add_vert(v)
@@ -1198,10 +1260,14 @@ fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, edge_t
 			}
 		}
 
-		let posts = get_posts(&g, Some(get_max_num_posts(&mut rng)));
+		let posts = if is_spinal(&g) {
+				get_spinal_posts(&g)	
+			} else {
+				get_posts(&g, Some(get_max_num_posts(&mut rng)))
+			};
 
 		if let Some(edge_type) = edge_type {
-			get_ratios_dp(&g, posts, edge_type, &mut data, vertices);
+			get_ratios_dp(&g, posts, edge_type, &mut data, vertices, num_reps == 1);
 		} else {
 			get_ratios_naive(&g, posts, &mut data, vertices);
 		}
@@ -1230,30 +1296,22 @@ pub fn search_for_counterexample(h: &Graph, edge_type: usize) {
 		'find_good_g: loop {
 			g = h.constructor.new_graph();
 			if connectedness::is_k_connected(&g, 2) && !is_bunkbed_reducible(&g) && approx_contradicts_reduced_bunkbed_conjecture(&g, 5000) {
-				println!("Inner!");
-				if approx_contradicts_reduced_bunkbed_conjecture(&g, 100_000) {
+				if approx_contradicts_reduced_bunkbed_conjecture(&g, 20_000) {
 					break 'find_good_g;
 				}
 			} else {
 				num_trials += 1;
 			}
 		}
-		use crate::constructor::*;
-		let is_spinal = match g.constructor {
-				Constructor::Random(RandomConstructor::Spinal(_, _, _)) => true,
-				_ => false,
-			};
-		let posts = if is_spinal { get_spinal_posts(&g) } else { get_posts(&g, None) };
-		let vertices = if is_spinal {
-				let mut spine_end = Vertex::ZERO;
-				while g.adj[spine_end][spine_end.incr()] {
-					spine_end.incr_inplace();
-				}
-				VertexSet::of_vec(g.n, &vec![Vertex::ZERO, spine_end])
+		let posts = if is_spinal(&g) { get_spinal_posts(&g) } else { get_posts(&g, None) };
+		let vertices = if is_spinal(&g) {
+				get_spinal_vertices(&g)
 			} else { 
 				VertexSet::of_vec(g.n, &vec![Vertex::ZERO, g.n.to_max_vertex()])
 			};
-		get_ratios_dp(&g, posts, edge_type, &mut data, vertices);
+		print!("DP ");
+		std::io::stdout().flush().unwrap();		
+		get_ratios_dp(&g, posts, edge_type, &mut data, vertices, true);
 		num_loops += 1;
 		if num_loops > 1000 {
 			break 'search_for_counterexample;
