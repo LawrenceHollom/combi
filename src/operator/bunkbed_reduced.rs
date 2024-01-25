@@ -1208,6 +1208,7 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Da
 				println!("Found a graph with the desired config ratio!");
 				rel1.print_fancy_pair(rel2, (*count1 as f64) / (*count2 as f64), 1);
 				println!("Counts {} / {}", *count1, *count2);
+				print_vertex_table(vec![("posts", posts.to_vec().to_vec_of_strings()), ("targets", vertices.to_vec().to_vec_of_strings())]);
 				g.print();
 				panic!("NOOOT NOOOT")
 			}
