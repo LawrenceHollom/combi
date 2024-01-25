@@ -792,6 +792,7 @@ impl ReducedEquivalenceRelation {
 	}
 }
 
+#[derive(Clone)]
 struct EquivalenceCounts {
 	counts: HashMap<ReducedEquivalenceRelation, u128>
 }
@@ -1179,6 +1180,16 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Da
 		}
 	}
 
+	if vertices.size() >= 3 {
+		// Remove one vertex and add results to equivalence counts
+		for i in 0..vertices.size() {
+			let mut counts_copy = counts.to_owned();
+			remove_vertex(i, &mut counts_copy, &mut vert_activity, &mut num_active_verts);
+			counts_copy.reduce();
+			add_equivalence_counts(&counts_copy, data);
+		}
+	}
+
 	counts.reduce();
 
 	if PRINT_DEBUG_LEVEL >= 1 {
@@ -1191,14 +1202,19 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Da
 		counts.print_summary(g);
 	}
 
-	add_equivalence_counts(&counts, data);
-
-	if vertices.size() >= 3 {
-		// Remove one vertex and add results to equivalence counts
-		remove_vertex(1, &mut counts, &mut vert_activity, &mut num_active_verts);
-		counts.reduce();
-		add_equivalence_counts(&counts, data);
+	for (rel1, count1) in counts.counts.iter() {
+		for (rel2, count2) in counts.counts.iter() {
+			if rel1.to_code() == 34026 && rel2.to_code() == 34020 && *count1 > *count2 {
+				println!("Found a graph with the desired config ratio!");
+				rel1.print_fancy_pair(rel2, (*count1 as f64) / (*count2 as f64), 1);
+				println!("Counts {} / {}", *count1, *count2);
+				g.print();
+				panic!("NOOOT NOOOT")
+			}
+		}
 	}
+
+	add_equivalence_counts(&counts, data);
 }
 
 fn is_spinal(g: &Graph) -> bool {
