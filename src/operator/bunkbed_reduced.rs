@@ -1209,12 +1209,17 @@ fn is_spinal(g: &Graph) -> bool {
 	}
 }
 
-fn get_spinal_vertices(g: &Graph) -> VertexSet {
+fn get_spinal_vertices(g: &Graph, k: usize) -> VertexSet {
 	let mut spine_end = Vertex::ZERO;
 	while g.adj[spine_end][spine_end.incr()] {
 		spine_end.incr_inplace();
 	}
-	VertexSet::of_vec(g.n, &vec![Vertex::ZERO, spine_end])
+	let mut vs = VertexSet::of_vert(g.n, Vertex::ZERO);
+	for _i in 0..(k-1) {
+		vs.add_vert(spine_end);
+		spine_end.decr_inplace()
+	}
+	vs
 }
 
 fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, edge_type: Option<EdgeType>) {
@@ -1243,7 +1248,7 @@ fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, edge_t
 
 		let mut vertices = VertexSet::new(g.n);
 		if is_spinal(&g) {
-			vertices = get_spinal_vertices(&g);
+			vertices = get_spinal_vertices(&g, k);
 		} else if rng.gen_bool(0.9) {
 			vertices.add_vert(Vertex::ZERO);
 			for v in g.iter_verts().skip(g.n.to_usize() - k + 1) {
@@ -1300,7 +1305,7 @@ pub fn search_for_counterexample(h: &Graph, edge_type: usize) {
 		}
 		let posts = if is_spinal(&g) { get_spinal_posts(&g) } else { get_posts(&g, None) };
 		let vertices = if is_spinal(&g) {
-				get_spinal_vertices(&g)
+				get_spinal_vertices(&g, 2)
 			} else { 
 				VertexSet::of_vec(g.n, &vec![Vertex::ZERO, g.n.to_max_vertex()])
 			};
