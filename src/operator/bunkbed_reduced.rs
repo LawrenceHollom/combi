@@ -456,8 +456,8 @@ impl GraphAndMetadata {
 	 * - G is disconnected
 	 * - Target vertices are adjacent
 	 * - G minus posts is disconnected
-	 * - G minus deg-1-targets is not 2-connected
 	 * - G minus targets is disconnected
+	 * - G minus deg-1-targets is not 2-connected
 	 */
 	pub fn is_boring(&self) -> bool {
 		if !self.g.is_connected() {
@@ -476,7 +476,13 @@ impl GraphAndMetadata {
 		if self.g.num_filtered_components(Some(&self.targets.not().to_vec())) >= 2 {
 			return true;
 		}
-		if !connectedness::is_k_connected(&self.g, 2) {
+		let mut deg_1_targets = VertexSet::new(self.g.n);
+		for v in self.targets.iter() {
+			if self.g.deg[v].equals(1) {
+				deg_1_targets.add_vert(v);
+			}
+		}
+		if !connectedness::is_filtered_k_connected(&self.g, 2, Some(&deg_1_targets.not().to_vec())) {
 			return true;
 		}
 		false
