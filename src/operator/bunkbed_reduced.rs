@@ -1289,7 +1289,8 @@ fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, edge_t
 			get_ratios_naive(&g, posts, &mut data, vertices);
 		}
 	}
-	data.print(k)
+	data.print(k);
+	println!("Constructor: {:?}", h.constructor.to_string());
 }
 
 pub fn simulate_connection_count_ratios_naive(h: &Graph, num_reps: usize, k: usize) {
