@@ -56,6 +56,10 @@ pub fn is_k_connected(g: &Graph, k: usize) -> bool {
     }
 }
 
+pub fn is_filtered_k_connected(g: &Graph, k: usize, filter: Option<&VertexVec>) -> bool {
+
+}
+
 // This is stupid slow for e.g. the complete graph.
 pub fn connectedness(g: &Graph) -> u32 {
     let mut k = 1;
