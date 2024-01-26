@@ -403,6 +403,85 @@ pub fn is_bunkbed_reducible(g: &Graph) -> bool {
 		is_reducible
 	}
 }
+struct GraphAndMetadata {
+	g: Graph,
+	posts: VertexSet,
+	targets: VertexSet,
+}
+
+impl GraphAndMetadata {
+	fn new(h: &Graph, rng: &mut ThreadRng, k: usize) -> GraphAndMetadata {
+		let mut g: Graph;
+		if h.constructor.is_random() {
+			let should_be_connected = rng.gen_bool(0.8);
+			'find_g: loop {
+				g = h.constructor.new_graph();
+				if !should_be_connected || g.is_connected() {
+					break 'find_g;
+				}
+			}
+		} else {
+			g = h.to_owned();	
+		}
+
+		let mut targets = VertexSet::new(g.n);
+		if is_spinal(&g) {
+			targets = get_spinal_vertices(&g, k);
+		} else if rng.gen_bool(0.9) {
+			targets.add_vert(Vertex::ZERO);
+			for v in g.iter_verts().skip(g.n.to_usize() - k + 1) {
+				targets.add_vert(v)
+			}
+		} else {
+			while targets.size() < k {
+				targets.add_vert(Vertex::of_usize(rng.gen_range(0..g.n.to_usize())))
+			}
+		}
+
+		let posts = if is_spinal(&g) {
+				get_spinal_posts(&g)	
+			} else {
+				get_posts(&g, Some(get_max_num_posts(rng)))
+			};
+		
+		GraphAndMetadata{g, posts, targets}
+	}
+
+	pub fn new_manual(g: &Graph, posts: VertexSet, targets: VertexSet) -> GraphAndMetadata {
+		GraphAndMetadata { g: g.to_owned(), posts, targets }
+	}
+
+	/** 
+	 * Test if the graph (etc.) is BORING. Things that make a graph (etc.) boring:
+	 * - G is disconnected
+	 * - Target vertices are adjacent
+	 * - G minus posts is disconnected
+	 * - G minus deg-1-targets is not 2-connected
+	 * - G minus targets is disconnected
+	 */
+	pub fn is_boring(&self) -> bool {
+		if !self.g.is_connected() {
+			return true;
+		}
+		for v in self.targets.iter() {
+			for u in self.g.adj_list[v].iter() {
+				if self.targets.has_vert(*u) {
+					return true;
+				}
+			}
+		}
+		if self.g.num_filtered_components(Some(&self.posts.not().to_vec())) >= 2 {
+			return true;
+		}
+		if self.g.num_filtered_components(Some(&self.targets.not().to_vec())) >= 2 {
+			return true;
+		}
+		if !connectedness::is_k_connected(&self.g, 2) {
+			return true;
+		}
+		false
+	}
+}
 
 #[derive(Clone)]
 struct EquivalenceRelation {
@@ -412,7 +491,7 @@ struct EquivalenceRelation {
 }
 
 impl EquivalenceRelation {
-	pub fn new(g: &Graph, config: &EdgeSet, indexer: &EdgeIndexer, posts: &VertexSet, vertices: VertexSet) -> EquivalenceRelation {
+	pub fn new(g_etc: &GraphAndMetadata, config: &EdgeSet, indexer: &EdgeIndexer) -> EquivalenceRelation {
 		fn pack_vertex(n: Order, x: Vertex, level: bool) -> Vertex {
 			if level {
 				x.incr_by_order(n)
@@ -420,29 +499,30 @@ impl EquivalenceRelation {
 				x
 			}
 		}
-		let mut union = UnionFind::new(g.n.times(2));
-		for v in vertices.iter() {
-			let down_conns = get_connections(g, v, config, indexer, posts);
-			let up_conns = get_connections(g, v, &config.inverse(indexer), indexer, posts);
-			for u in vertices.iter() {
+		let n = g_etc.g.n;
+		let mut union = UnionFind::new(n.times(2));
+		for v in g_etc.targets.iter() {
+			let down_conns = get_connections(&g_etc.g, v, config, indexer, &g_etc.posts);
+			let up_conns = get_connections(&g_etc.g, v, &config.inverse(indexer), indexer, &g_etc.posts);
+			for u in g_etc.targets.iter() {
 				if down_conns[u][0] {
-					union.merge(pack_vertex(g.n, u, false), pack_vertex(g.n, v, false))
+					union.merge(pack_vertex(n, u, false), pack_vertex(n, v, false))
 				}
 				if down_conns[u][1] {
-					union.merge(pack_vertex(g.n, u, true), pack_vertex(g.n, v, false))
+					union.merge(pack_vertex(n, u, true), pack_vertex(n, v, false))
 				}
 				if up_conns[u][0] {
-					union.merge(pack_vertex(g.n, u, true), pack_vertex(g.n, v, true))
+					union.merge(pack_vertex(n, u, true), pack_vertex(n, v, true))
 				}
 				if up_conns[u][1] {
-					union.merge(pack_vertex(g.n, u, false), pack_vertex(g.n, v, true))
+					union.merge(pack_vertex(n, u, false), pack_vertex(n, v, true))
 				}
 			}
 		}
 		EquivalenceRelation { 
-			n: g.n,
+			n,
 			components : union.to_canonical_component_vec(),
-			vertices
+			vertices: g_etc.targets
 		 }
 	}
 }
@@ -808,8 +888,8 @@ impl EquivalenceCounts {
 		EquivalenceCounts { counts }
 	}
 
-	pub fn add(&mut self, g: &Graph, config: &EdgeSet, indexer: &EdgeIndexer, posts: &VertexSet, vertices: VertexSet) {
-		let conn = EquivalenceRelation::new(g, config, indexer, posts, vertices);
+	pub fn add(&mut self, g_etc: &GraphAndMetadata, config: &EdgeSet, indexer: &EdgeIndexer) {
+		let conn = EquivalenceRelation::new(g_etc, config, indexer);
 		let reduced_conn = ReducedEquivalenceRelation::of_equiv_rel(conn);
 		self.counts.entry(reduced_conn).and_modify(|x| *x += 1).or_insert(1);
 	}
@@ -900,13 +980,14 @@ pub fn print_connection_counts(g: &Graph, k: usize) {
 	let posts = get_posts(g, None);
 	let indexer = EdgeIndexer::new(&g.adj_list);		
 	let mut counts = EquivalenceCounts::new();
-	let mut vertices = VertexSet::of_vert(g.n, Vertex::ZERO);
+	let mut targets = VertexSet::of_vert(g.n, Vertex::ZERO);
 	for v in g.iter_verts().skip(g.n.to_usize() - k + 1) {
-		vertices.add_vert(v)
+		targets.add_vert(v)
 	}
+	let g_etc = GraphAndMetadata::new_manual(g, posts, targets);
 	
 	for config in g.iter_edge_sets() {
-		counts.add(g, &config, &indexer, &posts, vertices);
+		counts.add(&g_etc, &config, &indexer);
 	}
 
 	println!("Counts:");
@@ -1052,13 +1133,13 @@ fn add_equivalence_counts(counts: &EquivalenceCounts, data: &mut Data) {
 	}
 }
 
-fn get_ratios_naive(g: &Graph, posts: VertexSet, data: &mut Data, vertices: VertexSet) {
-	let indexer = EdgeIndexer::new(&g.adj_list);
+fn get_ratios_naive(g_etc: &GraphAndMetadata, data: &mut Data) {
+	let indexer = EdgeIndexer::new(&g_etc.g.adj_list);
 	let mut counts = EquivalenceCounts::new();
 
 	// This here is the bottleneck.
-	for config in g.iter_edge_sets() {
-		counts.add(&g, &config, &indexer, &posts, vertices);
+	for config in g_etc.g.iter_edge_sets() {
+		counts.add(g_etc, &config, &indexer);
 	}
 
 	add_equivalence_counts(&counts, data)
@@ -1069,12 +1150,13 @@ const PRINT_DEBUG_LEVEL: u8 = 0;
 /**
  * Use dynamic programming to compute the EquivalenceCounts between the given set of vertices.
  */
-fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Data, vertices: VertexSet, print_summary: bool) {
+fn get_ratios_dp(g_etc: &GraphAndMetadata, edge_type: EdgeType, data: &mut Data, print_summary: bool) {
 	let mut counts = EquivalenceCounts::new_singleton();
-	let mut vert_activity = VertexVec::new(g.n, &None);
+	let n = g_etc.g.n;
+	let mut vert_activity = VertexVec::new(n, &None);
 	let mut num_active_verts = 1;
 	vert_activity[Vertex::ZERO] = Some(0);
-	let mut remaining_degree = g.deg.to_owned();
+	let mut remaining_degree = g_etc.g.deg.to_owned();
 	let default_edge = edge_type.to_rer_vec();
 
 	fn remove_vertex(index: usize, counts: &mut EquivalenceCounts, vert_activity: &mut VertexVec<Option<usize>>, num_active_verts: &mut usize) {
@@ -1092,15 +1174,15 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Da
 	}
 
 	if PRINT_DEBUG_LEVEL >= 1 {
-		println!("BFS width of g = {}", g.get_bfs_width());
-		print_vertex_table(vec![("posts", posts.to_vec().to_vec_of_strings()), ("targets", vertices.to_vec().to_vec_of_strings())]);
+		println!("BFS width of g = {}", g_etc.g.get_bfs_width());
+		print_vertex_table(vec![("posts", g_etc.posts.to_vec().to_vec_of_strings()), ("targets", g_etc.targets.to_vec().to_vec_of_strings())]);
 	}
 
-	for v in g.iter_verts_bfs().skip(1) {
+	for v in g_etc.g.iter_verts_bfs().skip(1) {
 		// add room for this new vertex, and then add edges and remove unwanted old vertices.
 		if PRINT_DEBUG_LEVEL >= 1 {
 			print!("Starting on vertex {}; num_active_verts = {}, num RERs = {}; ", v, num_active_verts, counts.num_distinct_rers());
-			for w in g.iter_verts() {
+			for w in g_etc.g.iter_verts() {
 				if vert_activity[w].is_some() {
 					print!("{}({}) ", w, remaining_degree[w].to_usize());
 				}
@@ -1110,14 +1192,14 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Da
 		vert_activity[v] = Some(num_active_verts);
 		let mut v_index = num_active_verts;
 		num_active_verts += 1;
-		counts.add_vertex(posts.has_vert(v));
+		counts.add_vertex(g_etc.posts.has_vert(v));
 
 		//println!("Added vertex {}", v);
 		//counts.print();
 
-		for u in g.adj_list[v].iter() {
+		for u in g_etc.g.adj_list[v].iter() {
 			// If it needs to be removed; all its edges will have been processed.
-			if *u != v && remaining_degree[*u].equals(1) && !vertices.has_vert(*u) {
+			if *u != v && remaining_degree[*u].equals(1) && !g_etc.targets.has_vert(*u) {
 				if let Some(index) = vert_activity[*u] {
 					if PRINT_DEBUG_LEVEL >= 2 {
 						println!("Adding killer edge {}-{}", v, u);
@@ -1140,7 +1222,7 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Da
 				vert_activity[*u] = None;
 			}
 		}
-		for u in g.adj_list[v].iter() {
+		for u in g_etc.g.adj_list[v].iter() {
 			if *u != v {
 				// There's an edge here that we should probably do something about.
 				if let Some(index) = vert_activity[*u] {
@@ -1156,7 +1238,7 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Da
 				}
 			}
 		}
-		if remaining_degree[v].equals(0) && !vertices.has_vert(v) {
+		if remaining_degree[v].equals(0) && !g_etc.targets.has_vert(v) {
 			// This one needs to be removed too!
 			remove_vertex(v_index, &mut counts, &mut vert_activity, &mut num_active_verts);
 			vert_activity[v] = None
@@ -1168,8 +1250,8 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Da
 	}
 
 	// Finally, remove vertices not in the prescribed target set.
-	for v in g.iter_verts() {
-		if !vertices.has_vert(v) {
+	for v in g_etc.g.iter_verts() {
+		if !g_etc.targets.has_vert(v) {
 			if let Some(index) = vert_activity[v] {
 				if PRINT_DEBUG_LEVEL >= 2 {
 					println!("Removing vertex {} (in final steps)", v);
@@ -1181,9 +1263,9 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Da
 		}
 	}
 
-	if vertices.size() >= 3 {
+	if g_etc.targets.size() >= 3 {
 		// Remove one vertex and add results to equivalence counts
-		for i in 0..vertices.size() {
+		for i in 0..g_etc.targets.size() {
 			let mut counts_copy = counts.to_owned();
 			remove_vertex(i, &mut counts_copy, &mut vert_activity, &mut num_active_verts);
 			counts_copy.reduce();
@@ -1194,13 +1276,13 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Da
 	counts.reduce();
 
 	if PRINT_DEBUG_LEVEL >= 1 {
-		println!("vertices: {:?}", vertices.to_vec());
+		println!("targets: {:?}", g_etc.targets.to_vec());
 		println!("num_active = {}. Activity: {:?}", num_active_verts, vert_activity);
 		counts.print();
 	}
 
 	if print_summary {
-		counts.print_summary(g);
+		counts.print_summary(&g_etc.g);
 	}
 
 	for (rel1, count1) in counts.counts.iter() {
@@ -1209,10 +1291,10 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Da
 				println!("Found a graph with the desired config ratio!");
 				rel1.print_fancy_pair(rel2, (*count1 as f64) / (*count2 as f64), 1);
 				println!("Counts {} / {}", *count1, *count2);
-				print_vertex_table(vec![("posts", posts.to_vec().to_vec_of_strings()), 
-					("targets", vertices.to_vec().to_vec_of_strings()),
+				print_vertex_table(vec![("posts", g_etc.posts.to_vec().to_vec_of_strings()), 
+					("targets", g_etc.targets.to_vec().to_vec_of_strings()),
 					("activity", vert_activity.to_vec_of_strings())]);
-				g.print();
+				g_etc.g.print();
 				counts.print();
 				let mut counts_copy = counts.to_owned();
 				remove_vertex(2, &mut counts_copy, &mut vert_activity, &mut num_active_verts);
@@ -1252,53 +1334,33 @@ fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, edge_t
 	let mut data = Data::new();
 	let mut rng = thread_rng();
 	let mut time_of_last_print = SystemTime::now();
+	let mut num_boring = 0;
 	for rep in 0..num_reps {
-		let mut g: Graph;
-		if h.constructor.is_random() {
-			let should_be_connected = rng.gen_bool(0.8);
-			'find_g: loop {
-				g = h.constructor.new_graph();
-				if !should_be_connected || g.is_connected() {
-					break 'find_g;
-				}
+		let mut g_etc;
+		'find_interesting_g_etc: loop {
+			g_etc = GraphAndMetadata::new(h, &mut rng, k);
+			if !g_etc.is_boring() {
+				break 'find_interesting_g_etc
+			} else {
+				num_boring += 1;
 			}
-		} else {
-			g = h.to_owned();	
 		}
+
 		if time_of_last_print.elapsed().unwrap().as_secs() >= 1 {
 			print!("{} ", rep);
 			std::io::stdout().flush().unwrap();
 			time_of_last_print = SystemTime::now();
 		}
 
-		let mut vertices = VertexSet::new(g.n);
-		if is_spinal(&g) {
-			vertices = get_spinal_vertices(&g, k);
-		} else if rng.gen_bool(0.9) {
-			vertices.add_vert(Vertex::ZERO);
-			for v in g.iter_verts().skip(g.n.to_usize() - k + 1) {
-				vertices.add_vert(v)
-			}
-		} else {
-			while vertices.size() < k {
-				vertices.add_vert(Vertex::of_usize(rng.gen_range(0..g.n.to_usize())))
-			}
-		}
-
-		let posts = if is_spinal(&g) {
-				get_spinal_posts(&g)	
-			} else {
-				get_posts(&g, Some(get_max_num_posts(&mut rng)))
-			};
-
 		if let Some(edge_type) = edge_type {
-			get_ratios_dp(&g, posts, edge_type, &mut data, vertices, num_reps == 1);
+			get_ratios_dp(&g_etc, edge_type, &mut data, num_reps == 1);
 		} else {
-			get_ratios_naive(&g, posts, &mut data, vertices);
+			get_ratios_naive(&g_etc, &mut data);
 		}
 	}
 	data.print(k);
 	println!("Constructor: {:?}", h.constructor.to_string());
+	println!("Average {} boring graphs per interesting one", num_boring / num_reps);
 }
 
 pub fn simulate_connection_count_ratios_naive(h: &Graph, num_reps: usize, k: usize) {
@@ -1311,33 +1373,17 @@ pub fn bunkbed_connection_counts_dp(h: &Graph, num_reps: usize, k: usize, edge_t
 }
 
 pub fn search_for_counterexample(h: &Graph, edge_type: usize) {
-	let mut g: Graph;
 	let edge_type = EdgeType::of_usize(edge_type);
 	let mut data = Data::new();
 	let mut num_loops = 0;
-	let mut num_trials = 0;
 	let mut time_of_last_print = SystemTime::now();
+	let mut rng = thread_rng();
 
 	'search_for_counterexample: loop {
-		'find_good_g: loop {
-			g = h.constructor.new_graph();
-			if connectedness::is_k_connected(&g, 2) && !is_bunkbed_reducible(&g) && approx_contradicts_reduced_bunkbed_conjecture(&g, 5000) {
-				if approx_contradicts_reduced_bunkbed_conjecture(&g, 20_000) {
-					break 'find_good_g;
-				}
-			} else {
-				num_trials += 1;
-			}
-		}
-		let posts = if is_spinal(&g) { get_spinal_posts(&g) } else { get_posts(&g, None) };
-		let vertices = if is_spinal(&g) {
-				get_spinal_vertices(&g, 2)
-			} else { 
-				VertexSet::of_vec(g.n, &vec![Vertex::ZERO, g.n.to_max_vertex()])
-			};
+		let g_etc = GraphAndMetadata::new(h, &mut rng, 2);
 		print!("DP ");
 		std::io::stdout().flush().unwrap();		
-		get_ratios_dp(&g, posts, edge_type, &mut data, vertices, true);
+		get_ratios_dp(&g_etc, edge_type, &mut data, true);
 		num_loops += 1;
 		if num_loops > 1000 {
 			break 'search_for_counterexample;
@@ -1350,5 +1396,4 @@ pub fn search_for_counterexample(h: &Graph, edge_type: usize) {
 		}
 	}
 	data.print(2);
-	println!("Average num trials per graph: {}", num_trials / num_loops)
 }
