@@ -454,6 +454,7 @@ impl GraphAndMetadata {
 	/** 
 	 * Test if the graph (etc.) is BORING. Things that make a graph (etc.) boring:
 	 * - G is disconnected
+	 * - Any non-target, non-post vertex has degree <= 2
 	 * - Target vertices are adjacent
 	 * - G minus posts is disconnected
 	 * - G minus targets is disconnected
@@ -468,6 +469,11 @@ impl GraphAndMetadata {
 				if self.targets.has_vert(*u) {
 					return true;
 				}
+			}
+		}
+		for v in self.g.iter_verts() {
+			if !self.posts.has_vert(v) && !self.targets.has_vert(v) && self.g.deg[v].less_than(3) {
+				return true;
 			}
 		}
 		if self.g.num_filtered_components(Some(&self.posts.not().to_vec())) >= 2 {
@@ -1343,13 +1349,17 @@ fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, edge_t
 	let mut num_boring = 0;
 	for rep in 0..num_reps {
 		let mut g_etc;
-		'find_interesting_g_etc: loop {
-			g_etc = GraphAndMetadata::new(h, &mut rng, k);
-			if !g_etc.is_boring() {
-				break 'find_interesting_g_etc
-			} else {
-				num_boring += 1;
+		if rng.gen_bool(0.8) {
+			'find_interesting_g_etc: loop {
+				g_etc = GraphAndMetadata::new(h, &mut rng, k);
+				if !g_etc.is_boring() {
+					break 'find_interesting_g_etc
+				} else {
+					num_boring += 1;
+				}
 			}
+		} else {
+			g_etc = GraphAndMetadata::new(h, &mut rng, k);
 		}
 
 		if time_of_last_print.elapsed().unwrap().as_secs() >= 1 {
