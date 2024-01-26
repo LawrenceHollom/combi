@@ -867,9 +867,10 @@ impl EquivalenceCounts {
 	}
 
 	pub fn print(&self) {
-		let rows = self.counts.iter()
+		let mut rows = self.counts.iter()
 			.map(|(rel, c)| (rel.to_string(), vec![c.to_string(), rel.k.to_string()]))
 			.collect::<Vec<(String, Vec<String>)>>();
+		rows.sort();
 		print_table(vec!["count".to_string(), "k".to_string()], rows)
 	}
 
@@ -1208,8 +1209,15 @@ fn get_ratios_dp(g: &Graph, posts: VertexSet, edge_type: EdgeType, data: &mut Da
 				println!("Found a graph with the desired config ratio!");
 				rel1.print_fancy_pair(rel2, (*count1 as f64) / (*count2 as f64), 1);
 				println!("Counts {} / {}", *count1, *count2);
-				print_vertex_table(vec![("posts", posts.to_vec().to_vec_of_strings()), ("targets", vertices.to_vec().to_vec_of_strings())]);
+				print_vertex_table(vec![("posts", posts.to_vec().to_vec_of_strings()), 
+					("targets", vertices.to_vec().to_vec_of_strings()),
+					("activity", vert_activity.to_vec_of_strings())]);
 				g.print();
+				counts.print();
+				let mut counts_copy = counts.to_owned();
+				remove_vertex(2, &mut counts_copy, &mut vert_activity, &mut num_active_verts);
+				println!("With highest-index vertex removed:");
+				counts_copy.print();
 				panic!("NOOOT NOOOT")
 			}
 		}
