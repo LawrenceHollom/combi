@@ -1299,26 +1299,30 @@ fn get_ratios_dp(g_etc: &GraphAndMetadata, edge_type: EdgeType, data: &mut Data,
 
 	for (rel1, count1) in counts.counts.iter() {
 		for (rel2, count2) in counts.counts.iter() {
-			if rel1.to_code() == 34026 && rel2.to_code() == 34020 && *count1 > *count2 {
-				println!("Found a graph with the desired config ratio!");
-				rel1.print_fancy_pair(rel2, (*count1 as f64) / (*count2 as f64), 1);
-				println!("Counts {} / {}", *count1, *count2);
-				print_vertex_table(vec![("posts", g_etc.posts.to_vec().to_vec_of_strings()), 
-					("targets", g_etc.targets.to_vec().to_vec_of_strings()),
-					("activity", vert_activity.to_vec_of_strings())]);
-				g_etc.g.print();
-				counts.print();
-				let mut counts_copy = counts.to_owned();
-				remove_vertex(2, &mut counts_copy, &mut vert_activity, &mut num_active_verts);
-				println!("With highest-index vertex removed:");
-				counts_copy.print();
-				panic!("NOOOT NOOOT")
+			for (code1, code2) in NOOOTERS.iter() {
+				if rel1.to_code() == *code1 && rel2.to_code() == *code2 && *count1 > *count2 {
+					println!("Found a graph with the desired config ratio!");
+					rel1.print_fancy_pair(rel2, (*count1 as f64) / (*count2 as f64), 1);
+					println!("Counts {} / {}", *count1, *count2);
+					print_vertex_table(vec![("posts", g_etc.posts.to_vec().to_vec_of_strings()), 
+						("targets", g_etc.targets.to_vec().to_vec_of_strings()),
+						("activity", vert_activity.to_vec_of_strings())]);
+					g_etc.g.print();
+					counts.print();
+					let mut counts_copy = counts.to_owned();
+					remove_vertex(2, &mut counts_copy, &mut vert_activity, &mut num_active_verts);
+					println!("With highest-index vertex removed:");
+					counts_copy.print();
+					panic!("NOOOT NOOOT")
+				}
 			}
 		}
 	}
 
 	add_equivalence_counts(&counts, data);
 }
+
+const NOOOTERS: [(u128, u128); 2] = [(148, 144), (20, 80)];
 
 fn is_spinal(g: &Graph) -> bool {
 	use crate::constructor::*;
