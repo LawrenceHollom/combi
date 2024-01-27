@@ -583,6 +583,7 @@ enum EdgeType {
 	Classic,
 	FiftyFifty,
 	Double,
+	ThreeWay,
 }
 
 impl EdgeType {
@@ -592,6 +593,7 @@ impl EdgeType {
 			0 => Classic,
 			1 => FiftyFifty,
 			2 => Double,
+			3 => ThreeWay,
 			_ => FiftyFifty,
 		}
 	}
@@ -601,7 +603,8 @@ impl EdgeType {
 		let raw_edges = match self {
 			Classic => vec![[[0, 0], [1, 2]], [[1, 2], [0, 0]], [[0, 1], [2, 3]], [[0, 0], [0, 0]]],
 			FiftyFifty => vec![[[0, 0], [1, 2]], [[1, 2], [0, 0]]],
-			Double => vec![[[0, 1], [1, 0]], [[0, 0], [1, 1]]]
+			Double => vec![[[0, 1], [1, 0]], [[0, 0], [1, 1]]],
+			ThreeWay => vec![[[0, 0], [1, 1]], [[1, 2], [0, 1]], [[1, 0], [0, 2]]],
 		};
 		raw_edges.iter()
 			.map(|raw| ReducedEquivalenceRelation::of_raw_vecs(raw)
@@ -1025,7 +1028,7 @@ impl Data {
 		}
 	}
 
-	fn print(&self, k: usize) {
+	fn print(&self) {
 		let mut rels_ordered = self.all_rels.iter().map(|x| x.to_owned()).collect::<Vec<ReducedEquivalenceRelation>>();
 		rels_ordered.sort();
 	
@@ -1038,7 +1041,6 @@ impl Data {
 			*x >= y * 0.99999 && *x <= y * 1.000001
 		}
 	
-		let mut i = 0;
 		let mut num_unwrapping_fails = 0;
 		let mut num_big = 0;
 		let mut num_ratio_one_pairs = 0;
@@ -1050,9 +1052,6 @@ impl Data {
 				if rel1 != rel2 {
 					if let Some((ratio, count)) = self.max_ratios.get(&(rel1.to_owned(), rel2.to_owned())) {
 						if *ratio > BIG_CUTOFF {
-							if k == 2 {
-								println!("{}: ({:?}, {:?}) big [{}]", i, rel1, rel2, count);
-							}
 							num_big += 1;
 						} else {
 							if is_approx(ratio, 1.0) {
@@ -1065,12 +1064,8 @@ impl Data {
 							good_pairs.push((rel1.to_owned(), rel2.to_owned(), *count, *ratio));
 						}
 					} else {
-						if k == 2 {
-							println!("{}: ({:?}, {:?}) fails due to unwrapping error", i, rel1, rel2);
-						}
 						num_unwrapping_fails += 1;
 					}
-					i += 1
 				}
 			}
 		}
@@ -1108,7 +1103,34 @@ impl Data {
 	}
 }
 
-fn add_equivalence_counts(counts: &EquivalenceCounts, data: &mut Data) {
+const NOOOTERS: [(u128, u128); 2] = [(148, 144), (20, 80)];
+
+fn consider_noooting(g_etc: &GraphAndMetadata, data: &Data, vert_activity: &VertexVec<Option<usize>>, counts: &EquivalenceCounts) {
+	for (rel1, count1) in counts.counts.iter() {
+		for (rel2, count2) in counts.counts.iter() {
+			for (code1, code2) in NOOOTERS.iter() {
+				if rel1.to_code() == *code1 && rel2.to_code() == *code2 && count1 > count2 {
+					data.print();
+					println!("Found a graph with the desired config ratio!");
+					rel1.print_fancy_pair(rel2, (*count1 as f64) / (*count2 as f64), 1);
+					println!("Counts {} / {}", count1, count2);
+					print_vertex_table(vec![("posts", g_etc.posts.to_vec().to_vec_of_strings()), 
+						("targets", g_etc.targets.to_vec().to_vec_of_strings()),
+						("activity", vert_activity.to_vec_of_strings())]);
+					g_etc.g.print();
+					/*counts.print();
+					let mut counts_copy = counts.to_owned();
+					remove_vertex(2, &mut counts_copy, &mut vert_activity, &mut num_active_verts);
+					println!("With highest-index vertex removed:");
+					counts_copy.print();*/
+					panic!("NOOOT NOOOT")
+				}
+			}
+		}
+	}
+}
+
+fn add_equivalence_counts(g_etc: &GraphAndMetadata, vert_activity: &VertexVec<Option<usize>>, counts: &EquivalenceCounts, data: &mut Data) {
 	for rel in counts.counts.keys() {
 		if !data.all_rels.contains(rel) {
 			data.all_rels.insert(rel.to_owned());
@@ -1143,6 +1165,7 @@ fn add_equivalence_counts(counts: &EquivalenceCounts, data: &mut Data) {
 			}
 		}
 	}
+	consider_noooting(g_etc, data, vert_activity, counts)
 }
 
 fn get_ratios_naive(g_etc: &GraphAndMetadata, data: &mut Data) {
@@ -1154,7 +1177,7 @@ fn get_ratios_naive(g_etc: &GraphAndMetadata, data: &mut Data) {
 		counts.add(g_etc, &config, &indexer);
 	}
 
-	add_equivalence_counts(&counts, data)
+	add_equivalence_counts(g_etc, &VertexVec::new(g_etc.g.n, &None), &counts, data)
 }
 
 const PRINT_DEBUG_LEVEL: u8 = 0;
@@ -1281,7 +1304,7 @@ fn get_ratios_dp(g_etc: &GraphAndMetadata, edge_type: EdgeType, data: &mut Data,
 			let mut counts_copy = counts.to_owned();
 			remove_vertex(i, &mut counts_copy, &mut vert_activity, &mut num_active_verts);
 			counts_copy.reduce();
-			add_equivalence_counts(&counts_copy, data);
+			add_equivalence_counts(g_etc, &vert_activity, &counts_copy, data);
 		}
 	}
 
@@ -1297,32 +1320,8 @@ fn get_ratios_dp(g_etc: &GraphAndMetadata, edge_type: EdgeType, data: &mut Data,
 		counts.print_summary(&g_etc.g);
 	}
 
-	for (rel1, count1) in counts.counts.iter() {
-		for (rel2, count2) in counts.counts.iter() {
-			for (code1, code2) in NOOOTERS.iter() {
-				if rel1.to_code() == *code1 && rel2.to_code() == *code2 && *count1 > *count2 {
-					println!("Found a graph with the desired config ratio!");
-					rel1.print_fancy_pair(rel2, (*count1 as f64) / (*count2 as f64), 1);
-					println!("Counts {} / {}", *count1, *count2);
-					print_vertex_table(vec![("posts", g_etc.posts.to_vec().to_vec_of_strings()), 
-						("targets", g_etc.targets.to_vec().to_vec_of_strings()),
-						("activity", vert_activity.to_vec_of_strings())]);
-					g_etc.g.print();
-					counts.print();
-					let mut counts_copy = counts.to_owned();
-					remove_vertex(2, &mut counts_copy, &mut vert_activity, &mut num_active_verts);
-					println!("With highest-index vertex removed:");
-					counts_copy.print();
-					panic!("NOOOT NOOOT")
-				}
-			}
-		}
-	}
-
-	add_equivalence_counts(&counts, data);
+	add_equivalence_counts(g_etc, &vert_activity, &counts, data);
 }
-
-const NOOOTERS: [(u128, u128); 2] = [(148, 144), (20, 80)];
 
 fn is_spinal(g: &Graph) -> bool {
 	use crate::constructor::*;
@@ -1378,7 +1377,7 @@ fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, edge_t
 			get_ratios_naive(&g_etc, &mut data);
 		}
 	}
-	data.print(k);
+	data.print();
 	println!("Constructor: {:?}", h.constructor.to_string());
 	println!("Average {} boring graphs per interesting one", num_boring / num_reps);
 }
@@ -1415,5 +1414,5 @@ pub fn search_for_counterexample(h: &Graph, edge_type: usize) {
 			time_of_last_print = SystemTime::now();
 		}
 	}
-	data.print(2);
+	data.print();
 }
