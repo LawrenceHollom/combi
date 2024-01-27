@@ -584,6 +584,7 @@ enum EdgeType {
 	FiftyFifty,
 	Double,
 	ThreeWay,
+	Posted,
 }
 
 impl EdgeType {
@@ -594,6 +595,7 @@ impl EdgeType {
 			1 => FiftyFifty,
 			2 => Double,
 			3 => ThreeWay,
+			4 => Posted,
 			_ => FiftyFifty,
 		}
 	}
@@ -604,7 +606,8 @@ impl EdgeType {
 			Classic => vec![[[0, 0], [1, 2]], [[1, 2], [0, 0]], [[0, 1], [2, 3]], [[0, 0], [0, 0]]],
 			FiftyFifty => vec![[[0, 0], [1, 2]], [[1, 2], [0, 0]]],
 			Double => vec![[[0, 1], [1, 0]], [[0, 0], [1, 1]]],
-			ThreeWay => vec![[[0, 0], [1, 1]], [[1, 2], [0, 1]], [[1, 0], [0, 2]]],
+			ThreeWay => vec![[[0, 0], [1, 1]], [[0, 0], [1, 1]], [[1, 2], [0, 1]], [[1, 0], [0, 2]]],
+			Posted => vec![[[0, 0], [1, 2]], [[0, 2], [1, 1]], [[1, 2], [0, 1]], [[1, 0], [0, 2]]],
 		};
 		raw_edges.iter()
 			.map(|raw| ReducedEquivalenceRelation::of_raw_vecs(raw)
@@ -1103,7 +1106,7 @@ impl Data {
 	}
 }
 
-const NOOOTERS: [(u128, u128); 2] = [(148, 144), (20, 80)];
+const NOOOTERS: [(u128, u128); 1] = [/*(148, 144),*/ (20, 80)];
 
 fn consider_noooting(g_etc: &GraphAndMetadata, data: &Data, vert_activity: &VertexVec<Option<usize>>, counts: &EquivalenceCounts) {
 	for (rel1, count1) in counts.counts.iter() {
