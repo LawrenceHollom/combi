@@ -493,6 +493,12 @@ impl GraphAndMetadata {
 		}
 		false
 	}
+
+	pub fn print(&self) {
+		print_vertex_table(vec![("posts", self.posts.to_vec().to_vec_of_strings()), 
+			("targets", self.targets.to_vec().to_vec_of_strings())]);
+		self.g.print();
+	}
 }
 
 #[derive(Clone)]
@@ -845,6 +851,23 @@ impl ReducedEquivalenceRelation {
 		self.reduce_no_symmetrise(false)
 	}
 
+	pub fn flip(&self) -> ReducedEquivalenceRelation {
+		ReducedEquivalenceRelation {
+			k: self.k,
+			down: self.up.to_owned(),
+			up: self.down.to_owned(),
+			next_label: self.next_label,
+		}
+	}
+
+	pub fn is_classically_flat(&self) -> bool {
+		self.down[0] == self.down[1]
+	}
+
+	pub fn is_classically_cross(&self) -> bool {
+		self.down[0] == self.up[1]
+	}
+
 	pub fn to_string(&self) -> String {
 		format!("{:?}", self)
 	}
@@ -872,7 +895,7 @@ impl ReducedEquivalenceRelation {
 		Self::print_row(&self.down);
 		print!(" / ");
 		Self::print_row(&denom.down);
-		println!(" ) : {:.3} [{}]", ratio, count)
+		println!(" ) : {:.6} [{}]", ratio, count)
 	}
 
 	pub fn to_code(&self) -> u128 {
@@ -1106,9 +1129,41 @@ impl Data {
 	}
 }
 
-const NOOOTERS: [(u128, u128); 1] = [/*(148, 144),*/ (20, 80)];
+fn is_genuine_counterexample(g_etc: &GraphAndMetadata, data: &Data, counts: &EquivalenceCounts) {
+	let mut num_flat = 0;
+	let mut num_cross = 0;
 
-fn consider_noooting(g_etc: &GraphAndMetadata, data: &Data, vert_activity: &VertexVec<Option<usize>>, counts: &EquivalenceCounts) {
+	for (rel1, count) in counts.counts.iter() {
+		if rel1.k == 2 {
+			if rel1.is_classically_flat() {
+				num_flat += *count
+			}
+			if rel1.is_classically_cross() {
+				num_cross += *count
+			}
+			if rel1.flip().is_classically_flat() {
+				num_flat += *count
+			}
+			if rel1.flip().is_classically_cross() {
+				num_cross += *count
+			}
+		}
+	}
+
+	if num_cross > num_flat {
+		data.print();
+		println!("Just g:");
+		counts.print();
+		g_etc.print();
+		println!("num classically flat: {}, num classically cross: {}", num_flat, num_cross);
+		panic!("WE'VE GOT A LIVE ONE!")
+	}
+}
+
+const NOOOTERS: [(u128, u128); 2] = [(148, 144), (20, 80)];
+
+fn consider_noooting(g_etc: &GraphAndMetadata, data: &Data, counts: &EquivalenceCounts) {
+	is_genuine_counterexample(g_etc, data, counts);
 	for (rel1, count1) in counts.counts.iter() {
 		for (rel2, count2) in counts.counts.iter() {
 			for (code1, code2) in NOOOTERS.iter() {
@@ -1117,10 +1172,7 @@ fn consider_noooting(g_etc: &GraphAndMetadata, data: &Data, vert_activity: &Vert
 					println!("Found a graph with the desired config ratio!");
 					rel1.print_fancy_pair(rel2, (*count1 as f64) / (*count2 as f64), 1);
 					println!("Counts {} / {}", count1, count2);
-					print_vertex_table(vec![("posts", g_etc.posts.to_vec().to_vec_of_strings()), 
-						("targets", g_etc.targets.to_vec().to_vec_of_strings()),
-						("activity", vert_activity.to_vec_of_strings())]);
-					g_etc.g.print();
+					g_etc.print();
 					/*counts.print();
 					let mut counts_copy = counts.to_owned();
 					remove_vertex(2, &mut counts_copy, &mut vert_activity, &mut num_active_verts);
@@ -1133,7 +1185,7 @@ fn consider_noooting(g_etc: &GraphAndMetadata, data: &Data, vert_activity: &Vert
 	}
 }
 
-fn add_equivalence_counts(g_etc: &GraphAndMetadata, vert_activity: &VertexVec<Option<usize>>, counts: &EquivalenceCounts, data: &mut Data) {
+fn add_equivalence_counts(g_etc: &GraphAndMetadata, counts: &EquivalenceCounts, data: &mut Data) {
 	for rel in counts.counts.keys() {
 		if !data.all_rels.contains(rel) {
 			data.all_rels.insert(rel.to_owned());
@@ -1168,7 +1220,7 @@ fn add_equivalence_counts(g_etc: &GraphAndMetadata, vert_activity: &VertexVec<Op
 			}
 		}
 	}
-	consider_noooting(g_etc, data, vert_activity, counts)
+	consider_noooting(g_etc, data, counts)
 }
 
 fn get_ratios_naive(g_etc: &GraphAndMetadata, data: &mut Data) {
@@ -1180,7 +1232,7 @@ fn get_ratios_naive(g_etc: &GraphAndMetadata, data: &mut Data) {
 		counts.add(g_etc, &config, &indexer);
 	}
 
-	add_equivalence_counts(g_etc, &VertexVec::new(g_etc.g.n, &None), &counts, data)
+	add_equivalence_counts(g_etc, &counts, data)
 }
 
 const PRINT_DEBUG_LEVEL: u8 = 0;
@@ -1307,7 +1359,7 @@ fn get_ratios_dp(g_etc: &GraphAndMetadata, edge_type: EdgeType, data: &mut Data,
 			let mut counts_copy = counts.to_owned();
 			remove_vertex(i, &mut counts_copy, &mut vert_activity, &mut num_active_verts);
 			counts_copy.reduce();
-			add_equivalence_counts(g_etc, &vert_activity, &counts_copy, data);
+			add_equivalence_counts(g_etc, &counts_copy, data);
 		}
 	}
 
@@ -1323,7 +1375,7 @@ fn get_ratios_dp(g_etc: &GraphAndMetadata, edge_type: EdgeType, data: &mut Data,
 		counts.print_summary(&g_etc.g);
 	}
 
-	add_equivalence_counts(g_etc, &vert_activity, &counts, data);
+	add_equivalence_counts(g_etc, &counts, data);
 }
 
 fn is_spinal(g: &Graph) -> bool {
@@ -1354,6 +1406,7 @@ fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, edge_t
 	let mut time_of_last_print = SystemTime::now();
 	let mut num_boring = 0;
 	for rep in 0..num_reps {
+		//let rep_start_time = SystemTime::now();
 		let mut g_etc;
 		if rng.gen_bool(0.8) {
 			'find_interesting_g_etc: loop {
@@ -1379,6 +1432,7 @@ fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, edge_t
 		} else {
 			get_ratios_naive(&g_etc, &mut data);
 		}
+		//println!("rep duration: {}ms, edges: {}, bfs width: {}", rep_start_time.elapsed().unwrap().as_millis(), g_etc.g.size(), g_etc.g.get_bfs_width());
 	}
 	data.print();
 	println!("Constructor: {:?}", h.constructor.to_string());
