@@ -656,7 +656,7 @@ impl Graph {
 
     #[allow(dead_code)]
     pub fn test_graph(index: usize) -> Graph {
-        crate::constructor::from_file::new_graph(&format!("test_{}", index))
+        crate::constructor::from_file::new_graph(&format!("test/test_{}", index))
     }
 }
 
