@@ -1101,9 +1101,8 @@ impl Data {
 		}
 	
 		fn cmp_pair(count1: usize, r1: f64, count2: usize, r2: f64) -> Ordering {
-			let r1u = (r1 * 100.0) as usize;
-			let r2u = (r2 * 100.0) as usize;
-			let ratio_compare = r1u.cmp(&r2u);
+			// This might have done crazy stuff in the past.
+			let ratio_compare = r1.partial_cmp(&r2).unwrap_or(Ordering::Equal);
 			if ratio_compare.is_eq() {
 				count1.cmp(&count2)
 			} else {
@@ -1130,6 +1129,29 @@ impl Data {
 			rel.print_fancy(**count);
 			println!();
 		}
+	}
+
+	pub fn insert_relation(&mut self, rel: &ReducedEquivalenceRelation) {
+		if !self.all_rels.contains(rel) {
+			self.all_rels.insert(rel.to_owned());
+		}
+		if !self.permutations.contains_key(rel) {
+			self.permutations.insert(rel.to_owned(), rel.get_all_permutations());
+		}
+		self.rel_counts.entry(rel.to_owned()).and_modify(|x| *x += 1).or_insert(1);
+	}
+
+	pub fn get_lexicographically_first_permutation(&self, rel1: &ReducedEquivalenceRelation, rel2: &ReducedEquivalenceRelation) -> (ReducedEquivalenceRelation, ReducedEquivalenceRelation) {
+		let mut first_rel1 = rel1;
+		let mut first_rel2 = rel2;
+		for (i, permed_rel1) in self.permutations.get(rel1).unwrap().iter().enumerate() {
+			let permed_rel2 = &self.permutations.get(rel2).unwrap()[i];
+			if permed_rel1 < first_rel1 || (permed_rel1 == first_rel1 && permed_rel2 < first_rel2) {
+				first_rel1 = permed_rel1;
+				first_rel2 = permed_rel2;
+			}
+		}
+		(first_rel1.to_owned(), first_rel2.to_owned())
 	}
 }
 
@@ -1164,17 +1186,18 @@ fn is_genuine_counterexample(g_etc: &GraphAndMetadata, data: &Data, counts: &Equ
 	}
 }
 
-const NOOOTERS: [(u128, u128); 2] = [(148, 144), (20, 80)];
+const NOOOTERS: [(u128, u128); 3] = [(148, 144), (20, 80), (34026, 34020)];
 
 fn consider_noooting(g_etc: &GraphAndMetadata, data: &Data, counts: &EquivalenceCounts) {
 	is_genuine_counterexample(g_etc, data, counts);
 	for (rel1, count1) in counts.counts.iter() {
 		for (rel2, count2) in counts.counts.iter() {
+			let (reduced_rel1, reduced_rel2) = data.get_lexicographically_first_permutation(rel1, rel2);
 			for (code1, code2) in NOOOTERS.iter() {
-				if rel1.to_code() == *code1 && rel2.to_code() == *code2 && count1 > count2 {
+				if reduced_rel1.to_code() == *code1 && reduced_rel2.to_code() == *code2 && *count1 > *count2 {
 					data.print();
 					println!("Found a graph with the desired config ratio!");
-					rel1.print_fancy_pair(rel2, (*count1 as f64) / (*count2 as f64), 1);
+					rel1.print_fancy_pair(&rel2, (*count1 as f64) / (*count2 as f64), 1);
 					println!("Counts {} / {}", count1, count2);
 					g_etc.print();
 					/*counts.print();
@@ -1182,6 +1205,7 @@ fn consider_noooting(g_etc: &GraphAndMetadata, data: &Data, counts: &Equivalence
 					remove_vertex(2, &mut counts_copy, &mut vert_activity, &mut num_active_verts);
 					println!("With highest-index vertex removed:");
 					counts_copy.print();*/
+					println!("{} distinct RERs", counts.counts.len());
 					panic!("NOOOT NOOOT")
 				}
 			}
@@ -1191,13 +1215,7 @@ fn consider_noooting(g_etc: &GraphAndMetadata, data: &Data, counts: &Equivalence
 
 fn add_equivalence_counts(g_etc: &GraphAndMetadata, counts: &EquivalenceCounts, data: &mut Data) {
 	for rel in counts.counts.keys() {
-		if !data.all_rels.contains(rel) {
-			data.all_rels.insert(rel.to_owned());
-		}
-		if !data.permutations.contains_key(rel) {
-			data.permutations.insert(rel.to_owned(), rel.get_all_permutations());
-		}
-		data.rel_counts.entry(rel.to_owned()).and_modify(|x| *x += 1).or_insert(1);
+		data.insert_relation(rel)
 	}
 	for rel1 in data.all_rels.iter() {
 		let count1 = *counts.counts.get(rel1).unwrap_or(&0);
@@ -1206,18 +1224,9 @@ fn add_equivalence_counts(g_etc: &GraphAndMetadata, counts: &EquivalenceCounts, 
 				if rel1.k == rel2.k {
 					let count2 = *counts.counts.get(rel2).unwrap_or(&0);
 					let ratio = if count2 == 0 { f64::INFINITY } else { (count1 as f64) / (count2 as f64) };
-					// Now get the lexicographically first permutation of the pair (rel1, rel2).
-					let mut first_rel1 = rel1;
-					let mut first_rel2 = rel2;
-					for (i, permed_rel1) in data.permutations.get(rel1).unwrap().iter().enumerate() {
-						let permed_rel2 = &data.permutations.get(rel2).unwrap()[i];
-						if permed_rel1 < first_rel1 || (permed_rel1 == first_rel1 && permed_rel2 < first_rel2) {
-							first_rel1 = permed_rel1;
-							first_rel2 = permed_rel2;
-						}
-					}
+					let (rel1, rel2) = data.get_lexicographically_first_permutation(rel1, rel2);
 
-					data.max_ratios.entry((first_rel1.to_owned(), first_rel2.to_owned()))
+					data.max_ratios.entry((rel1, rel2))
 						.and_modify(|(x, count)| if ratio > *x { *x = ratio; *count = 1 } else if ratio == *x { *count += 1 } )	
 						.or_insert((ratio, 1));
 				}
