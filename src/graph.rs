@@ -525,6 +525,21 @@ impl Graph {
         radius as u32
     }
 
+    pub fn min_distance_sum(&self, targets: VertexSet) -> usize {
+        let dist = self.floyd_warshall();
+        let mut min_sum = usize::MAX;
+        for u in self.iter_verts() {
+            let mut sum = 0;
+            for v in targets.iter() {
+                sum += dist[u][v];
+            }
+            if sum < min_sum {
+                min_sum = sum;
+            }
+        }
+        min_sum
+    }
+
     pub fn delete_edge(&mut self, e: Edge) {
         let x = e.fst();
         let y = e.snd();

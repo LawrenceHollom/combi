@@ -459,6 +459,7 @@ impl GraphAndMetadata {
 	 * - G minus posts is disconnected
 	 * - G minus targets is disconnected
 	 * - G minus deg-1-targets is not 2-connected
+	 * - The target vertices all being too close together.
 	 */
 	pub fn is_boring(&self) -> bool {
 		if !self.g.is_connected() {
@@ -489,6 +490,9 @@ impl GraphAndMetadata {
 			}
 		}
 		if !connectedness::is_filtered_k_connected(&self.g, 2, Some(&deg_1_targets.not().to_vec())) {
+			return true;
+		}
+		if (self.g.min_distance_sum(self.targets) as f64) / (self.targets.size() as f64) < 1.55 {
 			return true;
 		}
 		false
@@ -1387,14 +1391,15 @@ fn is_spinal(g: &Graph) -> bool {
 }
 
 fn get_spinal_vertices(g: &Graph, k: usize) -> VertexSet {
+	let mut vs = VertexSet::of_vert(g.n, Vertex::ZERO);
 	let mut spine_end = Vertex::ZERO;
 	while g.adj[spine_end][spine_end.incr()] {
 		spine_end.incr_inplace();
 	}
-	let mut vs = VertexSet::of_vert(g.n, Vertex::ZERO);
+	// Add the end of the spine, and then random posts.
 	for _i in 0..(k-1) {
-		vs.add_vert(spine_end);
-		spine_end.decr_inplace()
+		vs.add_vert(spine_end); 
+		spine_end.incr_inplace()
 	}
 	vs
 }
@@ -1408,10 +1413,14 @@ fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, edge_t
 	for rep in 0..num_reps {
 		//let rep_start_time = SystemTime::now();
 		let mut g_etc;
-		if rng.gen_bool(0.8) {
+		if rng.gen_bool(0.9) {
 			'find_interesting_g_etc: loop {
 				g_etc = GraphAndMetadata::new(h, &mut rng, k);
 				if !g_etc.is_boring() {
+					if PRINT_DEBUG_LEVEL >= 2 {
+						println!("Found interesting graph; min_sum = {}", g_etc.g.min_distance_sum(g_etc.targets));
+						g_etc.print();
+					}
 					break 'find_interesting_g_etc
 				} else {
 					num_boring += 1;
