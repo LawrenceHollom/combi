@@ -5,6 +5,7 @@ use utilities::parse_function_like;
 #[derive(Eq, Hash, PartialEq, Clone, Copy, Debug, PartialOrd, Ord)]
 pub enum StringListOperation {
     BunkbedSiteSignatures,
+    Serialise,
 }
 
 impl StringListOperation {
@@ -13,6 +14,7 @@ impl StringListOperation {
         let (func, _args) = parse_function_like(text);
         match func.trim().to_lowercase().as_str() {
             "bbss" => Some(BunkbedSiteSignatures),
+            "serialise" | "code" => Some(Serialise),
             &_ => None,
         }
     }
@@ -23,6 +25,7 @@ impl fmt::Display for StringListOperation {
         use StringListOperation::*;
         let name = match self {
             BunkbedSiteSignatures => "Bunkbed site reachability signatures",
+            Serialise => "Serialise graph to a string",
         };
         write!(f, "{}", name)
     }

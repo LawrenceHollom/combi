@@ -297,6 +297,7 @@ impl Operator {
         use StringListOperation::*;
         match operation {
             BunkbedSiteSignatures => bunkbed_sites::signatures(&self.g),
+            Serialise => vec![self.g.serialise()],
         }
     }
 

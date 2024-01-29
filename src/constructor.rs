@@ -85,6 +85,7 @@ pub enum Constructor {
     Recursive(RecursiveConstructor),
     RootedTree(Vec<usize>),
     File(String),
+    Serialised(String),
     Special,
 }
 
@@ -314,6 +315,7 @@ impl Constructor {
                 corona::new_corona_product(self, &c1.new_graph(), &c2.new_graph())
             }
             File(filename) => from_file::new_graph(filename),
+            Serialised(code) => Graph::deserialise(code),
             Special => panic!("Cannot directly construct Special graph!"),
         }
     }
@@ -327,7 +329,7 @@ impl Constructor {
             Recursive(RecursiveConstructor::CoronaProduct(c1, c2)) => {
                 c1.is_random() || c2.is_random()
             }
-            RootedTree(_) | Raw(_) | File(_) | Special => false,
+            RootedTree(_) | Raw(_) | File(_) | Serialised(_) | Special => false,
             Random(_) => true,
         }
     }
@@ -354,6 +356,7 @@ impl fmt::Display for Constructor {
                 write!(f, "Rooted tree with parent pattern {:?}", parents)
             },
             File(filename) => write!(f, "From file {}.gph", filename),
+            Serialised(code) => write!(f, "From code {}", code),
             Special => write!(f, "Special"),
         }
     }
