@@ -1,4 +1,4 @@
-use std::{collections::{HashMap, HashSet}, cmp::Ordering};
+use std::{collections::{HashMap, HashSet}, cmp::Ordering, fs};
 
 use super::reduced_equivalence_relation::*;
 use super::graph_and_metadata::*;
@@ -6,10 +6,85 @@ use super::equivalence_counts::*;
 
 const BIG_CUTOFF: f64 = 5.999;
 
+#[derive(PartialEq, Eq, Hash)]
+struct RERPair {
+    numerator: ReducedEquivalenceRelation,
+    denominator: ReducedEquivalenceRelation,
+}
+
+impl RERPair {
+    fn new(numerator: &ReducedEquivalenceRelation, denominator: &ReducedEquivalenceRelation) -> RERPair {
+        RERPair {
+            numerator: numerator.to_owned(),
+            denominator: denominator.to_owned(),
+        }
+    }
+
+    fn of_string(text: &str) -> RERPair {
+        let (numer, denom) = text.split_once("/").unwrap();
+        RERPair {
+            numerator: ReducedEquivalenceRelation::of_short_string(numer),
+            denominator: ReducedEquivalenceRelation::of_short_string(denom),
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+struct BigRational {
+    numer: u128,
+    denom: u128,
+}
+
+impl BigRational {
+    fn new(numer: u128, denom: u128) -> BigRational {
+        BigRational { numer, denom }
+    }
+
+    fn is_big(&self) -> bool {
+        self.numer >= 10 * self.denom
+    }
+
+    fn is_one(&self) -> bool {
+        self.numer == self.denom
+    }
+
+    fn is_two(&self) -> bool {
+        self.numer == 2 * self.denom
+    }
+
+    fn is_half(&self) -> bool {
+        2 * self.numer == self.denom
+    }
+
+    fn to_float(&self) -> f64 {
+        (self.numer as f64) / (self.denom as f64)
+    }
+}
+
+impl PartialEq for BigRational {
+    fn eq(&self, other: &BigRational) -> bool {
+        self.numer * other.denom == other.numer * self.denom
+    }
+}
+
+impl Eq for BigRational { }
+
+impl PartialOrd for BigRational {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for BigRational {
+    fn cmp(&self, other: &Self) -> Ordering {
+        (self.numer * other.denom).cmp(&(other.numer * self.denom))
+    }
+}
+
 pub struct Data {
 	permutations: HashMap<ReducedEquivalenceRelation, Vec<ReducedEquivalenceRelation>>,
 	rel_counts: HashMap<ReducedEquivalenceRelation, usize>,
-	max_ratios: HashMap<(ReducedEquivalenceRelation, ReducedEquivalenceRelation), (f64, usize)>,
+	max_ratios: HashMap<RERPair, (BigRational, usize)>,
 	all_rels: HashSet<ReducedEquivalenceRelation>,
 }
 
@@ -32,8 +107,8 @@ impl Data {
 			println!("{:?} : code = {}, count = {}", rel, rel.to_code(), self.rel_counts.get(rel).unwrap())
 		}
 	
-		fn is_approx(x: &f64, y: f64) -> bool {
-			*x >= y * 0.99999 && *x <= y * 1.000001
+		fn is_approx(x: f64, y: f64) -> bool {
+			x >= y * 0.9999999 && x <= y * 1.00000001
 		}
 	
 		let mut num_unwrapping_fails = 0;
@@ -45,15 +120,16 @@ impl Data {
 		for rel1 in rels_ordered.iter() {
 			for rel2 in rels_ordered.iter() {
 				if rel1 != rel2 {
-					if let Some((ratio, count)) = self.max_ratios.get(&(rel1.to_owned(), rel2.to_owned())) {
-						if *ratio > BIG_CUTOFF {
+                    let pair = RERPair::new(rel1, rel2);
+					if let Some((ratio, count)) = self.max_ratios.get(&pair) {
+						if ratio.is_big() {
 							num_big += 1;
 						} else {
-							if is_approx(ratio, 1.0) {
+							if ratio.is_one() {
 								num_ratio_one_pairs += 1;
-							} else if is_approx(ratio, 0.5) {
+							} else if ratio.is_half() {
 								num_ratio_half_pairs += 1;
-							} else if is_approx(ratio, 2.0) {
+							} else if ratio.is_two() {
 								num_ratio_two_pairs += 1;
 							}
 							good_pairs.push((rel1.to_owned(), rel2.to_owned(), *count, *ratio));
@@ -65,7 +141,7 @@ impl Data {
 			}
 		}
 	
-		fn cmp_pair(count1: usize, r1: f64, count2: usize, r2: f64) -> Ordering {
+		fn cmp_pair(count1: usize, r1: BigRational, count2: usize, r2: BigRational) -> Ordering {
 			// This might have done crazy stuff in the past.
 			let ratio_compare = r1.partial_cmp(&r2).unwrap_or(Ordering::Equal);
 			if ratio_compare.is_eq() {
@@ -80,7 +156,7 @@ impl Data {
 		all_rel_counts.sort_by(|(_, c1), (_, c2)| c1.cmp(c2));
 		println!("All ratios less than {}:", BIG_CUTOFF);
 		for (rel1, rel2, count, ratio) in good_pairs.iter() {
-			rel1.print_fancy_pair(rel2, *ratio, *count);
+			rel1.print_fancy_pair(rel2, ratio.to_float(), *count);
 			println!();
 		}
 		println!("Num ratios bigger than {}: {}", BIG_CUTOFF, num_big);
@@ -106,17 +182,17 @@ impl Data {
 		self.rel_counts.entry(rel.to_owned()).and_modify(|x| *x += 1).or_insert(1);
 	}
 
-	pub fn get_lexicographically_first_permutation(&self, rel1: &ReducedEquivalenceRelation, rel2: &ReducedEquivalenceRelation) -> (ReducedEquivalenceRelation, ReducedEquivalenceRelation) {
-		let mut first_rel1 = rel1;
-		let mut first_rel2 = rel2;
-		for (i, permed_rel1) in self.permutations.get(rel1).unwrap().iter().enumerate() {
-			let permed_rel2 = &self.permutations.get(rel2).unwrap()[i];
+	pub fn get_lexicographically_first_permutation(&self, pair: &RERPair) -> RERPair {
+		let mut first_rel1 = &pair.numerator;
+		let mut first_rel2 = &pair.denominator;
+		for (i, permed_rel1) in self.permutations.get(&pair.numerator).unwrap().iter().enumerate() {
+			let permed_rel2 = &self.permutations.get(&pair.denominator).unwrap()[i];
 			if permed_rel1 < first_rel1 || (permed_rel1 == first_rel1 && permed_rel2 < first_rel2) {
 				first_rel1 = permed_rel1;
 				first_rel2 = permed_rel2;
 			}
 		}
-		(first_rel1.to_owned(), first_rel2.to_owned())
+		RERPair::new(first_rel1, first_rel2)
 	}
 
     const NOOOTERS: [(u128, u128); 3] = [(148, 144), (20, 80), (34026, 34020)];
@@ -124,12 +200,13 @@ impl Data {
     pub fn consider_noooting(&self, g_etc: &GraphAndMetadata, counts: &EquivalenceCounts) {
         for (rel1, count1) in counts.iter() {
             for (rel2, count2) in counts.iter() {
-                let (reduced_rel1, reduced_rel2) = self.get_lexicographically_first_permutation(rel1, rel2);
+                let pair = RERPair::new(rel1, rel2);
+                let reduced_pair = self.get_lexicographically_first_permutation(&pair);
                 for (code1, code2) in Self::NOOOTERS.iter() {
-                    if reduced_rel1.to_code() == *code1 && reduced_rel2.to_code() == *code2 && *count1 > *count2 {
+                    if reduced_pair.numerator.to_code() == *code1 && reduced_pair.denominator.to_code() == *code2 && *count1 > *count2 {
                         self.print();
                         println!("Found a graph with the desired config ratio!");
-                        rel1.print_fancy_pair(&rel2, (*count1 as f64) / (*count2 as f64), 1);
+                        rel1.print_fancy_pair(&rel2, if *count2 == 0 { f64::INFINITY } else { (*count1 as f64) / (*count2 as f64) }, 1);
                         println!("Counts {} / {}", count1, count2);
                         g_etc.print();
                         
@@ -150,12 +227,19 @@ impl Data {
             if count1 != 0 {
                 for rel2 in self.all_rels.iter() {
                     if rel1.k == rel2.k {
+                        let pair = RERPair::new(rel1, rel2);
                         let count2 = counts[rel2];
-                        let ratio = if count2 == 0 { f64::INFINITY } else { (count1 as f64) / (count2 as f64) };
-                        let (rel1, rel2) = self.get_lexicographically_first_permutation(rel1, rel2);
+                        let pair = self.get_lexicographically_first_permutation(&pair);
+                        let ratio = BigRational::new(count1, count2);
 
-                        self.max_ratios.entry((rel1, rel2))
-                            .and_modify(|(x, count)| if ratio > *x { *x = ratio; *count = 1 } else if ratio == *x { *count += 1 } )	
+                        self.max_ratios.entry(pair)
+                            .and_modify(|(x, count)| 
+                                if ratio > *x { 
+                                    *x = ratio; 
+                                    *count = 1 
+                                } else if ratio == *x { 
+                                    *count += 1 
+                                } )	
                             .or_insert((ratio, 1));
                     }
                 }
@@ -169,5 +253,66 @@ impl Data {
             panic!("WE'VE GOT A LIVE ONE!")
         }
         self.consider_noooting(g_etc, counts)
+    }
+
+    fn get_ignore_ratios(contents: String) -> HashSet<RERPair> {
+        let mut out = HashSet::new();
+        for line in contents.lines() {
+            out.insert(RERPair::of_string(line));
+        }
+        out
+    }
+
+    fn get_records(contents: String) -> HashMap<RERPair, BigRational> {
+        let mut out = HashMap::new();
+        for line in contents.lines() {
+            let pars = line.split(":").collect::<Vec<&str>>();
+            let pair = RERPair::of_string(pars[0]);
+            let (numer, denom) = pars[1].split_once("/").unwrap();
+            let ratio = BigRational::new(numer.parse().unwrap(), denom.parse().unwrap());
+            out.insert(pair, ratio);
+        }
+        out
+    }
+
+    pub fn save_to_file(&self) {
+        // Read in the no-print list and the existing data.
+        let mut pathbuf = std::env::current_exe().unwrap();
+        pathbuf.pop();
+        pathbuf.push("ratios");
+        let mut ignore_file = pathbuf.to_owned();
+        ignore_file.push("ignore.txt");
+        let mut live_file = pathbuf.to_owned();
+        live_file.push("live.txt");
+        let ignore_ratios = match fs::read_to_string(ignore_file) {
+            Ok(contents) => Self::get_ignore_ratios(contents),
+            Err(_e) => HashSet::new(),
+        };
+        let previous_records = match fs::read_to_string(live_file) {
+            Ok(contents) => Self::get_records(contents),
+            Err(_e) => panic!("Cannot find live file!")
+        };
+        let mut new_records = HashMap::new();
+        for rel1 in self.all_rels.iter() {
+            for rel2 in self.all_rels.iter() {
+                if rel1.k == rel2.k {
+                    let pair = RERPair::new(rel1, rel2);
+                    if !ignore_ratios.contains(&pair) {
+                        if let Some((new_ratio, _count)) = self.max_ratios.get(&pair) {
+                            if let Some(old_ratio) = previous_records.get(&pair) {
+                                if new_ratio > old_ratio {
+                                    new_records.insert(pair, *new_ratio);
+                                }
+                            } else {
+                                new_records.insert(pair, *new_ratio);
+                            }
+                        } else if let Some(old_ratio) = previous_records.get(&pair) {
+                            new_records.insert(pair, *old_ratio);
+                        }
+                    }
+                }
+            }
+        }
+        // Now actually save the new records to the live file.
     }
 }

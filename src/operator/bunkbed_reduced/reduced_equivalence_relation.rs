@@ -33,6 +33,7 @@ impl EquivalenceClass {
     }
 }
 
+// At some point we're probably going to opt this to use integers
 #[derive(Clone)]
 pub struct ReducedEquivalenceRelation {
 	pub k: usize,
@@ -141,6 +142,41 @@ impl ReducedEquivalenceRelation {
 		}
 		ReducedEquivalenceRelation { k: rel.get_k(), down, up, next_label }.reduce_and_symmetrise()
 	}
+
+    pub fn of_short_string(text: &str) -> ReducedEquivalenceRelation {
+        let k = text.len() / 2;
+        let bytes = text.as_bytes();
+        let zero = b'0';
+        let mut down = vec![EquivalenceClass(0); k];
+        let mut up = vec![EquivalenceClass(0); k];
+        let mut next_label = EquivalenceClass(0);
+        for (i, c) in bytes.iter().take(k).enumerate() {
+            let v = EquivalenceClass((*c - zero) as usize);
+            down[i] = v;
+            if v > next_label {
+                next_label = v;
+            }
+        }
+        for (i, c) in bytes.iter().skip(k).enumerate() {
+            let v = EquivalenceClass((*c - zero) as usize);
+            up[i] = v;
+            if v > next_label {
+                next_label = v;
+            }
+        }
+        ReducedEquivalenceRelation { k, down, up, next_label }
+    }
+
+    pub fn to_short_string(&self) -> String {
+        let mut bytes = vec![0_u8; self.k * 2];
+        for (i, v) in self.down.iter().enumerate() {
+            bytes[i] = v.0 as u8 + b'0';
+        }
+        for (i, v) in self.up.iter().enumerate() {
+            bytes[i + self.k] = v.0 as u8 + b'0';
+        }
+        String::from_utf8_lossy(&bytes).to_string()
+    }
 
 	pub fn empty(k: usize) -> ReducedEquivalenceRelation {
 		let down = (0..k).map(|x| EquivalenceClass(x)).collect::<Vec<EquivalenceClass>>();
