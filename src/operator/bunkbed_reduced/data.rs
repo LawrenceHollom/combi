@@ -8,19 +8,29 @@ use super::reduced_equivalence_relation::*;
 use super::graph_and_metadata::*;
 use super::equivalence_counts::*;
 
-const BIG_CUTOFF: f64 = 5.999;
+const BIG_CUTOFF: u128 = 3;
 
-#[derive(PartialEq, Eq, Hash)]
+// n.b. These are necessary reduced to be lexicographically first under permuting both RERs
+#[derive(PartialEq, Eq, Hash, Clone)]
 struct RERPair {
     numerator: ReducedEquivalenceRelation,
     denominator: ReducedEquivalenceRelation,
 }
 
 impl RERPair {
-    fn new(numerator: &ReducedEquivalenceRelation, denominator: &ReducedEquivalenceRelation) -> RERPair {
+    fn new(numerator: &ReducedEquivalenceRelation, denominator: &ReducedEquivalenceRelation, permutations: &HashMap<ReducedEquivalenceRelation, Vec<ReducedEquivalenceRelation>>) -> RERPair {
+        let mut first_numer = numerator;
+		let mut first_denom = denominator;
+		for (i, permed_rel1) in permutations.get(numerator).unwrap().iter().enumerate() {
+			let permed_rel2 = &permutations.get(&denominator).unwrap()[i];
+			if permed_rel1 < first_numer || (permed_rel1 == first_numer && permed_rel2 < first_denom) {
+				first_numer = permed_rel1;
+				first_denom = permed_rel2;
+			}
+		}
         RERPair {
-            numerator: numerator.to_owned(),
-            denominator: denominator.to_owned(),
+            numerator: first_numer.to_owned(),
+            denominator: first_denom.to_owned(),
         }
     }
 
@@ -41,7 +51,7 @@ impl RERPair {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 struct BigRational {
     numer: u128,
     denom: u128,
@@ -53,7 +63,7 @@ impl BigRational {
     }
 
     fn is_big(&self) -> bool {
-        self.numer >= 10 * self.denom
+        self.numer >= BIG_CUTOFF * self.denom
     }
 
     fn is_one(&self) -> bool {
@@ -129,6 +139,7 @@ impl Data {
 			println!("{:?} : code = {}, count = {}", rel, rel.to_code(), self.rel_counts.get(rel).unwrap())
 		}
 	
+        let mut already_printed = HashSet::new();
 		let mut num_unwrapping_fails = 0;
 		let mut num_big = 0;
 		let mut num_ratio_one_pairs = 0;
@@ -137,24 +148,26 @@ impl Data {
 		let mut good_pairs = vec![];
 		for rel1 in rels_ordered.iter() {
 			for rel2 in rels_ordered.iter() {
-				if rel1 != rel2 {
-                    let pair = RERPair::new(rel1, rel2);
-					if let Some((ratio, _, count)) = self.max_ratios.get(&pair) {
-						if ratio.is_big() {
-							num_big += 1;
-						} else {
-							if ratio.is_one() {
-								num_ratio_one_pairs += 1;
-							} else if ratio.is_half() {
-								num_ratio_half_pairs += 1;
-							} else if ratio.is_two() {
-								num_ratio_two_pairs += 1;
-							}
-							good_pairs.push((pair, *count, *ratio));
-						}
-					} else {
-						num_unwrapping_fails += 1;
-					}
+				if rel1.k == rel2.k && rel1 != rel2 {
+                    let pair = RERPair::new(rel1, rel2, &self.permutations);
+                    if already_printed.insert(pair.to_owned()) {
+                        if let Some((ratio, _, count)) = self.max_ratios.get(&pair) {
+                            if ratio.is_big() {
+                                num_big += 1;
+                            } else {
+                                if ratio.is_one() {
+                                    num_ratio_one_pairs += 1;
+                                } else if ratio.is_half() {
+                                    num_ratio_half_pairs += 1;
+                                } else if ratio.is_two() {
+                                    num_ratio_two_pairs += 1;
+                                }
+                                good_pairs.push((pair, *count, *ratio));
+                            }
+                        } else {
+                            num_unwrapping_fails += 1;
+                        }
+                    }
 				}
 			}
 		}
@@ -200,35 +213,24 @@ impl Data {
 		self.rel_counts.entry(rel.to_owned()).and_modify(|x| *x += 1).or_insert(1);
 	}
 
-	fn get_lexicographically_first_permutation(&self, pair: &RERPair) -> RERPair {
-		let mut first_rel1 = &pair.numerator;
-		let mut first_rel2 = &pair.denominator;
-		for (i, permed_rel1) in self.permutations.get(&pair.numerator).unwrap().iter().enumerate() {
-			let permed_rel2 = &self.permutations.get(&pair.denominator).unwrap()[i];
-			if permed_rel1 < first_rel1 || (permed_rel1 == first_rel1 && permed_rel2 < first_rel2) {
-				first_rel1 = permed_rel1;
-				first_rel2 = permed_rel2;
-			}
-		}
-		RERPair::new(first_rel1, first_rel2)
-	}
-
-    const NOOOTERS: [(u128, u128); 2] = [(148, 144), (20, 80)];
+    const NOOOTERS: [(u128, u128); 3] = [(148, 144), (20, 80), (26250, 26244)];
 
     pub fn consider_noooting(&self, g_etc: &GraphAndMetadata, counts: &EquivalenceCounts) {
         for (rel1, count1) in counts.iter() {
             for (rel2, count2) in counts.iter() {
-                let pair = RERPair::new(rel1, rel2);
-                let reduced_pair = self.get_lexicographically_first_permutation(&pair);
+                let pair: RERPair = RERPair::new(rel1, rel2, &self.permutations);
                 for (code1, code2) in Self::NOOOTERS.iter() {
-                    if reduced_pair.numerator.to_code() == *code1 && reduced_pair.denominator.to_code() == *code2 && *count1 > *count2 {
+                    if pair.numerator.to_code() == *code1 && pair.denominator.to_code() == *code2 && *count1 > *count2 {
                         self.print();
                         println!("Found a graph with the desired config ratio!");
-                        rel1.print_fancy_pair(&rel2, if *count2 == 0 { f64::INFINITY } else { (*count1 as f64) / (*count2 as f64) }, 1);
+                        rel1.print_fancy_pair(rel2, (*count1 as f64) / (*count2 as f64), 1);
                         println!("Counts {} / {}", count1, count2);
                         g_etc.print();
                         
                         println!("{} distinct RERs", counts.len());
+                        println!("And within the ratios counter: reduced_pair: ");
+                        pair.print_fancy(self.max_ratios.get(&pair).unwrap().0, 1);
+
                         panic!("NOOOT NOOOT")
                     }
                 }
@@ -245,9 +247,8 @@ impl Data {
             if count1 != 0 {
                 for rel2 in self.all_rels.iter() {
                     if rel1.k == rel2.k {
-                        let pair = RERPair::new(rel1, rel2);
                         let count2 = counts[rel2];
-                        let pair = self.get_lexicographically_first_permutation(&pair);
+                        let pair = RERPair::new(rel1, rel2, &self.permutations);
                         let ratio = BigRational::new(count1, count2);
 
                         self.max_ratios.entry(pair)
@@ -263,6 +264,32 @@ impl Data {
                 }
             }
         }
+
+        /*
+        // DEBUG DEBUG DEBUG DEBUG
+        println!("Ding dong! {}", counts.get_k());
+        let rel1 = ReducedEquivalenceRelation::of_short_string("012023");
+        let rel2 = ReducedEquivalenceRelation::of_short_string("011023");
+        for rel in rel1.get_all_permutations() {
+            if self.all_rels.contains(&rel) {
+                println!("Found rel in all_rels:");
+                rel.print_fancy(counts[&rel] as usize);
+            }
+        }
+        for rel in rel2.get_all_permutations() {
+            if self.all_rels.contains(&rel) {
+                println!("Found rel in all_rels:");
+                rel.print_fancy(counts[&rel] as usize);
+            }
+        }
+        self.insert_relation(&rel1);
+        self.insert_relation(&rel2);
+        let pair = RERPair::new(&rel1, &rel2);
+        pair.print_fancy(BigRational::new(69,1), 420);
+        let pair = self.get_lexicographically_first_permutation(&pair);
+        pair.print_fancy(BigRational::new(69,1), 420);
+        println!("What we foung in max_ratios: {:?}", self.max_ratios.get(&pair));*/
+
         if counts.is_genuine_counterexample() {
             self.print();
             println!("Just g:");
@@ -317,44 +344,45 @@ impl Data {
             Ok(contents) => Self::get_records(contents),
             Err(_e) => panic!("Cannot find live file!")
         };
-        let mut new_records = HashMap::new();
+        let mut new_records = vec![];
         for rel1 in self.all_rels.iter() {
             for rel2 in self.all_rels.iter() {
                 if rel1.k == rel2.k && rel1 != rel2 {
-                    let pair = RERPair::new(rel1, rel2);
+                    let pair = RERPair::new(rel1, rel2, &self.permutations);
                     if !ignore_ratios.contains(&pair) {
                         if let Some((new_ratio, new_graph, _count)) = self.max_ratios.get(&pair) {
                             if let Some((old_ratio, old_graph)) = previous_records.get(&pair) {
                                 if new_ratio > old_ratio {
                                     println!("Improved a ratio!");
                                     pair.print_fancy(*new_ratio, 1);
-                                    new_records.insert(pair, (*new_ratio, new_graph.to_owned()));
+                                    new_records.push((pair, *new_ratio, new_graph.to_owned()));
                                 } else {
-                                    new_records.insert(pair, (*old_ratio, old_graph.to_owned()));
+                                    new_records.push((pair, *old_ratio, old_graph.to_owned()));
                                 }
                             } else {
-                                new_records.insert(pair, (*new_ratio, new_graph.to_owned()));
+                                new_records.push((pair, *new_ratio, new_graph.to_owned()));
                             }
                         } else if let Some((old_ratio, old_graph)) = previous_records.get(&pair) {
-                            new_records.insert(pair, (*old_ratio, old_graph.to_owned()));
+                            new_records.push((pair, *old_ratio, old_graph.to_owned()));
                         }
                     }
                 }
             }
         }
+        new_records.sort_by(|(_, r1, _), (_, r2, _)| r1.cmp(r2));
         // Now actually save the new records to the live file.
         let mut writing_file = File::create(live_file).unwrap();
 
-        for (pair, (ratio, graph)) in new_records.iter() {
+        for (pair, ratio, graph) in new_records.iter() {
             if !ratio.is_infinite() {
-                writeln!(&mut writing_file, "{}:{}:{}", pair.to_string(), ratio, graph).unwrap();
+                writeln!(&mut writing_file, "{}:{}:{}:[{:.5}]", pair.to_string(), ratio, graph, ratio.to_float()).unwrap();
             }
         }
 
         // Now append any new infinite pairs to the ignore file.
         let mut ignore_file = OpenOptions::new().append(true).create(true).open(ignore_file).unwrap();
 
-        for (pair, (ratio, _graph)) in new_records {
+        for (pair, ratio, _graph) in new_records {
             if ratio.is_infinite() && !ignore_ratios.contains(&pair) {
                 println!("Found a new infinite ratio!");
                 pair.print_fancy(ratio, 1);

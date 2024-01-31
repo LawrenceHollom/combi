@@ -9,18 +9,19 @@ use super::reduced_equivalence_relation::*;
 
 #[derive(Clone)]
 pub struct EquivalenceCounts {
-	counts: HashMap<ReducedEquivalenceRelation, u128>
+	counts: HashMap<ReducedEquivalenceRelation, u128>,
+	k: usize,
 }
 
 impl EquivalenceCounts {
 	pub fn new() -> EquivalenceCounts {
-		EquivalenceCounts { counts : HashMap::new() }
+		EquivalenceCounts { counts : HashMap::new(), k: 0 }
 	}
 
 	pub fn new_singleton() -> EquivalenceCounts {
 		let mut counts = HashMap::new();
 		counts.insert(ReducedEquivalenceRelation::empty(1), 1);
-		EquivalenceCounts { counts }
+		EquivalenceCounts { counts, k: 1 }
 	}
 
 	pub fn add(&mut self, g_etc: &GraphAndMetadata, config: &EdgeSet, indexer: &EdgeIndexer) {
@@ -35,6 +36,7 @@ impl EquivalenceCounts {
 			rel.add_vertex(is_post);
 			new_counts.insert(rel, count);
 		}
+		self.k += 1;
 		self.counts = new_counts
 	}
 
@@ -60,6 +62,7 @@ impl EquivalenceCounts {
 					.and_modify(|y| *y += count)
 					.or_insert(count);
 		}
+		self.k -= 1;
 		self.counts = new_counts
 	}
 

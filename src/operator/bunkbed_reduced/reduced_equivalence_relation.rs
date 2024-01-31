@@ -257,19 +257,17 @@ impl ReducedEquivalenceRelation {
 		self.k += 1;
 	}
 
-	/** 
-	 * Blindly replace all d with c in the RER
-	 * will need reducing at a later date.
-	 */
 	fn merge_components(&mut self, c: EquivalenceClass, d: EquivalenceClass) {
-		for thing in self.down.iter_mut() {
-			if *thing == d {
-				*thing = c
+		if c != d {
+			for thing in self.down.iter_mut() {
+				if *thing == d {
+					*thing = c
+				}
 			}
-		}
-		for thing in self.up.iter_mut() {
-			if *thing == d {
-				*thing = c
+			for thing in self.up.iter_mut() {
+				if *thing == d {
+					*thing = c
+				}
 			}
 		}
 	}
@@ -277,6 +275,7 @@ impl ReducedEquivalenceRelation {
 	pub fn amalgamate_edge(&mut self, new_edge: &ReducedEquivalenceRelation, x: usize, y: usize) {
 		// We currently do the silly, easy version, and move to the harder one later.
 		// Let's just case-bash it for now.
+		// - this isn't actually very slow on fifty-fifty or classic edges.
 		if new_edge.down[0] == new_edge.down[1] {
 			self.merge_components(self.down[x], self.down[y])
 		}
