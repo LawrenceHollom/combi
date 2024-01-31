@@ -146,6 +146,9 @@ impl ReducedEquivalenceRelation {
     pub fn of_short_string(text: &str) -> ReducedEquivalenceRelation {
         let k = text.len() / 2;
         let bytes = text.as_bytes();
+		if bytes.len() != k * 2 {
+			panic!("The bytes are too wrong! {}", text)
+		}
         let zero = b'0';
         let mut down = vec![EquivalenceClass(0); k];
         let mut up = vec![EquivalenceClass(0); k];

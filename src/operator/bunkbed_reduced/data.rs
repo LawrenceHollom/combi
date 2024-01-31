@@ -1,5 +1,8 @@
-use std::{cmp::Ordering, collections::{HashMap, HashSet}, fmt::Display, fs::{self, File}};
+use std::{cmp::Ordering, collections::{HashMap, HashSet}, fmt::Display};
+use std::fs::{self, File, OpenOptions};
 use std::io::Write;
+
+use fs2::FileExt;
 
 use super::reduced_equivalence_relation::*;
 use super::graph_and_metadata::*;
@@ -32,6 +35,10 @@ impl RERPair {
     fn to_string(&self) -> String {
         format!("{}/{}", self.numerator.to_short_string(), self.denominator.to_short_string())
     }
+
+    fn print_fancy(&self, ratio: BigRational, count: usize) {
+        self.numerator.print_fancy_pair(&self.denominator, ratio.to_float(), count)
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -59,6 +66,10 @@ impl BigRational {
 
     fn is_half(&self) -> bool {
         2 * self.numer == self.denom
+    }
+
+    fn is_infinite(&self) -> bool {
+        self.denom == 0
     }
 
     fn to_float(&self) -> f64 {
@@ -139,7 +150,7 @@ impl Data {
 							} else if ratio.is_two() {
 								num_ratio_two_pairs += 1;
 							}
-							good_pairs.push((rel1.to_owned(), rel2.to_owned(), *count, *ratio));
+							good_pairs.push((pair, *count, *ratio));
 						}
 					} else {
 						num_unwrapping_fails += 1;
@@ -158,12 +169,12 @@ impl Data {
 			}
 		}
 	
-		good_pairs.sort_by(|(_, _, count1, r1), (_, _, count2, r2)| cmp_pair(*count1, *r1, *count2, *r2));
+		good_pairs.sort_by(|(_, count1, r1), (_, count2, r2)| cmp_pair(*count1, *r1, *count2, *r2));
 		let mut all_rel_counts = Vec::from_iter(self.rel_counts.iter());
 		all_rel_counts.sort_by(|(_, c1), (_, c2)| c1.cmp(c2));
 		println!("All ratios less than {}:", BIG_CUTOFF);
-		for (rel1, rel2, count, ratio) in good_pairs.iter() {
-			rel1.print_fancy_pair(rel2, ratio.to_float(), *count);
+		for (pair, count, ratio) in good_pairs.iter() {
+			pair.print_fancy(*ratio, *count);
 			println!();
 		}
 		println!("Num ratios bigger than {}: {}", BIG_CUTOFF, num_big);
@@ -202,7 +213,7 @@ impl Data {
 		RERPair::new(first_rel1, first_rel2)
 	}
 
-    const NOOOTERS: [(u128, u128); 3] = [(148, 144), (20, 80), (34026, 34020)];
+    const NOOOTERS: [(u128, u128); 2] = [(148, 144), (20, 80)];
 
     pub fn consider_noooting(&self, g_etc: &GraphAndMetadata, counts: &EquivalenceCounts) {
         for (rel1, count1) in counts.iter() {
@@ -291,7 +302,14 @@ impl Data {
         ignore_file.push("ignore.txt");
         let mut live_file = pathbuf.to_owned();
         live_file.push("live.txt");
-        let ignore_ratios = match fs::read_to_string(ignore_file) {
+        let mut lock_file = pathbuf.to_owned();
+        lock_file.push("lock");
+
+        // Wait to get the lock if necessary.
+        let lock = File::open(lock_file).unwrap();
+        lock.lock_exclusive().unwrap();
+
+        let ignore_ratios = match fs::read_to_string(ignore_file.to_owned()) {
             Ok(contents) => Self::get_ignore_ratios(contents),
             Err(_e) => HashSet::new(),
         };
@@ -302,12 +320,14 @@ impl Data {
         let mut new_records = HashMap::new();
         for rel1 in self.all_rels.iter() {
             for rel2 in self.all_rels.iter() {
-                if rel1.k == rel2.k {
+                if rel1.k == rel2.k && rel1 != rel2 {
                     let pair = RERPair::new(rel1, rel2);
                     if !ignore_ratios.contains(&pair) {
                         if let Some((new_ratio, new_graph, _count)) = self.max_ratios.get(&pair) {
                             if let Some((old_ratio, old_graph)) = previous_records.get(&pair) {
                                 if new_ratio > old_ratio {
+                                    println!("Improved a ratio!");
+                                    pair.print_fancy(*new_ratio, 1);
                                     new_records.insert(pair, (*new_ratio, new_graph.to_owned()));
                                 } else {
                                     new_records.insert(pair, (*old_ratio, old_graph.to_owned()));
@@ -325,8 +345,23 @@ impl Data {
         // Now actually save the new records to the live file.
         let mut writing_file = File::create(live_file).unwrap();
 
-        for (pair, (ratio, graph)) in new_records {
-            writeln!(&mut writing_file, "{}:{}:{}", pair.to_string(), ratio, graph).unwrap();
+        for (pair, (ratio, graph)) in new_records.iter() {
+            if !ratio.is_infinite() {
+                writeln!(&mut writing_file, "{}:{}:{}", pair.to_string(), ratio, graph).unwrap();
+            }
         }
+
+        // Now append any new infinite pairs to the ignore file.
+        let mut ignore_file = OpenOptions::new().append(true).create(true).open(ignore_file).unwrap();
+
+        for (pair, (ratio, _graph)) in new_records {
+            if ratio.is_infinite() && !ignore_ratios.contains(&pair) {
+                println!("Found a new infinite ratio!");
+                pair.print_fancy(ratio, 1);
+                writeln!(&mut ignore_file, "{}", pair.to_string()).unwrap();
+            }
+        }
+
+        lock.unlock().unwrap();
     }
 }
