@@ -256,6 +256,7 @@ impl Constructor {
                 Recursive(CoronaProduct(Box::new(Self::of_string(args[0])), 
                     Box::new(Self::of_string(args[1]))))
             }
+            "serial" => Serialised(args[0].to_string()),
             str => File(str.to_owned()),
         }
     }

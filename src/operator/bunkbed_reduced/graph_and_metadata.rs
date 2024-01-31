@@ -223,7 +223,24 @@ impl GraphAndMetadata {
 	}
 
 	pub fn get_graph_string(&self) -> String {
-		self.g.serialise()
+		let mut s = self.g.serialise();
+		s.push_str("-");
+		for v in self.iter_verts() {
+			if self.has_post(v) {
+				s.push_str("P")
+			} else {
+				s.push_str("0")
+			}
+		}
+		s.push_str("-");
+		for v in self.iter_verts() {
+			if self.has_target(v) {
+				s.push_str("T")
+			} else {
+				s.push_str("0")
+			}
+		}
+		s
 	}
 
     pub fn has_post(&self, v: Vertex) -> bool {

@@ -664,7 +664,7 @@ impl Graph {
         for v in self.iter_verts().take(self.n.to_usize() - 1) {
             for u in self.adj_list[v].iter() {
                 if *u > v {
-                    out.push_str(&format!(",{}", u))
+                    out.push_str(&format!("*{}", u))
                 }
             }
             out.push_str("|")
@@ -678,7 +678,7 @@ impl Graph {
         let mut adj_list = VertexVec::new(n, &vec![]);
         for (i, par) in pars.iter().enumerate() {
             let u = Vertex::of_usize(i);
-            for v in par.split(",").skip(1) {
+            for v in par.split("*").skip(1) {
                 let v = Vertex::of_string(v);
                 adj_list[u].push(v);
                 adj_list[v].push(u);

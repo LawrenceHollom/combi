@@ -213,14 +213,14 @@ impl Data {
 		self.rel_counts.entry(rel.to_owned()).and_modify(|x| *x += 1).or_insert(1);
 	}
 
-    const NOOOTERS: [(u128, u128); 3] = [(148, 144), (20, 80), (26250, 26244)];
+    const NOOOTERS: [(&str, &str); 3] = [("0110", "0011"), ("0112", "0012"), ("013123", "003123")];
 
     pub fn consider_noooting(&self, g_etc: &GraphAndMetadata, counts: &EquivalenceCounts) {
         for (rel1, count1) in counts.iter() {
             for (rel2, count2) in counts.iter() {
                 let pair: RERPair = RERPair::new(rel1, rel2, &self.permutations);
                 for (code1, code2) in Self::NOOOTERS.iter() {
-                    if pair.numerator.to_code() == *code1 && pair.denominator.to_code() == *code2 && *count1 > *count2 {
+                    if pair.numerator.to_short_string() == *code1 && pair.denominator.to_short_string() == *code2 && *count1 > *count2 {
                         self.print();
                         println!("Found a graph with the desired config ratio!");
                         rel1.print_fancy_pair(rel2, (*count1 as f64) / (*count2 as f64), 1);
@@ -252,10 +252,11 @@ impl Data {
                         let ratio = BigRational::new(count1, count2);
 
                         self.max_ratios.entry(pair)
-                            .and_modify(|(x, _, count)| 
+                            .and_modify(|(x, graph, count)| 
                                 if ratio > *x { 
                                     *x = ratio; 
-                                    *count = 1 
+                                    *count = 1;
+                                    *graph = g_etc.get_graph_string()
                                 } else if ratio == *x { 
                                     *count += 1 
                                 } )	
@@ -345,11 +346,12 @@ impl Data {
             Err(_e) => panic!("Cannot find live file!")
         };
         let mut new_records = vec![];
+        let mut considered_pairs = HashSet::new();
         for rel1 in self.all_rels.iter() {
             for rel2 in self.all_rels.iter() {
                 if rel1.k == rel2.k && rel1 != rel2 {
                     let pair = RERPair::new(rel1, rel2, &self.permutations);
-                    if !ignore_ratios.contains(&pair) {
+                    if !ignore_ratios.contains(&pair) && considered_pairs.insert(pair.to_owned()) {
                         if let Some((new_ratio, new_graph, _count)) = self.max_ratios.get(&pair) {
                             if let Some((old_ratio, old_graph)) = previous_records.get(&pair) {
                                 if new_ratio > old_ratio {
