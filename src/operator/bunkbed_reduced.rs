@@ -484,6 +484,7 @@ fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, edge_t
 		//println!("rep duration: {}ms, edges: {}, bfs width: {}", rep_start_time.elapsed().unwrap().as_millis(), g_etc.g.size(), g_etc.g.get_bfs_width());
 	}
 	data.print();
+	data.save_to_file();
 	println!("Constructor: {:?}", h.constructor.to_string());
 	println!("Average {} boring graphs per interesting one", num_boring / num_reps);
 }

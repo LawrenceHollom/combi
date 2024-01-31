@@ -1,4 +1,5 @@
-use std::{collections::{HashMap, HashSet}, cmp::Ordering, fs};
+use std::{cmp::Ordering, collections::{HashMap, HashSet}, fmt::Display, fs::{self, File}};
+use std::io::Write;
 
 use super::reduced_equivalence_relation::*;
 use super::graph_and_metadata::*;
@@ -26,6 +27,10 @@ impl RERPair {
             numerator: ReducedEquivalenceRelation::of_short_string(numer),
             denominator: ReducedEquivalenceRelation::of_short_string(denom),
         }
+    }
+
+    fn to_string(&self) -> String {
+        format!("{}/{}", self.numerator.to_short_string(), self.denominator.to_short_string())
     }
 }
 
@@ -81,10 +86,16 @@ impl Ord for BigRational {
     }
 }
 
+impl Display for BigRational {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}/{}", self.numer, self.denom)
+    }
+}
+
 pub struct Data {
 	permutations: HashMap<ReducedEquivalenceRelation, Vec<ReducedEquivalenceRelation>>,
 	rel_counts: HashMap<ReducedEquivalenceRelation, usize>,
-	max_ratios: HashMap<RERPair, (BigRational, usize)>,
+	max_ratios: HashMap<RERPair, (BigRational, String, usize)>,
 	all_rels: HashSet<ReducedEquivalenceRelation>,
 }
 
@@ -107,10 +118,6 @@ impl Data {
 			println!("{:?} : code = {}, count = {}", rel, rel.to_code(), self.rel_counts.get(rel).unwrap())
 		}
 	
-		fn is_approx(x: f64, y: f64) -> bool {
-			x >= y * 0.9999999 && x <= y * 1.00000001
-		}
-	
 		let mut num_unwrapping_fails = 0;
 		let mut num_big = 0;
 		let mut num_ratio_one_pairs = 0;
@@ -121,7 +128,7 @@ impl Data {
 			for rel2 in rels_ordered.iter() {
 				if rel1 != rel2 {
                     let pair = RERPair::new(rel1, rel2);
-					if let Some((ratio, count)) = self.max_ratios.get(&pair) {
+					if let Some((ratio, _, count)) = self.max_ratios.get(&pair) {
 						if ratio.is_big() {
 							num_big += 1;
 						} else {
@@ -182,7 +189,7 @@ impl Data {
 		self.rel_counts.entry(rel.to_owned()).and_modify(|x| *x += 1).or_insert(1);
 	}
 
-	pub fn get_lexicographically_first_permutation(&self, pair: &RERPair) -> RERPair {
+	fn get_lexicographically_first_permutation(&self, pair: &RERPair) -> RERPair {
 		let mut first_rel1 = &pair.numerator;
 		let mut first_rel2 = &pair.denominator;
 		for (i, permed_rel1) in self.permutations.get(&pair.numerator).unwrap().iter().enumerate() {
@@ -233,14 +240,14 @@ impl Data {
                         let ratio = BigRational::new(count1, count2);
 
                         self.max_ratios.entry(pair)
-                            .and_modify(|(x, count)| 
+                            .and_modify(|(x, _, count)| 
                                 if ratio > *x { 
                                     *x = ratio; 
                                     *count = 1 
                                 } else if ratio == *x { 
                                     *count += 1 
                                 } )	
-                            .or_insert((ratio, 1));
+                            .or_insert((ratio, g_etc.get_graph_string(), 1));
                     }
                 }
             }
@@ -263,14 +270,14 @@ impl Data {
         out
     }
 
-    fn get_records(contents: String) -> HashMap<RERPair, BigRational> {
+    fn get_records(contents: String) -> HashMap<RERPair, (BigRational, String)> {
         let mut out = HashMap::new();
         for line in contents.lines() {
             let pars = line.split(":").collect::<Vec<&str>>();
             let pair = RERPair::of_string(pars[0]);
             let (numer, denom) = pars[1].split_once("/").unwrap();
             let ratio = BigRational::new(numer.parse().unwrap(), denom.parse().unwrap());
-            out.insert(pair, ratio);
+            out.insert(pair, (ratio, pars[2].to_owned()));
         }
         out
     }
@@ -288,7 +295,7 @@ impl Data {
             Ok(contents) => Self::get_ignore_ratios(contents),
             Err(_e) => HashSet::new(),
         };
-        let previous_records = match fs::read_to_string(live_file) {
+        let previous_records = match fs::read_to_string(live_file.to_owned()) {
             Ok(contents) => Self::get_records(contents),
             Err(_e) => panic!("Cannot find live file!")
         };
@@ -298,21 +305,28 @@ impl Data {
                 if rel1.k == rel2.k {
                     let pair = RERPair::new(rel1, rel2);
                     if !ignore_ratios.contains(&pair) {
-                        if let Some((new_ratio, _count)) = self.max_ratios.get(&pair) {
-                            if let Some(old_ratio) = previous_records.get(&pair) {
+                        if let Some((new_ratio, new_graph, _count)) = self.max_ratios.get(&pair) {
+                            if let Some((old_ratio, old_graph)) = previous_records.get(&pair) {
                                 if new_ratio > old_ratio {
-                                    new_records.insert(pair, *new_ratio);
+                                    new_records.insert(pair, (*new_ratio, new_graph.to_owned()));
+                                } else {
+                                    new_records.insert(pair, (*old_ratio, old_graph.to_owned()));
                                 }
                             } else {
-                                new_records.insert(pair, *new_ratio);
+                                new_records.insert(pair, (*new_ratio, new_graph.to_owned()));
                             }
-                        } else if let Some(old_ratio) = previous_records.get(&pair) {
-                            new_records.insert(pair, *old_ratio);
+                        } else if let Some((old_ratio, old_graph)) = previous_records.get(&pair) {
+                            new_records.insert(pair, (*old_ratio, old_graph.to_owned()));
                         }
                     }
                 }
             }
         }
         // Now actually save the new records to the live file.
+        let mut writing_file = File::create(live_file).unwrap();
+
+        for (pair, (ratio, graph)) in new_records {
+            writeln!(&mut writing_file, "{}:{}:{}", pair.to_string(), ratio, graph).unwrap();
+        }
     }
 }

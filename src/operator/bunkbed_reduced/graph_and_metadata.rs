@@ -222,6 +222,10 @@ impl GraphAndMetadata {
 		false
 	}
 
+	pub fn get_graph_string(&self) -> String {
+		self.g.serialise()
+	}
+
     pub fn has_post(&self, v: Vertex) -> bool {
         self.posts.has_vert(v)
     }
