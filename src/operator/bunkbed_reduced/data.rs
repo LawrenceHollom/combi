@@ -272,6 +272,7 @@ impl Data {
             println!("Just g:");
             counts.print();
             g_etc.print();
+            println!("{}", g_etc.get_graph_string());
             panic!("WE'VE GOT A LIVE ONE!")
         }
         if should_nooot {

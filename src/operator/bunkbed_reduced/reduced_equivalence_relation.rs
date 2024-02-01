@@ -155,18 +155,18 @@ impl ReducedEquivalenceRelation {
     }
 
 	pub fn empty(k: usize) -> ReducedEquivalenceRelation {
-		let down = FastVec::of_range(0, k);
-		let up = FastVec::of_range(k, 2 * k);
-		ReducedEquivalenceRelation { k, down, up, next_label: EquivalenceClass::new(2 * k) }.reduce_and_symmetrise()
+		let down = FastVec::of_range(0, 2, k);
+		let up = FastVec::of_range(1, 2, k);
+		ReducedEquivalenceRelation { k, down, up, next_label: EquivalenceClass::new(2 * k) }
 	}
 
 	// We need to think through what's going on here and if there's a better way to do it.
-	fn reduce_no_symmetrise(&self, is_flat: bool) -> ReducedEquivalenceRelation {
+	fn reduce_no_symmetrise_slow(&self, is_flat: bool) -> ReducedEquivalenceRelation {
 		let mut new_labels = vec![None; (self.k + 1) * 2];
 		let mut next_label = EquivalenceClass::ZERO;
 		fn check_label(labels: &mut Vec<Option<EquivalenceClass>>, next_label: &mut EquivalenceClass, comp: EquivalenceClass) {
-			if labels[comp.to_usize()].is_none() {
-				labels[comp.to_usize()] = Some(*next_label);
+			if labels[comp._to_usize()].is_none() {
+				labels[comp._to_usize()] = Some(*next_label);
 				next_label.incr_inplace()
 			}
 		}
@@ -183,21 +183,62 @@ impl ReducedEquivalenceRelation {
 		let mut new_up = FastVec::new();
 		for v in 0..self.k {
 			if is_flat {
-				new_down.set(v, new_labels[self.down.get(v).to_usize()].unwrap());
-				new_up.set(v, new_labels[self.up.get(v).to_usize()].unwrap());
+				new_down.set(v, new_labels[self.down.get(v)._to_usize()].unwrap());
+				new_up.set(v, new_labels[self.up.get(v)._to_usize()].unwrap());
 			} else {
-				new_down.set(v, new_labels[self.up.get(v).to_usize()].unwrap());
-				new_up.set(v, new_labels[self.down.get(v).to_usize()].unwrap());
+				new_down.set(v, new_labels[self.up.get(v)._to_usize()].unwrap());
+				new_up.set(v, new_labels[self.down.get(v)._to_usize()].unwrap());
 			}
 		}
 		ReducedEquivalenceRelation { k: self.k, down: new_down, up: new_up, next_label }
 	}
 
-	// This is probably going to end up being the expensive one.
+	// This is under the assumptiong that self is already reduced (and not necc symmetrised)
 	pub fn reduce_and_symmetrise(&self) -> ReducedEquivalenceRelation {
-		let new_flat = self.reduce_no_symmetrise(true);
-		let new_cross = self.reduce_no_symmetrise(false);
-		new_flat.min(new_cross)
+		let mut flipped = self.to_owned();
+		let mut going_up = EquivalenceClassSet::new();
+		let mut going_down = EquivalenceClassSet::new();
+		let mut next_class = EquivalenceClass::ZERO;
+		for index in 0..self.k {
+			let old_down = self.down.get(index);
+			let old_up = self.up.get(index);
+			//if they're equal we don't need to do anything.
+			if old_down == old_up {
+				if old_down == next_class {
+					next_class.incr_inplace()
+				}
+			} else {
+				let old_next_class = next_class.to_owned();
+				if old_up >= old_next_class {
+					if old_up > next_class {
+						going_down.add(old_up);
+					}
+					flipped.down.set(index, next_class);
+					next_class.incr_inplace();
+				} else if going_down.has(old_up) {
+					flipped.down.set(index, old_up.decr())
+				} else if going_up.has(old_up) {
+					flipped.down.set(index, old_up.incr())
+				} else {
+					flipped.down.set(index, old_up)
+				}
+				// Now deal with up.
+				if old_down >= old_next_class {
+					if old_down < next_class {
+						going_up.add(old_down);
+					}
+					flipped.up.set(index, next_class);
+					next_class.incr_inplace()
+				} else if going_down.has(old_down) {
+					flipped.up.set(index, old_down.decr())
+				} else if going_up.has(old_down) {
+					flipped.up.set(index, old_down.incr())
+				} else {
+					flipped.up.set(index, old_down)
+				}
+			}
+		}
+		flipped.min(self.to_owned())
 	}
 
 	pub fn get_all_permutations(&self) -> Vec<ReducedEquivalenceRelation> {
@@ -213,11 +254,13 @@ impl ReducedEquivalenceRelation {
 		for sigma in sigmas.iter() {
 			let mut new_down = FastVec::new();
 			let mut new_up = FastVec::new();
-			for i in sigma.iter() {
-				new_down.set(*i, self.down.get(*i));
-				new_up.set(*i, self.up.get(*i));
+			for (i, j) in sigma.iter().enumerate() {
+				new_down.set(i, self.down.get(*j));
+				new_up.set(i, self.up.get(*j));
 			}
-			permutations.push(ReducedEquivalenceRelation { k: self.k, down: new_down, up: new_up, next_label: self.next_label }.reduce_and_symmetrise())
+			let rer = ReducedEquivalenceRelation { k: self.k, down: new_down, up: new_up, next_label: self.next_label };
+			//permutations.push(rer.reduce_no_symmetrise_slow(true).reduce_and_symmetrise())
+			permutations.push(rer.reduce_no_symmetrise_slow(true).min(rer.reduce_no_symmetrise_slow(false)))
 		}
 		permutations
 	}
@@ -234,16 +277,23 @@ impl ReducedEquivalenceRelation {
 
 	fn merge_components(&mut self, c: EquivalenceClass, d: EquivalenceClass) {
 		if c != d {
+			let small = c.min(d);
+			let big = c.max(d);
 			for index in 0..self.k {
-				if self.down.get(index) == d {
-					self.down.set(index, c)
+				if self.down.get(index) == big {
+					self.down.set(index, small)
+				} else if self.down.get(index) > big {
+					self.down.decr_inplace(index);
 				}
 			}
 			for index in 0..self.k {
-				if self.up.get(index) == d {
-					self.up.set(index, c)
+				if self.up.get(index) == big {
+					self.up.set(index, small)
+				} else if self.up.get(index) > big {
+					self.up.decr_inplace(index);
 				}
 			}
+			self.next_label.decr_inplace()
 		}
 	}
 
@@ -265,31 +315,67 @@ impl ReducedEquivalenceRelation {
 				}
 			}
 		}
-		*self = self.reduce_no_symmetrise(false)
 	}
 
-	pub fn remove_vertex(mut self, x: usize) -> ReducedEquivalenceRelation {
+	pub fn remove_vertex(&mut self, x: usize) {
+		let a = self.down.get(x);
+		let b = self.up.get(x);
 		self.down.remove(x);
 		self.up.remove(x);
 		self.k -= 1;
-		self.reduce_no_symmetrise(false)
-	}
+		let mut new_a = None;
+		let mut new_b = None;
+		let mut next_class = EquivalenceClass::ZERO;
 
-	pub fn flip(&self) -> ReducedEquivalenceRelation {
-		ReducedEquivalenceRelation {
-			k: self.k,
-			down: self.up.to_owned(),
-			up: self.down.to_owned(),
-			next_label: self.next_label,
+		fn deal_with_point(index: usize, v: &mut FastVec, a: EquivalenceClass, b: EquivalenceClass, new_a: &mut Option<EquivalenceClass>, new_b: &mut Option<EquivalenceClass>, next_class: &mut EquivalenceClass) {
+			let old_val = v.get(index);
+			if old_val == a {
+				if let Some(new_a) = new_a {
+					v.set(index, *new_a)
+				} else {
+					*new_a = Some(*next_class);
+					v.set(index, *next_class);
+					next_class.incr_inplace();
+				}
+			} else if old_val == b {
+				if let Some(new_b) = new_b {
+					v.set(index, *new_b)
+				} else {
+					*new_b = Some(*next_class);
+					v.set(index, *next_class);
+					next_class.incr_inplace();
+				}
+			} else {
+				if old_val > a && new_a.map_or(true, |new_a| old_val <= new_a) {
+					v.decr_inplace(index);
+				}
+				if a != b && old_val > b && new_b.map_or(true, |new_b| old_val <= new_b) {
+					v.decr_inplace(index);
+				}
+				*next_class = (*next_class).max(v.get(index).incr())
+			}
+		}
+
+		for index in 0..self.k {
+			deal_with_point(index, &mut self.down, a, b, &mut new_a, &mut new_b, &mut next_class);
+			deal_with_point(index, &mut self.up, a, b, &mut new_a, &mut new_b, &mut next_class);
 		}
 	}
 
-	pub fn is_classically_flat(&self) -> bool {
-		self.down.get(0) == self.down.get(1)
+	pub fn is_classically_flat(&self, is_flipped: bool) -> bool {
+		if is_flipped {
+			self.down.get(0) == self.down.get(1)
+		} else {
+			self.up.get(0) == self.up.get(1)
+		}
 	}
 
-	pub fn is_classically_cross(&self) -> bool {
-		self.down.get(0) == self.up.get(1)
+	pub fn is_classically_cross(&self, is_flipped: bool) -> bool {
+		if is_flipped {
+			self.down.get(0) == self.up.get(1)
+		} else {
+			self.up.get(0) == self.down.get(1)
+		}
 	}
 
 	pub fn to_string(&self) -> String {
@@ -348,15 +434,66 @@ impl EdgeType {
 	pub fn to_rer_vec(&self) -> Vec<ReducedEquivalenceRelation> {
 		use EdgeType::*;
 		let raw_edges = match self {
-			Classic => vec![[[0, 0], [1, 2]], [[1, 2], [0, 0]], [[0, 1], [2, 3]], [[0, 0], [0, 0]]],
-			FiftyFifty => vec![[[0, 0], [1, 2]], [[1, 2], [0, 0]]],
+			Classic => vec![[[0, 0], [1, 2]], [[0, 2], [1, 1]], [[0, 2], [1, 3]], [[0, 0], [0, 0]]],
+			FiftyFifty => vec![[[0, 0], [1, 2]], [[0, 2], [1, 1]]],
 			Double => vec![[[0, 1], [1, 0]], [[0, 0], [1, 1]]],
-			ThreeWay => vec![[[0, 0], [1, 1]], [[0, 0], [1, 1]], [[1, 2], [0, 1]], [[1, 0], [0, 2]]],
-			Posted => vec![[[0, 0], [1, 2]], [[0, 2], [1, 1]], [[1, 2], [0, 1]], [[1, 0], [0, 2]]],
+			ThreeWay => vec![[[0, 0], [1, 1]], [[0, 0], [1, 1]], [[0, 2], [1, 0]], [[0, 1], [1, 2]]],
+			Posted => vec![[[0, 0], [1, 2]], [[0, 2], [1, 1]], [[0, 2], [1, 0]], [[0, 1], [1, 2]]],
 		};
 		raw_edges.iter()
-			.map(|raw| ReducedEquivalenceRelation::of_raw_vecs(raw)
-				.reduce_no_symmetrise(true))
+			.map(|raw| ReducedEquivalenceRelation::of_raw_vecs(raw))
 			.collect::<Vec<ReducedEquivalenceRelation>>()
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn test_edge_types() {
+		for i in 0..10 {
+			let edge = EdgeType::of_usize(i);
+			let rers = edge.to_rer_vec();
+			for rer in rers.iter() {
+				assert_eq!(rer.to_owned(), rer.reduce_no_symmetrise_slow(true))
+			}
+		}
+	}
+
+	#[test]
+	fn test_empty_rer() {
+		for k in 1..5 {
+			let rer = ReducedEquivalenceRelation::empty(k);
+			assert_eq!(rer, rer.reduce_no_symmetrise_slow(true))
+		}
+	}
+
+	fn rers(text: &str) -> ReducedEquivalenceRelation {
+		ReducedEquivalenceRelation::of_short_string(text)
+	}
+
+	#[test]
+	fn test_remove_vertex() {
+		let mut rer = rers("02141130");
+		rer.remove_vertex(1);
+		assert_eq!(rer, rers("013120"));
+
+		let mut rer = rers("0120302310");
+		rer.remove_vertex(0);
+		assert_eq!(rer, rers("01321203"))
+	}
+
+	#[test]
+	fn test_reduce_and_symmetrise() {
+		let rer = rers("0123210143");
+		assert_eq!(rer.reduce_and_symmetrise(), rers("0103410242"))
+	}
+
+	#[test]
+	fn test_reduce_no_symmetrise() {
+		let rer = rers("000104");
+		assert_eq!(rer.reduce_no_symmetrise_slow(true), rers("000102"));
+		assert_eq!(rer.reduce_no_symmetrise_slow(true).reduce_and_symmetrise(), rers("000102"));
 	}
 }

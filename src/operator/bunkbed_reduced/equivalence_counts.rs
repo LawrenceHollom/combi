@@ -56,9 +56,9 @@ impl EquivalenceCounts {
 
 	pub fn remove_vertex(&mut self, x: usize) {
 		let mut new_counts = HashMap::new();
-		for (rel, count) in self.counts.drain() {
-			let new_rel = rel.remove_vertex(x);
-			new_counts.entry(new_rel)
+		for (mut rel, count) in self.counts.drain() {
+			rel.remove_vertex(x);
+			new_counts.entry(rel)
 					.and_modify(|y| *y += count)
 					.or_insert(count);
 		}
@@ -86,16 +86,16 @@ impl EquivalenceCounts {
 
         for (rel1, count) in self.iter() {
             if rel1.k == 2 {
-                if rel1.is_classically_flat() {
+                if rel1.is_classically_flat(true) {
                     num_flat += *count
                 }
-                if rel1.is_classically_cross() {
+                if rel1.is_classically_cross(true) {
                     num_cross += *count
                 }
-                if rel1.flip().is_classically_flat() {
+                if rel1.is_classically_flat(false) {
                     num_flat += *count
                 }
-                if rel1.flip().is_classically_cross() {
+                if rel1.is_classically_cross(false) {
                     num_cross += *count
                 }
             }
@@ -146,10 +146,10 @@ impl EquivalenceCounts {
 			let rel = ReducedEquivalenceRelation::of_raw_vecs(raw).reduce_and_symmetrise();
 			*counts.get(&rel).unwrap_or(&0)
 		}
-		let num_single_flat = get_num(&self.counts, &[[1, 2], [0, 0]]);
-		let num_single_cross = get_num(&self.counts, &[[1, 2], [0, 1]]);
-		let num_double_flat = get_num(&self.counts, &[[1, 1], [0, 0]]);
-		let num_double_cross = get_num(&self.counts, &[[1, 0], [0, 1]]);
+		let num_single_flat = get_num(&self.counts, &[[0, 2], [1, 1]]);
+		let num_single_cross = get_num(&self.counts, &[[0, 2], [1, 0]]);
+		let num_double_flat = get_num(&self.counts, &[[0, 0], [1, 1]]);
+		let num_double_cross = get_num(&self.counts, &[[0, 1], [1, 0]]);
 		let single_ratio = (num_single_cross as f64) / (num_single_flat as f64);
 		let double_ratio = (num_double_cross as f64) / (num_double_flat as f64);
 		println!("1-flat: {}, 1-cross: {}, ratio: {:.5} // 2-flat: {}, 2-cross: {}, ratio: {:.5}", 
@@ -157,6 +157,7 @@ impl EquivalenceCounts {
 		if num_single_flat < num_single_cross || num_double_flat < num_double_cross {
 			println!("Counterexample found!");
 			g_etc.print();
+			self.print_fancy();
 			panic!("SO IT HAS BEEN DONE!")
 		}
 	}

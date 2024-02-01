@@ -14,6 +14,18 @@ impl EquivalenceClass {
 		self.0 += 1
 	}
 
+    pub fn incr(&self) -> EquivalenceClass {
+        EquivalenceClass(self.0 + 1)
+    }
+
+	pub fn decr_inplace(&mut self) {
+		self.0 -= 1
+	}
+
+    pub fn decr(&self) -> EquivalenceClass {
+        EquivalenceClass(self.0 - 1)
+    }
+
 	pub fn to_string(&self) -> String {
 		self.0.to_string()
 	}
@@ -23,7 +35,7 @@ impl EquivalenceClass {
     }
 
     // Ideally we would kill this function after the big opt.
-    pub fn to_usize(&self) -> usize {
+    pub fn _to_usize(&self) -> usize {
         self.0
     }
 
@@ -40,6 +52,22 @@ impl EquivalenceClass {
     }
 }
 
+pub struct EquivalenceClassSet(u64);
+
+impl EquivalenceClassSet {
+    pub fn new() -> EquivalenceClassSet {
+        EquivalenceClassSet(0)
+    }
+
+    pub fn add(&mut self, c: EquivalenceClass) {
+        self.0 |= 1 << c.0
+    }
+
+    pub fn has(&self, c: EquivalenceClass) -> bool {
+        (self.0 >> c.0) % 2 == 1
+    }
+}
+
 #[derive(Copy, Clone, Hash)]
 pub struct FastVec(u128);
 
@@ -52,10 +80,10 @@ impl FastVec {
         FastVec(((arr[1] << 5) + arr[0]) as u128)
     }
 
-    pub fn of_range(start: usize, end: usize) -> FastVec {
+    pub fn of_range(start: usize, skip: usize, num: usize) -> FastVec {
         let mut v = Self::new();
-        for (index, c) in (start..end).enumerate() {
-            v.set(index, EquivalenceClass(c))
+        for index in 0..num {
+            v.set(index, EquivalenceClass(start + index * skip))
         }
         v
     }
@@ -68,6 +96,10 @@ impl FastVec {
         // blank out any old values
         self.0 &= !(31_u128 << (index * 5));
         self.0 += (c.0 as u128) << (index * 5)
+    }
+
+    pub fn decr_inplace(&mut self, index: usize) {
+        self.0 -= 1 << (index * 5)
     }
 
     // Remove data at the index, and shift everything above down by 5 bits.

@@ -15,7 +15,6 @@ mod reduced_equivalence_relation;
 mod equivalence_counts;
 mod graph_and_metadata;
 mod equivalence_relation;
-mod equivalence_class;
 
 use equivalence_counts::*;
 use data::*;
@@ -448,7 +447,7 @@ fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, edge_t
 	for rep in 0..num_reps {
 		//let rep_start_time = SystemTime::now();
 		let mut g_etc;
-		if rng.gen_bool(0.9) {
+		if h.constructor.is_random() && rng.gen_bool(0.9) {
 			'find_interesting_g_etc: loop {
 				g_etc = GraphAndMetadata::new(h, &mut rng, k);
 				if !g_etc.is_boring() {
