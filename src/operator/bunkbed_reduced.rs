@@ -366,6 +366,10 @@ fn get_ratios_dp(g_etc: &GraphAndMetadata, edge_type: EdgeType, data: &mut Data,
 					counts.amalgamate_edge(&default_edge, index, v_index);
 					remaining_degree[v].decr_inplace();
 					remaining_degree[*u].decr_inplace();
+
+					if PRINT_DEBUG_LEVEL >= 4 {
+						counts.print();
+					}
 					// remove the vertex.
 					if PRINT_DEBUG_LEVEL >= 2 {
 						println!("Remove the vertex!");
@@ -373,6 +377,10 @@ fn get_ratios_dp(g_etc: &GraphAndMetadata, edge_type: EdgeType, data: &mut Data,
 					remove_vertex(index, &mut counts, &mut vert_activity, &mut num_active_verts);
 					if v_index > index {
 						v_index -= 1;
+					}
+
+					if PRINT_DEBUG_LEVEL >= 4 {
+						counts.print();
 					}
 				}
 				vert_activity[*u] = None;
@@ -389,18 +397,22 @@ fn get_ratios_dp(g_etc: &GraphAndMetadata, edge_type: EdgeType, data: &mut Data,
 					counts.amalgamate_edge(&default_edge, index, v_index);
 					remaining_degree[*u].decr_inplace();
 					remaining_degree[v].decr_inplace();
+
+					if PRINT_DEBUG_LEVEL >= 4 {
+						counts.print();
+					}
 				}
 			}
 		}
 		if remaining_degree[v].equals(0) && !g_etc.has_target(v) {
 			// This one needs to be removed too!
 			remove_vertex(v_index, &mut counts, &mut vert_activity, &mut num_active_verts);
-			vert_activity[v] = None
-		}
-	}
+			vert_activity[v] = None;
 
-	if PRINT_DEBUG_LEVEL >= 3 {
-		counts.print();
+			if PRINT_DEBUG_LEVEL >= 4 {
+				counts.print();
+			}
+		}
 	}
 
 	// Finally, remove vertices not in the prescribed target set.

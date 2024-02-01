@@ -360,6 +360,7 @@ impl ReducedEquivalenceRelation {
 			deal_with_point(index, &mut self.down, a, b, &mut new_a, &mut new_b, &mut next_class);
 			deal_with_point(index, &mut self.up, a, b, &mut new_a, &mut new_b, &mut next_class);
 		}
+		self.next_label = next_class;
 	}
 
 	pub fn is_classically_flat(&self, is_flipped: bool) -> bool {
