@@ -115,7 +115,7 @@ impl Display for BigRational {
 
 pub struct Data {
 	permutations: HashMap<ReducedEquivalenceRelation, Vec<ReducedEquivalenceRelation>>,
-	rel_counts: HashMap<ReducedEquivalenceRelation, usize>,
+	rel_counts: HashMap<ReducedEquivalenceRelation, u128>,
 	max_ratios: HashMap<RERPair, (BigRational, String, usize)>,
 	all_rels: HashSet<ReducedEquivalenceRelation>,
 }
@@ -136,7 +136,7 @@ impl Data {
 	
 		println!("All equivalence relations");
 		for rel in rels_ordered.iter() {
-			println!("{:?} : code = {}, count = {}", rel, rel.to_code(), self.rel_counts.get(rel).unwrap())
+			println!("{:?} : code = {}, count = {}", rel, rel.to_short_string(), self.rel_counts.get(rel).unwrap())
 		}
 	
         let mut already_printed = HashSet::new();
@@ -185,11 +185,11 @@ impl Data {
 		good_pairs.sort_by(|(_, count1, r1), (_, count2, r2)| cmp_pair(*count1, *r1, *count2, *r2));
 		let mut all_rel_counts = Vec::from_iter(self.rel_counts.iter());
 		all_rel_counts.sort_by(|(_, c1), (_, c2)| c1.cmp(c2));
-		println!("All ratios less than {}:", BIG_CUTOFF);
-		for (pair, count, ratio) in good_pairs.iter() {
-			pair.print_fancy(*ratio, *count);
-			println!();
-		}
+        println!("All ratios less than {}:", BIG_CUTOFF);
+        for (pair, count, ratio) in good_pairs.iter() {
+            pair.print_fancy(*ratio, *count);
+            println!();
+        }
 		println!("Num ratios bigger than {}: {}", BIG_CUTOFF, num_big);
 		println!("Num ratios resulting in unwrapping errors: {}", num_unwrapping_fails);
 		println!("{} pairs have a ratio of precisely 0.500", num_ratio_half_pairs);
@@ -226,6 +226,7 @@ impl Data {
                         rel1.print_fancy_pair(rel2, (*count1 as f64) / (*count2 as f64), 1);
                         println!("Counts {} / {}", count1, count2);
                         g_etc.print();
+                        println!("{}", g_etc.get_graph_string());
                         
                         println!("{} distinct RERs", counts.len());
                         println!("And within the ratios counter: reduced_pair: ");
@@ -238,7 +239,7 @@ impl Data {
         }
     }
 
-    pub fn add_equivalence_counts(&mut self, g_etc: &GraphAndMetadata, counts: &EquivalenceCounts) {
+    pub fn add_equivalence_counts(&mut self, g_etc: &GraphAndMetadata, counts: &EquivalenceCounts, should_nooot: bool) {
         for rel in counts.keys() {
             self.insert_relation(rel)
         }
@@ -266,31 +267,6 @@ impl Data {
             }
         }
 
-        /*
-        // DEBUG DEBUG DEBUG DEBUG
-        println!("Ding dong! {}", counts.get_k());
-        let rel1 = ReducedEquivalenceRelation::of_short_string("012023");
-        let rel2 = ReducedEquivalenceRelation::of_short_string("011023");
-        for rel in rel1.get_all_permutations() {
-            if self.all_rels.contains(&rel) {
-                println!("Found rel in all_rels:");
-                rel.print_fancy(counts[&rel] as usize);
-            }
-        }
-        for rel in rel2.get_all_permutations() {
-            if self.all_rels.contains(&rel) {
-                println!("Found rel in all_rels:");
-                rel.print_fancy(counts[&rel] as usize);
-            }
-        }
-        self.insert_relation(&rel1);
-        self.insert_relation(&rel2);
-        let pair = RERPair::new(&rel1, &rel2);
-        pair.print_fancy(BigRational::new(69,1), 420);
-        let pair = self.get_lexicographically_first_permutation(&pair);
-        pair.print_fancy(BigRational::new(69,1), 420);
-        println!("What we foung in max_ratios: {:?}", self.max_ratios.get(&pair));*/
-
         if counts.is_genuine_counterexample() {
             self.print();
             println!("Just g:");
@@ -298,7 +274,9 @@ impl Data {
             g_etc.print();
             panic!("WE'VE GOT A LIVE ONE!")
         }
-        self.consider_noooting(g_etc, counts)
+        if should_nooot {
+            self.consider_noooting(g_etc, counts)
+        }
     }
 
     fn get_ignore_ratios(contents: String) -> HashSet<RERPair> {
@@ -332,6 +310,11 @@ impl Data {
         live_file.push("live.txt");
         let mut lock_file = pathbuf.to_owned();
         lock_file.push("lock");
+
+        if !lock_file.exists() {
+            println!("FAILURE TO SAVE: LOCK FILE NOT FOUND!");
+            return;
+        }
 
         // Wait to get the lock if necessary.
         let lock = File::open(lock_file).unwrap();

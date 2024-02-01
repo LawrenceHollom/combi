@@ -132,6 +132,15 @@ impl EquivalenceCounts {
 		print_table(vec!["count".to_string(), "k".to_string()], rows)
 	}
 
+	pub fn print_fancy(&self) {
+		let mut counts = self.counts.iter().collect::<Vec<(&ReducedEquivalenceRelation, &u128)>>();
+		counts.sort();
+		for (rer, count) in counts {
+			rer.print_fancy(*count);
+			println!();
+		}
+	}
+
 	pub fn print_summary(&self, g_etc: &GraphAndMetadata) {
 		fn get_num(counts: &HashMap<ReducedEquivalenceRelation, u128>, raw: &[[usize; 2]; 2]) -> u128 {
 			let rel = ReducedEquivalenceRelation::of_raw_vecs(raw).reduce_and_symmetrise();

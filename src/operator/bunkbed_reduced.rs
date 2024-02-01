@@ -16,12 +16,11 @@ mod equivalence_counts;
 mod graph_and_metadata;
 mod equivalence_relation;
 mod equivalence_class;
-mod edge_type;
 
 use equivalence_counts::*;
 use data::*;
 use graph_and_metadata::*;
-use edge_type::*;
+use reduced_equivalence_relation::EdgeType;
 
 /**
  * This file deals with the version of the conjecture wherein we have
@@ -305,7 +304,7 @@ fn get_ratios_naive(g_etc: &GraphAndMetadata, data: &mut Data) {
 		counts.add(g_etc, &config, &indexer);
 	}
 
-	data.add_equivalence_counts(g_etc, &counts)
+	data.add_equivalence_counts(g_etc, &counts, true)
 }
 
 const PRINT_DEBUG_LEVEL: u8 = 0;
@@ -313,7 +312,7 @@ const PRINT_DEBUG_LEVEL: u8 = 0;
 /**
  * Use dynamic programming to compute the EquivalenceCounts between the given set of vertices.
  */
-fn get_ratios_dp(g_etc: &GraphAndMetadata, edge_type: EdgeType, data: &mut Data, print_summary: bool) {
+fn get_ratios_dp(g_etc: &GraphAndMetadata, edge_type: EdgeType, data: &mut Data, print_counts: bool) {
 	let mut counts = EquivalenceCounts::new_singleton();
 	let n = g_etc.get_n();
 	let mut vert_activity = VertexVec::new(n, &None);
@@ -425,23 +424,19 @@ fn get_ratios_dp(g_etc: &GraphAndMetadata, edge_type: EdgeType, data: &mut Data,
 			let mut counts_copy = counts.to_owned();
 			remove_vertex(i, &mut counts_copy, &mut vert_activity, &mut num_active_verts);
 			counts_copy.reduce();
-			data.add_equivalence_counts(g_etc, &counts_copy);
+			data.add_equivalence_counts(g_etc, &counts_copy, !print_counts);
 		}
 	}
 
-	counts.reduce();
-
-	if PRINT_DEBUG_LEVEL >= 1 {
+	if PRINT_DEBUG_LEVEL >= 1 || print_counts {
+		counts.print_summary(&g_etc);
 		println!("targets: {:?}", g_etc.targets_for_table());
 		println!("num_active = {}. Activity: {:?}", num_active_verts, vert_activity);
-		counts.print();
+		counts.print_fancy();
 	}
 
-	if print_summary {
-		counts.print_summary(&g_etc);
-	}
-
-	data.add_equivalence_counts(g_etc, &counts);
+	counts.reduce();
+	data.add_equivalence_counts(g_etc, &counts, !print_counts);
 }
 
 fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, edge_type: Option<EdgeType>) {
@@ -483,10 +478,12 @@ fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, edge_t
 		}
 		//println!("rep duration: {}ms, edges: {}, bfs width: {}", rep_start_time.elapsed().unwrap().as_millis(), g_etc.g.size(), g_etc.g.get_bfs_width());
 	}
-	data.print();
-	data.save_to_file();
-	println!("Constructor: {:?}", h.constructor.to_string());
-	println!("Average {} boring graphs per interesting one", num_boring / num_reps);
+	if num_reps > 1 {
+		data.print();
+		data.save_to_file();
+		println!("Constructor: {:?}", h.constructor.to_string());
+		println!("Average {} boring graphs per interesting one", num_boring / num_reps);
+	}
 }
 
 pub fn simulate_connection_count_ratios_naive(h: &Graph, num_reps: usize, k: usize) {
