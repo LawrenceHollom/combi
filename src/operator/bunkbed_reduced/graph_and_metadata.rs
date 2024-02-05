@@ -303,8 +303,12 @@ impl GraphAndMetadata {
         self.targets.to_vec().to_vec_of_strings()
     }
 
-	pub fn print(&self) {
+	pub fn print_table(&self) {
 		print_vertex_table(vec![("posts", self.posts_for_table()), ("targets", self.targets_for_table())]);
+	}
+
+	pub fn print(&self) {
+		self.print_table();
 		self.g.print();
 	}
 }

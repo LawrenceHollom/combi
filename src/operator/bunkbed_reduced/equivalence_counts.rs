@@ -10,18 +10,19 @@ use super::reduced_equivalence_relation::*;
 #[derive(Clone)]
 pub struct EquivalenceCounts {
 	counts: HashMap<ReducedEquivalenceRelation, u128>,
+	operation_count: u128,
 	k: usize,
 }
 
 impl EquivalenceCounts {
 	pub fn new() -> EquivalenceCounts {
-		EquivalenceCounts { counts : HashMap::new(), k: 0 }
+		EquivalenceCounts { counts : HashMap::new(), operation_count: 0, k: 0 }
 	}
 
 	pub fn new_singleton() -> EquivalenceCounts {
 		let mut counts = HashMap::new();
 		counts.insert(ReducedEquivalenceRelation::empty(1), 1);
-		EquivalenceCounts { counts, k: 1 }
+		EquivalenceCounts { counts, operation_count: 1, k: 1 }
 	}
 
 	pub fn add(&mut self, g_etc: &GraphAndMetadata, config: &EdgeSet, indexer: &EdgeIndexer) {
@@ -32,6 +33,7 @@ impl EquivalenceCounts {
 
 	pub fn add_vertex(&mut self, is_post: bool) {
 		let mut new_counts = HashMap::new();
+		self.operation_count += self.counts.len() as u128;
 		for (mut rel, count) in self.counts.drain() {
 			rel.add_vertex(is_post);
 			new_counts.insert(rel, count);
@@ -42,6 +44,7 @@ impl EquivalenceCounts {
 
 	pub fn amalgamate_edge(&mut self, edge: &Vec<ReducedEquivalenceRelation>, x: usize, y: usize) {
 		let mut new_counts = HashMap::new();
+		self.operation_count += (self.counts.len() as u128) * (edge.len() as u128);
 		for (rel, count) in self.counts.iter() {
 			for edge_rel in edge.iter() {
 				let mut new_rel = rel.to_owned();
@@ -56,6 +59,7 @@ impl EquivalenceCounts {
 
 	pub fn remove_vertex(&mut self, x: usize) {
 		let mut new_counts = HashMap::new();
+		self.operation_count += self.counts.len() as u128;
 		for (mut rel, count) in self.counts.drain() {
 			rel.remove_vertex(x);
 			new_counts.entry(rel)
@@ -71,8 +75,19 @@ impl EquivalenceCounts {
 	 */
 	pub fn reduce(&mut self) {
 		let mut new_counts = HashMap::new();
+		self.operation_count += self.counts.len() as u128;
 		for (rel, count) in self.counts.drain() {
 			let new_rel = rel.reduce_and_symmetrise();
+			let new_flat = rel.reduce_no_symmetrise_slow(true);
+			let new_cross = rel.reduce_no_symmetrise_slow(false);
+			let new_rel_DEBUG = new_flat.min(new_cross);
+			if new_rel != new_rel_DEBUG {
+				println!("Found the bug! new_rel: ");
+				new_rel.print_fancy(0);
+				println!("\nnew_rel_DEBUG: ");
+				new_rel_DEBUG.print_fancy(0);
+				panic!("BUG BUG BUG BUG BUG BUG BUG")
+			}
 			new_counts.entry(new_rel)
 					.and_modify(|v| *v = count.max(*v))
 					.or_insert(count);
@@ -129,7 +144,13 @@ impl EquivalenceCounts {
 			.map(|(rel, c)| (rel.to_string(), vec![c.to_string(), rel.k.to_string()]))
 			.collect::<Vec<(String, Vec<String>)>>();
 		rows.sort();
-		print_table(vec!["count".to_string(), "k".to_string()], rows)
+		print_table(vec!["count".to_string(), "k".to_string()], rows);
+		let mut total = 0;
+		for (_rer, count) in self.counts.iter() {
+			total += *count
+		}
+		println!("Total num RERs: {}", total);
+		println!("Number of operations: {}", self.operation_count);
 	}
 
 	pub fn print_fancy(&self) {
@@ -139,6 +160,7 @@ impl EquivalenceCounts {
 			rer.print_fancy(*count);
 			println!();
 		}
+		println!("Number of operations: {}", self.operation_count);
 	}
 
 	pub fn print_summary(&self, g_etc: &GraphAndMetadata) {
