@@ -430,16 +430,8 @@ fn get_ratios_dp(g_etc: &GraphAndMetadata, edge_type: EdgeType, data: &mut Data,
 	}
 
 	if g_etc.num_targets() >= 3 {
-		for (rer, _count) in counts.iter() {
-			let mut rer2 = rer.to_owned();
-			rer2.print_fancy(0);
-			rer2.remove_vertex(0);
-			rer2.print_fancy(0);
-			println!();
-		}
 		// Remove one vertex and add results to equivalence counts
 		for i in 0..g_etc.num_targets() {
-			println!("Removed target {}", i);
 			let mut counts_copy = counts.to_owned();
 			remove_vertex(i, &mut counts_copy, &mut vert_activity.to_owned(), &mut num_active_verts);
 						

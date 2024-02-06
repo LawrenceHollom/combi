@@ -65,6 +65,11 @@ pub fn new_spinal(n: Order, spine_propn: f64, off_deg: &Degree) -> Graph {
 
     for v in spine_len..order {
         let mut remaining_deg = *off_deg;
+        if rng.gen_bool(0.25) {
+            remaining_deg.decr_inplace();
+        } else if rng.gen_bool(0.25) {
+            remaining_deg.incr_inplace();
+        }
         while remaining_deg.more_than(0) {
             let u = rng.gen_range(0..spine_len);
             if !adj[u][v] && (u != spine_len - 1 || v != spine_len) {

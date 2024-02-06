@@ -23,14 +23,21 @@ fn get_spinal_posts(g: &Graph) -> VertexSet {
 	posts
 }
 
-fn get_spinal_vertices(g: &Graph, k: usize) -> VertexSet {
+fn get_spinal_targets(g: &Graph, k: usize) -> VertexSet {
 	let mut vs = VertexSet::of_vert(g.n, Vertex::ZERO);
 	let mut spine_end = Vertex::ZERO;
 	while g.adj[spine_end][spine_end.incr()] {
 		spine_end.incr_inplace();
 	}
+	if k >= 3 {
+		vs.add_vert(spine_end.div(2));
+	}
+	if k >= 2 {
+		vs.add_vert(spine_end);
+		spine_end.incr_inplace();
+	}
 	// Add the end of the spine, and then random posts.
-	for _i in 0..(k-1) {
+	for _i in 0..(k-3) {
 		vs.add_vert(spine_end); 
 		spine_end.incr_inplace()
 	}
@@ -150,7 +157,7 @@ impl GraphAndMetadata {
 
 		let mut targets = VertexSet::new(g.n);
 		if is_spinal(&g) {
-			targets = get_spinal_vertices(&g, k);
+			targets = get_spinal_targets(&g, k);
 		} else if rng.gen_bool(0.9) {
 			targets.add_vert(Vertex::ZERO);
 			for v in g.iter_verts().skip(g.n.to_usize() - k + 1) {
