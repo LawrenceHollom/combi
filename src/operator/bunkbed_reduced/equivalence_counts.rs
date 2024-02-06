@@ -78,16 +78,6 @@ impl EquivalenceCounts {
 		self.operation_count += self.counts.len() as u128;
 		for (rel, count) in self.counts.drain() {
 			let new_rel = rel.reduce_and_symmetrise();
-			let new_flat = rel.reduce_no_symmetrise_slow(true);
-			let new_cross = rel.reduce_no_symmetrise_slow(false);
-			let new_rel_DEBUG = new_flat.min(new_cross);
-			if new_rel != new_rel_DEBUG {
-				println!("Found the bug! new_rel: ");
-				new_rel.print_fancy(0);
-				println!("\nnew_rel_DEBUG: ");
-				new_rel_DEBUG.print_fancy(0);
-				panic!("BUG BUG BUG BUG BUG BUG BUG")
-			}
 			new_counts.entry(new_rel)
 					.and_modify(|v| *v = count.max(*v))
 					.or_insert(count);

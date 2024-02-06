@@ -306,7 +306,7 @@ fn get_ratios_naive(g_etc: &GraphAndMetadata, data: &mut Data) {
 	data.add_equivalence_counts(g_etc, &counts, true)
 }
 
-const PRINT_DEBUG_LEVEL: u8 = 4;
+const PRINT_DEBUG_LEVEL: u8 = 0;
 
 /**
  * Use dynamic programming to compute the EquivalenceCounts between the given set of vertices.
