@@ -306,7 +306,7 @@ fn get_ratios_naive(g_etc: &GraphAndMetadata, data: &mut Data) {
 	data.add_equivalence_counts(g_etc, &counts, true)
 }
 
-const PRINT_DEBUG_LEVEL: u8 = 0;
+const PRINT_DEBUG_LEVEL: u8 = 4;
 
 /**
  * Use dynamic programming to compute the EquivalenceCounts between the given set of vertices.
@@ -430,19 +430,38 @@ fn get_ratios_dp(g_etc: &GraphAndMetadata, edge_type: EdgeType, data: &mut Data,
 	}
 
 	if g_etc.num_targets() >= 3 {
+		for (rer, _count) in counts.iter() {
+			let mut rer2 = rer.to_owned();
+			rer2.print_fancy(0);
+			rer2.remove_vertex(0);
+			rer2.print_fancy(0);
+			println!();
+		}
 		// Remove one vertex and add results to equivalence counts
 		for i in 0..g_etc.num_targets() {
 			println!("Removed target {}", i);
 			let mut counts_copy = counts.to_owned();
-			remove_vertex(i, &mut counts_copy, &mut vert_activity, &mut num_active_verts);
+			remove_vertex(i, &mut counts_copy, &mut vert_activity.to_owned(), &mut num_active_verts);
+						
+			if PRINT_DEBUG_LEVEL >= 4 {
+				println!("Pre-reduction:");
+				counts_copy.print()
+			}
+			
 			counts_copy.reduce();
+
+			if PRINT_DEBUG_LEVEL >= 3 {
+				println!("Removed target vertex {}", i);
+				counts_copy.print();
+			}
+
 			data.add_equivalence_counts(g_etc, &counts_copy, !print_counts);
 		}
 	}
 
 	if PRINT_DEBUG_LEVEL >= 1 || print_counts {
 		counts.print_summary(&g_etc);
-		println!("targets: {:?}", g_etc.targets_for_table());
+		g_etc.print_table();
 		println!("num_active = {}. Activity: {:?}", num_active_verts, vert_activity);
 		counts.print_fancy();
 	}
@@ -490,7 +509,7 @@ fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, edge_t
 		}
 		//println!("rep duration: {}ms, edges: {}, bfs width: {}", rep_start_time.elapsed().unwrap().as_millis(), g_etc.g.size(), g_etc.g.get_bfs_width());
 	}
-	if num_reps > 1 {
+	if num_reps > 2 {
 		data.print();
 		data.save_to_file();
 		println!("Constructor: {:?}", h.constructor.to_string());
