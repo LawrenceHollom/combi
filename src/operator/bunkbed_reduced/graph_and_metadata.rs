@@ -178,6 +178,40 @@ impl GraphAndMetadata {
 		GraphAndMetadata{g, posts, targets}
 	}
 
+	pub fn new_forced(h: &Graph, targets: VertexSet, forced_posts: VertexSet, forced_non_posts: VertexSet) -> GraphAndMetadata {
+		let mut posts = forced_posts;
+		let mut non_posts = forced_non_posts;
+		non_posts.add_all(targets);
+
+		let mut g: Graph;
+		if h.constructor.is_random() {
+			'find_g: loop {
+				g = h.constructor.new_graph();
+				if g.is_connected() {
+					break 'find_g;
+				}
+			}
+		} else {
+			g = h.to_owned();	
+		}
+
+		for p in forced_posts.iter() {
+			for v in g.adj_list[p].iter() {
+				non_posts.add_vert(*v);
+			}
+		}
+		for v in g.iter_verts() {
+			if !posts.has_vert(v) && !non_posts.has_vert(v) {
+				posts.add_vert(v);
+				for u in g.adj_list[v].iter() {
+					non_posts.add_vert(*u);
+				}
+			}
+		}
+
+		GraphAndMetadata{g, posts, targets}
+	}
+
     pub fn min_distance_sum(&self) -> usize {
         self.g.min_distance_sum(self.targets)
     }

@@ -30,6 +30,7 @@ pub enum UnitOperation {
     BunkbedReducedConnectionSimulation(usize, usize),
     BunkbedReducedConnectionDP(usize, usize, usize),
     BunkbedCounterexampleSearch(usize),
+    BunkbedGadget,
     Signature,
     Unit,
 }
@@ -75,6 +76,7 @@ impl UnitOperation {
                 Some(BunkbedReducedConnectionDP(args[0].parse().unwrap(), k, edges))
             },
             "bb_counterexample" => Some(BunkbedCounterexampleSearch(args.get(0).map_or(1, |x| x.parse().unwrap()))),
+            "bb_gadget" => Some(BunkbedGadget),
             "()" | "(" => Some(Unit),
             &_ => None,
         }
@@ -130,6 +132,7 @@ impl fmt::Display for UnitOperation {
                 &str
             }
             BunkbedCounterexampleSearch(_) => "Search for a counterexample to the bunkbed conjecture",
+            BunkbedGadget => "Use as a gadget in the search for a bunkbed counterexample",
             Unit => "Do nothing",
         };
         write!(f, "{}", name)

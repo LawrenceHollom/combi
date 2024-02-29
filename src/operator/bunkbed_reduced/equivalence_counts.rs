@@ -25,6 +25,13 @@ impl EquivalenceCounts {
 		EquivalenceCounts { counts, operation_count: 1, k: 1 }
 	}
 
+	/*pub fn manual_hypergraph_counts() -> EquivalenceCounts {
+		let mut counts = HashMap::new();
+		counts.insert(ReducedEquivalenceRelation::of_short_string("000120"), 1);
+		counts.insert(ReducedEquivalenceRelation::of_short_string("021111"), 1);
+		EquivalenceCounts { counts, operation_count: 1, k: 3 }
+	}*/
+
 	pub fn add(&mut self, g_etc: &GraphAndMetadata, config: &EdgeSet, indexer: &EdgeIndexer) {
 		let conn = EquivalenceRelation::new(g_etc, config, indexer);
 		let reduced_conn = ReducedEquivalenceRelation::of_equiv_rel(conn);
@@ -52,6 +59,22 @@ impl EquivalenceCounts {
 				new_counts.entry(new_rel)
 						.and_modify(|x| *x += *count)
 						.or_insert(*count);
+			}
+		}
+		self.counts = new_counts
+	}
+
+	pub fn amalgamate_3_edge(&mut self, edge: &EquivalenceCounts, x: usize, y: usize, z: usize) {
+		let mut new_counts = HashMap::new();
+		self.operation_count += (self.counts.len() as u128) * (edge.counts.len() as u128);
+		for (rel, count1) in self.counts.iter() {
+			for (edge_rel, count2) in edge.counts.iter() {
+				let count = *count1 * *count2;
+				let mut new_rel = rel.to_owned();
+				new_rel.amalgamate_3_edge(edge_rel, x, y, z);
+				new_counts.entry(new_rel)
+						.and_modify(|x| *x += count)
+						.or_insert(count);
 			}
 		}
 		self.counts = new_counts

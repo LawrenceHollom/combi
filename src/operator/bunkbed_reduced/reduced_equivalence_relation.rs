@@ -323,6 +323,36 @@ impl ReducedEquivalenceRelation {
 		}
 	}
 
+	pub fn amalgamate_3_edge(&mut self, new_edge: &ReducedEquivalenceRelation, x: usize, y: usize, z: usize) {
+		let vert = [x, y, z];
+		// within down
+		for i in 0..2 {
+			for j in (i+1)..3 {
+				if new_edge.down.get(i) == new_edge.down.get(j) {
+					self.merge_components(self.down.get(vert[i]), self.down.get(vert[j]));
+				}
+			}
+		}
+
+		// within up
+		for i in 0..2 {
+			for j in (i+1)..3 {
+				if new_edge.up.get(i) == new_edge.up.get(j) {
+					self.merge_components(self.up.get(vert[i]), self.up.get(vert[j]));
+				}
+			}
+		}
+
+		// cross
+		for i in 0..3 {
+			for j in 0..3 {
+				if new_edge.down.get(i) == new_edge.up.get(j) {
+					self.merge_components(self.down.get(vert[i]), self.up.get(vert[j]));
+				}
+			}
+		}
+	}
+
 	pub fn remove_vertex(&mut self, x: usize) {
 		let a = self.down.get(x);
 		let b = self.up.get(x);
