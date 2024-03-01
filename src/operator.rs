@@ -222,6 +222,7 @@ impl Operator {
                     ApproxContradictsReducedBunkbedConjecture(samples) => bunkbed_reduced::approx_contradicts_reduced_bunkbed_conjecture(&self.g, *samples),
                     ContradictsReducedConditionedBunkbedConjecture => bunkbed_reduced::contradicts_reduced_conditioned_bunkbed_conjecture(&self.g),
                     IsBunkbedReducible => bunkbed_reduced::is_bunkbed_reducible(&self.g),
+                    BunkbedGadget => bunkbed_reduced::is_contradictory_3_gadget(&self.g),
                     Debug => debug::debug(&self.g),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);
@@ -289,7 +290,6 @@ impl Operator {
             BunkbedReducedConnectionSimulation(num_reps, k) => bunkbed_reduced::simulate_connection_count_ratios_naive(&self.g, *num_reps, *k),
             BunkbedReducedConnectionDP(num_reps, k, edge_type) => bunkbed_reduced::bunkbed_connection_counts_dp(&self.g, *num_reps, *k, *edge_type),
             BunkbedCounterexampleSearch(edge_type) => bunkbed_reduced::search_for_counterexample(&self.g, *edge_type),
-            BunkbedGadget => bunkbed_reduced::test_3_gadget(&self.g),
             Unit => (),
         }
     }

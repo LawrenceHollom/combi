@@ -554,7 +554,7 @@ pub fn search_for_counterexample(h: &Graph, edge_type: usize) {
 	data.print();
 }
 
-pub fn test_3_gadget(h: &Graph) {
+pub fn is_contradictory_3_gadget(h: &Graph) -> bool {
 	fn v(v: usize) -> Vertex {
 		Vertex::of_usize(v)
 	}
@@ -612,10 +612,5 @@ pub fn test_3_gadget(h: &Graph) {
 
 	/*println!("\n\nCounts:");
 	counts.print_fancy();*/
-	if counts.is_genuine_counterexample() {
-		counts.print_fancy();
-		println!("Gadget:");
-		gadget.print();
-		panic!("WE'VE GOT A LIVE ONE!")
-	}
+	counts.is_genuine_counterexample()
 }

@@ -67,6 +67,7 @@ pub enum BoolOperation {
     ApproxContradictsReducedBunkbedConjecture(usize),
     ContradictsReducedConditionedBunkbedConjecture,
     IsBunkbedReducible,
+    BunkbedGadget,
     Debug,
 }
 
@@ -191,6 +192,7 @@ impl BoolOperation {
                     "acrbb" => Some(ApproxContradictsReducedBunkbedConjecture(args[0].parse().unwrap())),
                     "crcbb" => Some(ContradictsReducedConditionedBunkbedConjecture),
                     "is_bb_reducible" | "is_bbr" => Some(IsBunkbedReducible),
+                    "bb_gadget" => Some(BunkbedGadget),
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -326,6 +328,7 @@ impl fmt::Display for BoolOperation {
             }
             ContradictsReducedConditionedBunkbedConjecture => "Does this contradict the reduced conditioned bunkbed conjecture".to_owned(),
             IsBunkbedReducible => "Is bunkbed reducible".to_owned(),
+            BunkbedGadget => "Use as a gadget in the search for a bunkbed counterexample".to_owned(),
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };
         write!(f, "{}", name)
