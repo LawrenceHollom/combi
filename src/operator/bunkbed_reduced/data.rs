@@ -213,7 +213,7 @@ impl Data {
 		self.rel_counts.entry(rel.to_owned()).and_modify(|x| *x += 1).or_insert(1);
 	}
 
-    const NOOOTERS: [(&str, &str); 3] = [("0110", "0011"), ("0112", "0012"), ("013123", "003123")];
+    const NOOOTERS: [(&'static str, &'static str); 3] = [("0110", "0011"), ("0112", "0012"), ("013123", "003123")];
 
     pub fn consider_noooting(&self, g_etc: &GraphAndMetadata, counts: &EquivalenceCounts) {
         for (rel1, count1) in counts.iter() {

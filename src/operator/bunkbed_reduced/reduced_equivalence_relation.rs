@@ -161,7 +161,7 @@ impl ReducedEquivalenceRelation {
 	}
 
 	// We need to think through what's going on here and if there's a better way to do it.
-	fn reduce_no_symmetrise_slow(&self, is_flat: bool) -> ReducedEquivalenceRelation {
+	pub fn reduce_no_symmetrise_slow(&self, is_flat: bool) -> ReducedEquivalenceRelation {
 		let mut new_labels = vec![None; (self.k + 1) * 2];
 		let mut next_label = EquivalenceClass::ZERO;
 		fn check_label(labels: &mut Vec<Option<EquivalenceClass>>, next_label: &mut EquivalenceClass, comp: EquivalenceClass) {
@@ -206,6 +206,12 @@ impl ReducedEquivalenceRelation {
 			if old_down == old_up {
 				if old_down == next_class {
 					next_class.incr_inplace()
+				} else if going_down.has(old_down) {
+					flipped.down.set(index, old_down.decr());
+					flipped.up.set(index, old_down.decr());
+				} else if going_up.has(old_down) {
+					flipped.down.set(index, old_down.incr());
+					flipped.up.set(index, old_down.incr());
 				}
 			} else {
 				let old_next_class = next_class.to_owned();
@@ -317,50 +323,104 @@ impl ReducedEquivalenceRelation {
 		}
 	}
 
+	pub fn amalgamate_3_edge(&mut self, new_edge: &ReducedEquivalenceRelation, x: usize, y: usize, z: usize) {
+		let vert = [x, y, z];
+		// within down
+		for i in 0..2 {
+			for j in (i+1)..3 {
+				if new_edge.down.get(i) == new_edge.down.get(j) {
+					self.merge_components(self.down.get(vert[i]), self.down.get(vert[j]));
+				}
+			}
+		}
+
+		// within up
+		for i in 0..2 {
+			for j in (i+1)..3 {
+				if new_edge.up.get(i) == new_edge.up.get(j) {
+					self.merge_components(self.up.get(vert[i]), self.up.get(vert[j]));
+				}
+			}
+		}
+
+		// cross
+		for i in 0..3 {
+			for j in 0..3 {
+				if new_edge.down.get(i) == new_edge.up.get(j) {
+					self.merge_components(self.down.get(vert[i]), self.up.get(vert[j]));
+				}
+			}
+		}
+	}
+
 	pub fn remove_vertex(&mut self, x: usize) {
 		let a = self.down.get(x);
 		let b = self.up.get(x);
 		self.down.remove(x);
 		self.up.remove(x);
 		self.k -= 1;
-		let mut new_a = None;
-		let mut new_b = None;
-		let mut next_class = EquivalenceClass::ZERO;
+		struct DP {
+			new_a: Option<EquivalenceClass>,
+			new_b: Option<EquivalenceClass>,
+			next_class: EquivalenceClass,
+			decr_from_a: EquivalenceClassSet,
+			decr_from_b: EquivalenceClassSet,
+			found: EquivalenceClassSet,
+		}
 
-		fn deal_with_point(index: usize, v: &mut FastVec, a: EquivalenceClass, b: EquivalenceClass, new_a: &mut Option<EquivalenceClass>, new_b: &mut Option<EquivalenceClass>, next_class: &mut EquivalenceClass) {
+		let mut dp = DP { 
+			new_a: None, 
+			new_b: None, 
+			next_class: EquivalenceClass::ZERO, 
+			decr_from_a: EquivalenceClassSet::new(), 
+			decr_from_b: EquivalenceClassSet::new(), 
+			found: EquivalenceClassSet::new() 
+		};
+
+		fn deal_with_point(index: usize, v: &mut FastVec, a: EquivalenceClass, b: EquivalenceClass, dp: &mut DP) {
 			let old_val = v.get(index);
 			if old_val == a {
-				if let Some(new_a) = new_a {
-					v.set(index, *new_a)
+				if let Some(new_a) = dp.new_a {
+					v.set(index, new_a)
 				} else {
-					*new_a = Some(*next_class);
-					v.set(index, *next_class);
-					next_class.incr_inplace();
+					dp.new_a = Some(dp.next_class);
+					v.set(index, dp.next_class);
+					dp.next_class.incr_inplace();
 				}
 			} else if old_val == b {
-				if let Some(new_b) = new_b {
-					v.set(index, *new_b)
+				if let Some(new_b) = dp.new_b {
+					v.set(index, new_b)
 				} else {
-					*new_b = Some(*next_class);
-					v.set(index, *next_class);
-					next_class.incr_inplace();
+					dp.new_b = Some(dp.next_class);
+					v.set(index, dp.next_class);
+					dp.next_class.incr_inplace();
+				}
+			} else if dp.found.has(old_val) {
+				if dp.decr_from_a.has(old_val) {
+					v.decr_inplace(index);
+				}
+				if dp.decr_from_b.has(old_val) {
+					v.decr_inplace(index);
 				}
 			} else {
-				if old_val > a && new_a.map_or(true, |new_a| old_val <= new_a) {
+				if old_val > a && dp.new_a.map_or(true, |new_a| old_val <= new_a) {
+					dp.decr_from_a.add(old_val);
 					v.decr_inplace(index);
 				}
-				if a != b && old_val > b && new_b.map_or(true, |new_b| old_val <= new_b) {
+				if a != b && old_val > b && dp.new_b.map_or(true, |new_b| old_val <= new_b) {
+					dp.decr_from_b.add(old_val);
 					v.decr_inplace(index);
 				}
-				*next_class = (*next_class).max(v.get(index).incr())
+				dp.found.add(old_val);
+				dp.next_class = dp.next_class.max(v.get(index).incr())
 			}
 		}
 
 		for index in 0..self.k {
-			deal_with_point(index, &mut self.down, a, b, &mut new_a, &mut new_b, &mut next_class);
-			deal_with_point(index, &mut self.up, a, b, &mut new_a, &mut new_b, &mut next_class);
+			deal_with_point(index, &mut self.down, a, b, &mut dp);
+			deal_with_point(index, &mut self.up, a, b, &mut dp);
 		}
-		self.next_label = next_class;
+		self.next_label = dp.next_class;
 	}
 
 	pub fn is_classically_flat(&self, is_flipped: bool) -> bool {
@@ -496,5 +556,12 @@ mod tests {
 		let rer = rers("000104");
 		assert_eq!(rer.reduce_no_symmetrise_slow(true), rers("000102"));
 		assert_eq!(rer.reduce_no_symmetrise_slow(true).reduce_and_symmetrise(), rers("000102"));
+	}
+
+	#[test]
+	fn test_remove_vertex_zero() {
+		let mut rer = rers("020133");
+		rer.remove_vertex(0);
+		assert_eq!(rer, rers("0211"))
 	}
 }

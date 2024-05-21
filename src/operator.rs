@@ -222,6 +222,7 @@ impl Operator {
                     ApproxContradictsReducedBunkbedConjecture(samples) => bunkbed_reduced::approx_contradicts_reduced_bunkbed_conjecture(&self.g, *samples),
                     ContradictsReducedConditionedBunkbedConjecture => bunkbed_reduced::contradicts_reduced_conditioned_bunkbed_conjecture(&self.g),
                     IsBunkbedReducible => bunkbed_reduced::is_bunkbed_reducible(&self.g),
+                    BunkbedGadget => bunkbed_reduced::is_contradictory_3_gadget(&self.g),
                     Debug => debug::debug(&self.g),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);

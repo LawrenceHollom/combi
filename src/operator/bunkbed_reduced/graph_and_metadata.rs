@@ -23,14 +23,21 @@ fn get_spinal_posts(g: &Graph) -> VertexSet {
 	posts
 }
 
-fn get_spinal_vertices(g: &Graph, k: usize) -> VertexSet {
+fn get_spinal_targets(g: &Graph, k: usize) -> VertexSet {
 	let mut vs = VertexSet::of_vert(g.n, Vertex::ZERO);
 	let mut spine_end = Vertex::ZERO;
 	while g.adj[spine_end][spine_end.incr()] {
 		spine_end.incr_inplace();
 	}
+	if k >= 3 {
+		vs.add_vert(spine_end.div(2));
+	}
+	if k >= 2 {
+		vs.add_vert(spine_end);
+		spine_end.incr_inplace();
+	}
 	// Add the end of the spine, and then random posts.
-	for _i in 0..(k-1) {
+	for _i in 0..(k-3) {
 		vs.add_vert(spine_end); 
 		spine_end.incr_inplace()
 	}
@@ -150,7 +157,7 @@ impl GraphAndMetadata {
 
 		let mut targets = VertexSet::new(g.n);
 		if is_spinal(&g) {
-			targets = get_spinal_vertices(&g, k);
+			targets = get_spinal_targets(&g, k);
 		} else if rng.gen_bool(0.9) {
 			targets.add_vert(Vertex::ZERO);
 			for v in g.iter_verts().skip(g.n.to_usize() - k + 1) {
@@ -168,6 +175,40 @@ impl GraphAndMetadata {
 				get_posts(&g, Some(get_max_num_posts(rng)))
 			};
 		
+		GraphAndMetadata{g, posts, targets}
+	}
+
+	pub fn new_forced(h: &Graph, targets: VertexSet, forced_posts: VertexSet, forced_non_posts: VertexSet) -> GraphAndMetadata {
+		let mut posts = forced_posts;
+		let mut non_posts = forced_non_posts;
+		non_posts.add_all(targets);
+
+		let mut g: Graph;
+		if h.constructor.is_random() {
+			'find_g: loop {
+				g = h.constructor.new_graph();
+				if g.is_connected() {
+					break 'find_g;
+				}
+			}
+		} else {
+			g = h.to_owned();	
+		}
+
+		for p in forced_posts.iter() {
+			for v in g.adj_list[p].iter() {
+				non_posts.add_vert(*v);
+			}
+		}
+		for v in g.iter_verts() {
+			if !posts.has_vert(v) && !non_posts.has_vert(v) {
+				posts.add_vert(v);
+				for u in g.adj_list[v].iter() {
+					non_posts.add_vert(*u);
+				}
+			}
+		}
+
 		GraphAndMetadata{g, posts, targets}
 	}
 
@@ -303,8 +344,12 @@ impl GraphAndMetadata {
         self.targets.to_vec().to_vec_of_strings()
     }
 
-	pub fn print(&self) {
+	pub fn print_table(&self) {
 		print_vertex_table(vec![("posts", self.posts_for_table()), ("targets", self.targets_for_table())]);
+	}
+
+	pub fn print(&self) {
+		self.print_table();
 		self.g.print();
 	}
 }

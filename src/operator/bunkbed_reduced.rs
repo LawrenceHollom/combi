@@ -7,6 +7,7 @@ use rand::Rng;
 use rand::thread_rng;
 use utilities::vertex_tools::*;
 use utilities::edge_tools::*;
+use utilities::*;
 
 use queues::*;
 
@@ -308,10 +309,27 @@ fn get_ratios_naive(g_etc: &GraphAndMetadata, data: &mut Data) {
 
 const PRINT_DEBUG_LEVEL: u8 = 0;
 
-/**
- * Use dynamic programming to compute the EquivalenceCounts between the given set of vertices.
- */
-fn get_ratios_dp(g_etc: &GraphAndMetadata, edge_type: EdgeType, data: &mut Data, print_counts: bool) {
+fn remove_vertex(index: usize, counts: &mut EquivalenceCounts, vert_activity: &mut VertexVec<Option<usize>>, num_active_verts: &mut usize) {
+	counts.remove_vertex(index);
+	//counts.print();
+	// Now reduce all later indices to make up for this removal.
+	for index2 in vert_activity.iter_mut() {
+		if let Some(index2) = index2 {
+			if *index2 > index {
+				*index2 -= 1;
+			}
+		}
+	}
+	*num_active_verts -= 1;
+}
+
+fn add_vertex(counts: &mut EquivalenceCounts, vert_activity: &mut VertexVec<Option<usize>>, num_active_verts: &mut usize, v: Vertex, is_post: bool) {
+	vert_activity[v] = Some(*num_active_verts);
+	*num_active_verts += 1;
+	counts.add_vertex(is_post);
+}
+
+fn compute_equivalence_counts(g_etc: &GraphAndMetadata, edge_type: EdgeType) -> EquivalenceCounts {
 	let mut counts = EquivalenceCounts::new_singleton();
 	let n = g_etc.get_n();
 	let mut vert_activity = VertexVec::new(n, &None);
@@ -319,20 +337,6 @@ fn get_ratios_dp(g_etc: &GraphAndMetadata, edge_type: EdgeType, data: &mut Data,
 	vert_activity[Vertex::ZERO] = Some(0);
 	let mut remaining_degree = g_etc.get_deg_vec();
 	let default_edge = edge_type.to_rer_vec();
-
-	fn remove_vertex(index: usize, counts: &mut EquivalenceCounts, vert_activity: &mut VertexVec<Option<usize>>, num_active_verts: &mut usize) {
-		counts.remove_vertex(index);
-		//counts.print();
-		// Now reduce all later indices to make up for this removal.
-		for index2 in vert_activity.iter_mut() {
-			if let Some(index2) = index2 {
-				if *index2 > index {
-					*index2 -= 1;
-				}
-			}
-		}
-		*num_active_verts -= 1;
-	}
 
 	if PRINT_DEBUG_LEVEL >= 1 {
 		println!("BFS width of g = {}", g_etc.get_bfs_width());
@@ -350,10 +354,8 @@ fn get_ratios_dp(g_etc: &GraphAndMetadata, edge_type: EdgeType, data: &mut Data,
 			}
 			println!();
 		}
-		vert_activity[v] = Some(num_active_verts);
 		let mut v_index = num_active_verts;
-		num_active_verts += 1;
-		counts.add_vertex(g_etc.has_post(v));
+		add_vertex(&mut counts, &mut vert_activity, &mut num_active_verts, v, g_etc.has_post(v));
 
 		for u in g_etc.iter_adj_list(v) {
 			// If it needs to be removed; all its edges will have been processed.
@@ -429,22 +431,40 @@ fn get_ratios_dp(g_etc: &GraphAndMetadata, edge_type: EdgeType, data: &mut Data,
 		}
 	}
 
+	counts
+}
+
+/**
+ * Use dynamic programming to compute the EquivalenceCounts between the given set of vertices.
+ */
+fn get_ratios_dp(g_etc: &GraphAndMetadata, edge_type: EdgeType, data: &mut Data, print_counts: bool) {
+	let mut counts = compute_equivalence_counts(g_etc, edge_type);
+
 	if g_etc.num_targets() >= 3 {
 		// Remove one vertex and add results to equivalence counts
 		for i in 0..g_etc.num_targets() {
 			let mut counts_copy = counts.to_owned();
-			let mut vert_activity_copy = vert_activity.to_owned();
-			let mut num_active_verts_copy = num_active_verts.to_owned();
-			remove_vertex(i, &mut counts_copy, &mut vert_activity_copy, &mut num_active_verts_copy);
+			remove_vertex(i, &mut counts_copy, &mut VertexVec::new(g_etc.get_n(), &None), &mut 3);
+						
+			if PRINT_DEBUG_LEVEL >= 4 {
+				println!("Pre-reduction:");
+				counts_copy.print()
+			}
+			
 			counts_copy.reduce();
+
+			if PRINT_DEBUG_LEVEL >= 3 {
+				println!("Removed target vertex {}", i);
+				counts_copy.print();
+			}
+
 			data.add_equivalence_counts(g_etc, &counts_copy, !print_counts);
 		}
 	}
 
 	if PRINT_DEBUG_LEVEL >= 1 || print_counts {
 		counts.print_summary(&g_etc);
-		println!("targets: {:?}", g_etc.targets_for_table());
-		println!("num_active = {}. Activity: {:?}", num_active_verts, vert_activity);
+		g_etc.print_table();
 		counts.print_fancy();
 	}
 
@@ -491,7 +511,7 @@ fn simulate_connection_count_ratios(h: &Graph, num_reps: usize, k: usize, edge_t
 		}
 		//println!("rep duration: {}ms, edges: {}, bfs width: {}", rep_start_time.elapsed().unwrap().as_millis(), g_etc.g.size(), g_etc.g.get_bfs_width());
 	}
-	if num_reps > 1 {
+	if num_reps > 2 {
 		data.print();
 		data.save_to_file();
 		println!("Constructor: {:?}", h.constructor.to_string());
@@ -532,4 +552,65 @@ pub fn search_for_counterexample(h: &Graph, edge_type: usize) {
 		}
 	}
 	data.print();
+}
+
+pub fn is_contradictory_3_gadget(h: &Graph) -> bool {
+	fn v(v: usize) -> Vertex {
+		Vertex::of_usize(v)
+	}
+
+	let targets = VertexSet::of_vec(h.n, &vec![v(0), v(1), v(2)]);
+	let posts = VertexSet::of_vert(h.n, v(2));
+	let gadget = GraphAndMetadata::new_forced(h, targets, posts, VertexSet::new(h.n));
+
+	// We find the counts for our gadget.
+	let gadget_counts = compute_equivalence_counts(&gadget, EdgeType::FiftyFifty);
+	//let gadget_counts = EquivalenceCounts::manual_hypergraph_counts();
+	/*println!("Gadget graph:");
+	gadget.print();
+	println!("\nGadget counts:");
+	gadget_counts.print_fancy();*/
+
+	// Now we begin el grande computations.
+	let n = Order::of_usize(10);
+	let mut counts = EquivalenceCounts::new_singleton();
+	let mut vert_activity = VertexVec::new(n, &None);
+	let mut num_active_verts = 1;
+	vert_activity[Vertex::ZERO] = Some(0);
+
+	fn amalgamate_3_edge(counts: &mut EquivalenceCounts, gadget_counts: &EquivalenceCounts, vert_activity: &mut VertexVec<Option<usize>>, x: Vertex, y: Vertex, z: Vertex) {
+		let x = vert_activity[x].unwrap();
+		let y = vert_activity[y].unwrap();
+		let z = vert_activity[z].unwrap();
+		counts.amalgamate_3_edge(gadget_counts, x, y, z);
+	}
+
+	// This is done manually because it's a specific hypergraph and I cba to code hypergraphs properly.
+	add_vertex(&mut counts, &mut vert_activity, &mut num_active_verts, v(1), false);
+	add_vertex(&mut counts, &mut vert_activity, &mut num_active_verts, v(2), false);
+	add_vertex(&mut counts, &mut vert_activity, &mut num_active_verts, v(3), false);
+	add_vertex(&mut counts, &mut vert_activity, &mut num_active_verts, v(4), false);
+	amalgamate_3_edge(&mut counts, &gadget_counts, &mut vert_activity, v(0), v(1), v(4));
+	add_vertex(&mut counts, &mut vert_activity, &mut num_active_verts, v(5), false);
+	amalgamate_3_edge(&mut counts, &gadget_counts, &mut vert_activity, v(3), v(5), v(4));
+	remove_vertex(vert_activity[v(4)].unwrap(), &mut counts, &mut vert_activity, &mut num_active_verts);
+	add_vertex(&mut counts, &mut vert_activity, &mut num_active_verts, v(6), false);
+	amalgamate_3_edge(&mut counts, &gadget_counts, &mut vert_activity, v(2), v(3), v(6));
+	remove_vertex(vert_activity[v(3)].unwrap(), &mut counts, &mut vert_activity, &mut num_active_verts);
+	add_vertex(&mut counts, &mut vert_activity, &mut num_active_verts, v(7), false);
+	amalgamate_3_edge(&mut counts, &gadget_counts, &mut vert_activity, v(5), v(7), v(6));
+	remove_vertex(vert_activity[v(5)].unwrap(), &mut counts, &mut vert_activity, &mut num_active_verts);
+	remove_vertex(vert_activity[v(6)].unwrap(), &mut counts, &mut vert_activity, &mut num_active_verts);
+	add_vertex(&mut counts, &mut vert_activity, &mut num_active_verts, v(8), false);
+	amalgamate_3_edge(&mut counts, &gadget_counts, &mut vert_activity, v(1), v(2), v(8));
+	remove_vertex(vert_activity[v(1)].unwrap(), &mut counts, &mut vert_activity, &mut num_active_verts);
+	remove_vertex(vert_activity[v(2)].unwrap(), &mut counts, &mut vert_activity, &mut num_active_verts);
+	add_vertex(&mut counts, &mut vert_activity, &mut num_active_verts, v(9), false);
+	amalgamate_3_edge(&mut counts, &gadget_counts, &mut vert_activity, v(7), v(9), v(8));
+	remove_vertex(vert_activity[v(7)].unwrap(), &mut counts, &mut vert_activity, &mut num_active_verts);
+	remove_vertex(vert_activity[v(8)].unwrap(), &mut counts, &mut vert_activity, &mut num_active_verts);
+
+	/*println!("\n\nCounts:");
+	counts.print_fancy();*/
+	counts.is_genuine_counterexample()
 }
