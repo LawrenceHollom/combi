@@ -433,7 +433,9 @@ fn get_ratios_dp(g_etc: &GraphAndMetadata, edge_type: EdgeType, data: &mut Data,
 		// Remove one vertex and add results to equivalence counts
 		for i in 0..g_etc.num_targets() {
 			let mut counts_copy = counts.to_owned();
-			remove_vertex(i, &mut counts_copy, &mut vert_activity, &mut num_active_verts);
+			let mut vert_activity_copy = vert_activity.to_owned();
+			let mut num_active_verts_copy = num_active_verts.to_owned();
+			remove_vertex(i, &mut counts_copy, &mut vert_activity_copy, &mut num_active_verts_copy);
 			counts_copy.reduce();
 			data.add_equivalence_counts(g_etc, &counts_copy, !print_counts);
 		}
