@@ -2,8 +2,9 @@ use utilities::*;
 use std::fmt;
 
 use crate::pattern::*;
+use crate::entity::*;
 use crate::entity::graph::*;
-use crate::poset::*;
+use crate::entity::poset::*;
 
 mod products;
 mod erdos_renyi;
@@ -278,66 +279,77 @@ impl Constructor {
         }
     }
 
-    pub fn new_graph(&self) -> Graph {
+    pub fn new_graph(&self) -> Entity {
         use Constructor::*;
         use RandomConstructor::*;
         use RawConstructor::*;
         use RecursiveConstructor::*;
         use PosetConstructor::*;
 
+        fn g(g: Graph) -> Entity {
+            Entity::Graph(g)
+        }
+        fn p(p: Poset) -> Entity {
+            Entity::Poset(p)
+        }
+
         match self {
             Product(product, c1, c2) => {
-                products::new_product(product, self, &c1.new_graph(), &c2.new_graph())
+                let g1 = c1.new_graph().as_graph();
+                let g2 = c2.new_graph().as_graph();
+                g(products::new_product(product, self, &g1, &g2))
             }
-            RootedTree(parents) => tree::new_rooted(parents),
+            RootedTree(parents) => g(tree::new_rooted(parents)),
             Random(Biregular(order, left_deg, right_deg)) => {
-                random_regular_bipartite::new_biregular(*order, *left_deg, *right_deg)
+                g(random_regular_bipartite::new_biregular(*order, *left_deg, *right_deg))
             }
-            Random(ErdosRenyi(order, p)) => erdos_renyi::new(*order, *p),
-            Random(BasedErdosRenyi(order, p, base)) => erdos_renyi::new_based(*order, *p, base),
-            Random(InducedErdosRenyi(order, p, base)) => erdos_renyi::new_induced(*order, *p, base),
-            Random(RandomBipartite(order, p)) => erdos_renyi::new_bipartite(*order, *p),
+            Random(ErdosRenyi(order, p)) => g(erdos_renyi::new(*order, *p)),
+            Random(BasedErdosRenyi(order, p, base)) => g(erdos_renyi::new_based(*order, *p, base)),
+            Random(InducedErdosRenyi(order, p, base)) => g(erdos_renyi::new_induced(*order, *p, base)),
+            Random(RandomBipartite(order, p)) => g(erdos_renyi::new_bipartite(*order, *p)),
             Random(RandomSubgraph(constructor, p)) => {
-                erdos_renyi::new_random_subgraph(constructor, *p)
+                g(erdos_renyi::new_random_subgraph(constructor, *p))
             }
-            Random(Triangulation(order)) => random_planar::new_triangulation(*order),
-            Random(MaximalPlanar(order)) => random_planar::new_maximal(*order),
+            Random(Triangulation(order)) => g(random_planar::new_triangulation(*order)),
+            Random(MaximalPlanar(order)) => g(random_planar::new_maximal(*order)),
             Random(PlanarConditioned(order, max_deg, min_girth)) => {
-                random_planar::new_conditioned(*order, *max_deg, *min_girth)
+                g(random_planar::new_conditioned(*order, *max_deg, *min_girth))
             }
-            Random(PlanarGons(order, k)) => random_planar::k_gon_gluing(*order, *k),
-            Random(Bowties(scale, degree)) => bowties::new_bowties(*scale, *degree),
-            Random(Regular(order, degree)) => regular::new_regular(order, degree),
-            Random(RegularIsh(order, degree)) => regular::new_approximately_regular(order, degree),
-            Random(DegreeSequence(deg_seq)) => regular::new_from_degree_sequence(deg_seq, false),
-            Random(VertexStructured(pattern, num)) => pattern.new_graph(*num),
-            Random(EdgeStructured(pattern, num)) => pattern.new_graph(*num),
-            Random(ConnectedSemiregular(order, p, exp)) => semiregular::new_semiregular(*order, *p, *exp),
-            Random(BFSOptimal(order, width, density)) => random_bfs::new_bfs(*order, *width, *density),
-            Random(Spinal(order, spine_propn, off_deg)) => random_bfs::new_spinal(*order, *spine_propn, off_deg),
-            Raw(Grid(height, width)) => grid::new(height, width),
-            Raw(Complete(order)) => Graph::new_complete(*order),
-            Raw(CompleteBipartite(left, right)) => Graph::new_complete_bipartite(*left, *right),
-            Raw(CompleteMultipartite(orders)) => Graph::new_complete_multipartite(orders),
-            Raw(Turan(order, chi)) => Graph::new_turan(*order, *chi),
-            Raw(Cyclic(order)) => Graph::new_cyclic(*order),
-            Raw(Path(order)) => Graph::new_path(*order),
-            Raw(Star(order)) => Graph::new_star(*order),
-            Raw(Empty(order)) => Graph::new_empty(*order),
-            Raw(Cube(dimension)) => raw::new_cube(*dimension),
-            Raw(FanoPlane) => raw::new_fano_plane(),
-            Raw(Petersen(cycles, skip)) => raw::new_petersen(*cycles, *skip),
-            Raw(Octahedron) => raw::new_octahedron(),
-            Raw(Icosahedron) => raw::new_icosahedron(),
-            Raw(Dodecahedron) => raw::new_dodecahedron(),
+            Random(PlanarGons(order, k)) => g(random_planar::k_gon_gluing(*order, *k)),
+            Random(Bowties(scale, degree)) => g(bowties::new_bowties(*scale, *degree)),
+            Random(Regular(order, degree)) => g(regular::new_regular(order, degree)),
+            Random(RegularIsh(order, degree)) => g(regular::new_approximately_regular(order, degree)),
+            Random(DegreeSequence(deg_seq)) => g(regular::new_from_degree_sequence(deg_seq, false)),
+            Random(VertexStructured(pattern, num)) => g(pattern.new_graph(*num)),
+            Random(EdgeStructured(pattern, num)) => g(pattern.new_graph(*num)),
+            Random(ConnectedSemiregular(order, p, exp)) => g(semiregular::new_semiregular(*order, *p, *exp)),
+            Random(BFSOptimal(order, width, density)) => g(random_bfs::new_bfs(*order, *width, *density)),
+            Random(Spinal(order, spine_propn, off_deg)) => g(random_bfs::new_spinal(*order, *spine_propn, off_deg)),
+            Raw(Grid(height, width)) => g(grid::new(height, width)),
+            Raw(Complete(order)) => g(Graph::new_complete(*order)),
+            Raw(CompleteBipartite(left, right)) => g(Graph::new_complete_bipartite(*left, *right)),
+            Raw(CompleteMultipartite(orders)) => g(Graph::new_complete_multipartite(orders)),
+            Raw(Turan(order, chi)) => g(Graph::new_turan(*order, *chi)),
+            Raw(Cyclic(order)) => g(Graph::new_cyclic(*order)),
+            Raw(Path(order)) => g(Graph::new_path(*order)),
+            Raw(Star(order)) => g(Graph::new_star(*order)),
+            Raw(Empty(order)) => g(Graph::new_empty(*order)),
+            Raw(Cube(dimension)) => g(raw::new_cube(*dimension)),
+            Raw(FanoPlane) => g(raw::new_fano_plane()),
+            Raw(Petersen(cycles, skip)) => g(raw::new_petersen(*cycles, *skip)),
+            Raw(Octahedron) => g(raw::new_octahedron()),
+            Raw(Icosahedron) => g(raw::new_icosahedron()),
+            Raw(Dodecahedron) => g(raw::new_dodecahedron()),
             Recursive(CoronaProduct(c1, c2)) => {
-                corona::new_corona_product(self, &c1.new_graph(), &c2.new_graph())
+                let g1 = c1.new_graph().as_graph();
+                let g2 = c2.new_graph().as_graph();
+                g(corona::new_corona_product(self, &g1, &g2))
             }
-            PosetConstr(Chain(order)) => Poset::new_chain(*order),
-            PosetConstr(Antichain(order)) => Poset::new_antichain(*order),
-            PosetConstr(ChainIntersection(order, k)) => Poset::new_random_intersection(*order, *k),
-            File(filename) => from_file::new_graph(filename),
-            Serialised(code) => Graph::deserialise(code),
+            PosetConstr(Chain(order)) => p(Poset::new_chain(*order)),
+            PosetConstr(Antichain(order)) => p(Poset::new_antichain(*order)),
+            PosetConstr(ChainIntersection(order, k)) => p(Poset::new_random_intersection(*order, *k)),
+            File(filename) => g(from_file::new_graph(filename)),
+            Serialised(code) => g(Graph::deserialise(code)),
             Special => panic!("Cannot directly construct Special graph!"),
         }
     }
@@ -388,6 +400,7 @@ impl fmt::Display for Constructor {
             RootedTree(parents) => {
                 write!(f, "Rooted tree with parent pattern {:?}", parents)
             },
+            PosetConstr(constr) => write!(f, "{}", constr),
             File(filename) => write!(f, "From file {}.gph", filename),
             Serialised(code) => write!(f, "From code {}", code),
             Special => write!(f, "Special"),
@@ -529,6 +542,19 @@ impl fmt::Display for RecursiveConstructor {
         match self {
             CoronaProduct(c1, c2) => {
                 write!(f, "Corona product of ({}) and ({})", c1, c2)
+            }
+        }
+    }
+}
+
+impl fmt::Display for PosetConstructor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use PosetConstructor::*;
+        match self {
+            Chain(order) => write!(f, "Chain of {} elements", order),
+            Antichain(order) => write!(f, "Antichain of {} elements", order),
+            ChainIntersection(order, k) => {
+                write!(f, "Intersection of {} random chains of {} elements", k, order)
             }
         }
     }
