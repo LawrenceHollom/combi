@@ -294,6 +294,7 @@ impl Operator {
             BunkbedReducedConnectionDP(num_reps, k, edge_type) => bunkbed_reduced::bunkbed_connection_counts_dp(self.e.as_graph(), *num_reps, *k, *edge_type),
             BunkbedCounterexampleSearch(edge_type) => bunkbed_reduced::search_for_counterexample(self.e.as_graph(), *edge_type),
             PosetRelationProbabilities => poset_balance::print_relation_probabilities(self.e.as_poset()),
+            PosetHasseDiagram => self.e.as_poset().print_hasse(),
             Unit => (),
         }
     }
