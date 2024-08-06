@@ -2,7 +2,7 @@ use utilities::*;
 use std::fmt;
 
 use crate::pattern::*;
-use crate::graph::*;
+use crate::entity::graph::*;
 use crate::poset::*;
 
 mod products;

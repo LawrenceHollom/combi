@@ -1,4 +1,5 @@
-use crate::{graph::*, dossier::Operator};
+use crate::entity::graph::*;
+use crate::dossier::Operator;
 
 pub fn print_signature(g: &Graph) {
     let mut properties: Vec<(String, String)> = vec![];

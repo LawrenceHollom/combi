@@ -1,5 +1,5 @@
 use utilities::vertex_tools::*;
-use crate::graph::*;
+use crate::entity::graph::*;
 
 fn list_cycles_rec(g: &Graph, dist: &VertexVec<VertexVec<usize>>, visited: &mut VertexVec<bool>, cycle: &mut Vec<Edge>, 
         current_len: usize, target_len: usize, this_vert: Vertex, start_vert: Vertex, list: &mut Vec<Vec<Edge>>) {

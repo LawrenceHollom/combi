@@ -1,6 +1,6 @@
 use std::{ops::{Add, AddAssign}, io::Write};
 
-use crate::graph::*;
+use crate::entity::graph::*;
 
 use rand::{rngs::ThreadRng, thread_rng, Rng};
 use utilities::{vertex_tools::*, rational::Rational};

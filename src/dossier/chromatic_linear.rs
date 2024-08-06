@@ -1,5 +1,5 @@
 
-use crate::graph::*;
+use crate::entity::graph::*;
 
 use utilities::vertex_tools::*;
 use utilities::chromatic_tools::*;

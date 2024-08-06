@@ -3,7 +3,7 @@ extern crate queues;
 
 use utilities::*;
 use utilities::vertex_tools::*;
-use crate::graph::*;
+use crate::entity::graph::*;
 
 use queues::*;
 

@@ -1,4 +1,4 @@
-use crate::graph::*;
+use crate::entity::graph::*;
 
 use super::*;
 use utilities::vertex_tools::*;

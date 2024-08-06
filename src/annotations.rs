@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
-use crate::graph::*;
+use crate::entity::graph::*;
 
 use queues::*;
 use rand::{Rng, thread_rng};

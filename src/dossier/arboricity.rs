@@ -1,6 +1,6 @@
 use utilities::edge_tools::*;
 
-use crate::graph::*;
+use crate::entity::graph::*;
 
 fn maker_wins_arboricity_game_rec(g: &Graph, indexer: &EdgeIndexer, k: usize, max_colour_used: usize, 
         colours: &mut EdgeVec<Option<usize>>, num_edges: usize, num_cold: usize) -> bool {

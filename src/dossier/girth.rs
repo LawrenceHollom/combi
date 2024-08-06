@@ -1,4 +1,4 @@
-use crate::graph::*;
+use crate::entity::graph::*;
 
 pub fn girth(g: &Graph) -> u32 {
     let dist = g.floyd_warshall();

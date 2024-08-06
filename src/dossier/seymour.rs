@@ -4,8 +4,8 @@ use rand::thread_rng;
 
 use utilities::{*, vertex_tools::*, edge_tools::*};
 
-use crate::graph::*;
-use crate::digraph::*;
+use crate::entity::graph::*;
+use crate::entity::digraph::*;
 
 const MAX_ATTEMPTS_MULT: usize = 1;
 const NUM_TESTS: usize = 100;

@@ -1,4 +1,5 @@
-use crate::{graph::*, dossier::domination};
+use crate::entity::graph::*;
+use crate::dossier::domination;
 
 use utilities::vertex_tools::*;
 

@@ -1,4 +1,4 @@
-use crate::{graph::*, digraph::Digraph};
+use crate::entity::{graph::*, digraph::Digraph};
 
 use rand::{thread_rng, Rng};
 use utilities::vertex_tools::*;

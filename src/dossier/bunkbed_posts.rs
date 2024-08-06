@@ -1,4 +1,4 @@
-use crate::graph::*;
+use crate::entity::graph::*;
 use crate::dossier::percolate::*;
 
 use utilities::polynomial::*;

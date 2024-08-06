@@ -33,7 +33,7 @@ use utilities::rational::*;
 use crate::annotations::*;
 use crate::constructor::Constructor;
 use crate::operation::*;
-use crate::graph::*;
+use crate::entity::graph::*;
 
 use crate::operation::bool_operation::*;
 use crate::operation::rational_operation::*;

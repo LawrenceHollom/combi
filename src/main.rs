@@ -3,14 +3,11 @@ use std::time::*;
 use std::env;
 
 mod controller;
-mod graph;
 mod dossier;
 mod operation;
 mod constructor;
 mod pattern;
 mod annotations;
-mod digraph;
-mod poset;
 mod entity;
 
 use controller::*;

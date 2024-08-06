@@ -1,4 +1,4 @@
-use crate::graph::*;
+use crate::entity::graph::*;
 
 use utilities::component_tools::ComponentVec;
 use utilities::edge_tools::*;

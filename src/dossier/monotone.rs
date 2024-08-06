@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use utilities::vertex_tools::*;
 
-use crate::graph::*;
+use crate::entity::graph::*;
 
 fn monot_predecessors(g: &Graph, forward: bool, start: Vertex) -> VertexVec<Option<Vertex>> {
     let mut pred = VertexVec::new(g.n, &None);

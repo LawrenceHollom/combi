@@ -1,5 +1,5 @@
 use utilities::vertex_tools::*;
-use crate::graph::*;
+use crate::entity::graph::*;
 
 fn codeg_code(u: Vertex, v: Vertex) -> usize {
     Edge::of_pair(u, v).encode()

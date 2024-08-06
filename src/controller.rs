@@ -16,7 +16,7 @@ use crate::operation::int_operation::IntOperation;
 use crate::operation::string_list_operation::StringListOperation;
 use crate::dossier::AnnotationsBox;
 use crate::dossier::Operator;
-use crate::graph::Graph;
+use crate::entity::graph::Graph;
 
 use crate::operation::*;
 use crate::operation::bool_operation::*;

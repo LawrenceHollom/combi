@@ -1,4 +1,4 @@
-use crate::graph::*;
+use crate::entity::graph::*;
 use rand::{Rng, thread_rng};
 
 use std::io::*;

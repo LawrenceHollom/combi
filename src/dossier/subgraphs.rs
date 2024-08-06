@@ -1,4 +1,4 @@
-use crate::graph::*;
+use crate::entity::graph::*;
 
 pub fn is_triangle_free(g: &Graph) -> bool {
     let mut is_triangle_free = true;

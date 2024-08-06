@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::graph::*;
+use crate::entity::graph::*;
 
 use utilities::vertex_tools::*;
 

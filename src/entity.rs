@@ -1,6 +1,6 @@
-mod digraph;
-mod graph;
-mod poset;
+pub mod digraph;
+pub mod graph;
+pub mod poset;
 
 pub enum Entity {
     Graph(graph::Graph),

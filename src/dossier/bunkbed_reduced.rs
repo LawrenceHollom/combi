@@ -1,7 +1,7 @@
 use std::io::Write;
 use std::time::SystemTime;
 
-use crate::graph::*;
+use crate::entity::graph::*;
 
 use rand::Rng;
 use rand::thread_rng;

@@ -1,5 +1,5 @@
 use utilities::vertex_tools::*;
-use crate::graph::*;
+use crate::entity::graph::*;
 
 // Test components, but only considering vertices in the filter.
 pub fn filtered_components(g: &Graph, filter: Option<&VertexVec<bool>>) -> VertexVec<Component> {
