@@ -21,7 +21,7 @@ pub fn new(order: Order, p: f64) -> Graph {
 
 pub fn new_based(n: Order, p: f64, base: &Constructor) -> Graph {
     let mut adj = VertexVec::new(n, &VertexVec::new(n, &false));
-    let base_g = base.new_graph();
+    let base_g = base.new_entity().as_owned_graph();
     let base_n = base_g.n;
     let mut rng = thread_rng();
 
@@ -37,7 +37,7 @@ pub fn new_based(n: Order, p: f64, base: &Constructor) -> Graph {
 
 pub fn new_induced(n: Order, p: f64, base: &Constructor) -> Graph {
     let mut adj = VertexVec::new(n, &VertexVec::new(n, &false));
-    let base_g = base.new_graph();
+    let base_g = base.new_entity().as_owned_graph();
     let base_n = base_g.n;
     let mut rng = thread_rng();
 
@@ -75,7 +75,7 @@ pub fn new_bipartite(order: Order, p: f64) -> Graph {
 }
 
 pub fn new_random_subgraph(constructor: &Box<Constructor>, p: f64) -> Graph {
-    let g = constructor.new_graph();
+    let g = constructor.new_entity().as_owned_graph();
     let mut adj_list = VertexVec::new(g.n, &vec![]);
     let mut rng = thread_rng();
 

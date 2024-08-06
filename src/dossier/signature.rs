@@ -1,5 +1,6 @@
 use crate::entity::graph::*;
 use crate::dossier::Operator;
+use crate::entity::Entity;
 
 pub fn print_signature(g: &Graph) {
     let mut properties: Vec<(String, String)> = vec![];
@@ -12,7 +13,7 @@ pub fn print_signature(g: &Graph) {
     let bool_operations =
         vec![IsPlanar, IsTriangleFree];
     let mut ann = crate::dossier::AnnotationsBox::new();
-    let mut operator = Operator::new(g.to_owned());
+    let mut operator = Operator::new(Entity::Graph(g.to_owned()));
     for op in int_operations.iter() {
         properties.push((format!("{}", op), format!("{}", operator.operate_int(&mut ann, op))));
     }

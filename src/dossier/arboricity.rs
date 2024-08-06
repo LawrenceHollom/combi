@@ -108,7 +108,7 @@ mod tests {
         let constr = Product(ProductConstructor::Cartesian, 
             Box::new(Raw(RawConstructor::Complete(ous(2)))), 
             Box::new(Raw(RawConstructor::Complete(ous(3)))));
-        test_arb_game(&constr.new_graph(), 2)
+        test_arb_game(&constr.new_entity().as_owned_graph(), 2)
     }
 
     #[test]

@@ -7,6 +7,7 @@ use utilities::vertex_tools::*;
 
 use crate::constructor::*;
 
+#[derive(Clone)]
 pub struct Poset {
     pub order: Order,
     gt: VertexVec<VertexVec<bool>>,

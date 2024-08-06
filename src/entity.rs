@@ -7,6 +7,7 @@ pub mod poset;
 use graph::*;
 use poset::*;
 
+#[derive(Clone)]
 pub enum Entity {
     Graph(graph::Graph),
     Poset(poset::Poset),
@@ -14,7 +15,7 @@ pub enum Entity {
 }
 
 impl Entity {
-    pub fn as_graph(self) -> Graph {
+    pub fn as_graph(&self) -> &Graph {
         use Entity::*;
         match self {
             Graph(g) => g,
@@ -23,7 +24,25 @@ impl Entity {
         }
     }
 
-    pub fn as_digraph(self) -> Digraph {
+    pub fn as_owned_graph(self) -> Graph {
+        use Entity::*;
+        match self {
+            Graph(g) => g,
+            Poset(_) => panic!("Cannot convert poset to graph!"),
+            Digraph(_) => panic!("Cannot convert digraph to graph!"),
+        }
+    }
+
+    pub fn as_digraph(&self) -> &Digraph {
+        use Entity::*;
+        match self {
+            Graph(_) => panic!("This is the one thing we didn't want to happen (Graph -> Digraph as reference)"),
+            Digraph(d) => d,
+            Poset(_) => panic!("Cannot convert poset to digraph!"),
+        }
+    }
+
+    pub fn as_owned_digraph(self) -> Digraph {
         use Entity::*;
         match self {
             Graph(g) => digraph::Digraph::of_matrix(g.adj),
@@ -32,12 +51,21 @@ impl Entity {
         }
     }
 
-    pub fn as_poset(self) -> Poset {
+    pub fn as_poset(&self) -> &Poset {
         use Entity::*;
         match self {
             Poset(p) => p,
             Graph(_) => panic!("Cannot convert graph to poset!"),
             Digraph(_) => panic!("Cannot convert digraph to poset!"),
+        }
+    }
+
+    pub fn print(&self) {
+        use Entity::*;
+        match self {
+            Poset(p) => p.print(),
+            Graph(g) => g.print(),
+            Digraph(d) => d.print(),
         }
     }
 }

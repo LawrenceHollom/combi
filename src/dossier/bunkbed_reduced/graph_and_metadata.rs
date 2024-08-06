@@ -146,7 +146,7 @@ impl GraphAndMetadata {
 		if h.constructor.is_random() {
 			let should_be_connected = rng.gen_bool(0.8);
 			'find_g: loop {
-				g = h.constructor.new_graph();
+				g = h.constructor.new_entity().as_owned_graph();
 				if !should_be_connected || g.is_connected() {
 					break 'find_g;
 				}
@@ -186,7 +186,7 @@ impl GraphAndMetadata {
 		let mut g: Graph;
 		if h.constructor.is_random() {
 			'find_g: loop {
-				g = h.constructor.new_graph();
+				g = h.constructor.new_entity().as_owned_graph();
 				if g.is_connected() {
 					break 'find_g;
 				}

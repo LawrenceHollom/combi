@@ -17,6 +17,7 @@ use crate::operation::string_list_operation::StringListOperation;
 use crate::dossier::AnnotationsBox;
 use crate::dossier::Operator;
 use crate::entity::graph::Graph;
+use crate::entity::Entity;
 
 use crate::operation::*;
 use crate::operation::bool_operation::*;
@@ -222,7 +223,7 @@ impl Controller {
     }
 
     fn execute_single_return(&self, constr: &Constructor) -> Operator {
-        let g = constr.new_graph();
+        let g = constr.new_entity();
         let mut operator = Operator::new(g);
         let mut ann = AnnotationsBox::new();
         self.compute_and_print(&mut operator, &mut ann);
@@ -260,7 +261,7 @@ impl Controller {
             let p = tab.start + (tab.step * (i as f64));
             for _j in 0..reps {
                 let constr = Constructor::Random(RandomConstructor::ErdosRenyi(tab.order, p));
-                let g = constr.new_graph();
+                let g = constr.new_entity();
                 let mut operator = Operator::new(g);
                 let mut ann = AnnotationsBox::new();
                 for (op, sum) in operators.iter().zip(sums.iter_mut()) {
@@ -300,7 +301,7 @@ impl Controller {
             adj_list[e.snd()].push(e.fst());
             let g = Graph::of_adj_list(adj_list.to_owned(), Constructor::Special);
             let mut ann = AnnotationsBox::new();
-            let mut operator = Operator::new(g);
+            let mut operator = Operator::new(Entity::Graph(g));
             print!("[{} / {}]: ", i+1, edges.len());
             self.compute_and_print(&mut operator, &mut ann);
         }
@@ -330,7 +331,7 @@ impl Controller {
                 adj_list[e.snd()].push(e.fst());
                 let g = Graph::of_adj_list(adj_list.to_owned(), Constructor::Special);
                 let mut ann = AnnotationsBox::new();
-                let mut operator = Operator::new(g);
+                let mut operator = Operator::new(Entity::Graph(g));
                 count += 1;
                 print!("[{} / {}]: ", count, part_size * copart_size);
                 self.compute_and_print(&mut operator, &mut ann);
@@ -367,7 +368,7 @@ impl Controller {
                 adj_list[e.fst()].push(e.snd());
                 adj_list[e.snd()].push(e.fst());
                 let g = Graph::of_adj_list(adj_list.to_owned(), Constructor::Special);
-                let mut operator = Operator::new(g);
+                let mut operator = Operator::new(Entity::Graph(g));
                 let mut ann_box = AnnotationsBox::new();
                 if self.do_all_conditions_hold(&mut operator, &mut ann_box, conditions, true) {
                     break 'test_procs;
@@ -394,7 +395,7 @@ impl Controller {
                 adj_list[e.fst()].push(e.snd());
                 adj_list[e.snd()].push(e.fst());
                 let g = Graph::of_adj_list(adj_list.to_owned(), Constructor::Special);
-                let mut operator = Operator::new(g);
+                let mut operator = Operator::new(Entity::Graph(g));
                 let mut ann_box = AnnotationsBox::new();
                 if self.do_all_conditions_hold(&mut operator, &mut ann_box, conditions, false) {
                     let new_value = operator.operate_int(&mut ann_box, int_op);
@@ -456,7 +457,7 @@ impl Controller {
 
             if is_good {
                 let g = Graph::of_matrix(adj.to_owned(), Constructor::Special);
-                let mut operator = Operator::new(g);
+                let mut operator = Operator::new(Entity::Graph(g));
                 let mut ann_box = AnnotationsBox::new();
                 if self.do_all_conditions_hold(&mut operator, &mut ann_box, conditions, true) {
                     found_graph = true;
@@ -473,7 +474,7 @@ impl Controller {
         let mut vals: HashSet<String> = HashSet::new();
         let mut last_index_of_change = 0;
         for i in 0..reps {
-            let mut operator = Operator::new(constr.new_graph());
+            let mut operator = Operator::new(constr.new_entity());
             let mut ann_box = AnnotationsBox::new();
             for line in operator.operate_string_list(&mut ann_box, op) {
                 if vals.insert(line) {
@@ -531,7 +532,7 @@ impl Controller {
                 }
             }
             rep += 1;
-            let g = constr.new_graph();
+            let g = constr.new_entity();
             let mut ann = AnnotationsBox::new();
             let mut operator = Operator::new(g);
             let mut all_satisfied = true;
@@ -587,7 +588,7 @@ impl Controller {
             }
             if is_in_order {
                 // We just copy the vector of parents because fuck it, that's why.
-                let g = Constructor::RootedTree(parents.to_vec()).new_graph();
+                let g = Constructor::RootedTree(parents.to_vec()).new_entity();
                 let mut operator = Operator::new(g);
                 let mut ann = AnnotationsBox::new();
                 
@@ -636,7 +637,7 @@ impl Controller {
     }
             
     fn test_sink_graph(&self, g: Graph, conditions: &[BoolOperation], find_all: bool) -> bool {
-        let mut operator = Operator::new(g);
+        let mut operator = Operator::new(Entity::Graph(g));
         let mut ann = AnnotationsBox::new();
         let mut result = true;
         'test_conditions: for condition in conditions.iter() {
@@ -699,7 +700,7 @@ impl Controller {
             let mut graphs: Vec<Graph> = vec![];
             for constr in constructors[verts].iter() {
                 // Actually test the graph
-                let g = constr.new_graph();
+                let g = constr.new_entity().as_owned_graph();
                 if self.test_sink_graph(g.clone(), conditions, find_all) && !find_all {
                     break 'main;
                 }
@@ -717,7 +718,7 @@ impl Controller {
                             if factor < verts / factor || i <= j {
                                 for product in ProductConstructor::all() {
                                     let constr = Product(product, Box::new((*c1).to_owned()), Box::new((*c2).to_owned()));
-                                    let g = constr.new_graph();
+                                    let g = constr.new_entity().as_owned_graph();
                                     let mut is_already_there = false;
                                     'find_graph: for h in graphs.iter() {
                                         if h.is_isomorphic_to(&g) {
@@ -772,7 +773,7 @@ impl Controller {
 
                 for _rep in 0..10 {
                     for constr in random_constructors.iter() {
-                        let g = constr.new_graph();
+                        let g = constr.new_entity().as_owned_graph();
                         if self.test_sink_graph(g, conditions, find_all) && !find_all {
                             break 'main;
                         }

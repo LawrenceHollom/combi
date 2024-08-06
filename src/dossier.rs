@@ -25,6 +25,7 @@ mod marking_game;
 mod seymour;
 mod grabbing;
 mod bunkbed_sites;
+mod poset_balance;
 
 use std::collections::HashMap;
 
@@ -33,6 +34,7 @@ use utilities::rational::*;
 use crate::annotations::*;
 use crate::constructor::Constructor;
 use crate::operation::*;
+use crate::entity::*;
 use crate::entity::graph::*;
 
 use crate::operation::bool_operation::*;
@@ -73,7 +75,7 @@ impl AnnotationsBox {
 impl Operator {
     pub fn operate_int(&mut self, ann_box: &mut AnnotationsBox, operation: &IntOperation) -> u32 {
         use IntOperation::*;
-        let ann = ann_box.get_annotations(&self.e.as_graph());
+        let ann = ann_box.get_annotations(self.e.as_graph());
         match self.previous_int_values.get(operation) {
             Some(value) => *value,
             None => {
@@ -82,39 +84,39 @@ impl Operator {
                     Size => self.e.as_graph().size() as u32,
                     LargestComponent => self.e.as_graph().largest_component(),
                     NumComponents => self.e.as_graph().num_components(),
-                    CliqueNumber => cliques::largest_clique(&self.e.as_graph()),
-                    IndependenceNumber => cliques::independence_number(&self.e.as_graph()),
-                    Girth => girth::girth(&self.e.as_graph()),
-                    DominationNumber => domination::domination_number(&self.e.as_graph()),
-                    EdgeDominationNumber => domination::edge_domination_number(&self.e.as_graph()),
-                    ChromaticNumber => chromatic::chromatic_number(&self.e.as_graph()),
-                    MaxAcyclicSubgraph => max_acyclic::max_acyclic_subgraph(&self.e.as_graph()),
+                    CliqueNumber => cliques::largest_clique(self.e.as_graph()),
+                    IndependenceNumber => cliques::independence_number(self.e.as_graph()),
+                    Girth => girth::girth(self.e.as_graph()),
+                    DominationNumber => domination::domination_number(self.e.as_graph()),
+                    EdgeDominationNumber => domination::edge_domination_number(self.e.as_graph()),
+                    ChromaticNumber => chromatic::chromatic_number(self.e.as_graph()),
+                    MaxAcyclicSubgraph => max_acyclic::max_acyclic_subgraph(self.e.as_graph()),
                     CliqueCoveringNumber => chromatic::chromatic_number(&self.e.as_graph().complement()),
-                    NumOnLongMonotone => monotone::num_on_long_monotone(&self.e.as_graph()),
-                    MaxMonotonePath => monotone::max_monotone(&self.e.as_graph()),
-                    NumOnMonotoneCycle => monotone::num_on_monot_cycle(&self.e.as_graph()),
-                    MaxFindableRigidComponent => monotone::max_rigid_component(&self.e.as_graph()),
-                    TotalDominationGameLength => domination::total_domination_game_length(&self.e.as_graph()),
-                    NumIntervalColors => interval_coloring::num_interval_colors(&self.e.as_graph()),
-                    MaxInducedForest => induced_forest::max_induced_forest(&self.e.as_graph()),
+                    NumOnLongMonotone => monotone::num_on_long_monotone(self.e.as_graph()),
+                    MaxMonotonePath => monotone::max_monotone(self.e.as_graph()),
+                    NumOnMonotoneCycle => monotone::num_on_monot_cycle(self.e.as_graph()),
+                    MaxFindableRigidComponent => monotone::max_rigid_component(self.e.as_graph()),
+                    TotalDominationGameLength => domination::total_domination_game_length(self.e.as_graph()),
+                    NumIntervalColors => interval_coloring::num_interval_colors(self.e.as_graph()),
+                    MaxInducedForest => induced_forest::max_induced_forest(self.e.as_graph()),
                     MinDegree => self.e.as_graph().min_degree().to_usize() as u32,
                     MaxDegree => self.e.as_graph().max_degree().to_usize() as u32,
-                    Connectedness => connectedness::connectedness(&self.e.as_graph()),
+                    Connectedness => connectedness::connectedness(self.e.as_graph()),
                     Diameter => self.e.as_graph().diameter(),
                     Radius => self.e.as_graph().radius(),
-                    Thomassen(long_path_cap) => edge_partitions::thomassen_check(&self.e.as_graph(), *long_path_cap),
-                    NumBipartiteEdgeBisections => edge_partitions::count_bipartite_edge_bisections(&self.e.as_graph()),
-                    GameChromaticNumber => chromatic::game_chromatic_number(&self.e.as_graph(), ann),
-                    GameChromaticNumberGreedy => chromatic::alice_greedy_lower_bound(&self.e.as_graph()) as u32,
-                    GameArboricityNumber => arboricity::game_arboricity_number(&self.e.as_graph()),
-                    Degeneracy => degeneracy::degeneracy(&self.e.as_graph()),
-                    LinearGameChromaticNumber => chromatic_linear::linear_game_chromatic_number(&self.e.as_graph()),
-                    GameGrundyNumber => grundy::game_grundy_number(&self.e.as_graph(), ann),
-                    MarkingGameNumber => marking_game::marking_game_number(&self.e.as_graph(), false),
-                    ConnectedGameChromaticNumber => chromatic::connected_game_chromatic_number(&self.e.as_graph(), ann),
-                    ConnectedMarkingGameNumber => marking_game::marking_game_number(&self.e.as_graph(), true),
-                    BipartiteSideDifference => chromatic::bipartite_side_difference(&self.e.as_graph()),
-                    NumCutvertices => connectedness::num_cutvertices(&self.e.as_graph()),
+                    Thomassen(long_path_cap) => edge_partitions::thomassen_check(self.e.as_graph(), *long_path_cap),
+                    NumBipartiteEdgeBisections => edge_partitions::count_bipartite_edge_bisections(self.e.as_graph()),
+                    GameChromaticNumber => chromatic::game_chromatic_number(self.e.as_graph(), ann),
+                    GameChromaticNumberGreedy => chromatic::alice_greedy_lower_bound(self.e.as_graph()) as u32,
+                    GameArboricityNumber => arboricity::game_arboricity_number(self.e.as_graph()),
+                    Degeneracy => degeneracy::degeneracy(self.e.as_graph()),
+                    LinearGameChromaticNumber => chromatic_linear::linear_game_chromatic_number(self.e.as_graph()),
+                    GameGrundyNumber => grundy::game_grundy_number(self.e.as_graph(), ann),
+                    MarkingGameNumber => marking_game::marking_game_number(self.e.as_graph(), false),
+                    ConnectedGameChromaticNumber => chromatic::connected_game_chromatic_number(self.e.as_graph(), ann),
+                    ConnectedMarkingGameNumber => marking_game::marking_game_number(self.e.as_graph(), true),
+                    BipartiteSideDifference => chromatic::bipartite_side_difference(self.e.as_graph()),
+                    NumCutvertices => connectedness::num_cutvertices(self.e.as_graph()),
                     Number(k) => *k,
                 };
                 self.previous_int_values.insert(*operation, value);
@@ -165,7 +167,7 @@ impl Operator {
 
     pub fn operate_bool(&mut self, ann_box: &mut AnnotationsBox, operation: &BoolOperation) -> bool {
         use BoolOperation::*;
-        let ann = ann_box.get_annotations(&self.e.as_graph());
+        let ann = ann_box.get_annotations(self.e.as_graph());
         match self.previous_bool_values.get(operation) {
             Some(value) => *value,
             None => {
@@ -181,49 +183,49 @@ impl Operator {
                     }
                     Not(op) => !self.operate_bool(ann_box, op),
                     IsDominationNumberAtLeast(lower_bound) => {
-                        domination::is_domination_number_at_least(&self.e.as_graph(), *lower_bound)
+                        domination::is_domination_number_at_least(self.e.as_graph(), *lower_bound)
                     }
                     Const(val) => *val,
                     IsConnected => self.e.as_graph().is_connected(),
-                    HasLongMonotone => monotone::has_long_monotone(&self.e.as_graph()),
-                    HasIntervalColoring => interval_coloring::has_interval_coloring(&self.e.as_graph()),
-                    IsPlanar => planar::is_planar(&self.e.as_graph()),
+                    HasLongMonotone => monotone::has_long_monotone(self.e.as_graph()),
+                    HasIntervalColoring => interval_coloring::has_interval_coloring(self.e.as_graph()),
+                    IsPlanar => planar::is_planar(self.e.as_graph()),
                     IsRegular => self.e.as_graph().is_regular(),
-                    BunkbedDiffsAllUnimodal => bunkbed::are_all_diffs_unimodal(&self.e.as_graph()),
-                    HasRegularLosslessEdgeDominator => domination::has_regular_lossless_edge_dominator(&self.e.as_graph()),
-                    IsKConnected(connectivity) => connectedness::is_k_connected(&self.e.as_graph(), *connectivity),
-                    IsTriangleFree => subgraphs::is_triangle_free(&self.e.as_graph()),
-                    CanBeEdgePartitionedIntoLinearForestAndMatching => edge_partitions::edge_partition_forest_and_matching(&self.e.as_graph()),
-                    GoodCubicDominationBase => cubic_domination::is_good(&self.e.as_graph()),
-                    GameChromaticWinner(k) => chromatic::maker_wins_chromatic_game(&self.e.as_graph(), ann, *k, false, false),
-                    IsChromaticGameMonotone => chromatic::game_chromatic_colour_monotone(&self.e.as_graph(), ann),
+                    BunkbedDiffsAllUnimodal => bunkbed::are_all_diffs_unimodal(self.e.as_graph()),
+                    HasRegularLosslessEdgeDominator => domination::has_regular_lossless_edge_dominator(self.e.as_graph()),
+                    IsKConnected(connectivity) => connectedness::is_k_connected(self.e.as_graph(), *connectivity),
+                    IsTriangleFree => subgraphs::is_triangle_free(self.e.as_graph()),
+                    CanBeEdgePartitionedIntoLinearForestAndMatching => edge_partitions::edge_partition_forest_and_matching(self.e.as_graph()),
+                    GoodCubicDominationBase => cubic_domination::is_good(self.e.as_graph()),
+                    GameChromaticWinner(k) => chromatic::maker_wins_chromatic_game(self.e.as_graph(), ann, *k, false, false),
+                    IsChromaticGameMonotone => chromatic::game_chromatic_colour_monotone(self.e.as_graph(), ann),
                     IsChromaticGameStronglyMonotone => {
-                        chromatic::chromatic_game_strong_monotonicity(&self.e.as_graph(), ann)
+                        chromatic::chromatic_game_strong_monotonicity(self.e.as_graph(), ann)
                     }
-                    ArboricityGameWinner(k) => arboricity::maker_wins_arboricity_game(&self.e.as_graph(), *k),
-                    IsDDegenerate(d) => degeneracy::is_d_degenerate(&self.e.as_graph(), *d),
-                    IsBunkbedPostRemovalInductionGood => bunkbed_reduced::is_post_removal_induction_always_good(&self.e.as_graph()),
-                    CanChromaticGameHaveDudUniqueWin => chromatic::can_chormatic_game_dud_unique_win(&self.e.as_graph(), ann),
-                    GameChromaticWinnerWithDuds(k) => chromatic::alice_wins_chromatic_game_with_duds(&self.e.as_graph(), ann, *k),
-                    ChromaticGameSubsetMonotonicity(k) => chromatic::is_some_subset_non_monotone(&self.e.as_graph(), ann, *k),
-                    LinearGameChromaticWinner(k) => chromatic_linear::does_maker_win_linear_chromatic_game(&self.e.as_graph(), *k),
-                    GameGrundyWinner(k) => grundy::does_maker_win_grundy_game(&self.e.as_graph(), ann, *k),
-                    MakerWinsConnectedChromaticGame(k) => chromatic::maker_wins_chromatic_game(&self.e.as_graph(), ann, *k, true, false),
-                    IsBipartite => chromatic::is_bipartite(&self.e.as_graph()),
-                    MakerWinsChromaticGameGreedily(k) => chromatic::alice_greedy_wins_chromatic_game(&self.e.as_graph(), ann, *k),
-                    HasSeymourVertex => seymour::has_seymour_vertex(&self.e.as_graph()),
-                    CanBobWinGraphGrabbing(max_weight) => grabbing::can_bob_win_graph_grabbing(&self.e.as_graph(), *max_weight),
-                    IsOddCoronaFree => !grabbing::has_induced_odd_cycle_corona(&self.e.as_graph()),
-                    IsOddSemicoronaFree => !grabbing::has_induced_odd_cycle_semicorona(&self.e.as_graph()),
-                    IsForkFree => !grabbing::has_induced_fork(&self.e.as_graph()),
-                    BunkbedSiteHasBadConditioning => bunkbed_sites::has_bad_conditioning(&self.e.as_graph()),
-                    ContradictsBunkbedSiteConjecture => bunkbed_sites::contradicts_bb_site_conjecture(&self.e.as_graph()),
-                    ContradictsReducedBunkbedConjecture => bunkbed_reduced::contradicts_reduced_bunkbed_conjecture(&self.e.as_graph()),
-                    ApproxContradictsReducedBunkbedConjecture(samples) => bunkbed_reduced::approx_contradicts_reduced_bunkbed_conjecture(&self.e.as_graph(), *samples),
-                    ContradictsReducedConditionedBunkbedConjecture => bunkbed_reduced::contradicts_reduced_conditioned_bunkbed_conjecture(&self.e.as_graph()),
-                    IsBunkbedReducible => bunkbed_reduced::is_bunkbed_reducible(&self.e.as_graph()),
-                    BunkbedGadget => bunkbed_reduced::is_contradictory_3_gadget(&self.e.as_graph()),
-                    Debug => debug::debug(&self.e.as_graph()),
+                    ArboricityGameWinner(k) => arboricity::maker_wins_arboricity_game(self.e.as_graph(), *k),
+                    IsDDegenerate(d) => degeneracy::is_d_degenerate(self.e.as_graph(), *d),
+                    IsBunkbedPostRemovalInductionGood => bunkbed_reduced::is_post_removal_induction_always_good(self.e.as_graph()),
+                    CanChromaticGameHaveDudUniqueWin => chromatic::can_chormatic_game_dud_unique_win(self.e.as_graph(), ann),
+                    GameChromaticWinnerWithDuds(k) => chromatic::alice_wins_chromatic_game_with_duds(self.e.as_graph(), ann, *k),
+                    ChromaticGameSubsetMonotonicity(k) => chromatic::is_some_subset_non_monotone(self.e.as_graph(), ann, *k),
+                    LinearGameChromaticWinner(k) => chromatic_linear::does_maker_win_linear_chromatic_game(self.e.as_graph(), *k),
+                    GameGrundyWinner(k) => grundy::does_maker_win_grundy_game(self.e.as_graph(), ann, *k),
+                    MakerWinsConnectedChromaticGame(k) => chromatic::maker_wins_chromatic_game(self.e.as_graph(), ann, *k, true, false),
+                    IsBipartite => chromatic::is_bipartite(self.e.as_graph()),
+                    MakerWinsChromaticGameGreedily(k) => chromatic::alice_greedy_wins_chromatic_game(self.e.as_graph(), ann, *k),
+                    HasSeymourVertex => seymour::has_seymour_vertex(self.e.as_graph()),
+                    CanBobWinGraphGrabbing(max_weight) => grabbing::can_bob_win_graph_grabbing(self.e.as_graph(), *max_weight),
+                    IsOddCoronaFree => !grabbing::has_induced_odd_cycle_corona(self.e.as_graph()),
+                    IsOddSemicoronaFree => !grabbing::has_induced_odd_cycle_semicorona(self.e.as_graph()),
+                    IsForkFree => !grabbing::has_induced_fork(self.e.as_graph()),
+                    BunkbedSiteHasBadConditioning => bunkbed_sites::has_bad_conditioning(self.e.as_graph()),
+                    ContradictsBunkbedSiteConjecture => bunkbed_sites::contradicts_bb_site_conjecture(self.e.as_graph()),
+                    ContradictsReducedBunkbedConjecture => bunkbed_reduced::contradicts_reduced_bunkbed_conjecture(self.e.as_graph()),
+                    ApproxContradictsReducedBunkbedConjecture(samples) => bunkbed_reduced::approx_contradicts_reduced_bunkbed_conjecture(self.e.as_graph(), *samples),
+                    ContradictsReducedConditionedBunkbedConjecture => bunkbed_reduced::contradicts_reduced_conditioned_bunkbed_conjecture(self.e.as_graph()),
+                    IsBunkbedReducible => bunkbed_reduced::is_bunkbed_reducible(self.e.as_graph()),
+                    BunkbedGadget => bunkbed_reduced::is_contradictory_3_gadget(self.e.as_graph()),
+                    Debug => debug::debug(self.e.as_graph()),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);
                 value
@@ -252,8 +254,9 @@ impl Operator {
                             Ratio => par1 / par2,
                         }
                     }
-                    DominationRedundancy => domination::domination_redundancy(&self.e.as_graph()),
-                    GrabbingColeafWeightedDifference => grabbing::coleaf_weighted_score_difference(&self.e.as_graph()),
+                    DominationRedundancy => domination::domination_redundancy(self.e.as_graph()),
+                    GrabbingColeafWeightedDifference => grabbing::coleaf_weighted_score_difference(self.e.as_graph()),
+                    PosetBalance => poset_balance::balance_constant(self.e.as_poset()),
                 };
                 self.previous_rational_values.insert(operation.to_owned(), value);
                 value
@@ -264,32 +267,33 @@ impl Operator {
     fn operate_unit(&mut self, ann: &mut AnnotationsBox, operation: &UnitOperation) {
         use UnitOperation::*;
         match operation {
-            Print => self.e.as_graph().print(),
+            Print => self.e.print(),
             PrintMatrix => self.e.as_graph().print_matrix(true, true),
-            RawBunkbed => bunkbed::print_polynomials(&self.e.as_graph()),
-            BunkbedPosts => bunkbed_posts::print_polynomials(&self.e.as_graph()),
-            BunkbedSimulation => bunkbed::simulate(&self.e.as_graph()),
-            PercolationPolys => percolate::print_polynomials(&self.e.as_graph()),
-            BunkbedCuts(u) => bunkbed::compute_problem_cuts(&self.e.as_graph(), *u),
-            BunkbedDists => bunkbed::print_distance_polynomials(&self.e.as_graph()),
-            BunkbedDiffs(u, print_size) => bunkbed::interesting_configurations(&self.e.as_graph(), *u, *print_size),
-            PrintIntervalColoring => interval_coloring::print_interval_coloring(&self.e.as_graph()),
-            PrintDominatingSet => domination::print_random_dominator(&self.e.as_graph()),
-            GameChromaticTable => chromatic::print_game_chromatic_table(&self.e.as_graph(), ann.get_annotations(&self.e.as_graph())),
-            GameChromaticStrategy(k) => chromatic::print_chromatic_game_strategy(&self.e.as_graph(), ann.get_annotations(&self.e.as_graph()), *k, false),
-            ConnectedGameChromaticStrategy(k) => chromatic::print_chromatic_game_strategy(&self.e.as_graph(), ann.get_annotations(&self.e.as_graph()), *k, true),
-            PrintAutomorphisms => print_automorphism_info(&self.e.as_graph()),
-	        BunkbedPostRemoval => bunkbed_reduced::test_post_removal_induction(&self.e.as_graph()),
-            Signature => signature::print_signature(&self.e.as_graph()),
-            PrintMarkingGameStrat => marking_game::print_marking_game_strat(&self.e.as_graph(), false),
-            PrintConnectedMarkingGameStrat => marking_game::print_marking_game_strat(&self.e.as_graph(), true),
-            PrintBobWinGrabbingWeighting => grabbing::print_bob_win_weighting(&self.e.as_graph()),
-            GrabbingHypothesisTest => grabbing::hypothesis_testing(&self.e.as_graph()),
-            BunkbedSiteCOunts => bunkbed_sites::print_counts(&self.e.as_graph()),
-            BunkbedReducedConnectionCounts(k) => bunkbed_reduced::print_connection_counts(&self.e.as_graph(), *k),
-            BunkbedReducedConnectionSimulation(num_reps, k) => bunkbed_reduced::simulate_connection_count_ratios_naive(&self.e.as_graph(), *num_reps, *k),
-            BunkbedReducedConnectionDP(num_reps, k, edge_type) => bunkbed_reduced::bunkbed_connection_counts_dp(&self.e.as_graph(), *num_reps, *k, *edge_type),
-            BunkbedCounterexampleSearch(edge_type) => bunkbed_reduced::search_for_counterexample(&self.e.as_graph(), *edge_type),
+            RawBunkbed => bunkbed::print_polynomials(self.e.as_graph()),
+            BunkbedPosts => bunkbed_posts::print_polynomials(self.e.as_graph()),
+            BunkbedSimulation => bunkbed::simulate(self.e.as_graph()),
+            PercolationPolys => percolate::print_polynomials(self.e.as_graph()),
+            BunkbedCuts(u) => bunkbed::compute_problem_cuts(self.e.as_graph(), *u),
+            BunkbedDists => bunkbed::print_distance_polynomials(self.e.as_graph()),
+            BunkbedDiffs(u, print_size) => bunkbed::interesting_configurations(self.e.as_graph(), *u, *print_size),
+            PrintIntervalColoring => interval_coloring::print_interval_coloring(self.e.as_graph()),
+            PrintDominatingSet => domination::print_random_dominator(self.e.as_graph()),
+            GameChromaticTable => chromatic::print_game_chromatic_table(self.e.as_graph(), ann.get_annotations(self.e.as_graph())),
+            GameChromaticStrategy(k) => chromatic::print_chromatic_game_strategy(self.e.as_graph(), ann.get_annotations(self.e.as_graph()), *k, false),
+            ConnectedGameChromaticStrategy(k) => chromatic::print_chromatic_game_strategy(self.e.as_graph(), ann.get_annotations(self.e.as_graph()), *k, true),
+            PrintAutomorphisms => print_automorphism_info(self.e.as_graph()),
+	        BunkbedPostRemoval => bunkbed_reduced::test_post_removal_induction(self.e.as_graph()),
+            Signature => signature::print_signature(self.e.as_graph()),
+            PrintMarkingGameStrat => marking_game::print_marking_game_strat(self.e.as_graph(), false),
+            PrintConnectedMarkingGameStrat => marking_game::print_marking_game_strat(self.e.as_graph(), true),
+            PrintBobWinGrabbingWeighting => grabbing::print_bob_win_weighting(self.e.as_graph()),
+            GrabbingHypothesisTest => grabbing::hypothesis_testing(self.e.as_graph()),
+            BunkbedSiteCOunts => bunkbed_sites::print_counts(self.e.as_graph()),
+            BunkbedReducedConnectionCounts(k) => bunkbed_reduced::print_connection_counts(self.e.as_graph(), *k),
+            BunkbedReducedConnectionSimulation(num_reps, k) => bunkbed_reduced::simulate_connection_count_ratios_naive(self.e.as_graph(), *num_reps, *k),
+            BunkbedReducedConnectionDP(num_reps, k, edge_type) => bunkbed_reduced::bunkbed_connection_counts_dp(self.e.as_graph(), *num_reps, *k, *edge_type),
+            BunkbedCounterexampleSearch(edge_type) => bunkbed_reduced::search_for_counterexample(self.e.as_graph(), *edge_type),
+            PosetRelationProbabilities => poset_balance::print_relation_probabilities(self.e.as_poset()),
             Unit => (),
         }
     }
@@ -297,7 +301,7 @@ impl Operator {
     pub fn operate_string_list(&mut self, _ann: &mut AnnotationsBox, operation: &StringListOperation) -> Vec<String> {
         use StringListOperation::*;
         match operation {
-            BunkbedSiteSignatures => bunkbed_sites::signatures(&self.e.as_graph()),
+            BunkbedSiteSignatures => bunkbed_sites::signatures(self.e.as_graph()),
             Serialise => vec![self.e.as_graph().serialise()],
         }
     }

@@ -5,6 +5,7 @@ use crate::pattern::*;
 use crate::entity::*;
 use crate::entity::graph::*;
 use crate::entity::poset::*;
+use crate::entity::digraph::*;
 
 mod products;
 mod erdos_renyi;
@@ -87,6 +88,11 @@ pub enum PosetConstructor {
 }
 
 #[derive(Clone)]
+pub enum DigraphConstructor {
+    OfGraph(Box<Constructor>)
+}
+
+#[derive(Clone)]
 pub enum Constructor {
     Product(ProductConstructor, Box<Constructor>, Box<Constructor>),
     Random(RandomConstructor),
@@ -94,6 +100,7 @@ pub enum Constructor {
     Recursive(RecursiveConstructor),
     RootedTree(Vec<usize>),
     PosetConstr(PosetConstructor),
+    DigraphConstr(DigraphConstructor),
     File(String),
     Serialised(String),
     Special,
@@ -109,6 +116,7 @@ impl Constructor {
         use RandomConstructor::*;
         use RecursiveConstructor::*;
         use PosetConstructor::*;
+        use DigraphConstructor::*;
         
         match func.to_lowercase().as_str() {
             "cartesian" | "box" => {
@@ -275,16 +283,18 @@ impl Constructor {
                 let k = args[1].parse().unwrap();
                 PosetConstr(ChainIntersection(order, k))
             }
+            "digraph" => DigraphConstr(OfGraph(Box::new(Self::of_string(args[0])))),
             str => File(str.to_owned()),
         }
     }
 
-    pub fn new_graph(&self) -> Entity {
+    pub fn new_entity(&self) -> Entity {
         use Constructor::*;
         use RandomConstructor::*;
         use RawConstructor::*;
         use RecursiveConstructor::*;
         use PosetConstructor::*;
+        use DigraphConstructor::*;
 
         fn g(g: Graph) -> Entity {
             Entity::Graph(g)
@@ -292,11 +302,14 @@ impl Constructor {
         fn p(p: Poset) -> Entity {
             Entity::Poset(p)
         }
+        fn d(d: Digraph) -> Entity {
+            Entity::Digraph(d)
+        }
 
         match self {
             Product(product, c1, c2) => {
-                let g1 = c1.new_graph().as_graph();
-                let g2 = c2.new_graph().as_graph();
+                let g1 = c1.new_entity().as_owned_graph();
+                let g2 = c2.new_entity().as_owned_graph();
                 g(products::new_product(product, self, &g1, &g2))
             }
             RootedTree(parents) => g(tree::new_rooted(parents)),
@@ -341,13 +354,17 @@ impl Constructor {
             Raw(Icosahedron) => g(raw::new_icosahedron()),
             Raw(Dodecahedron) => g(raw::new_dodecahedron()),
             Recursive(CoronaProduct(c1, c2)) => {
-                let g1 = c1.new_graph().as_graph();
-                let g2 = c2.new_graph().as_graph();
+                let g1 = c1.new_entity().as_owned_graph();
+                let g2 = c2.new_entity().as_owned_graph();
                 g(corona::new_corona_product(self, &g1, &g2))
             }
             PosetConstr(Chain(order)) => p(Poset::new_chain(*order)),
             PosetConstr(Antichain(order)) => p(Poset::new_antichain(*order)),
             PosetConstr(ChainIntersection(order, k)) => p(Poset::new_random_intersection(*order, *k)),
+            DigraphConstr(OfGraph(constr)) => {
+                let g = constr.new_entity().as_owned_graph();
+                d(Digraph::of_matrix(g.adj))
+            }
             File(filename) => g(from_file::new_graph(filename)),
             Serialised(code) => g(Graph::deserialise(code)),
             Special => panic!("Cannot directly construct Special graph!"),
@@ -364,6 +381,7 @@ impl Constructor {
                 c1.is_random() || c2.is_random()
             }
             PosetConstr(poset_constr) => poset_constr.is_random(),
+            DigraphConstr(digraph_constr) => digraph_constr.is_random(),
             RootedTree(_) | Raw(_) | File(_) | Serialised(_) | Special => false,
             Random(_) => true,
         }
@@ -387,6 +405,15 @@ impl PosetConstructor {
     }
 }
 
+impl DigraphConstructor {
+    pub fn is_random(&self) -> bool {
+        use DigraphConstructor::*;
+        match self {
+            OfGraph(constr) => constr.is_random(),
+        }
+    }
+}
+
 impl fmt::Display for Constructor {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use Constructor::*;
@@ -401,6 +428,7 @@ impl fmt::Display for Constructor {
                 write!(f, "Rooted tree with parent pattern {:?}", parents)
             },
             PosetConstr(constr) => write!(f, "{}", constr),
+            DigraphConstr(constr) => write!(f, "{}", constr),
             File(filename) => write!(f, "From file {}.gph", filename),
             Serialised(code) => write!(f, "From code {}", code),
             Special => write!(f, "Special"),
@@ -556,6 +584,15 @@ impl fmt::Display for PosetConstructor {
             ChainIntersection(order, k) => {
                 write!(f, "Intersection of {} random chains of {} elements", k, order)
             }
+        }
+    }
+}
+
+impl fmt::Display for DigraphConstructor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use DigraphConstructor::*;
+        match self {
+            OfGraph(digraph) => write!(f, "Digraph of ({})", *digraph),
         }
     }
 }

@@ -874,19 +874,19 @@ mod tests {
 
     #[test]
     fn test_coleaf_weighted_c5_corona() {
-        let g = Constructor::of_string("corona(c(5),k(1))").new_graph();
+        let g = Constructor::of_string("corona(c(5),k(1))").new_entity().as_owned_graph();
         assert_eq!(coleaf_weighted_score_difference(&g), Rational::new(-1));
     }
 
     #[test]
     fn test_coleaf_weighted_c4_corona() {
-        let g = Constructor::of_string("corona(c(4),k(1))").new_graph();
+        let g = Constructor::of_string("corona(c(4),k(1))").new_entity().as_owned_graph();
         assert_eq!(coleaf_weighted_score_difference(&g), Rational::new(0));
     }
 
     #[test]
     fn test_corona_counterexample() {
-        let g = Constructor::of_string("corona(c(5),k(1))").new_graph();
+        let g = Constructor::of_string("corona(c(5),k(1))").new_entity().as_owned_graph();
         let weights = weight(vec![1, 2, 1, 0, 0, 0, 1, 0, 0, 0]);
         assert_eq!(grabbing_game_scores(&g, &weights, None, false, false), grab(2, 3));
     }
