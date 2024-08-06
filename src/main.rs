@@ -4,12 +4,13 @@ use std::env;
 
 mod controller;
 mod graph;
-mod operator;
+mod dossier;
 mod operation;
 mod constructor;
 mod pattern;
 mod annotations;
 mod digraph;
+//mod poset;
 
 use controller::*;
 

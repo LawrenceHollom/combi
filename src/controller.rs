@@ -14,8 +14,8 @@ use utilities::vertex_tools::*;
 use crate::constructor::*;
 use crate::operation::int_operation::IntOperation;
 use crate::operation::string_list_operation::StringListOperation;
-use crate::operator::AnnotationsBox;
-use crate::operator::Operator;
+use crate::dossier::AnnotationsBox;
+use crate::dossier::Operator;
 use crate::graph::Graph;
 
 use crate::operation::*;
