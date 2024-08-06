@@ -16,10 +16,10 @@ use controller::*;
 
 fn execute_instruction(text: &String) {
     let start_time = SystemTime::now();
-    let instruction = Instruction::of_string(text);
-    println!("Instruction constructed!\n{},\nTime: {}", instruction, start_time.elapsed().unwrap().as_millis());
+    let controller = Controller::of_string(text);
+    println!("Instruction constructed!\n{},\nTime: {}", controller, start_time.elapsed().unwrap().as_millis());
 
-    instruction.execute();
+    controller.execute();
     println!("Finished! Time (s): {}", start_time.elapsed().unwrap().as_secs())
 }
 

@@ -29,7 +29,7 @@ pub struct Tabulation {
     pub step: f64,
 }
 
-pub enum Controller {
+pub enum Instruction {
     Single(Constructor),
     Repeat(Constructor, usize),
     Tabulate(Tabulation),
@@ -47,8 +47,8 @@ pub enum Controller {
     Help,
 }
 
-pub struct Instruction {
-    pub controller: Controller,
+pub struct Controller {
+    pub instruction: Instruction,
     pub operations: Vec<Operation>,
 }
 
@@ -65,9 +65,9 @@ impl fmt::Display for Tabulation {
     }
 }
 
-impl Controller {
-    pub fn of_string(text: &str) -> Controller {
-        use Controller::*;
+impl Instruction {
+    pub fn of_string(text: &str) -> Instruction {
+        use Instruction::*;
         let (func, args) = parse_function_like(text);
 
         match func.to_lowercase().as_str() {
@@ -131,9 +131,9 @@ impl Controller {
     }
 }
 
-impl fmt::Display for Controller {
+impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use Controller::*;
+        use Instruction::*;
         match self {
             Repeat(constr, num) => {
                 write!(f, "Repeat ({}) {} times", constr, num)
@@ -183,8 +183,8 @@ impl fmt::Display for Controller {
     }
 }
 
-impl Instruction {
-    pub fn of_string(text: &str) -> Instruction {
+impl Controller {
+    pub fn of_string(text: &str) -> Controller {
         /*let re = regex::Regex::new(r"->|=>").unwrap();
         let pars: Vec<&str> = re.split(text).map(|par| par.trim()).collect();*/
         let pars = match parse_infix_like_restricted(text, vec!['-', '=', '>']) {
@@ -192,7 +192,7 @@ impl Instruction {
             None => vec![text.trim()],
         };
 
-        let controller = Controller::of_string(pars[0]);
+        let controller = Instruction::of_string(pars[0]);
         let operations = 
             if pars.len() > 1 {
                 split_list(pars[1]).iter().map(|x| Operation::of_string(x)).collect()
@@ -200,8 +200,8 @@ impl Instruction {
                 vec![]
             };
 
-        Instruction {
-            controller,
+        Controller {
+            instruction: controller,
             operations,
         }
     }
@@ -807,8 +807,8 @@ impl Instruction {
     }
 
     pub fn execute(&self) {
-        use Controller::*;
-        match &self.controller {
+        use Instruction::*;
+        match &self.instruction {
             Single(constr) => self.execute_single(constr),
             Repeat(constr, reps) => self.execute_reps(constr, *reps),
             Tabulate(tabulation) => self.execute_tabulate(tabulation),
@@ -830,8 +830,8 @@ impl Instruction {
     }
 }
 
-impl fmt::Display for Instruction {
+impl fmt::Display for Controller {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Constructor: {}\nOperations: [{}]", self.controller, self.operations_string())
+        write!(f, "Constructor: {}\nOperations: [{}]", self.instruction, self.operations_string())
     }
 }
