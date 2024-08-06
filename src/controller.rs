@@ -351,7 +351,7 @@ impl Controller {
         if is_good && should_print {
             println!("Found graph satisfying conditions!");
             operator.print_all();
-            operator.print_graph();
+            operator.print_entity();
         }
         is_good
     }
@@ -402,7 +402,7 @@ impl Controller {
                     if let Some(last_value) = last_value_opn {
                         if last_value > new_value {
                             println!("Decreasement found! g:");
-                            operator.print_graph();
+                            operator.print_entity();
                             println!("After adding edge {}", e);
                             break 'test_procs;
                         }
@@ -564,8 +564,8 @@ impl Controller {
             if all_satisfied {
                 if !forever {
                     println!("All conditions satisfied! {:?}", conditions);
-                    println!("Graph: ");
-                    operator.print_graph();
+                    println!("Entity: ");
+                    operator.print_entity();
                 }
                 self.compute_and_print(&mut operator, &mut ann);
                 satisfied = true;
@@ -595,7 +595,7 @@ impl Controller {
                 let success = operator.operate_bool(&mut ann, condition);
                 if success {
                     println!("Success!");
-                    operator.print_graph();
+                    operator.print_entity();
                 }
 
                 success
@@ -655,7 +655,7 @@ impl Controller {
                 println!("Constructor: {}", operator.get_constructor());
                 operator.print_all();
                 println!("Graph:");
-                operator.print_graph();
+                operator.print_entity();
             }
         }
         result

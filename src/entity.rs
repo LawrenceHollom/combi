@@ -24,6 +24,15 @@ impl Entity {
         }
     }
 
+    pub fn as_graph_opn(&self) -> Option<&Graph> {
+        use Entity::*;
+        match self {
+            Graph(g) => Some(g),
+            Poset(_) => None,
+            Digraph(_) => None,
+        }
+    }
+
     pub fn as_owned_graph(self) -> Graph {
         use Entity::*;
         match self {
@@ -66,6 +75,15 @@ impl Entity {
             Poset(p) => p.print(),
             Graph(g) => g.print(),
             Digraph(d) => d.print(),
+        }
+    }
+
+    pub fn is_connected(&self) -> bool {
+        use Entity::*;
+        match self {
+            Poset(p) => p.is_connected(),
+            Graph(g) => g.is_connected(),
+            Digraph(d) => d.is_connected(),
         }
     }
 }

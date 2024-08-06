@@ -167,7 +167,7 @@ impl Operator {
 
     pub fn operate_bool(&mut self, ann_box: &mut AnnotationsBox, operation: &BoolOperation) -> bool {
         use BoolOperation::*;
-        let ann = ann_box.get_annotations(self.e.as_graph());
+        let ann = self.e.as_graph_opn().map(|g| ann_box.get_annotations(g));
         match self.previous_bool_values.get(operation) {
             Some(value) => *value,
             None => {
@@ -186,7 +186,7 @@ impl Operator {
                         domination::is_domination_number_at_least(self.e.as_graph(), *lower_bound)
                     }
                     Const(val) => *val,
-                    IsConnected => self.e.as_graph().is_connected(),
+                    IsConnected => self.e.is_connected(),
                     HasLongMonotone => monotone::has_long_monotone(self.e.as_graph()),
                     HasIntervalColoring => interval_coloring::has_interval_coloring(self.e.as_graph()),
                     IsPlanar => planar::is_planar(self.e.as_graph()),
@@ -197,22 +197,22 @@ impl Operator {
                     IsTriangleFree => subgraphs::is_triangle_free(self.e.as_graph()),
                     CanBeEdgePartitionedIntoLinearForestAndMatching => edge_partitions::edge_partition_forest_and_matching(self.e.as_graph()),
                     GoodCubicDominationBase => cubic_domination::is_good(self.e.as_graph()),
-                    GameChromaticWinner(k) => chromatic::maker_wins_chromatic_game(self.e.as_graph(), ann, *k, false, false),
-                    IsChromaticGameMonotone => chromatic::game_chromatic_colour_monotone(self.e.as_graph(), ann),
+                    GameChromaticWinner(k) => chromatic::maker_wins_chromatic_game(self.e.as_graph(), ann.unwrap(), *k, false, false),
+                    IsChromaticGameMonotone => chromatic::game_chromatic_colour_monotone(self.e.as_graph(), ann.unwrap()),
                     IsChromaticGameStronglyMonotone => {
-                        chromatic::chromatic_game_strong_monotonicity(self.e.as_graph(), ann)
+                        chromatic::chromatic_game_strong_monotonicity(self.e.as_graph(), ann.unwrap())
                     }
                     ArboricityGameWinner(k) => arboricity::maker_wins_arboricity_game(self.e.as_graph(), *k),
                     IsDDegenerate(d) => degeneracy::is_d_degenerate(self.e.as_graph(), *d),
                     IsBunkbedPostRemovalInductionGood => bunkbed_reduced::is_post_removal_induction_always_good(self.e.as_graph()),
-                    CanChromaticGameHaveDudUniqueWin => chromatic::can_chormatic_game_dud_unique_win(self.e.as_graph(), ann),
-                    GameChromaticWinnerWithDuds(k) => chromatic::alice_wins_chromatic_game_with_duds(self.e.as_graph(), ann, *k),
-                    ChromaticGameSubsetMonotonicity(k) => chromatic::is_some_subset_non_monotone(self.e.as_graph(), ann, *k),
+                    CanChromaticGameHaveDudUniqueWin => chromatic::can_chormatic_game_dud_unique_win(self.e.as_graph(), ann.unwrap()),
+                    GameChromaticWinnerWithDuds(k) => chromatic::alice_wins_chromatic_game_with_duds(self.e.as_graph(), ann.unwrap(), *k),
+                    ChromaticGameSubsetMonotonicity(k) => chromatic::is_some_subset_non_monotone(self.e.as_graph(), ann.unwrap(), *k),
                     LinearGameChromaticWinner(k) => chromatic_linear::does_maker_win_linear_chromatic_game(self.e.as_graph(), *k),
-                    GameGrundyWinner(k) => grundy::does_maker_win_grundy_game(self.e.as_graph(), ann, *k),
-                    MakerWinsConnectedChromaticGame(k) => chromatic::maker_wins_chromatic_game(self.e.as_graph(), ann, *k, true, false),
+                    GameGrundyWinner(k) => grundy::does_maker_win_grundy_game(self.e.as_graph(), ann.unwrap(), *k),
+                    MakerWinsConnectedChromaticGame(k) => chromatic::maker_wins_chromatic_game(self.e.as_graph(), ann.unwrap(), *k, true, false),
                     IsBipartite => chromatic::is_bipartite(self.e.as_graph()),
-                    MakerWinsChromaticGameGreedily(k) => chromatic::alice_greedy_wins_chromatic_game(self.e.as_graph(), ann, *k),
+                    MakerWinsChromaticGameGreedily(k) => chromatic::alice_greedy_wins_chromatic_game(self.e.as_graph(), ann.unwrap(), *k),
                     HasSeymourVertex => seymour::has_seymour_vertex(self.e.as_graph()),
                     CanBobWinGraphGrabbing(max_weight) => grabbing::can_bob_win_graph_grabbing(self.e.as_graph(), *max_weight),
                     IsOddCoronaFree => !grabbing::has_induced_odd_cycle_corona(self.e.as_graph()),
@@ -225,6 +225,7 @@ impl Operator {
                     ContradictsReducedConditionedBunkbedConjecture => bunkbed_reduced::contradicts_reduced_conditioned_bunkbed_conjecture(self.e.as_graph()),
                     IsBunkbedReducible => bunkbed_reduced::is_bunkbed_reducible(self.e.as_graph()),
                     BunkbedGadget => bunkbed_reduced::is_contradictory_3_gadget(self.e.as_graph()),
+                    IsPosetIncomparabilityConnected => self.e.as_poset().is_incomparability_connected(),
                     Debug => debug::debug(self.e.as_graph()),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);
@@ -346,8 +347,8 @@ impl Operator {
         println!();
     }
 
-    pub fn print_graph(&self) {
-        self.e.as_graph().print()
+    pub fn print_entity(&self) {
+        self.e.print()
     }
 
     pub fn get_constructor(&self) -> &Constructor {

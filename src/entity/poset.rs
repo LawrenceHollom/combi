@@ -1,5 +1,6 @@
 mod random_construction;
 
+use queues::*;
 use std::usize;
 
 use utilities::*;
@@ -133,6 +134,57 @@ impl Poset {
         }
     }
 
+    /**
+     * Is there a comparability chain from 0 to everywhere else?
+     */
+    pub fn is_connected(&self) -> bool {
+        let mut found = VertexVec::new(self.order, &false);
+        let mut q = queue![];
+        let _ = q.add(Vertex::ZERO);
+        let mut num_found = 1;
+        while let Ok(next) = q.remove() {
+            for u in self.covered_by[next].iter() {
+                if !found[*u] {
+                    found[*u] = true;
+                    num_found += 1;
+                    let _ = q.add(*u);
+                }
+            }
+            for u in self.covers[next].iter() {
+                if !found[*u] {
+                    found[*u] = true;
+                    num_found += 1;
+                    let _ = q.add(*u);
+                }
+            }
+        }
+        num_found == self.order.to_usize()
+    }
+
+    pub fn incomp(&self, u: Vertex, v: Vertex) -> bool {
+        !(self.gt[u][v] || self.gt[v][u])
+    }
+
+    /**
+     * Is the incomparability graph connected?
+     */
+    pub fn is_incomparability_connected(&self) -> bool {
+        let mut found = VertexVec::new(self.order, &false);
+        let mut q = queue![];
+        let _ = q.add(Vertex::ZERO);
+        let mut num_found = 1;
+        while let Ok(next) = q.remove() {
+            for u in self.iter_verts() {
+                if self.incomp(next, u) && !found[u] {
+                    found[u] = true;
+                    num_found += 1;
+                    let _ = q.add(u);
+                }
+            }
+        }
+        num_found == self.order.to_usize()
+    }
+
     pub fn iter_verts(&self) -> impl Iterator<Item = Vertex> {
         self.order.iter_verts()
     }
@@ -175,6 +227,7 @@ impl Poset {
         let rows = self.gt.iter().map(
             |row| ("row!", row.to_vec_of_strings())
         ).collect::<Vec<(&str, VertexVec<String>)>>();
-        print_vertex_table(rows)
+        print_vertex_table(rows);
+        self.print_hasse()
     }
 }

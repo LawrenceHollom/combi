@@ -1,4 +1,5 @@
 use rand::{thread_rng, Rng};
+use queues::*;
 use utilities::{*, vertex_tools::*, edge_tools::*};
 
 use crate::entity::graph::*;
@@ -94,6 +95,31 @@ impl Digraph {
             }
         }
         Digraph::of_matrix(adj)
+    }
+
+    /**
+     * Can everywhere send a path to everywhere?
+     */
+    pub fn is_connected(&self) -> bool {
+        for v in self.iter_verts() {
+            let mut found = VertexVec::new(self.n, &false);
+            let mut q = queue![];
+            let _ = q.add(v);
+            let mut num_found = 1;
+            while let Ok(next) = q.remove() {
+                for u in self.out_adj_list[next].iter() {
+                    if !found[*u] {
+                        found[*u] = true;
+                        num_found += 1;
+                        let _ = q.add(*u);
+                    }
+                }
+            }
+            if num_found < self.n.to_usize() {
+                return false
+            }
+        }
+        true
     }
 
     pub fn iter_verts(&self) -> impl Iterator<Item = Vertex> {
