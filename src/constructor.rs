@@ -3,6 +3,7 @@ use std::fmt;
 
 use crate::pattern::*;
 use crate::graph::*;
+use crate::poset::*;
 
 mod products;
 mod erdos_renyi;
@@ -78,12 +79,20 @@ pub enum RecursiveConstructor {
 }
 
 #[derive(Clone)]
+pub enum PosetConstructor {
+    Chain(Order),
+    Antichain(Order),
+    ChainIntersection(Order, usize),
+}
+
+#[derive(Clone)]
 pub enum Constructor {
     Product(ProductConstructor, Box<Constructor>, Box<Constructor>),
     Random(RandomConstructor),
     Raw(RawConstructor),
     Recursive(RecursiveConstructor),
     RootedTree(Vec<usize>),
+    PosetConstr(PosetConstructor),
     File(String),
     Serialised(String),
     Special,
@@ -98,6 +107,7 @@ impl Constructor {
         use RawConstructor::*;
         use RandomConstructor::*;
         use RecursiveConstructor::*;
+        use PosetConstructor::*;
         
         match func.to_lowercase().as_str() {
             "cartesian" | "box" => {
@@ -257,6 +267,13 @@ impl Constructor {
                     Box::new(Self::of_string(args[1]))))
             }
             "serial" => Serialised(args[0].to_string()),
+            "chain" => PosetConstr(Chain(Order::of_string(args[0]))),
+            "antichain" | "anti" => PosetConstr(Antichain(Order::of_string(args[0]))),
+            "intersection" | "inter" => {
+                let order = Order::of_string(args[0]);
+                let k = args[1].parse().unwrap();
+                PosetConstr(ChainIntersection(order, k))
+            }
             str => File(str.to_owned()),
         }
     }
@@ -266,6 +283,7 @@ impl Constructor {
         use RandomConstructor::*;
         use RawConstructor::*;
         use RecursiveConstructor::*;
+        use PosetConstructor::*;
 
         match self {
             Product(product, c1, c2) => {
@@ -315,6 +333,9 @@ impl Constructor {
             Recursive(CoronaProduct(c1, c2)) => {
                 corona::new_corona_product(self, &c1.new_graph(), &c2.new_graph())
             }
+            PosetConstr(Chain(order)) => Poset::new_chain(*order),
+            PosetConstr(Antichain(order)) => Poset::new_antichain(*order),
+            PosetConstr(ChainIntersection(order, k)) => Poset::new_random_intersection(*order, *k),
             File(filename) => from_file::new_graph(filename),
             Serialised(code) => Graph::deserialise(code),
             Special => panic!("Cannot directly construct Special graph!"),
@@ -330,6 +351,7 @@ impl Constructor {
             Recursive(RecursiveConstructor::CoronaProduct(c1, c2)) => {
                 c1.is_random() || c2.is_random()
             }
+            PosetConstr(poset_constr) => poset_constr.is_random(),
             RootedTree(_) | Raw(_) | File(_) | Serialised(_) | Special => false,
             Random(_) => true,
         }
@@ -340,6 +362,16 @@ impl ProductConstructor {
     pub fn all() -> Vec<ProductConstructor> {
         use ProductConstructor::*;
         vec![Cartesian, Tensor, Lex, RevLex, Strong, Conormal, Rooted, RevRooted]
+    }
+}
+
+impl PosetConstructor {
+    pub fn is_random(&self) -> bool {
+        use PosetConstructor::*;
+        match self {
+            Chain(_) | Antichain(_) => false,
+            ChainIntersection(_, _) => true,
+        }
     }
 }
 

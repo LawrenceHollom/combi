@@ -10,7 +10,8 @@ mod constructor;
 mod pattern;
 mod annotations;
 mod digraph;
-//mod poset;
+mod poset;
+mod entity;
 
 use controller::*;
 

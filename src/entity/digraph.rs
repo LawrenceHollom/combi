@@ -1,7 +1,7 @@
 use rand::{thread_rng, Rng};
 use utilities::{*, vertex_tools::*, edge_tools::*};
 
-use crate::graph::*;
+use crate::entity::graph::*;
 
 #[derive(Clone)]
 pub struct Digraph {

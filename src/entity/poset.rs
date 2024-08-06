@@ -2,8 +2,8 @@ mod random_construction;
 
 use std::usize;
 
-use crate::util::*;
-use crate::util::vertex_tools::*;
+use utilities::*;
+use utilities::vertex_tools::*;
 
 use crate::constructor::*;
 
@@ -48,7 +48,7 @@ impl Poset {
             covered_by,
             height,
             max_height: order.to_usize() - 1,
-            constructor: Constructor::Raw(RawConstructor::Chain(order))
+            constructor: Constructor::PosetConstr(PosetConstructor::Chain(order))
         }
     }
 
@@ -60,7 +60,7 @@ impl Poset {
             covered_by: VertexVec::new(order, &vec![]),
             height: VertexVec::new(order, &0),
             max_height: 0,
-            constructor: Constructor::Raw(RawConstructor::Antichain(order))
+            constructor: Constructor::PosetConstr(PosetConstructor::Antichain(order))
         }
     }
 
@@ -161,7 +161,7 @@ impl Poset {
     }
 
     pub fn print(&self) {
-        self.constructor.print();
+        println!("{}", self.constructor);
         println!("\nCoverings: ");
         for (v, covers) in self.covers.iter_enum() {
             if covers.is_empty() {
@@ -171,9 +171,9 @@ impl Poset {
             }
         }
         println!("Order: {}", self.order);
-        let rows = self.gt.iter_enum().map(
-            |(v, row)| (v.to_string(), row.to_vec_of_strings())
-        ).collect::<Vec<(String, VertexVec<String>)>>();
+        let rows = self.gt.iter().map(
+            |row| ("row!", row.to_vec_of_strings())
+        ).collect::<Vec<(&str, VertexVec<String>)>>();
         print_vertex_table(rows)
     }
 }

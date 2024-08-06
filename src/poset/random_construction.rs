@@ -31,15 +31,16 @@ impl Poset {
 
     pub fn new_scrambled_chain(order: Order) -> Poset {
         let gt = Self::new_scrambled_order(order);
-        Poset::of_ordering(gt, Constructor::Raw(RawConstructor::Chain(order)))
+        Poset::of_ordering(gt, Constructor::PosetConstr(PosetConstructor::Chain(order)))
     }
 
     pub fn new_random_intersection(order: Order, k: usize) -> Poset {
-        let mut gt = Self::new_scrambled_order(order);
+        let mut gt = VertexVec::new_fn(order, 
+            |u| VertexVec::new_fn(order, |v| u > v));
         for _i in 0..k-1 {
             let ht = Self::new_scrambled_order(order);
             gt = VertexVec::new_fn(order, |u| VertexVec::new_fn(order, |v| gt[u][v] && ht[u][v]))
         }
-        Poset::of_ordering(gt, Constructor::Random(RandomConstructor::ChainIntersection(order, k)))
+        Poset::of_ordering(gt, Constructor::PosetConstr(PosetConstructor::ChainIntersection(order, k)))
     }
 }
