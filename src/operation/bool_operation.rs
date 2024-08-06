@@ -69,6 +69,8 @@ pub enum BoolOperation {
     IsBunkbedReducible,
     BunkbedGadget,
     IsPosetIncomparabilityConnected,
+    HasTwinElements,
+    HasAlmostTwinElements,
     Debug,
 }
 
@@ -195,6 +197,8 @@ impl BoolOperation {
                     "is_bb_reducible" | "is_bbr" => Some(IsBunkbedReducible),
                     "bb_gadget" => Some(BunkbedGadget),
                     "incomp_connected" | "is_incomp_connected" => Some(IsPosetIncomparabilityConnected),
+                    "has_twins" => Some(HasTwinElements),
+                    "has_almost_twins" => Some(HasAlmostTwinElements),
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -332,6 +336,8 @@ impl fmt::Display for BoolOperation {
             IsBunkbedReducible => "Is bunkbed reducible".to_owned(),
             BunkbedGadget => "Use as a gadget in the search for a bunkbed counterexample".to_owned(),
             IsPosetIncomparabilityConnected => "Has connected incomparability graph".to_owned(),
+            HasTwinElements => "Has a pair of twin elements".to_owned(),
+            HasAlmostTwinElements => "Has a pair of almost-twin elements".to_owned(),
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };
         write!(f, "{}", name)

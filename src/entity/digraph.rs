@@ -106,6 +106,7 @@ impl Digraph {
             let mut q = queue![];
             let _ = q.add(v);
             let mut num_found = 1;
+            found[v] = true;
             while let Ok(next) = q.remove() {
                 for u in self.out_adj_list[next].iter() {
                     if !found[*u] {

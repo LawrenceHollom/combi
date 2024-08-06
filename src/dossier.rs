@@ -26,6 +26,7 @@ mod seymour;
 mod grabbing;
 mod bunkbed_sites;
 mod poset_balance;
+mod twins;
 
 use std::collections::HashMap;
 
@@ -226,6 +227,8 @@ impl Operator {
                     IsBunkbedReducible => bunkbed_reduced::is_bunkbed_reducible(self.e.as_graph()),
                     BunkbedGadget => bunkbed_reduced::is_contradictory_3_gadget(self.e.as_graph()),
                     IsPosetIncomparabilityConnected => self.e.as_poset().is_incomparability_connected(),
+                    HasTwinElements => twins::has_twin_elements(&self.e),
+                    HasAlmostTwinElements => twins::has_almost_twin_elements(self.e.as_poset()),
                     Debug => debug::debug(self.e.as_graph()),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);

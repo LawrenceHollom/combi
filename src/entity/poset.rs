@@ -142,6 +142,7 @@ impl Poset {
         let mut q = queue![];
         let _ = q.add(Vertex::ZERO);
         let mut num_found = 1;
+        found[Vertex::ZERO] = true;
         while let Ok(next) = q.remove() {
             for u in self.covered_by[next].iter() {
                 if !found[*u] {
@@ -172,6 +173,7 @@ impl Poset {
         let mut found = VertexVec::new(self.order, &false);
         let mut q = queue![];
         let _ = q.add(Vertex::ZERO);
+        found[Vertex::ZERO] = true;
         let mut num_found = 1;
         while let Ok(next) = q.remove() {
             for u in self.iter_verts() {
