@@ -196,6 +196,11 @@ pub fn is_heuristically_balanced(p: &Poset) -> bool {
     false
 }
 
+/**
+ * Manually adjust weight of permutation depending on the elements 0, 1, 2, 3.
+ * Can assume that 2 < 1, 0 and 3 < 1; magic numbers for the 5 possible permutations are
+ * [169, 273, 273, 441, 441] (clear which ones are the likely ones.)
+ */
 pub fn compute_cap_balance_massive_hack(p: &Poset) -> Rational {
 
 }
