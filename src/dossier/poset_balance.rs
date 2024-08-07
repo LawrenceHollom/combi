@@ -196,6 +196,6 @@ pub fn is_heuristically_balanced(p: &Poset) -> bool {
     false
 }
 
-pub fn print_cap_balanced_massive_hack(p: &Poset) {
+pub fn compute_cap_balance_massive_hack(p: &Poset) -> Rational {
 
 }

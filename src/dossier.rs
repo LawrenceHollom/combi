@@ -268,6 +268,7 @@ impl Dossier {
                     DominationRedundancy => domination::domination_redundancy(self.e.as_graph()),
                     GrabbingColeafWeightedDifference => grabbing::coleaf_weighted_score_difference(self.e.as_graph()),
                     PosetBalance => poset_balance::balance_constant(self.e.as_poset()),
+                    PosetCapBalanceHackHackHack => poset_balance::compute_cap_balance_massive_hack(self.e.as_poset()),
                 };
                 self.previous_rational_values.insert(operation.to_owned(), value);
                 value
