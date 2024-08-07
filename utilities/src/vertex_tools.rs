@@ -438,6 +438,13 @@ impl VertexSet {
         self.verts &= !vs.verts;
     }
 
+    /**
+     * Could also be called remove_all_immutable
+     */
+    pub fn setminus(&self, vs: VertexSet) -> VertexSet {
+        VertexSet{ verts: self.verts & !vs.verts, n: self.n }
+    }
+
     pub fn union(&self, other: &VertexSet) -> VertexSet {
         VertexSet{ verts: self.verts | other.verts, n: self.n }
     }

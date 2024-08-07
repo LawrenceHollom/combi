@@ -14,6 +14,8 @@ pub struct Poset {
     gt: VertexVec<VertexVec<bool>>,
     pub covers: VertexVec<VertexSet>,
     pub covered_by: VertexVec<VertexSet>,
+    pub downsets: VertexVec<VertexSet>,
+    pub upsets: VertexVec<VertexSet>,
     pub height: VertexVec<usize>,
     max_height: usize,
     constructor: Constructor,
@@ -33,6 +35,8 @@ impl Poset {
             |u| VertexVec::new_fn(order, |v| u > v));
         let mut covers = VertexVec::new(order, &VertexSet::new(order));
         let mut covered_by = VertexVec::new(order, &VertexSet::new(order));
+        let mut downsets = VertexVec::new(order, &VertexSet::new(order));
+        let mut upsets = VertexVec::new(order, &VertexSet::new(order));
         let mut height = VertexVec::new(order, &0);
         for (i, v) in order.iter_verts().enumerate() {
             if v != Vertex::ZERO {
@@ -41,13 +45,21 @@ impl Poset {
             if v != order.to_max_vertex() {
                 covered_by[v].add_vert(v.incr())
             }
-            height[v] = i
+            height[v] = i;
+            for u in order.iter_verts() {
+                if u < v {
+                    downsets[v].add_vert(u);
+                    upsets[u].add_vert(v);
+                }
+            }
         }
         Poset {
             order,
             gt,
             covers,
             covered_by,
+            downsets,
+            upsets,
             height,
             max_height: order.to_usize() - 1,
             constructor: Constructor::PosetConstr(PosetConstructor::Chain(order))
@@ -60,6 +72,8 @@ impl Poset {
             gt: VertexVec::new(order, &VertexVec::new(order, &false)),
             covers: VertexVec::new(order, &VertexSet::new(order)),
             covered_by: VertexVec::new(order, &VertexSet::new(order)),
+            downsets: VertexVec::new(order, &VertexSet::new(order)),
+            upsets: VertexVec::new(order, &VertexSet::new(order)),
             height: VertexVec::new(order, &0),
             max_height: 0,
             constructor: Constructor::PosetConstr(PosetConstructor::Antichain(order))
@@ -128,6 +142,8 @@ impl Poset {
             gt,
             covers,
             covered_by,
+            downsets,
+            upsets,
             height,
             max_height,
             constructor,
@@ -161,6 +177,20 @@ impl Poset {
 
     pub fn comparable(&self, u: Vertex, v: Vertex) -> bool {
         self.gt[u][v] || self.gt[v][u]
+    }
+
+    /**
+     * Is the subposet induces by the vs a chain?
+     */
+    pub fn is_chain(&self, vs: VertexSet) -> bool {
+        for x in vs.iter() {
+            for y in vs.iter() {
+                if x != y && self.incomparable(x, y) {
+                    return false
+                }
+            }
+        }
+        true
     }
 
     /**

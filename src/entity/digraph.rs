@@ -127,6 +127,10 @@ impl Digraph {
         self.n.iter_verts()
     }
 
+    pub fn iter_pairs(&self) -> impl Iterator<Item = (Vertex, Vertex)> {
+        self.n.iter_pairs()
+    }
+
     pub fn print(&self) {
         println!("n: {}", self.n);
         println!("in degs: {:?}", self.in_deg.iter().map(|x| x.to_usize()).collect::<Vec<usize>>());
