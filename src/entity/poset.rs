@@ -16,8 +16,8 @@ pub struct Poset {
     pub covered_by: VertexVec<VertexSet>,
     pub downsets: VertexVec<VertexSet>,
     pub upsets: VertexVec<VertexSet>,
-    pub height: VertexVec<usize>,
-    max_height: usize,
+    pub heights: VertexVec<usize>,
+    pub height: usize,
     constructor: Constructor,
 }
 
@@ -37,7 +37,7 @@ impl Poset {
         let mut covered_by = VertexVec::new(order, &VertexSet::new(order));
         let mut downsets = VertexVec::new(order, &VertexSet::new(order));
         let mut upsets = VertexVec::new(order, &VertexSet::new(order));
-        let mut height = VertexVec::new(order, &0);
+        let mut heights = VertexVec::new(order, &0);
         for (i, v) in order.iter_verts().enumerate() {
             if v != Vertex::ZERO {
                 covers[v].add_vert(v.decr());
@@ -45,7 +45,7 @@ impl Poset {
             if v != order.to_max_vertex() {
                 covered_by[v].add_vert(v.incr())
             }
-            height[v] = i;
+            heights[v] = i;
             for u in order.iter_verts() {
                 if u < v {
                     downsets[v].add_vert(u);
@@ -60,8 +60,8 @@ impl Poset {
             covered_by,
             downsets,
             upsets,
-            height,
-            max_height: order.to_usize() - 1,
+            heights,
+            height: order.to_usize(),
             constructor: Constructor::PosetConstr(PosetConstructor::Chain(order))
         }
     }
@@ -74,8 +74,8 @@ impl Poset {
             covered_by: VertexVec::new(order, &VertexSet::new(order)),
             downsets: VertexVec::new(order, &VertexSet::new(order)),
             upsets: VertexVec::new(order, &VertexSet::new(order)),
-            height: VertexVec::new(order, &0),
-            max_height: 0,
+            heights: VertexVec::new(order, &0),
+            height: 1,
             constructor: Constructor::PosetConstr(PosetConstructor::Antichain(order))
         }
     }
@@ -128,13 +128,13 @@ impl Poset {
             height[v] = h;
         }
 
-        let mut height = VertexVec::new(order, &usize::MAX);
+        let mut heights = VertexVec::new(order, &usize::MAX);
         let mut max_height = 0;
         for v in order.iter_verts() {
-            if height[v] == usize::MAX {
-                compute_height_rec(order, &covered_by, &mut height, v)
+            if heights[v] == usize::MAX {
+                compute_height_rec(order, &covered_by, &mut heights, v)
             }
-            max_height = max_height.max(height[v]);
+            max_height = max_height.max(heights[v]);
         }
         
         Poset {
@@ -144,8 +144,8 @@ impl Poset {
             covered_by,
             downsets,
             upsets,
-            height,
-            max_height,
+            heights,
+            height: max_height + 1,
             constructor,
         }
     }
@@ -177,6 +177,18 @@ impl Poset {
 
     pub fn comparable(&self, u: Vertex, v: Vertex) -> bool {
         self.gt[u][v] || self.gt[v][u]
+    }
+
+    pub fn get_width(&self) -> u32 {
+        let mut h_counts = vec![0; self.height];
+        let mut width = 0;
+        for h in self.heights.iter() {
+            h_counts[*h] += 1;
+            if h_counts[*h] > width {
+                width = h_counts[*h];
+            }
+        }
+        width
     }
 
     /**
@@ -224,16 +236,16 @@ impl Poset {
 
     pub fn print_hasse(&self) {
         println!("Hasse diagram of the poset:");
-        for h in 0..=self.max_height {
+        for h in 0..self.height {
             println!("Height = {}", h);
             for v in self.order.iter_verts() {
-                if self.height[v] == h {
+                if self.heights[v] == h {
                     if self.covers[v].is_empty() {
                         println!("{}", v);
                     } else {
                         print!("{} <", v);
                         for u in self.covers[v].iter() {
-                            print!(" {}[{}],", u, self.height[u]);
+                            print!(" {}[{}],", u, self.heights[u]);
                         }
                         println!();
                     }

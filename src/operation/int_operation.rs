@@ -41,6 +41,9 @@ pub enum IntOperation {
     ConnectedMarkingGameNumber,
     BipartiteSideDifference,
     NumCutvertices,
+    Height,
+    Width,
+    NumLinearExtensions,
     Number(u32),
 }
 
@@ -92,6 +95,9 @@ impl IntOperation {
             "connected_marking_game_numner" | "mark_c" => Some(ConnectedMarkingGameNumber),
             "bip_side_diff" | "bip_diff" => Some(BipartiteSideDifference),
             "num_cutvertices" | "num_cut" => Some(NumCutvertices),
+            "height" => Some(Height),
+            "width" => Some(Width),
+            "num_extensions" => Some(NumLinearExtensions),
             str => str.parse().ok().map(Number),
         }
     }
@@ -139,6 +145,9 @@ impl fmt::Display for IntOperation {
             ConnectedMarkingGameNumber => "Connected marking game number",
             BipartiteSideDifference => "Difference between side sizes in bipartition",
             NumCutvertices => "Number of cutvertices",
+            Height => "Poset height",
+            Width => "Poset width",
+            NumLinearExtensions => "Number of linear extensions",
             Number(n) => {
                 sta = n.to_string();
                 sta.as_str()

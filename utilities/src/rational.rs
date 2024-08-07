@@ -108,7 +108,7 @@ impl Ord for Rational {
 
 impl fmt::Display for Rational {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} / {}", self.numerator, self.denominator)
+        write!(f, "{} / {} ≈ {:.4}", self.numerator, self.denominator, self.to_f64())
     }
 }
 

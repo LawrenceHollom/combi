@@ -76,13 +76,15 @@ impl AnnotationsBox {
 impl Operator {
     pub fn operate_int(&mut self, ann_box: &mut AnnotationsBox, operation: &IntOperation) -> u32 {
         use IntOperation::*;
-        let ann = ann_box.get_annotations(self.e.as_graph());
+        let ann = self.e.as_graph_opn().map(|g| ann_box.get_annotations(g));
         match self.previous_int_values.get(operation) {
             Some(value) => *value,
             None => {
                 let value = match operation {
                     Order => self.e.as_graph().n.to_usize() as u32,
                     Size => self.e.as_graph().size() as u32,
+                    Height => self.e.as_poset().height as u32,
+                    Width => self.e.as_poset().get_width(),
                     LargestComponent => self.e.as_graph().largest_component(),
                     NumComponents => self.e.as_graph().num_components(),
                     CliqueNumber => cliques::largest_clique(self.e.as_graph()),
@@ -107,17 +109,18 @@ impl Operator {
                     Radius => self.e.as_graph().radius(),
                     Thomassen(long_path_cap) => edge_partitions::thomassen_check(self.e.as_graph(), *long_path_cap),
                     NumBipartiteEdgeBisections => edge_partitions::count_bipartite_edge_bisections(self.e.as_graph()),
-                    GameChromaticNumber => chromatic::game_chromatic_number(self.e.as_graph(), ann),
+                    GameChromaticNumber => chromatic::game_chromatic_number(self.e.as_graph(), ann.unwrap()),
                     GameChromaticNumberGreedy => chromatic::alice_greedy_lower_bound(self.e.as_graph()) as u32,
                     GameArboricityNumber => arboricity::game_arboricity_number(self.e.as_graph()),
                     Degeneracy => degeneracy::degeneracy(self.e.as_graph()),
                     LinearGameChromaticNumber => chromatic_linear::linear_game_chromatic_number(self.e.as_graph()),
-                    GameGrundyNumber => grundy::game_grundy_number(self.e.as_graph(), ann),
+                    GameGrundyNumber => grundy::game_grundy_number(self.e.as_graph(), ann.unwrap()),
                     MarkingGameNumber => marking_game::marking_game_number(self.e.as_graph(), false),
-                    ConnectedGameChromaticNumber => chromatic::connected_game_chromatic_number(self.e.as_graph(), ann),
+                    ConnectedGameChromaticNumber => chromatic::connected_game_chromatic_number(self.e.as_graph(), ann.unwrap()),
                     ConnectedMarkingGameNumber => marking_game::marking_game_number(self.e.as_graph(), true),
                     BipartiteSideDifference => chromatic::bipartite_side_difference(self.e.as_graph()),
                     NumCutvertices => connectedness::num_cutvertices(self.e.as_graph()),
+                    NumLinearExtensions => poset_balance::num_linear_extensions(self.e.as_poset()),
                     Number(k) => *k,
                 };
                 self.previous_int_values.insert(*operation, value);
@@ -316,7 +319,7 @@ impl Operator {
         match operation {
             Int(op) => u32::to_string(&self.operate_int(ann, op)),
             Bool(op) => bool::to_string(&self.operate_bool(ann, op)),
-            Rational(op) => format!("{:.4}", self.operate_rational(ann, op)),
+            Rational(op) => format!("{}", self.operate_rational(ann, op)),
             Unit(op) => {
                 self.operate_unit(ann, op);
                 "()".to_owned()
