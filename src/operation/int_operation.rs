@@ -44,6 +44,7 @@ pub enum IntOperation {
     Height,
     Width,
     NumLinearExtensions,
+    MaxMatching,
     Number(u32),
 }
 
@@ -98,6 +99,7 @@ impl IntOperation {
             "height" => Some(Height),
             "width" => Some(Width),
             "num_extensions" => Some(NumLinearExtensions),
+            "max_matching" => Some(MaxMatching),
             str => str.parse().ok().map(Number),
         }
     }
@@ -148,6 +150,7 @@ impl fmt::Display for IntOperation {
             Height => "Poset height",
             Width => "Poset width",
             NumLinearExtensions => "Number of linear extensions",
+            MaxMatching => "Max matching size in a bipartite graph",
             Number(n) => {
                 sta = n.to_string();
                 sta.as_str()

@@ -27,6 +27,7 @@ mod grabbing;
 mod bunkbed_sites;
 mod poset_balance;
 mod twins;
+mod matching;
 
 use std::collections::HashMap;
 
@@ -121,6 +122,7 @@ impl Dossier {
                     BipartiteSideDifference => chromatic::bipartite_side_difference(self.e.as_graph()),
                     NumCutvertices => connectedness::num_cutvertices(self.e.as_graph()),
                     NumLinearExtensions => poset_balance::num_linear_extensions(self.e.as_poset()),
+                    MaxMatching => matching::max_matching_size(self.e.as_graph()),
                     Number(k) => *k,
                 };
                 self.previous_int_values.insert(*operation, value);

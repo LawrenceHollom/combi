@@ -8,6 +8,11 @@ use utilities::vertex_tools::*;
 
 use crate::constructor::*;
 
+use crate::dossier::*;
+use crate::entity::*;
+
+use super::Graph;
+
 #[derive(Clone)]
 pub struct Poset {
     pub order: Order,
@@ -179,16 +184,27 @@ impl Poset {
         self.gt[u][v] || self.gt[v][u]
     }
 
+    /**
+     * Construct an auxilliary bipartite graph and find a maximal matching.
+     * By Dilworth's theorem, this allows us to deduce the size of the largest antichain.
+     */
     pub fn get_width(&self) -> u32 {
-        let mut h_counts = vec![0; self.height];
-        let mut width = 0;
-        for h in self.heights.iter() {
-            h_counts[*h] += 1;
-            if h_counts[*h] > width {
-                width = h_counts[*h];
+        let n = self.order.times(2);
+        let mut adj = VertexVec::new(n, &VertexVec::new(n, &false));
+        for (u, v) in self.iter_pairs() {
+            if self.gt[u][v] {
+                adj[v][u.incr_by_order(self.order)] = true;
+            } else if self.gt[v][u] {
+                adj[u][v.incr_by_order(self.order)] = true;
             }
         }
-        width
+        let g = Graph::of_matrix(adj, Constructor::Special);
+        let mut dossier = Dossier::new(Entity::Graph(g));
+        let mut ann_box = AnnotationsBox::new();
+        let operation = crate::operation::int_operation::IntOperation::MaxMatching;
+        let max_matching = dossier.operate_int(&mut ann_box, &operation);
+        // This is the number of edges in chains; subtracting this from order gives the number of chains.
+        self.order.to_usize() as u32 - max_matching
     }
 
     /**
