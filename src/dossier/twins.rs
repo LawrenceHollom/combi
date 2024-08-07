@@ -5,10 +5,13 @@ use crate::entity::poset::*;
  * Elements are twin elements if they cannot be distinguished by their
  * neighbours; e.g. they cover and are covered by the same elements,
  * or have the same adj, or similar.
+ * 
+ * Algorithms could probably be n log n by e.g. sorting a list of vertex sets.
  */
 
 fn poset_has_twin_elements(p: &Poset) -> bool {
-
+    for (u, v) in p.iter_pairs() {
+    }
 }
 
 fn graph_has_twin_elements(g: &Graph) -> bool {

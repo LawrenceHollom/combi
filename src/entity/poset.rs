@@ -12,8 +12,8 @@ use crate::constructor::*;
 pub struct Poset {
     pub order: Order,
     gt: VertexVec<VertexVec<bool>>,
-    pub covers: VertexVec<Vec<Vertex>>,
-    pub covered_by: VertexVec<Vec<Vertex>>,
+    pub covers: VertexVec<VertexSet>,
+    pub covered_by: VertexVec<VertexSet>,
     pub height: VertexVec<usize>,
     max_height: usize,
     constructor: Constructor,
@@ -31,15 +31,15 @@ impl Poset {
     pub fn new_chain(order: Order) -> Poset {
         let gt = VertexVec::new_fn(order, 
             |u| VertexVec::new_fn(order, |v| u > v));
-        let mut covers = VertexVec::new(order, &vec![]);
-        let mut covered_by = VertexVec::new(order, &vec![]);
+        let mut covers = VertexVec::new(order, &VertexSet::new(order));
+        let mut covered_by = VertexVec::new(order, &VertexSet::new(order));
         let mut height = VertexVec::new(order, &0);
         for (i, v) in order.iter_verts().enumerate() {
             if v != Vertex::ZERO {
-                covers[v].push(v.decr());
+                covers[v].add_vert(v.decr());
             }
             if v != order.to_max_vertex() {
-                covered_by[v].push(v.incr())
+                covered_by[v].add_vert(v.incr())
             }
             height[v] = i
         }
@@ -58,8 +58,8 @@ impl Poset {
         Poset {
             order,
             gt: VertexVec::new(order, &VertexVec::new(order, &false)),
-            covers: VertexVec::new(order, &vec![]),
-            covered_by: VertexVec::new(order, &vec![]),
+            covers: VertexVec::new(order, &VertexSet::new(order)),
+            covered_by: VertexVec::new(order, &VertexSet::new(order)),
             height: VertexVec::new(order, &0),
             max_height: 0,
             constructor: Constructor::PosetConstr(PosetConstructor::Antichain(order))
@@ -75,8 +75,8 @@ impl Poset {
 
     pub fn of_ordering(gt: VertexVec<VertexVec<bool>>, constructor: Constructor) -> Poset {
         let order = gt.len();
-        let mut covers = VertexVec::new(order, &vec![]);
-        let mut covered_by = VertexVec::new(order, &vec![]);
+        let mut covers = VertexVec::new(order, &VertexSet::new(order));
+        let mut covered_by = VertexVec::new(order, &VertexSet::new(order));
 
         let mut downsets = VertexVec::new(order, &VertexSet::new(order));
         let mut upsets = VertexVec::new(order, &VertexSet::new(order));
@@ -93,23 +93,23 @@ impl Poset {
 
         for (u, v) in order.iter_pairs() {
             if gt[u][v] && downsets[u].inter(&upsets[v]).is_empty() {
-                covered_by[u].push(v);
-                covers[v].push(u);
+                covered_by[u].add_vert(v);
+                covers[v].add_vert(u);
             }
             if gt[v][u] && upsets[u].inter(&downsets[v]).is_empty() {
-                covers[u].push(v);
-                covered_by[v].push(u);
+                covers[u].add_vert(v);
+                covered_by[v].add_vert(u);
             }
         }
         
-        fn compute_height_rec(order: Order, covered_by: &VertexVec<Vec<Vertex>>, height: &mut VertexVec<usize>, v: Vertex) {
+        fn compute_height_rec(order: Order, covered_by: &VertexVec<VertexSet>, height: &mut VertexVec<usize>, v: Vertex) {
             let mut h = 0;
             for u in covered_by[v].iter() {
-                if height[*u] == usize::MAX {
-                    compute_height_rec(order, covered_by, height, *u);
+                if height[u] == usize::MAX {
+                    compute_height_rec(order, covered_by, height, u);
                 }
                 // So now we do know all those heights
-                h = h.max(height[*u] + 1);
+                h = h.max(height[u] + 1);
             }
             height[v] = h;
         }
@@ -144,26 +144,23 @@ impl Poset {
         let mut num_found = 1;
         found[Vertex::ZERO] = true;
         while let Ok(next) = q.remove() {
-            for u in self.covered_by[next].iter() {
-                if !found[*u] {
-                    found[*u] = true;
+            for u in self.order.iter_verts() {
+                if !found[u] && self.comparable(u, next) {
+                    found[u] = true;
                     num_found += 1;
-                    let _ = q.add(*u);
-                }
-            }
-            for u in self.covers[next].iter() {
-                if !found[*u] {
-                    found[*u] = true;
-                    num_found += 1;
-                    let _ = q.add(*u);
+                    let _ = q.add(u);
                 }
             }
         }
         num_found == self.order.to_usize()
     }
 
-    pub fn incomp(&self, u: Vertex, v: Vertex) -> bool {
-        !(self.gt[u][v] || self.gt[v][u])
+    pub fn incomparable(&self, u: Vertex, v: Vertex) -> bool {
+        !self.comparable(u, v)
+    }
+
+    pub fn comparable(&self, u: Vertex, v: Vertex) -> bool {
+        self.gt[u][v] || self.gt[v][u]
     }
 
     /**
@@ -177,7 +174,7 @@ impl Poset {
         let mut num_found = 1;
         while let Ok(next) = q.remove() {
             for u in self.iter_verts() {
-                if self.incomp(next, u) && !found[u] {
+                if self.incomparable(next, u) && !found[u] {
                     found[u] = true;
                     num_found += 1;
                     let _ = q.add(u);
@@ -206,7 +203,7 @@ impl Poset {
                     } else {
                         print!("{} <", v);
                         for u in self.covers[v].iter() {
-                            print!(" {}[{}],", u, self.height[*u]);
+                            print!(" {}[{}],", u, self.height[u]);
                         }
                         println!();
                     }
