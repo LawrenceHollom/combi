@@ -113,6 +113,54 @@ pub fn is_num_extensions_less_than(p: &Poset, k: usize) -> bool {
  * Prints some heuristics about whether we expect the poset to be balanced or not.
  */
 pub fn print_heuristics(p: &Poset) {
+    fn count_permutations_rec(p: &Poset, placed: VertexSet, num_placed: usize, num_perms: &mut [u64; 5], interesting_order: u32, num_interesting_placed: u32) -> u64{
+        if num_placed == p.order.to_usize() {
+            // Check what order elements 6, 7, 8, 9 are in.
+            match interesting_order {
+                8967 => num_perms[0] += 1,
+                8976 => num_perms[1] += 1,
+                9867 => num_perms[2] += 1,
+                9876 => num_perms[3] += 1,
+                9786 => num_perms[4] += 1,
+                _ => panic!("My god you are an idiot. {}", interesting_order),
+            }
+            return 1;
+        }
+        let mut count = 0;
+        for v in p.iter_verts() {
+            if !placed.has_vert(v) {
+                let mut can_place = true;
+                'test_coverees: for u in p.covered_by[v].iter() {
+                    if !placed.has_vert(u) {
+                        can_place = false;
+                        break 'test_coverees;
+                    }
+                }
+                if can_place {
+                    // sub_count is how many extensions there are with v placed.
+                    let mut new_num_interesting_placed = num_interesting_placed;
+                    let mut new_interesting_order = interesting_order;
+                    if v == Vertex::of_usize(6) {
+                        new_interesting_order += num_interesting_placed * 6;
+                        new_num_interesting_placed *= 10;
+                    } else if v == Vertex::of_usize(7) {
+                        new_interesting_order += num_interesting_placed * 7;
+                        new_num_interesting_placed *= 10;
+                    } else if v == Vertex::of_usize(8) {
+                        new_interesting_order += num_interesting_placed * 8;
+                        new_num_interesting_placed *= 10;
+                    } else if v == Vertex::of_usize(9) {
+                        new_interesting_order += num_interesting_placed * 9;
+                        new_num_interesting_placed *= 10;
+                    }
+                    let new_placed = placed.add_vert_immutable(v);
+                    let sub_count = count_permutations_rec(p, new_placed, num_placed + 1, num_perms, new_interesting_order, new_num_interesting_placed);
+                    count += sub_count;
+                }
+            }
+        }
+        count
+    }
     println!("Comparably balanced pairs:");
     for (u, v) in p.iter_pairs() {
         if p.incomparable(u, v) && p.downsets[u].size() + p.upsets[v].size() == p.upsets[u].size() + p.downsets[v].size() {
@@ -129,6 +177,10 @@ pub fn print_heuristics(p: &Poset) {
         }
     }
     println!("{} levels of width 3", width_3_levels);
+
+    let mut num_perms = [0; 5];
+    count_permutations_rec(p, VertexSet::new(p.order), 0, &mut num_perms, 0, 1);
+    println!("Num perms = {:?}", num_perms);
 }
 
 /**
@@ -142,4 +194,8 @@ pub fn is_heuristically_balanced(p: &Poset) -> bool {
         }
     }
     false
+}
+
+pub fn print_cap_balanced_massive_hack(p: &Poset) {
+
 }
