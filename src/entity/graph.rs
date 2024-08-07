@@ -656,7 +656,7 @@ impl Graph {
 
     #[allow(dead_code)]
     pub fn test_graph(index: usize) -> Graph {
-        crate::constructor::from_file::new_graph(&format!("test/test_{}", index))
+        crate::constructor::from_file::new_entity(&format!("test/test_{}", index)).as_owned_graph()
     }
 
     pub fn serialise(&self) -> String {

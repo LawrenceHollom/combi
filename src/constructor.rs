@@ -365,7 +365,7 @@ impl Constructor {
                 let g = constr.new_entity().as_owned_graph();
                 d(Digraph::of_matrix(g.adj))
             }
-            File(filename) => g(from_file::new_graph(filename)),
+            File(filename) => from_file::new_entity(filename),
             Serialised(code) => g(Graph::deserialise(code)),
             Special => panic!("Cannot directly construct Special graph!"),
         }
