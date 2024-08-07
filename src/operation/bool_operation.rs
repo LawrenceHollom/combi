@@ -71,6 +71,7 @@ pub enum BoolOperation {
     IsPosetIncomparabilityConnected,
     HasTwinElements,
     HasAlmostTwinElements,
+    NumLinearExtensionsLessThan(usize),
     Debug,
 }
 
@@ -199,6 +200,7 @@ impl BoolOperation {
                     "incomp_connected" | "is_incomp_connected" => Some(IsPosetIncomparabilityConnected),
                     "has_twins" => Some(HasTwinElements),
                     "has_almost_twins" => Some(HasAlmostTwinElements),
+                    "num_extensions_less_than" => Some(NumLinearExtensionsLessThan(args[0].parse().unwrap())),
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -338,6 +340,7 @@ impl fmt::Display for BoolOperation {
             IsPosetIncomparabilityConnected => "Has connected incomparability graph".to_owned(),
             HasTwinElements => "Has a pair of twin elements".to_owned(),
             HasAlmostTwinElements => "Has a pair of almost-twin elements".to_owned(),
+            NumLinearExtensionsLessThan(k) => format!("Has at most {} linear extensions", k),
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };
         write!(f, "{}", name)

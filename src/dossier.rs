@@ -89,7 +89,7 @@ impl Operator {
                     NumComponents => self.e.as_graph().num_components(),
                     CliqueNumber => cliques::largest_clique(self.e.as_graph()),
                     IndependenceNumber => cliques::independence_number(self.e.as_graph()),
-                    Girth => girth::girth(self.e.as_graph()),
+                    Girth => girth::girth(&self.e),
                     DominationNumber => domination::domination_number(self.e.as_graph()),
                     EdgeDominationNumber => domination::edge_domination_number(self.e.as_graph()),
                     ChromaticNumber => chromatic::chromatic_number(self.e.as_graph()),
@@ -232,6 +232,7 @@ impl Operator {
                     IsPosetIncomparabilityConnected => self.e.as_poset().is_incomparability_connected(),
                     HasTwinElements => twins::has_twin_elements(&self.e),
                     HasAlmostTwinElements => twins::has_almost_twin_elements(self.e.as_poset()),
+                    NumLinearExtensionsLessThan(k) => poset_balance::is_num_extensions_less_than(self.e.as_poset(), *k),
                     Debug => debug::debug(self.e.as_graph()),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);

@@ -1,6 +1,7 @@
-use crate::entity::graph::*;
+use crate::entity::{*, graph::*, poset::*};
+use utilities::vertex_tools::*;
 
-pub fn girth(g: &Graph) -> u32 {
+fn graph_girth(g: &Graph) -> u32 {
     let dist = g.floyd_warshall();
     let mut girth = g.n.to_usize();
 
@@ -30,6 +31,35 @@ pub fn girth(g: &Graph) -> u32 {
     girth as u32
 }
 
+/**
+ * The girth of a poset is defined (by us) to be the max number of elements
+ * incomparable to a single x in P.
+ */
+fn poset_girth(p: &Poset) -> u32 {
+    let mut incomp_sizes = VertexVec::new(p.order, &0);
+    for (u, v) in p.iter_pairs() {
+        if p.incomparable(u, v) {
+            incomp_sizes[u] += 1;
+            incomp_sizes[v] += 1;
+        }
+    }
+
+    let mut girth = 0;
+    for v in p.iter_verts() {
+        girth = girth.max(incomp_sizes[v])
+    }
+    girth
+}
+
+pub fn girth(e: &Entity) -> u32 {
+    use Entity::*;
+    match e {
+        Graph(g) => graph_girth(g),
+        Poset(p) => poset_girth(p),
+        Digraph(_d) => todo!("If you want to use digraph girth, you need to code it first."),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -37,21 +67,21 @@ mod tests {
 
     #[test]
     fn test_girth_1() {
-        assert_eq!(girth(&Graph::test_graph(1)), 3);
+        assert_eq!(graph_girth(&Graph::test_graph(1)), 3);
     }
 
     #[test]
     fn test_girth_2() {
-        assert_eq!(girth(&Graph::test_graph(2)), 4);
+        assert_eq!(graph_girth(&Graph::test_graph(2)), 4);
     }
 
     #[test]
     fn test_girth_3() {
-        assert_eq!(girth(&Graph::test_graph(3)), 4);
+        assert_eq!(graph_girth(&Graph::test_graph(3)), 4);
     }
 
     #[test]
     fn test_girth_c10() {
-        assert_eq!(girth(&Graph::new_cyclic(Order::of_usize(10))), 10);
+        assert_eq!(graph_girth(&Graph::new_cyclic(Order::of_usize(10))), 10);
     }
 }
