@@ -47,7 +47,7 @@ impl RationalOperation {
             }
             None => {
                 use RationalOperation::*;
-                match text {
+                match text.trim().to_lowercase().as_str() {
                     "domination_redundancy" | "gamma_red" => Some(DominationRedundancy),
                     "grabbing_coleaf_difference" | "gcwd" => Some(GrabbingColeafWeightedDifference),
                     "balance" => Some(PosetBalance),

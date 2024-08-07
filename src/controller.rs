@@ -30,6 +30,15 @@ pub struct Tabulation {
     pub step: f64,
 }
 
+pub struct LineGraphMetadata {
+    pub x_axis: RationalOperation,
+    pub min_x: f64,
+    pub max_x: f64,
+    pub num_x_divisions: usize,
+    pub num_reps: usize,
+    pub conditions: Vec<BoolOperation>,
+}
+
 pub enum Instruction {
     Single(Constructor),
     Repeat(Constructor, usize),
@@ -45,6 +54,7 @@ pub enum Instruction {
     ProcessUntilDecreasing(Order, IntOperation, Vec<BoolOperation>),
     SearchAll(Order, Vec<BoolOperation>),
     Collate(Constructor, usize, StringListOperation),
+    LineGraph(Constructor, LineGraphMetadata),
     Help,
 }
 
@@ -63,6 +73,13 @@ impl fmt::Display for Tabulation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Tabulate results for simulations of G({}, p) for p from {} to {} in steps of {}",
             self.order, self.start, self.end, self.step)
+    }
+}
+
+impl fmt::Display for LineGraphMetadata {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Produce CSV table, first column: ({}) from {:.3} to {:.3} in {} steps, with {} samples of objects passing all of {:?}",
+            self.x_axis, self.min_x, self.max_x, self.num_x_divisions, self.num_reps, self.conditions)
     }
 }
 
@@ -124,6 +141,22 @@ impl Instruction {
                 Collate(Constructor::of_string(args[0]), args[1].parse().unwrap(),
                     StringListOperation::of_string_result(args[2]).unwrap())
             }
+            "plot" | "line_graph" => {
+                let x_axis = 
+                    if let Some(op) = RationalOperation::of_string_result(args[1]) {
+                        op
+                    } else {
+                        RationalOperation::OfInt(IntOperation::of_string_result(args[1]).unwrap())
+                    };
+                LineGraph(Constructor::of_string(args[0]), LineGraphMetadata {
+                    x_axis,
+                    min_x: args[2].trim().parse().unwrap(),
+                    max_x: args[3].trim().parse().unwrap(),
+                    num_x_divisions: args[4].trim().parse().unwrap(),
+                    num_reps: args[5].trim().parse().unwrap(),
+                    conditions: args.iter().skip(6).map(|x| BoolOperation::of_string_result(x).unwrap()).collect(),
+                })
+            }
             "help" | "h" => Help,
             &_ => {
                 Single(Constructor::of_string(text))
@@ -155,7 +188,7 @@ impl fmt::Display for Instruction {
                 write!(f, "Search all trees of order {} and max_degree {} until ({})", n, max_degree, condition)
             }
             KitchenSink(conditions) => {
-                write!(f, "Search the kitchen sink for a graph satisfying {:?}", *conditions)
+                write!(f, "Search the kiLineGraphtchen sink for a graph satisfying {:?}", *conditions)
             }
             KitchenSinkAll(conditions) => {
                 write!(f, "Search the kitchen sink for all graphs satisfying {:?}", *conditions)
@@ -178,6 +211,9 @@ impl fmt::Display for Instruction {
             }
             Collate(constr, reps, op) => {
                 write!(f, "Collate {} values of ({}) over {} reps", op, constr, reps)
+            }
+            LineGraph(constr, metadata) => {
+                write!(f, "Plot line graph of {} with metadata: {}", constr, metadata)
             }
             Help => write!(f, "Print help text"),
         }
@@ -494,6 +530,16 @@ impl Controller {
     }
 
     fn execute_until(&self, constr: &Constructor, conditions: &[BoolOperation], forever: bool) {
+        fn print_success_proportions(conditions: &[BoolOperation], num_passing_step: &Vec<usize>, rep: usize) {
+            fn f(x: usize, y: usize) -> f64 {
+                (100.0 * x as f64) / (y as f64)
+            }
+            println!("SUCCESS RATES:\n\t[0. {}: {} ; {:.1}%]", conditions[0], num_passing_step[0], f(num_passing_step[0], rep));
+            for (i, condition) in conditions.iter().enumerate().skip(1) {
+                println!("\t[{}. {}: {} ; {:.1}%]", i, condition, num_passing_step[i], f(num_passing_step[i], num_passing_step[i - 1]))
+            }
+        }
+
         let mut satisfied = false;
         let mut rep = 0;
         let mut lines_printed = 0;
@@ -501,6 +547,7 @@ impl Controller {
         let mut checkpoint_time = SystemTime::now();
         let mut required_steps = 0;
         let mut regular_rep_printing = 1000;
+        let mut num_passing_step = vec![0; conditions.len()];
         while !satisfied || forever {
             let mut checkpointed = false;
             if lines_printed >= 30 {
@@ -522,9 +569,11 @@ impl Controller {
                 checkpoint_time = SystemTime::now();
             }
             let mut printed_number = false;
+            let mut printed_round_number = false;
             if required_steps == 0 || rep % regular_rep_printing == 0 {
                 pretty_print_int(rep, ": ");
                 printed_number = true;
+                printed_round_number = true;
                 if rep % regular_rep_printing == 0 {
                     round_lines_printed += 1;
                 } else {
@@ -539,6 +588,7 @@ impl Controller {
             let mut num_satisfied = 0;
             'test_conditions: for condition in conditions.iter() {
                 if dossier.operate_bool(&mut ann, condition) {
+                    num_passing_step[num_satisfied] += 1;
                     num_satisfied += 1;
                     if num_satisfied >= required_steps {
                         if !printed_number {
@@ -561,6 +611,9 @@ impl Controller {
             if printed_number {
                 dossier.print_all();
             }
+            if printed_round_number {
+                print_success_proportions(conditions, &num_passing_step, rep);
+            }
             if all_satisfied {
                 if !forever {
                     println!("All conditions satisfied! {:?}", conditions);
@@ -569,6 +622,84 @@ impl Controller {
                 }
                 self.compute_and_print(&mut dossier, &mut ann);
                 satisfied = true;
+            }
+        }
+    }
+
+    fn execute_line_graph(&self, constr: &Constructor, metadata: &LineGraphMetadata) {
+        use Operation::*;
+        let mut num_reps = 0;
+        let mut last_percentage = 0;
+        let y_vars: Vec<RationalOperation> = self.operations
+            .iter()
+            .filter_map(|x| match x {
+                Int(op) => Some(RationalOperation::OfInt(*op)),
+                Bool(op) => Some(RationalOperation::OfBool(Box::new(op.to_owned()))),
+                Rational(op) => Some(op.to_owned()),
+                Unit(_op) => None,
+                StringList(_op) => None,
+            })
+            .collect();
+        let mut buckets: Vec<Vec<f64>> = vec![vec![0.0; y_vars.len() + 1]; metadata.num_x_divisions];
+        while num_reps < metadata.num_reps {
+            let percentage = (100 * num_reps) / metadata.num_reps;
+            if percentage > last_percentage {
+                last_percentage = percentage;
+                print!("{}% ", percentage);
+                std::io::stdout().flush().unwrap();
+            }
+            let e = constr.new_entity();
+            let mut dossier = Dossier::new(e);
+            let mut ann_box = AnnotationsBox::new();
+            let mut passes_conditions = true;
+            'test_conditions: for operation in metadata.conditions.iter() {
+                if !dossier.operate_bool(&mut ann_box, operation) {
+                    passes_conditions = false;
+                    break 'test_conditions;
+                }
+            }
+            if passes_conditions {
+                // Great, now actually record the data.
+                num_reps += 1;
+                let x = dossier.operate_rational(&mut ann_box, &metadata.x_axis).to_f64();
+                let ys: Vec<f64> = y_vars.iter().map(|y| dossier.operate_rational(&mut ann_box, y).to_f64()).collect();
+                let bucket_propn = (x - metadata.min_x) / (metadata.max_x - metadata.min_x);
+                let bucket_number = (((metadata.num_x_divisions as f64) * bucket_propn).floor() as usize).clamp(0, buckets.len() - 1);
+                buckets[bucket_number][0] += 1.0;
+                for (i, y) in ys.iter().enumerate() {
+                    buckets[bucket_number][i + 1] += y;
+                }
+            }
+        }
+        
+        // Normalise the values in the buckets by the bucket counts.
+        for row in buckets.iter_mut() {
+            let denominator = row[0];
+            for val in row.iter_mut().skip(1) {
+                if denominator <= 0.01 {
+                    *val = 0.0
+                } else {
+                    *val /= denominator;
+                }
+            }
+        }
+
+        // Finally, print out the information as a csv.
+        println!("\n\n");
+        print!("{},count", metadata.x_axis);
+        for y in y_vars {
+            print!(",{}", y);
+        }
+        println!();
+        for (i, row) in buckets.iter().enumerate() {
+            // Only print rows which contain data.
+            if row[0] > 0.5 {
+                let x = (i as f64 / metadata.num_x_divisions as f64) * (metadata.max_x - metadata.min_x) + metadata.min_x;
+                print!("{:.4},{:.0}", x, row[0]);
+                for value in row.iter().skip(1) {
+                    print!(",{:.4}", value);
+                }
+                println!();
             }
         }
     }
@@ -826,6 +957,7 @@ impl Controller {
             }
             SearchAll(order, conditions) => self.execute_search_all(*order, conditions),
             Collate(constr, reps, op) => self.execute_collate(constr, op, *reps),
+            LineGraph(constr, metadata) => self.execute_line_graph(constr, metadata),
             Help => Self::print_help(),
         }
     }
