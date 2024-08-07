@@ -235,6 +235,7 @@ impl Dossier {
                     HasTwinElements => twins::has_twin_elements(&self.e),
                     HasAlmostTwinElements => twins::has_almost_twin_elements(self.e.as_poset()),
                     NumLinearExtensionsLessThan(k) => poset_balance::is_num_extensions_less_than(self.e.as_poset(), *k),
+                    IsHeuristicallyBalanced => poset_balance::is_heuristically_balanced(self.e.as_poset()),
                     Debug => debug::debug(self.e.as_graph()),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);
@@ -305,6 +306,7 @@ impl Dossier {
             BunkbedCounterexampleSearch(edge_type) => bunkbed_reduced::search_for_counterexample(self.e.as_graph(), *edge_type),
             PosetRelationProbabilities => poset_balance::print_relation_probabilities(self.e.as_poset()),
             PosetHasseDiagram => self.e.as_poset().print_hasse(),
+            BalancedHeuristics => poset_balance::print_heuristics(self.e.as_poset()),
             Unit => (),
         }
     }

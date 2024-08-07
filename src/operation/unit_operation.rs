@@ -32,6 +32,7 @@ pub enum UnitOperation {
     BunkbedCounterexampleSearch(usize),
     PosetRelationProbabilities,
     PosetHasseDiagram,
+    BalancedHeuristics,
     Signature,
     Unit,
 }
@@ -79,6 +80,7 @@ impl UnitOperation {
             "bb_counterexample" => Some(BunkbedCounterexampleSearch(args.get(0).map_or(1, |x| x.parse().unwrap()))),
             "print_balance" => Some(PosetRelationProbabilities),
             "hasse" => Some(PosetHasseDiagram),
+            "balance_heuristics" => Some(BalancedHeuristics),
             "()" | "(" => Some(Unit),
             &_ => None,
         }
@@ -136,6 +138,7 @@ impl fmt::Display for UnitOperation {
             BunkbedCounterexampleSearch(_) => "Search for a counterexample to the bunkbed conjecture",
             PosetRelationProbabilities => "Print table of balance probabilities for a poset",
             PosetHasseDiagram => "Print Hasse diagram of poset",
+            BalancedHeuristics => "Heuristics about whether the poset has balanced vertices",
             Unit => "Do nothing",
         };
         write!(f, "{}", name)

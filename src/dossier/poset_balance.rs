@@ -43,7 +43,18 @@ pub fn print_relation_probabilities(p: &Poset) {
     let rows = gt_count.iter().map(
         |row| ("Row!", row.to_vec_of_strings())
     ).collect::<Vec<(&str, VertexVec<String>)>>();
-    print_vertex_table(rows)
+    print_vertex_table(rows);
+    let mut max_balance = 0;
+    let mut best_pair = (Vertex::ZERO, Vertex::ZERO);
+    for (u, v) in p.iter_pairs() {
+        let this_count = gt_count[u][v].min(count - gt_count[u][v]);
+        if this_count > max_balance {
+            max_balance = this_count;
+            best_pair = (u, v);
+        }
+    }
+    let balance = (max_balance as f64) / (count as f64);
+    println!("A maximally balanced pair ({} / {} ~ {:.4}): {:?}", max_balance, count, balance, best_pair);
 }
 
 pub fn balance_constant(p: &Poset) -> Rational {
@@ -96,4 +107,39 @@ fn count_extensions_up_to_cap_rec(p: &Poset, placed: VertexSet, num_placed: usiz
 
 pub fn is_num_extensions_less_than(p: &Poset, k: usize) -> bool {
     count_extensions_up_to_cap_rec(p, VertexSet::new(p.order), 0, k as u64) < k as u64
+}
+
+/**
+ * Prints some heuristics about whether we expect the poset to be balanced or not.
+ */
+pub fn print_heuristics(p: &Poset) {
+    println!("Comparably balanced pairs:");
+    for (u, v) in p.iter_pairs() {
+        if p.incomparable(u, v) && p.downsets[u].size() + p.upsets[v].size() == p.upsets[u].size() + p.downsets[v].size() {
+            println!("({}, {})", u, v)
+        }
+    }
+    let mut width_3_levels = 0;
+    let mut h_count = vec![0; p.height];
+    for v in p.iter_verts() {
+        let h = p.heights[v];
+        h_count[h] += 1;
+        if h_count[h] == 3 {
+            width_3_levels += 1;
+        }
+    }
+    println!("{} levels of width 3", width_3_levels);
+}
+
+/**
+ * A pair of vertices are equitable if they have the same difference in sizes between 
+ * their upsets and downsets
+ */
+pub fn is_heuristically_balanced(p: &Poset) -> bool {
+    for (u, v) in p.iter_pairs() {
+        if p.incomparable(u, v) && p.downsets[u].size() + p.upsets[v].size() == p.upsets[u].size() + p.downsets[v].size() {
+            return true
+        }
+    }
+    false
 }
