@@ -1,3 +1,5 @@
+use utilities::*;
+
 use digraph::Digraph;
 
 pub mod digraph;
@@ -75,6 +77,15 @@ impl Entity {
             Poset(p) => p.print(),
             Graph(g) => g.print(),
             Digraph(d) => d.print(),
+        }
+    }
+
+    pub fn order(&self) -> Order {
+        use Entity::*;
+        match self {
+            Poset(p) => p.order,
+            Graph(g) => g.n,
+            Digraph(d) => d.n,
         }
     }
 

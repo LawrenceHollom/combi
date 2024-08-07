@@ -44,7 +44,7 @@ use crate::operation::int_operation::*;
 use crate::operation::string_list_operation::*;
 use crate::operation::unit_operation::*;
 
-pub struct Operator {
+pub struct Dossier {
     e: Entity,
     previous_int_values: HashMap<IntOperation, u32>,
     previous_bool_values: HashMap<BoolOperation, bool>,
@@ -73,7 +73,7 @@ impl AnnotationsBox {
     }
 }
 
-impl Operator {
+impl Dossier {
     pub fn operate_int(&mut self, ann_box: &mut AnnotationsBox, operation: &IntOperation) -> u32 {
         use IntOperation::*;
         let ann = self.e.as_graph_opn().map(|g| ann_box.get_annotations(g));
@@ -81,7 +81,7 @@ impl Operator {
             Some(value) => *value,
             None => {
                 let value = match operation {
-                    Order => self.e.as_graph().n.to_usize() as u32,
+                    Order => self.e.order().to_usize() as u32,
                     Size => self.e.as_graph().size() as u32,
                     Height => self.e.as_poset().height as u32,
                     Width => self.e.as_poset().get_width(),
@@ -291,7 +291,7 @@ impl Operator {
             ConnectedGameChromaticStrategy(k) => chromatic::print_chromatic_game_strategy(self.e.as_graph(), ann.get_annotations(self.e.as_graph()), *k, true),
             PrintAutomorphisms => print_automorphism_info(self.e.as_graph()),
 	        BunkbedPostRemoval => bunkbed_reduced::test_post_removal_induction(self.e.as_graph()),
-            Signature => signature::print_signature(self.e.as_graph()),
+            Signature => signature::print_signature(&self.e),
             PrintMarkingGameStrat => marking_game::print_marking_game_strat(self.e.as_graph(), false),
             PrintConnectedMarkingGameStrat => marking_game::print_marking_game_strat(self.e.as_graph(), true),
             PrintBobWinGrabbingWeighting => grabbing::print_bob_win_weighting(self.e.as_graph()),
@@ -362,8 +362,8 @@ impl Operator {
         &self.e.as_graph().constructor
     }
 
-    pub fn new(e: Entity) -> Operator {
-        Operator { 
+    pub fn new(e: Entity) -> Dossier {
+        Dossier { 
             e,
             previous_int_values: HashMap::new(),
             previous_bool_values: HashMap::new(),

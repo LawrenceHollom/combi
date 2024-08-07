@@ -15,7 +15,7 @@ use crate::constructor::*;
 use crate::operation::int_operation::IntOperation;
 use crate::operation::string_list_operation::StringListOperation;
 use crate::dossier::AnnotationsBox;
-use crate::dossier::Operator;
+use crate::dossier::Dossier;
 use crate::entity::graph::Graph;
 use crate::entity::Entity;
 
@@ -212,22 +212,22 @@ impl Controller {
         operations_strs.join(", ")
     }
 
-    fn compute_and_print(&self, operator: &mut Operator, ann: &mut AnnotationsBox) {
+    fn compute_and_print(&self, dossier: &mut Dossier, ann: &mut AnnotationsBox) {
         let rep_start = SystemTime::now();
         let numbers: Vec<String> = self.operations
                 .iter()
-                .map(|op| operator.operate(ann, op))
+                .map(|op| dossier.operate(ann, op))
                 .collect();
         println!("{}: [{}], time: {}", self.operations_string(), numbers.join(", "),
             rep_start.elapsed().unwrap().as_millis());
     }
 
-    fn execute_single_return(&self, constr: &Constructor) -> Operator {
+    fn execute_single_return(&self, constr: &Constructor) -> Dossier {
         let g = constr.new_entity();
-        let mut operator = Operator::new(g);
+        let mut dossier = Dossier::new(g);
         let mut ann = AnnotationsBox::new();
-        self.compute_and_print(&mut operator, &mut ann);
-        operator
+        self.compute_and_print(&mut dossier, &mut ann);
+        dossier
     }
 
     fn execute_single(&self, constr: &Constructor) {
@@ -262,10 +262,10 @@ impl Controller {
             for _j in 0..reps {
                 let constr = Constructor::Random(RandomConstructor::ErdosRenyi(tab.order, p));
                 let g = constr.new_entity();
-                let mut operator = Operator::new(g);
+                let mut dossier = Dossier::new(g);
                 let mut ann = AnnotationsBox::new();
                 for (op, sum) in operators.iter().zip(sums.iter_mut()) {
-                    *sum += operator.operate_rational(&mut ann, op).to_f64();
+                    *sum += dossier.operate_rational(&mut ann, op).to_f64();
                 }
             }
             for sum in sums.iter_mut() {
@@ -301,9 +301,9 @@ impl Controller {
             adj_list[e.snd()].push(e.fst());
             let g = Graph::of_adj_list(adj_list.to_owned(), Constructor::Special);
             let mut ann = AnnotationsBox::new();
-            let mut operator = Operator::new(Entity::Graph(g));
+            let mut dossier = Dossier::new(Entity::Graph(g));
             print!("[{} / {}]: ", i+1, edges.len());
-            self.compute_and_print(&mut operator, &mut ann);
+            self.compute_and_print(&mut dossier, &mut ann);
         }
     }
 
@@ -331,27 +331,27 @@ impl Controller {
                 adj_list[e.snd()].push(e.fst());
                 let g = Graph::of_adj_list(adj_list.to_owned(), Constructor::Special);
                 let mut ann = AnnotationsBox::new();
-                let mut operator = Operator::new(Entity::Graph(g));
+                let mut dossier = Dossier::new(Entity::Graph(g));
                 count += 1;
                 print!("[{} / {}]: ", count, part_size * copart_size);
-                self.compute_and_print(&mut operator, &mut ann);
+                self.compute_and_print(&mut dossier, &mut ann);
             }
         }
     }
 
-    fn do_all_conditions_hold(&self, operator: &mut Operator, ann_box: &mut AnnotationsBox, 
+    fn do_all_conditions_hold(&self, dossier: &mut Dossier, ann_box: &mut AnnotationsBox, 
             conditions: &[BoolOperation], should_print: bool) -> bool {
         let mut is_good = true;
         'test_conditions: for operation in conditions.iter() {
-            if !operator.operate_bool(ann_box, operation) {
+            if !dossier.operate_bool(ann_box, operation) {
                 is_good = false;
                 break 'test_conditions;
             }
         }
         if is_good && should_print {
             println!("Found graph satisfying conditions!");
-            operator.print_all();
-            operator.print_entity();
+            dossier.print_all();
+            dossier.print_entity();
         }
         is_good
     }
@@ -368,9 +368,9 @@ impl Controller {
                 adj_list[e.fst()].push(e.snd());
                 adj_list[e.snd()].push(e.fst());
                 let g = Graph::of_adj_list(adj_list.to_owned(), Constructor::Special);
-                let mut operator = Operator::new(Entity::Graph(g));
+                let mut dossier = Dossier::new(Entity::Graph(g));
                 let mut ann_box = AnnotationsBox::new();
-                if self.do_all_conditions_hold(&mut operator, &mut ann_box, conditions, true) {
+                if self.do_all_conditions_hold(&mut dossier, &mut ann_box, conditions, true) {
                     break 'test_procs;
                 }
             }
@@ -395,14 +395,14 @@ impl Controller {
                 adj_list[e.fst()].push(e.snd());
                 adj_list[e.snd()].push(e.fst());
                 let g = Graph::of_adj_list(adj_list.to_owned(), Constructor::Special);
-                let mut operator = Operator::new(Entity::Graph(g));
+                let mut dossier = Dossier::new(Entity::Graph(g));
                 let mut ann_box = AnnotationsBox::new();
-                if self.do_all_conditions_hold(&mut operator, &mut ann_box, conditions, false) {
-                    let new_value = operator.operate_int(&mut ann_box, int_op);
+                if self.do_all_conditions_hold(&mut dossier, &mut ann_box, conditions, false) {
+                    let new_value = dossier.operate_int(&mut ann_box, int_op);
                     if let Some(last_value) = last_value_opn {
                         if last_value > new_value {
                             println!("Decreasement found! g:");
-                            operator.print_entity();
+                            dossier.print_entity();
                             println!("After adding edge {}", e);
                             break 'test_procs;
                         }
@@ -457,9 +457,9 @@ impl Controller {
 
             if is_good {
                 let g = Graph::of_matrix(adj.to_owned(), Constructor::Special);
-                let mut operator = Operator::new(Entity::Graph(g));
+                let mut dossier = Dossier::new(Entity::Graph(g));
                 let mut ann_box = AnnotationsBox::new();
-                if self.do_all_conditions_hold(&mut operator, &mut ann_box, conditions, true) {
+                if self.do_all_conditions_hold(&mut dossier, &mut ann_box, conditions, true) {
                     found_graph = true;
                     break 'test_all_graphs;
                 }
@@ -474,9 +474,9 @@ impl Controller {
         let mut vals: HashSet<String> = HashSet::new();
         let mut last_index_of_change = 0;
         for i in 0..reps {
-            let mut operator = Operator::new(constr.new_entity());
+            let mut dossier = Dossier::new(constr.new_entity());
             let mut ann_box = AnnotationsBox::new();
-            for line in operator.operate_string_list(&mut ann_box, op) {
+            for line in dossier.operate_string_list(&mut ann_box, op) {
                 if vals.insert(line) {
                     // i.e. if the line wasn't there before
                     last_index_of_change = i;
@@ -534,11 +534,11 @@ impl Controller {
             rep += 1;
             let g = constr.new_entity();
             let mut ann = AnnotationsBox::new();
-            let mut operator = Operator::new(g);
+            let mut dossier = Dossier::new(g);
             let mut all_satisfied = true;
             let mut num_satisfied = 0;
             'test_conditions: for condition in conditions.iter() {
-                if operator.operate_bool(&mut ann, condition) {
+                if dossier.operate_bool(&mut ann, condition) {
                     num_satisfied += 1;
                     if num_satisfied >= required_steps {
                         if !printed_number {
@@ -559,15 +559,15 @@ impl Controller {
                 }
             }
             if printed_number {
-                operator.print_all();
+                dossier.print_all();
             }
             if all_satisfied {
                 if !forever {
                     println!("All conditions satisfied! {:?}", conditions);
                     println!("Entity: ");
-                    operator.print_entity();
+                    dossier.print_entity();
                 }
-                self.compute_and_print(&mut operator, &mut ann);
+                self.compute_and_print(&mut dossier, &mut ann);
                 satisfied = true;
             }
         }
@@ -589,13 +589,13 @@ impl Controller {
             if is_in_order {
                 // We just copy the vector of parents because fuck it, that's why.
                 let g = Constructor::RootedTree(parents.to_vec()).new_entity();
-                let mut operator = Operator::new(g);
+                let mut dossier = Dossier::new(g);
                 let mut ann = AnnotationsBox::new();
                 
-                let success = operator.operate_bool(&mut ann, condition);
+                let success = dossier.operate_bool(&mut ann, condition);
                 if success {
                     println!("Success!");
-                    operator.print_entity();
+                    dossier.print_entity();
                 }
 
                 success
@@ -637,25 +637,25 @@ impl Controller {
     }
             
     fn test_sink_graph(&self, g: Graph, conditions: &[BoolOperation], find_all: bool) -> bool {
-        let mut operator = Operator::new(Entity::Graph(g));
+        let mut dossier = Dossier::new(Entity::Graph(g));
         let mut ann = AnnotationsBox::new();
         let mut result = true;
         'test_conditions: for condition in conditions.iter() {
-            if !operator.operate_bool(&mut ann, condition) {
+            if !dossier.operate_bool(&mut ann, condition) {
                 result = false;
                 break 'test_conditions;
             }
         }
         if result {
             if find_all {
-                println!("{}", operator.get_constructor());
+                println!("{}", dossier.get_constructor());
             } else {
                 // print lots of information in this case.
                 println!("Graph satisfying condition found!");
-                println!("Constructor: {}", operator.get_constructor());
-                operator.print_all();
+                println!("Constructor: {}", dossier.get_constructor());
+                dossier.print_all();
                 println!("Graph:");
-                operator.print_entity();
+                dossier.print_entity();
             }
         }
         result
