@@ -115,7 +115,7 @@ impl fmt::Display for UnitOperation {
             }
             PrintAutomorphisms => "Print automorphisms of g, and other autoj metadata",
 	        BunkbedPostRemoval => "Tests bunkbed induction via removing posts",
-            Signature => "Print a bunch of graph invariants",
+            Signature => "Print a bunch of invariants",
             PrintMarkingGameStrat => "Print marking game strategy",
             PrintConnectedMarkingGameStrat => "Print connected marking game strategy",
             PrintBobWinGrabbingWeighting => "Print a weighting with which Bob wins the graph grabbing game",

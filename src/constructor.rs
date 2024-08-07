@@ -429,7 +429,7 @@ impl fmt::Display for Constructor {
             },
             PosetConstr(constr) => write!(f, "{}", constr),
             DigraphConstr(constr) => write!(f, "{}", constr),
-            File(filename) => write!(f, "From file {}.gph", filename),
+            File(filename) => write!(f, "From file {}", filename),
             Serialised(code) => write!(f, "From code {}", code),
             Special => write!(f, "Special"),
         }
