@@ -196,6 +196,7 @@ pub fn is_heuristically_balanced(p: &Poset) -> bool {
     false
 }
 
+#[derive(Debug)]
 struct NStructure {
     top_left: Vertex,
     top_right: Vertex,
@@ -211,6 +212,7 @@ struct NStructure {
  */
 pub fn balance_as_cap(p: &Poset) -> Rational {
     let n_struct = self::find_maximal_n(p).expect("Can only call balance_as_cap on posets with maximal N!");
+    println!("Found N: {:?}", n_struct);
     let order = p.order.incr_by(4);
     let mut gt = VertexVec::new(order, &VertexVec::new(order, &false));
     for (x, y) in p.order.iter_pairs() {
@@ -241,7 +243,7 @@ pub fn balance_as_cap(p: &Poset) -> Rational {
 
     let mut balance: u64 = 0;
     // Now check for balancedness, but ignore the top two vertices.
-    for (u, v) in order.incr_by(2).iter_pairs() {
+    for (u, v) in p.order.incr_by(2).iter_pairs() {
         let this_balance = gt_count[u][v].min(count - gt_count[u][v]);
         balance = balance.max(this_balance);
     }
@@ -263,8 +265,8 @@ fn find_maximal_n(p: &Poset) -> Option<NStructure> {
     }
     let x = maximal_elements[0];
     let y = maximal_elements[1];
-    let inter = p.downsets[x].inter(&p.downsets[y]);
-    let sides = p.downsets[x].xor(&p.downsets[y]);
+    let inter = p.covered_by[x].inter(&p.covered_by[y]);
+    let sides = p.covered_by[x].xor(&p.covered_by[y]);
     if inter.is_empty() {
         return None
     }
