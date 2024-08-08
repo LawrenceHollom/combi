@@ -11,7 +11,7 @@ fn iterate_extensions_rec(p: &Poset, placed: VertexSet, num_placed: usize, gt_co
     for v in p.iter_verts() {
         if !placed.has_vert(v) {
             let mut can_place = true;
-            'test_coverees: for u in p.covered_by[v].iter() {
+            'test_coverees: for u in p.lower_covers[v].iter() {
                 if !placed.has_vert(u) {
                     can_place = false;
                     break 'test_coverees;
@@ -83,7 +83,7 @@ fn count_extensions_up_to_cap_rec(p: &Poset, placed: VertexSet, num_placed: usiz
     for v in p.iter_verts() {
         if !placed.has_vert(v) {
             let mut can_place = true;
-            'test_coverees: for u in p.covered_by[v].iter() {
+            'test_coverees: for u in p.lower_covers[v].iter() {
                 if !placed.has_vert(u) {
                     can_place = false;
                     break 'test_coverees;
@@ -131,7 +131,7 @@ pub fn print_heuristics(p: &Poset) {
         for v in p.iter_verts() {
             if !placed.has_vert(v) {
                 let mut can_place = true;
-                'test_coverees: for u in p.covered_by[v].iter() {
+                'test_coverees: for u in p.lower_covers[v].iter() {
                     if !placed.has_vert(u) {
                         can_place = false;
                         break 'test_coverees;
@@ -280,8 +280,8 @@ fn find_maximal_n(p: &Poset) -> Option<NStructure> {
     }
     let x = maximal_elements[0];
     let y = maximal_elements[1];
-    let inter = p.covered_by[x].inter(&p.covered_by[y]);
-    let sides = p.covered_by[x].xor(&p.covered_by[y]);
+    let inter = p.lower_covers[x].inter(&p.lower_covers[y]);
+    let sides = p.lower_covers[x].xor(&p.lower_covers[y]);
     if inter.is_empty() {
         return None
     }

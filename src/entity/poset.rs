@@ -15,8 +15,8 @@ use super::Graph;
 pub struct Poset {
     pub order: Order,
     pub gt: VertexVec<VertexVec<bool>>,
-    pub covers: VertexVec<VertexSet>,
-    pub covered_by: VertexVec<VertexSet>,
+    pub lower_covers: VertexVec<VertexSet>,
+    pub upper_covers: VertexVec<VertexSet>,
     pub downsets: VertexVec<VertexSet>,
     pub upsets: VertexVec<VertexSet>,
     pub heights: VertexVec<usize>,
@@ -25,28 +25,28 @@ pub struct Poset {
 }
 
 /***
- *     covers[v]
+ *  upper_covers[v]
  *        |
  *        v
  *        |
- *   covered_by[v]
+ *  lower_covers[v]
  */
 
 impl Poset {
     pub fn new_chain(order: Order) -> Poset {
         let gt = VertexVec::new_fn(order, 
             |u| VertexVec::new_fn(order, |v| u > v));
-        let mut covers = VertexVec::new(order, &VertexSet::new(order));
-        let mut covered_by = VertexVec::new(order, &VertexSet::new(order));
+        let mut upper_covers = VertexVec::new(order, &VertexSet::new(order));
+        let mut lower_covers = VertexVec::new(order, &VertexSet::new(order));
         let mut downsets = VertexVec::new(order, &VertexSet::new(order));
         let mut upsets = VertexVec::new(order, &VertexSet::new(order));
         let mut heights = VertexVec::new(order, &0);
         for (i, v) in order.iter_verts().enumerate() {
             if v != Vertex::ZERO {
-                covers[v].add_vert(v.decr());
+                upper_covers[v].add_vert(v.decr());
             }
             if v != order.to_max_vertex() {
-                covered_by[v].add_vert(v.incr())
+                lower_covers[v].add_vert(v.incr())
             }
             heights[v] = i;
             for u in order.iter_verts() {
@@ -59,8 +59,8 @@ impl Poset {
         Poset {
             order,
             gt,
-            covers,
-            covered_by,
+            upper_covers,
+            lower_covers,
             downsets,
             upsets,
             heights,
@@ -73,8 +73,8 @@ impl Poset {
         Poset {
             order,
             gt: VertexVec::new(order, &VertexVec::new(order, &false)),
-            covers: VertexVec::new(order, &VertexSet::new(order)),
-            covered_by: VertexVec::new(order, &VertexSet::new(order)),
+            upper_covers: VertexVec::new(order, &VertexSet::new(order)),
+            lower_covers: VertexVec::new(order, &VertexSet::new(order)),
             downsets: VertexVec::new(order, &VertexSet::new(order)),
             upsets: VertexVec::new(order, &VertexSet::new(order)),
             heights: VertexVec::new(order, &0),
@@ -92,8 +92,8 @@ impl Poset {
 
     pub fn of_ordering(gt: VertexVec<VertexVec<bool>>, constructor: Constructor) -> Poset {
         let order = gt.len();
-        let mut covers = VertexVec::new(order, &VertexSet::new(order));
-        let mut covered_by = VertexVec::new(order, &VertexSet::new(order));
+        let mut upper_covers = VertexVec::new(order, &VertexSet::new(order));
+        let mut lower_covers = VertexVec::new(order, &VertexSet::new(order));
 
         let mut downsets = VertexVec::new(order, &VertexSet::new(order));
         let mut upsets = VertexVec::new(order, &VertexSet::new(order));
@@ -110,20 +110,20 @@ impl Poset {
 
         for (u, v) in order.iter_pairs() {
             if gt[u][v] && downsets[u].inter(&upsets[v]).is_empty() {
-                covered_by[u].add_vert(v);
-                covers[v].add_vert(u);
+                lower_covers[u].add_vert(v);
+                upper_covers[v].add_vert(u);
             }
             if gt[v][u] && upsets[u].inter(&downsets[v]).is_empty() {
-                covers[u].add_vert(v);
-                covered_by[v].add_vert(u);
+                upper_covers[u].add_vert(v);
+                lower_covers[v].add_vert(u);
             }
         }
         
-        fn compute_height_rec(order: Order, covered_by: &VertexVec<VertexSet>, height: &mut VertexVec<usize>, v: Vertex) {
+        fn compute_height_rec(order: Order, lower_covers: &VertexVec<VertexSet>, height: &mut VertexVec<usize>, v: Vertex) {
             let mut h = 0;
-            for u in covered_by[v].iter() {
+            for u in lower_covers[v].iter() {
                 if height[u] == usize::MAX {
-                    compute_height_rec(order, covered_by, height, u);
+                    compute_height_rec(order, lower_covers, height, u);
                 }
                 // So now we do know all those heights
                 h = h.max(height[u] + 1);
@@ -135,7 +135,7 @@ impl Poset {
         let mut max_height = 0;
         for v in order.iter_verts() {
             if heights[v] == usize::MAX {
-                compute_height_rec(order, &covered_by, &mut heights, v)
+                compute_height_rec(order, &lower_covers, &mut heights, v)
             }
             max_height = max_height.max(heights[v]);
         }
@@ -143,8 +143,8 @@ impl Poset {
         Poset {
             order,
             gt,
-            covers,
-            covered_by,
+            upper_covers,
+            lower_covers,
             downsets,
             upsets,
             heights,
@@ -270,11 +270,11 @@ impl Poset {
             println!("Height = {}", h);
             for v in self.order.iter_verts() {
                 if self.heights[v] == h {
-                    if self.covers[v].is_empty() {
+                    if self.upper_covers[v].is_empty() {
                         println!("{}", v);
                     } else {
                         print!("{} <", v);
-                        for u in self.covers[v].iter() {
+                        for u in self.upper_covers[v].iter() {
                             print!(" {}[{}],", u, self.heights[u]);
                         }
                         println!();
@@ -287,11 +287,11 @@ impl Poset {
     pub fn print(&self) {
         println!("{}", self.constructor);
         println!("\nCoverings: ");
-        for (v, covers) in self.covers.iter_enum() {
-            if covers.is_empty() {
+        for (v, upper_covers) in self.upper_covers.iter_enum() {
+            if upper_covers.is_empty() {
                 println!("{}", v);
             } else {
-                println!("{} > {:?}", v, covers);
+                println!("{} > {:?}", v, upper_covers);
             }
         }
         println!("Order: {}", self.order);

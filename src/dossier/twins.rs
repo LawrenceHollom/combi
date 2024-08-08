@@ -15,7 +15,7 @@ use utilities::vertex_tools::*;
 
 fn poset_has_twin_elements(p: &Poset) -> bool {
     for (u, v) in p.iter_pairs() {
-        if p.covers[u] == p.covers[v] && p.covered_by[u] == p.covered_by[v] {
+        if p.upper_covers[u] == p.upper_covers[v] && p.lower_covers[u] == p.lower_covers[v] {
             return true
         }
     }
@@ -87,14 +87,14 @@ pub fn has_twin_elements(e: &Entity) -> bool {
  */
 pub fn has_almost_twin_elements(p: &Poset) -> bool {
     for (u, v) in p.iter_pairs() {
-        if p.covers[u] == p.covers[v] {
+        if p.upper_covers[u] == p.upper_covers[v] {
             // We need that the downsets subtract to give chains
             let x = p.downsets[u].setminus(p.downsets[v]);
             let y = p.downsets[v].setminus(p.downsets[u]);
             if p.is_chain(x) && p.is_chain(y) {
                 return true
             }
-        } else if p.covered_by[u] == p.covered_by[v] {
+        } else if p.lower_covers[u] == p.lower_covers[v] {
             // We need that the upsets subtract to give chains
             let x = p.upsets[u].setminus(p.upsets[v]);
             let y = p.upsets[v].setminus(p.upsets[u]);
