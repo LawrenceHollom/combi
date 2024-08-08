@@ -21,7 +21,7 @@ pub enum RationalOperation {
     DominationRedundancy,
     GrabbingColeafWeightedDifference,
     PosetBalance,
-    PosetCapBalanceHackHackHack,
+    PosetCapBalance,
 }
 
 impl RationalOperation {
@@ -52,7 +52,7 @@ impl RationalOperation {
                     "domination_redundancy" | "gamma_red" => Some(DominationRedundancy),
                     "grabbing_coleaf_difference" | "gcwd" => Some(GrabbingColeafWeightedDifference),
                     "balance" => Some(PosetBalance),
-                    "poset_cap_balance_hack_hack_hack" => Some(PosetCapBalanceHackHackHack),
+                    "poset_cap_balance" => Some(PosetCapBalance),
                     &_ => IntOperation::of_string_result(text).map(OfInt),
                 }
             }
@@ -91,7 +91,7 @@ impl fmt::Display for RationalOperation {
             DominationRedundancy => "Domination redundancy ratio".to_owned(),
             GrabbingColeafWeightedDifference => "Grabbing game score diff with coleaf weights".to_owned(),
             PosetBalance => "Balance constant of the poset".to_owned(),
-            PosetCapBalanceHackHackHack => "A hacked balancedness computation for caps of ladders".to_owned(),
+            PosetCapBalance => "Balance constant as the cap of a ladder".to_owned(),
         };
         write!(f, "{}", name)
     }

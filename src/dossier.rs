@@ -236,6 +236,7 @@ impl Dossier {
                     HasAlmostTwinElements => twins::has_almost_twin_elements(self.e.as_poset()),
                     NumLinearExtensionsLessThan(k) => poset_balance::is_num_extensions_less_than(self.e.as_poset(), *k),
                     IsHeuristicallyBalanced => poset_balance::is_heuristically_balanced(self.e.as_poset()),
+                    HasMaximalN => poset_balance::has_maximal_n(self.e.as_poset()),
                     Debug => debug::debug(self.e.as_graph()),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);
@@ -268,7 +269,7 @@ impl Dossier {
                     DominationRedundancy => domination::domination_redundancy(self.e.as_graph()),
                     GrabbingColeafWeightedDifference => grabbing::coleaf_weighted_score_difference(self.e.as_graph()),
                     PosetBalance => poset_balance::balance_constant(self.e.as_poset()),
-                    PosetCapBalanceHackHackHack => poset_balance::compute_cap_balance_massive_hack(self.e.as_poset()),
+                    PosetCapBalance => poset_balance::balance_as_cap(self.e.as_poset()),
                 };
                 self.previous_rational_values.insert(operation.to_owned(), value);
                 value

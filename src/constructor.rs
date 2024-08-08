@@ -85,7 +85,6 @@ pub enum PosetConstructor {
     Chain(Order),
     Antichain(Order),
     ChainIntersection(Order, usize),
-    LadderCap(usize, usize),
 }
 
 #[derive(Clone)]
@@ -284,7 +283,6 @@ impl Constructor {
                 let k = args[1].parse().unwrap();
                 PosetConstr(ChainIntersection(order, k))
             }
-            "ladder_cap" => PosetConstr(LadderCap(args[0].parse().unwrap(), args[1].parse().unwrap())),
             "digraph" => DigraphConstr(OfGraph(Box::new(Self::of_string(args[0])))),
             str => File(str.to_owned()),
         }
@@ -363,7 +361,6 @@ impl Constructor {
             PosetConstr(Chain(order)) => p(Poset::new_chain(*order)),
             PosetConstr(Antichain(order)) => p(Poset::new_antichain(*order)),
             PosetConstr(ChainIntersection(order, k)) => p(Poset::new_random_intersection(*order, *k)),
-            PosetConstr(LadderCap(rungs, floaters)) => p(Poset::new_ladder_cap(*rungs, *floaters)),
             DigraphConstr(OfGraph(constr)) => {
                 let g = constr.new_entity().as_owned_graph();
                 d(Digraph::of_matrix(g.adj))
@@ -403,7 +400,7 @@ impl PosetConstructor {
         use PosetConstructor::*;
         match self {
             Chain(_) | Antichain(_) => false,
-            ChainIntersection(_, _) | LadderCap(_, _) => true,
+            ChainIntersection(_, _) => true,
         }
     }
 }
@@ -586,9 +583,6 @@ impl fmt::Display for PosetConstructor {
             Antichain(order) => write!(f, "Antichain of {} elements", order),
             ChainIntersection(order, k) => {
                 write!(f, "Intersection of {} random chains of {} elements", k, order)
-            }
-            LadderCap(rungs, floaters) => {
-                write!(f, "Ladder cap with {} bonus rungs and {} floating elements", rungs, floaters)
             }
         }
     }

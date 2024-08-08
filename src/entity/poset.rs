@@ -16,7 +16,7 @@ use super::Graph;
 #[derive(Clone)]
 pub struct Poset {
     pub order: Order,
-    gt: VertexVec<VertexVec<bool>>,
+    pub gt: VertexVec<VertexVec<bool>>,
     pub covers: VertexVec<VertexSet>,
     pub covered_by: VertexVec<VertexSet>,
     pub downsets: VertexVec<VertexSet>,
@@ -153,6 +153,22 @@ impl Poset {
             height: max_height + 1,
             constructor,
         }
+    }
+
+    /**
+     * First take the transitive closure of the ordering and then make the poset from it.
+     * Runs Floyd-Warshall.
+     */
+    pub fn of_transitive_closure(mut gt: VertexVec<VertexVec<bool>>, constructor: Constructor) -> Poset {
+        let order = gt.len();
+        for k in order.iter_verts() {
+            for i in order.iter_verts() {
+                for j in order.iter_verts() {
+                    gt[i][j] = gt[i][j] || (gt[i][k] && gt[k][j]);
+                }
+            }
+        }
+        Poset::of_ordering(gt, constructor)
     }
 
     /**

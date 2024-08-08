@@ -63,6 +63,10 @@ impl Order {
         Order(self.0 + 1)
     }
 
+    pub fn incr_by(&self, x: usize) -> Order {
+        Order(self.0 + x)
+    }
+
     pub fn to_max_vertex(&self) -> Vertex {
         Vertex::of_usize(self.0 - 1)
     }

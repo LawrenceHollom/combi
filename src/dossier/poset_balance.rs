@@ -3,7 +3,7 @@ use crate::entity::poset::*;
 use utilities::vertex_tools::*;
 use utilities::rational::*;
 
-fn iterate_extensions_rec(p: &Poset, placed: VertexSet, num_placed: usize, gt_count: &mut VertexVec<VertexVec<u64>>) -> u64{
+fn iterate_extensions_rec(p: &Poset, placed: VertexSet, num_placed: usize, gt_count: &mut VertexVec<VertexVec<u64>>) -> u64 {
     if num_placed == p.order.to_usize() {
         return 1;
     }
@@ -196,11 +196,106 @@ pub fn is_heuristically_balanced(p: &Poset) -> bool {
     false
 }
 
-/**
- * Manually adjust weight of permutation depending on the elements 0, 1, 2, 3.
- * Can assume that 2 < 1, 0 and 3 < 1; magic numbers for the 5 possible permutations are
- * [169, 273, 273, 441, 441] (clear which ones are the likely ones.)
- */
-pub fn compute_cap_balance_massive_hack(p: &Poset) -> Rational {
+struct NStructure {
+    top_left: Vertex,
+    top_right: Vertex,
+    bottom_left: Vertex,
+    bottom_right: Vertex,
+}
 
+/**
+ * Assuming that P has a maximal N, we attach the start of a ladder to
+ * this N so that that top bit can't count as unbalanced, and don't
+ * count the new top elements.
+ * We construct a new poset Q with a bit of the ladder attached.
+ */
+pub fn balance_as_cap(p: &Poset) -> Rational {
+    let n_struct = self::find_maximal_n(p).expect("Can only call balance_as_cap on posets with maximal N!");
+    let order = p.order.incr_by(4);
+    let mut gt = VertexVec::new(order, &VertexVec::new(order, &false));
+    for (x, y) in p.order.iter_pairs() {
+        gt[x][y] = p.gt[x][y];
+        gt[y][x] = p.gt[y][x];
+    }
+
+    // Attach the N-struct.
+    let tr = order.to_max_vertex();
+    let tl = tr.decr();
+    let br = tl.decr();
+    let bl = br.decr();
+    gt[tr][br] = true;
+    gt[tl][bl] = true;
+    gt[tl][br] = true;
+    gt[bl][n_struct.top_left] = true;
+    gt[br][n_struct.top_right] = true;
+    gt[bl][n_struct.top_right] = true;
+    gt[tr][n_struct.top_left] = true;
+    gt[br][n_struct.bottom_left] = true;
+
+    // Construct our new poset, with the ladder attached.
+    let q = Poset::of_transitive_closure(gt, crate::constructor::Constructor::Special);
+
+    let mut gt_count = VertexVec::new(order, &VertexVec::new(order, &0));
+    let count = iterate_extensions_rec(&q, VertexSet::new(order), 0, &mut gt_count);
+    println!("Counted as cap; there are {} extensions.", count);
+
+    let mut balance: u64 = 0;
+    // Now check for balancedness, but ignore the top two vertices.
+    for (u, v) in order.incr_by(2).iter_pairs() {
+        let this_balance = gt_count[u][v].min(count - gt_count[u][v]);
+        balance = balance.max(this_balance);
+    }
+    Rational::new_fraction(balance as usize, count as usize)
+}
+
+/**
+ * Finds a maximal N in p if it exists, and returns it.
+ */
+fn find_maximal_n(p: &Poset) -> Option<NStructure> {
+    let mut maximal_elements = vec![];
+    for v in p.iter_verts() {
+        if p.upsets[v].is_empty() {
+            maximal_elements.push(v);
+        }
+    }
+    if maximal_elements.len() != 2 {
+        return None
+    }
+    let x = maximal_elements[0];
+    let y = maximal_elements[1];
+    let inter = p.downsets[x].inter(&p.downsets[y]);
+    let sides = p.downsets[x].xor(&p.downsets[y]);
+    if inter.is_empty() {
+        return None
+    }
+    for v in inter.iter() {
+        for u in sides.iter() {
+            if p.incomparable(u, v) {
+                if p.gt[x][u] {
+                    return Some(NStructure {
+                        top_left: x,
+                        top_right: y,
+                        bottom_left: u,
+                        bottom_right: v,
+                    })
+                } else {
+                    return Some(NStructure {
+                        top_left: y,
+                        top_right: x,
+                        bottom_left: u,
+                        bottom_right: v,
+                    })
+                }
+            }
+        }
+    }
+    None
+}
+
+/**
+ * Tests if there are precisely two maximal elements and that, with
+ * some of the elements they cover, they form an N.
+ */
+pub fn has_maximal_n(p: &Poset) -> bool {
+    find_maximal_n(p).is_some()
 }

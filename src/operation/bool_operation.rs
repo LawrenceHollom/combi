@@ -73,6 +73,7 @@ pub enum BoolOperation {
     HasAlmostTwinElements,
     NumLinearExtensionsLessThan(usize),
     IsHeuristicallyBalanced,
+    HasMaximalN,
     Debug,
 }
 
@@ -203,6 +204,7 @@ impl BoolOperation {
                     "has_almost_twins" => Some(HasAlmostTwinElements),
                     "num_extensions_less_than" => Some(NumLinearExtensionsLessThan(args[0].parse().unwrap())),
                     "heuristically_balanced" => Some(IsHeuristicallyBalanced),
+                    "has_maximal_n" => Some(HasMaximalN),
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -344,6 +346,7 @@ impl fmt::Display for BoolOperation {
             HasAlmostTwinElements => "Has a pair of almost-twin elements".to_owned(),
             NumLinearExtensionsLessThan(k) => format!("Has at most {} linear extensions", k),
             IsHeuristicallyBalanced => "Is heuristically balanced".to_owned(),
+            HasMaximalN => "Has maximal N".to_owned(),
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };
         write!(f, "{}", name)

@@ -43,27 +43,4 @@ impl Poset {
         }
         Poset::of_ordering(gt, Constructor::PosetConstr(PosetConstructor::ChainIntersection(order, k)))
     }
-
-    pub fn new_ladder_cap(rungs: usize, floaters: usize) -> Poset {
-        let mut rng = thread_rng();
-        let order = Order::of_usize(4 + 2 * rungs + floaters);
-        let mut gt = VertexVec::new(order, &VertexVec::new(order, &false));
-
-        for rung in 0..(rungs + 1) {
-            let x = Vertex::of_usize(2 * rung);
-            let y = Vertex::of_usize(2 * rung + 1);
-            gt[x][x.incr_by(2)] = true;
-            gt[y][y.incr_by(2)] = true;
-            gt[y][y.incr_by(1)] = true;
-            if rung < rungs {
-                gt[x][x.incr_by(5)] = true;
-            }
-        }
-        // Now shove in the extra stuff at the bottom
-        for x in (2 * rungs + 4)..(2 * rungs + 4 + floaters) {
-            todo!("Add relations between these bottom things and the rungs, and between them and each other.")
-        }
-
-        Poset::of_transitive_closure(gt, Constructor::PosetConstr(PosetConstructor::LadderCap(rungs, floaters)))
-    }
 }
