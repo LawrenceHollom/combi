@@ -85,23 +85,33 @@ pub fn has_twin_elements(e: &Entity) -> bool {
  * This is a little bit slow due to all the iterating.
  * If it's a sticking point then could probably be optimised significantly.
  */
-pub fn has_almost_twin_elements(p: &Poset) -> bool {
+fn has_almost_twins(p: &Poset, should_include_maximal: bool) -> bool {
     for (u, v) in p.iter_pairs() {
-        if p.upper_covers[u] == p.upper_covers[v] {
-            // We need that the downsets subtract to give chains
-            let x = p.downsets[u].setminus(p.downsets[v]);
-            let y = p.downsets[v].setminus(p.downsets[u]);
-            if p.is_chain(x) && p.is_chain(y) {
-                return true
-            }
-        } else if p.lower_covers[u] == p.lower_covers[v] {
-            // We need that the upsets subtract to give chains
-            let x = p.upsets[u].setminus(p.upsets[v]);
-            let y = p.upsets[v].setminus(p.upsets[u]);
-            if p.is_chain(x) && p.is_chain(y) {
-                return true
+        if should_include_maximal || !(p.upper_covers[u].is_empty() || p.upper_covers[v].is_empty()) {
+            if p.upper_covers[u] == p.upper_covers[v] {
+                // We need that the downsets subtract to give chains
+                let x = p.downsets[u].setminus(p.downsets[v]);
+                let y = p.downsets[v].setminus(p.downsets[u]);
+                if p.is_chain(x) && p.is_chain(y) {
+                    return true
+                }
+            } else if p.lower_covers[u] == p.lower_covers[v] {
+                // We need that the upsets subtract to give chains
+                let x = p.upsets[u].setminus(p.upsets[v]);
+                let y = p.upsets[v].setminus(p.upsets[u]);
+                if p.is_chain(x) && p.is_chain(y) {
+                    return true
+                }
             }
         }
     }
     false
+}
+
+pub fn has_almost_twin_elements(p: &Poset) -> bool {
+    has_almost_twins(p, true)
+}
+
+pub fn has_almost_twin_elements_exclude_maximal(p: &Poset) -> bool {
+    has_almost_twins(p, false)
 }

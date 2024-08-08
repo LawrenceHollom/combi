@@ -234,6 +234,7 @@ impl Dossier {
                     IsPosetIncomparabilityConnected => self.e.as_poset().is_incomparability_connected(),
                     HasTwinElements => twins::has_twin_elements(&self.e),
                     HasAlmostTwinElements => twins::has_almost_twin_elements(self.e.as_poset()),
+                    HasAlmostTwinElementsIgnoreMaximal => twins::has_almost_twin_elements_exclude_maximal(self.e.as_poset()),
                     NumLinearExtensionsLessThan(k) => poset_balance::is_num_extensions_less_than(self.e.as_poset(), *k),
                     IsHeuristicallyBalanced => poset_balance::is_heuristically_balanced(self.e.as_poset()),
                     HasMaximalN => poset_balance::has_maximal_n(self.e.as_poset()),
