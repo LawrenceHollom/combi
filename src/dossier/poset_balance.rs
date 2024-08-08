@@ -40,8 +40,9 @@ pub fn print_relation_probabilities(p: &Poset) {
     let count = iterate_extensions_rec(p, VertexSet::new(p.order), 0, &mut gt_count);
     println!("There are {} linear extensions of the poset.", count);
     println!("Counts of how many times we have u > v (u = y_axis, v = x_axis):");
-    let rows = gt_count.iter().map(
-        |row| ("Row!", row.to_vec_of_strings())
+    let names: Vec<String> = p.order.iter_verts().map(|v| v.to_string()).collect();
+    let rows = gt_count.iter().enumerate().map(
+        |(i, row)| (names[i].as_str(), row.to_vec_of_strings())
     ).collect::<Vec<(&str, VertexVec<String>)>>();
     print_vertex_table(rows);
     let mut max_balance = 0;
@@ -201,18 +202,11 @@ struct NStructure {
     top_left: Vertex,
     top_right: Vertex,
     bottom_left: Vertex,
-    bottom_right: Vertex,
+    // bottom_right: Vertex,
 }
 
-/**
- * Assuming that P has a maximal N, we attach the start of a ladder to
- * this N so that that top bit can't count as unbalanced, and don't
- * count the new top elements.
- * We construct a new poset Q with a bit of the ladder attached.
- */
-pub fn balance_as_cap(p: &Poset) -> Rational {
+fn attach_cap(p: &Poset) -> Poset {
     let n_struct = self::find_maximal_n(p).expect("Can only call balance_as_cap on posets with maximal N!");
-    println!("Found N: {:?}", n_struct);
     let order = p.order.incr_by(4);
     let mut gt = VertexVec::new(order, &VertexVec::new(order, &false));
     for (x, y) in p.order.iter_pairs() {
@@ -235,11 +229,21 @@ pub fn balance_as_cap(p: &Poset) -> Rational {
     gt[br][n_struct.bottom_left] = true;
 
     // Construct our new poset, with the ladder attached.
-    let q = Poset::of_transitive_closure(gt, crate::constructor::Constructor::Special);
+    Poset::of_transitive_closure(gt, crate::constructor::Constructor::Special)
+}
 
-    let mut gt_count = VertexVec::new(order, &VertexVec::new(order, &0));
-    let count = iterate_extensions_rec(&q, VertexSet::new(order), 0, &mut gt_count);
-    println!("Counted as cap; there are {} extensions.", count);
+/**
+ * Assuming that P has a maximal N, we attach the start of a ladder to
+ * this N so that that top bit can't count as unbalanced, and don't
+ * count the new top elements.
+ * We construct a new poset Q with a bit of the ladder attached.
+ */
+pub fn balance_as_cap(p: &Poset) -> Rational {
+    let q = attach_cap(p);
+
+    let mut gt_count = VertexVec::new(q.order, &VertexVec::new(q.order, &0));
+    let count = iterate_extensions_rec(&q, VertexSet::new(q.order), 0, &mut gt_count);
+    // println!("Counted as cap; there are {} extensions.", count);
 
     let mut balance: u64 = 0;
     // Now check for balancedness, but ignore the top two vertices.
@@ -248,6 +252,17 @@ pub fn balance_as_cap(p: &Poset) -> Rational {
         balance = balance.max(this_balance);
     }
     Rational::new_fraction(balance as usize, count as usize)
+}
+
+pub fn print_cap_balance(p: &Poset) {
+    let q = attach_cap(p);
+    
+    println!("\n ~~~~~~~~ ORIGINAL POSET ~~~~~~~~ \n");
+    p.print_hasse();
+    println!("\n ~~~~~~~~ CAPPED POSET ~~~~~~~~ \n");
+    q.print_hasse();
+    
+    print_relation_probabilities(&q);
 }
 
 /**
@@ -278,14 +293,14 @@ fn find_maximal_n(p: &Poset) -> Option<NStructure> {
                         top_left: x,
                         top_right: y,
                         bottom_left: u,
-                        bottom_right: v,
+                        // bottom_right: v,
                     })
                 } else {
                     return Some(NStructure {
                         top_left: y,
                         top_right: x,
                         bottom_left: u,
-                        bottom_right: v,
+                        // bottom_right: v,
                     })
                 }
             }

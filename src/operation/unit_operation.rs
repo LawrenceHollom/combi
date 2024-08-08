@@ -33,6 +33,7 @@ pub enum UnitOperation {
     PosetRelationProbabilities,
     PosetHasseDiagram,
     BalancedHeuristics,
+    PosetPrintBalanceAsCap,
     Signature,
     Unit,
 }
@@ -81,6 +82,7 @@ impl UnitOperation {
             "print_balance" => Some(PosetRelationProbabilities),
             "hasse" => Some(PosetHasseDiagram),
             "balance_heuristics" => Some(BalancedHeuristics),
+            "print_cap_balance" => Some(PosetPrintBalanceAsCap),
             "()" | "(" => Some(Unit),
             &_ => None,
         }
@@ -139,6 +141,7 @@ impl fmt::Display for UnitOperation {
             PosetRelationProbabilities => "Print table of balance probabilities for a poset",
             PosetHasseDiagram => "Print Hasse diagram of poset",
             BalancedHeuristics => "Heuristics about whether the poset has balanced vertices",
+            PosetPrintBalanceAsCap => "Print table of balance probabilities as a cap",
             Unit => "Do nothing",
         };
         write!(f, "{}", name)

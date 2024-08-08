@@ -309,6 +309,7 @@ impl Dossier {
             PosetRelationProbabilities => poset_balance::print_relation_probabilities(self.e.as_poset()),
             PosetHasseDiagram => self.e.as_poset().print_hasse(),
             BalancedHeuristics => poset_balance::print_heuristics(self.e.as_poset()),
+            PosetPrintBalanceAsCap => poset_balance::print_cap_balance(self.e.as_poset()),
             Unit => (),
         }
     }
