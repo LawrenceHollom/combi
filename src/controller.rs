@@ -640,7 +640,9 @@ impl Controller {
                     println!("Entity: ");
                     dossier.print_entity();
                 }
-                self.compute_and_print(&mut dossier, &mut ann);
+                if self.operations.len() > 0 {
+                    self.compute_and_print(&mut dossier, &mut ann);
+                }
                 satisfied = true;
             }
         }
