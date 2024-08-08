@@ -114,60 +114,6 @@ pub fn is_num_extensions_less_than(p: &Poset, k: usize) -> bool {
  * Prints some heuristics about whether we expect the poset to be balanced or not.
  */
 pub fn print_heuristics(p: &Poset) {
-    fn count_permutations_rec(p: &Poset, placed: VertexSet, num_placed: usize, num_perms: &mut [u64; 5], interesting_order: u32, num_interesting_placed: u32) -> u64{
-        if num_placed == p.order.to_usize() {
-            // Check what order elements 6, 7, 8, 9 are in.
-            match interesting_order {
-                8967 => num_perms[0] += 1,
-                8976 => num_perms[1] += 1,
-                9867 => num_perms[2] += 1,
-                9876 => num_perms[3] += 1,
-                9786 => num_perms[4] += 1,
-                _ => panic!("My god you are an idiot. {}", interesting_order),
-            }
-            return 1;
-        }
-        let mut count = 0;
-        for v in p.iter_verts() {
-            if !placed.has_vert(v) {
-                let mut can_place = true;
-                'test_coverees: for u in p.lower_covers[v].iter() {
-                    if !placed.has_vert(u) {
-                        can_place = false;
-                        break 'test_coverees;
-                    }
-                }
-                if can_place {
-                    // sub_count is how many extensions there are with v placed.
-                    let mut new_num_interesting_placed = num_interesting_placed;
-                    let mut new_interesting_order = interesting_order;
-                    if v == Vertex::of_usize(6) {
-                        new_interesting_order += num_interesting_placed * 6;
-                        new_num_interesting_placed *= 10;
-                    } else if v == Vertex::of_usize(7) {
-                        new_interesting_order += num_interesting_placed * 7;
-                        new_num_interesting_placed *= 10;
-                    } else if v == Vertex::of_usize(8) {
-                        new_interesting_order += num_interesting_placed * 8;
-                        new_num_interesting_placed *= 10;
-                    } else if v == Vertex::of_usize(9) {
-                        new_interesting_order += num_interesting_placed * 9;
-                        new_num_interesting_placed *= 10;
-                    }
-                    let new_placed = placed.add_vert_immutable(v);
-                    let sub_count = count_permutations_rec(p, new_placed, num_placed + 1, num_perms, new_interesting_order, new_num_interesting_placed);
-                    count += sub_count;
-                }
-            }
-        }
-        count
-    }
-    println!("Comparably balanced pairs:");
-    for (u, v) in p.iter_pairs() {
-        if p.incomparable(u, v) && p.downsets[u].size() + p.upsets[v].size() == p.upsets[u].size() + p.downsets[v].size() {
-            println!("({}, {})", u, v)
-        }
-    }
     let mut width_3_levels = 0;
     let mut h_count = vec![0; p.height];
     for v in p.iter_verts() {
@@ -178,10 +124,6 @@ pub fn print_heuristics(p: &Poset) {
         }
     }
     println!("{} levels of width 3", width_3_levels);
-
-    let mut num_perms = [0; 5];
-    count_permutations_rec(p, VertexSet::new(p.order), 0, &mut num_perms, 0, 1);
-    println!("Num perms = {:?}", num_perms);
 }
 
 /**
@@ -250,6 +192,24 @@ pub fn balance_as_cap(p: &Poset) -> Rational {
     for (u, v) in p.order.incr_by(2).iter_pairs() {
         let this_balance = gt_count[u][v].min(count - gt_count[u][v]);
         balance = balance.max(this_balance);
+    }
+    Rational::new_fraction(balance as usize, count as usize)
+}
+
+/**
+ * Get the most balanced pair, considering only those pairs in which one
+ * element is minimal in P.
+ */
+pub fn balance_with_min(p: &Poset) -> Rational {
+    let mut gt_count = VertexVec::new(p.order, &VertexVec::new(p.order, &0));
+    let count = iterate_extensions_rec(&p, VertexSet::new(p.order), 0, &mut gt_count);
+    let mut balance = 0;
+    for (u, v) in p.iter_pairs() {
+        // We only care if one of u and v is minimal.
+        if p.downsets[u].is_empty() || p.downsets[v].is_empty() {
+            let this_balance = gt_count[u][v].min(count - gt_count[u][v]);
+            balance = balance.max(this_balance);
+        }
     }
     Rational::new_fraction(balance as usize, count as usize)
 }

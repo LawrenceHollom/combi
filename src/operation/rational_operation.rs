@@ -22,6 +22,7 @@ pub enum RationalOperation {
     GrabbingColeafWeightedDifference,
     PosetBalance,
     PosetCapBalance,
+    PosetBalanceWithMinimal,
 }
 
 impl RationalOperation {
@@ -53,6 +54,7 @@ impl RationalOperation {
                     "grabbing_coleaf_difference" | "gcwd" => Some(GrabbingColeafWeightedDifference),
                     "balance" => Some(PosetBalance),
                     "poset_cap_balance" => Some(PosetCapBalance),
+                    "balance_with_min" => Some(PosetBalanceWithMinimal),
                     &_ => IntOperation::of_string_result(text).map(OfInt),
                 }
             }
@@ -92,6 +94,7 @@ impl fmt::Display for RationalOperation {
             GrabbingColeafWeightedDifference => "Grabbing game score diff with coleaf weights".to_owned(),
             PosetBalance => "Balance constant of the poset".to_owned(),
             PosetCapBalance => "Balance constant as the cap of a ladder".to_owned(),
+            PosetBalanceWithMinimal => "Balance among pairs including a min".to_owned(),
         };
         write!(f, "{}", name)
     }
