@@ -1,5 +1,3 @@
-mod random_construction;
-
 use queues::*;
 use std::usize;
 

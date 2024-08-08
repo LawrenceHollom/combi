@@ -20,6 +20,7 @@ mod regular;
 mod semiregular;
 mod corona;
 mod random_bfs;
+mod random_posets;
 
 #[derive(Clone)]
 pub enum ProductConstructor {
@@ -85,6 +86,7 @@ pub enum PosetConstructor {
     Chain(Order),
     Antichain(Order),
     ChainIntersection(Order, usize),
+    CorrelatedIntersection(Order, usize, f64),
 }
 
 #[derive(Clone)]
@@ -283,6 +285,12 @@ impl Constructor {
                 let k = args[1].parse().unwrap();
                 PosetConstr(ChainIntersection(order, k))
             }
+            "correlated_inter" => {
+                let order = Order::of_string(args[0]);
+                let k = args[1].parse().unwrap();
+                let prob = args[2].parse().unwrap();
+                PosetConstr(CorrelatedIntersection(order, k, prob))
+            }
             "digraph" => DigraphConstr(OfGraph(Box::new(Self::of_string(args[0])))),
             str => File(str.to_owned()),
         }
@@ -360,7 +368,8 @@ impl Constructor {
             }
             PosetConstr(Chain(order)) => p(Poset::new_chain(*order)),
             PosetConstr(Antichain(order)) => p(Poset::new_antichain(*order)),
-            PosetConstr(ChainIntersection(order, k)) => p(Poset::new_random_intersection(*order, *k)),
+            PosetConstr(ChainIntersection(order, k)) => p(random_posets::new_random_intersection(*order, *k)),
+            PosetConstr(CorrelatedIntersection(order, k, prob)) => p(random_posets::new_correlated_intersection(*order, *k, *prob)),
             DigraphConstr(OfGraph(constr)) => {
                 let g = constr.new_entity().as_owned_graph();
                 d(Digraph::of_matrix(g.adj))
@@ -400,7 +409,7 @@ impl PosetConstructor {
         use PosetConstructor::*;
         match self {
             Chain(_) | Antichain(_) => false,
-            ChainIntersection(_, _) => true,
+            ChainIntersection(_, _) | CorrelatedIntersection(_, _, _) => true,
         }
     }
 }
@@ -583,6 +592,9 @@ impl fmt::Display for PosetConstructor {
             Antichain(order) => write!(f, "Antichain of {} elements", order),
             ChainIntersection(order, k) => {
                 write!(f, "Intersection of {} random chains of {} elements", k, order)
+            }
+            CorrelatedIntersection(order, k, prob) => {
+                write!(f, "Intersection of {} correlated (prob {} of swaps) random chains of {} elements", k, prob, order)
             }
         }
     }
