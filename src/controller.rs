@@ -554,11 +554,12 @@ impl Controller {
         let mut lines_printed = 0;
         let mut round_lines_printed = 0;
         let mut checkpoint_time = SystemTime::now();
+        let start_time = checkpoint_time;
         let mut required_steps = 0;
         let mut regular_rep_printing = 1000;
         let mut num_passing_step = vec![0; conditions.len()];
         let mut time_spent = vec![0; conditions.len()];
-        let mut total_time_spent = 0;
+        let mut total_operation_time_spent = 0;
         while !satisfied || forever {
             let mut checkpointed = false;
             if lines_printed >= 30 {
@@ -602,7 +603,7 @@ impl Controller {
                 let operation_result = dossier.operate_bool(&mut ann, condition);
                 let duration = SystemTime::now().duration_since(start_time).unwrap().as_nanos();
                 time_spent[num_satisfied] += duration;
-                total_time_spent += duration;
+                total_operation_time_spent += duration;
                 if operation_result {
                     num_passing_step[num_satisfied] += 1;
                     num_satisfied += 1;
@@ -629,7 +630,9 @@ impl Controller {
             }
             if printed_round_number {
                 print_success_proportions(conditions, &num_passing_step, &time_spent, rep);
-                println!("Total ns/rep: {}", total_time_spent / (rep as u128));
+                let op_time = total_operation_time_spent / (rep as u128);
+                let net_time = (SystemTime::now().duration_since(start_time).unwrap().as_nanos()) / (rep as u128);
+                println!("Total ns/rep: \t operations: {}\t total: {}", op_time, net_time);
             }
             if all_satisfied {
                 if !forever {
