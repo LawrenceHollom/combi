@@ -151,7 +151,7 @@ impl Vertex {
     }
 
     pub fn to_binary_string(&self) -> String {
-        format!("{:05b}", self.0)
+        format!("{:04b}", self.0)
     }
 }
 
