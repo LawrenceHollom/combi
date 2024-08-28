@@ -149,6 +149,10 @@ impl Vertex {
     pub fn num_verts_after(&self, n: Order) -> usize {
         n.to_usize() - self.0 - 1
     }
+
+    pub fn to_binary_string(&self) -> String {
+        format!("{:05b}", self.0)
+    }
 }
 
 impl VertexPairIterator {
