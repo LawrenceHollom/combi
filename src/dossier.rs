@@ -28,6 +28,7 @@ mod bunkbed_sites;
 mod poset_balance;
 mod twins;
 mod matching;
+mod norine;
 
 use std::collections::HashMap;
 
@@ -312,6 +313,7 @@ impl Dossier {
             PosetHasseDiagram => self.e.as_poset().print_hasse(),
             BalancedHeuristics => poset_balance::print_heuristics(self.e.as_poset()),
             PosetPrintBalanceAsCap => poset_balance::print_cap_balance(self.e.as_poset()),
+            NorineHypercubeColourings => norine::partition_colourings(self.e.as_graph()),
             Unit => (),
         }
     }

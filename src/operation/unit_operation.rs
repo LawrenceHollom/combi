@@ -34,6 +34,7 @@ pub enum UnitOperation {
     PosetHasseDiagram,
     BalancedHeuristics,
     PosetPrintBalanceAsCap,
+    NorineHypercubeColourings,
     Signature,
     Unit,
 }
@@ -83,6 +84,7 @@ impl UnitOperation {
             "hasse" => Some(PosetHasseDiagram),
             "balance_heuristics" => Some(BalancedHeuristics),
             "print_cap_balance" => Some(PosetPrintBalanceAsCap),
+            "norine" => Some(NorineHypercubeColourings),
             "()" | "(" => Some(Unit),
             &_ => None,
         }
@@ -142,6 +144,7 @@ impl fmt::Display for UnitOperation {
             PosetHasseDiagram => "Print Hasse diagram of poset",
             BalancedHeuristics => "Heuristics about whether the poset has balanced vertices",
             PosetPrintBalanceAsCap => "Print table of balance probabilities as a cap",
+            NorineHypercubeColourings => "Print info about good and bad Norine colourings",
             Unit => "Do nothing",
         };
         write!(f, "{}", name)
