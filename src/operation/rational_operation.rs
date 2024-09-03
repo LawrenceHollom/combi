@@ -23,6 +23,7 @@ pub enum RationalOperation {
     PosetBalance,
     PosetCapBalance,
     PosetBalanceWithMinimal,
+    NorineAverageDistance,
 }
 
 impl RationalOperation {
@@ -55,6 +56,7 @@ impl RationalOperation {
                     "balance" => Some(PosetBalance),
                     "poset_cap_balance" => Some(PosetCapBalance),
                     "balance_with_min" => Some(PosetBalanceWithMinimal),
+                    "avg_norine" => Some(NorineAverageDistance),
                     &_ => IntOperation::of_string_result(text).map(OfInt),
                 }
             }
@@ -95,6 +97,7 @@ impl fmt::Display for RationalOperation {
             PosetBalance => "Balance constant of the poset".to_owned(),
             PosetCapBalance => "Balance constant as the cap of a ladder".to_owned(),
             PosetBalanceWithMinimal => "Balance among pairs including a min".to_owned(),
+            NorineAverageDistance => "Average Norine distance between antipodes".to_owned(),
         };
         write!(f, "{}", name)
     }

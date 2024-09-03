@@ -274,6 +274,7 @@ impl Dossier {
                     PosetBalance => poset_balance::balance_constant(self.e.as_poset()),
                     PosetCapBalance => poset_balance::balance_as_cap(self.e.as_poset()),
                     PosetBalanceWithMinimal => poset_balance::balance_with_min(self.e.as_poset()),
+                    NorineAverageDistance => norine::average_antipode_distance(self.e.as_graph()),
                 };
                 self.previous_rational_values.insert(operation.to_owned(), value);
                 value

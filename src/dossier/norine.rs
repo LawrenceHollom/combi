@@ -1,7 +1,7 @@
 use std::{io::{self, Write}, ops::{Index, IndexMut}, u32};
 
 use rand::{thread_rng, Rng};
-use utilities::{edge_tools::*, vertex_tools::*};
+use utilities::{edge_tools::*, rational::Rational, vertex_tools::*};
 
 use crate::entity::graph::*;
 
@@ -345,15 +345,17 @@ pub fn partition_colourings(g: &Graph) {
  * 
  */
 fn get_random_shell_colouring(g: &Graph) -> BigEdgeSet {
-    let mut rng = thread_rng();
     let indexer = EdgeIndexer::new(&g.adj_list);
-    let num_starters: usize = 10;
     let mut step = BigVertexSet::new(g.n);
     let mut next_step;
+    
+    let mut rng = thread_rng();
+    let num_starters: usize = g.n.to_usize() / 2; // No idea what a sensible number to put here is...
     for _i in 0..num_starters {
         let v = Vertex::of_usize(rng.gen_range(0..g.n.to_usize()));
         step.add_vert(v);
     }
+
     let mut reds = BigEdgeSet::new(&indexer);
     let mut coloured = BigEdgeSet::new(&indexer);
     let mut is_red_step = true;
@@ -388,13 +390,30 @@ fn get_random_shell_colouring(g: &Graph) -> BigEdgeSet {
  */
 pub fn min_antipode_distance(g: &Graph) -> u32 {
     let reds = get_random_shell_colouring(g);
+
+/*    for e in g.iter_edges() {
+        println!("{} : {}", e, if reds.has_edge(e) { "Red" } else { "Blue" })
+    }*/
+
     let mut min_dist = u32::MAX;
-    let mut total_distance = 0;
-    for v in g.n.div(2).iter_verts() {
-        let dists = distance_to_antipode(g, v, &reds, false);
-        min_dist = dists.min().min(min_dist);
-        total_distance += dists.min();
+    'test_verts: for v in g.n.div(2).iter_verts() {
+        let dist = distance_to_antipode(g, v, &reds, false).min();
+        min_dist = dist.min(min_dist);
+        if dist == 0 {
+            println!("Found zero: {} (binary = {})", v, v.to_binary_string());
+            break 'test_verts
+        }
     }
-    println!("Average distance = {:.3}", (total_distance as f64) / ((g.n.to_usize() / 2) as f64));
     min_dist
+}
+
+pub fn average_antipode_distance(g: &Graph) -> Rational {
+    let reds = get_random_shell_colouring(g);
+
+    let mut total_dist = 0;
+    for v in g.n.div(2).iter_verts() {
+        let dist = distance_to_antipode(g, v, &reds, false).min();
+        total_dist += dist
+    }
+    Rational::new_fraction(total_dist as usize, g.n.to_usize() / 2)
 }
