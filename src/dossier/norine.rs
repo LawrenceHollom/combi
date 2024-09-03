@@ -1,5 +1,6 @@
 use std::{io::{self, Write}, ops::{Index, IndexMut}, u32};
 
+use queues::*;
 use rand::{thread_rng, Rng};
 use utilities::{edge_tools::*, rational::Rational, vertex_tools::*};
 
@@ -350,7 +351,7 @@ fn get_random_shell_colouring(g: &Graph) -> BigEdgeSet {
     let mut next_step;
     
     let mut rng = thread_rng();
-    let num_starters: usize = g.n.to_usize() / 2; // No idea what a sensible number to put here is...
+    let num_starters: usize = rng.gen_range(2..=g.n.to_usize()); // No idea what a sensible number to put here is...
     for _i in 0..num_starters {
         let v = Vertex::of_usize(rng.gen_range(0..g.n.to_usize()));
         step.add_vert(v);
@@ -382,6 +383,49 @@ fn get_random_shell_colouring(g: &Graph) -> BigEdgeSet {
     reds
 }
 
+fn get_colouring_component_graph(g: &Graph, reds: &BigEdgeSet) -> Graph {
+    let mut comp_adj = vec![];
+    let mut components = EdgeVec::new(&g.adj_list, None);
+    let mut next_component = Vertex::ZERO;
+    for e in g.iter_edges() {
+        if components[e].is_none() {
+            components[e] = Some(next_component);
+            let mut adj = BigVertexSet::new(g.n);
+            // Starting from this edge, flood fill to find the colour component.
+            let mut q = queue![];
+            let _ = q.add(e.fst());
+            let _ = q.add(e.snd());
+            let mut found_verts = BigVertexSet::new(g.n);
+            let colour = reds.has_edge(e);
+
+            while let Ok(v) = q.remove() {
+                for u in g.adj_list[v].iter() {
+                    let f = Edge::of_pair(*u, v);
+                    if let Some(other_comp) = components[f] {
+                        if other_comp != next_component {
+                            // We implicitly know that the edge is the other colour.
+                            adj.add_vert(other_comp)
+                        }
+                    } else if reds.has_edge(f) == colour {
+                        // This edge hasn't been processed yet.
+                        components[f] = Some(next_component);
+                        if !found_verts.has_vert(*u) {
+                            let _ = q.add(*u);
+                            found_verts.add_vert(*u);
+                        }
+                    }
+                }
+            }
+            comp_adj.push(adj.to_vec());
+            next_component.incr_inplace()
+        }
+    }
+
+    let adj = VertexVec::of_vec(comp_adj);
+
+    Graph::of_matrix_to_be_symmetrised(adj, crate::constructor::Constructor::Special)
+}
+
 /**
  * Just runs a direct check on all antipodal pairs and finds the furthers away pair.
  * Here, furthest of course means distance in terms of min colour swaps.
@@ -389,7 +433,19 @@ fn get_random_shell_colouring(g: &Graph) -> BigEdgeSet {
  * We apply this to a random colouring, which is produced by colouring in shells.
  */
 pub fn min_antipode_distance(g: &Graph) -> u32 {
-    let reds = get_random_shell_colouring(g);
+    println!("Ding!");
+    let mut reds = get_random_shell_colouring(g);
+    println!("Dong!");
+
+    let mut i = 0;
+    while get_colouring_component_graph(g, &reds).is_forest() {
+        println!("Fail! {}", i);
+        reds = get_random_shell_colouring(g);
+        i += 1;
+    }
+
+    println!("Component graph:");
+    get_colouring_component_graph(g, &reds).print();
 
 /*    for e in g.iter_edges() {
         println!("{} : {}", e, if reds.has_edge(e) { "Red" } else { "Blue" })

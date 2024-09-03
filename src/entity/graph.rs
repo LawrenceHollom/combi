@@ -70,6 +70,36 @@ impl Graph {
         }
     }
 
+    /**
+     * For when we have a partial adjacency matrix, but it is not yet symmetric.
+     * This constructs a symmetric version (adj | adj^T), and builds the graph from that.
+     */
+    pub fn of_matrix_to_be_symmetrised(assym: VertexVec<VertexVec<bool>>, constructor: Constructor) -> Graph {
+        let n = assym.len();
+        let mut adj = VertexVec::new(n, &VertexVec::new(n, &false));
+        let mut adj_list = VertexVec::new(n, &vec![]);
+        let mut deg = VertexVec::new(n, &Degree::ZERO);
+
+        for (x, y) in n.iter_pairs() {
+            if assym[x][y] || assym[y][x] {
+                adj[x][y] = true;
+                adj[y][x] = true;
+                adj_list[x].push(y);
+                adj_list[y].push(x);
+                deg[x].incr_inplace();
+                deg[y].incr_inplace();
+            }
+        }
+
+        Graph { 
+            n,
+            adj,
+            adj_list,
+            deg,
+            constructor
+        }
+    }
+
     pub fn new_complete(n: Order) -> Graph {
         let mut adj_list = VertexVec::new(n, &vec![]);
 
@@ -598,15 +628,6 @@ impl Graph {
             self.delete_edge(max_edge);
         }
     }
-
-    pub fn remove_all_k_cycles(&mut self, k: usize) {    
-        cycles::remove_all_k_cycles(self, k)
-    }
-
-    pub fn is_filtered_acyclic(&self, filter: EdgeSet, indexer: &EdgeIndexer) -> bool {
-        cycles::is_filtered_acyclic(self, filter, indexer)
-    }
-
     pub fn open_nbhd(&self, v: Vertex) -> VertexSet {
         let mut nbhd = VertexSet::new(self.n);
         for u in self.adj_list[v].iter() {

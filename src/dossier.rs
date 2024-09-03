@@ -240,6 +240,7 @@ impl Dossier {
                     NumLinearExtensionsLessThan(k) => poset_balance::is_num_extensions_less_than(self.e.as_poset(), *k),
                     IsHeuristicallyBalanced => poset_balance::is_heuristically_balanced(self.e.as_poset()),
                     HasMaximalN => poset_balance::has_maximal_n(self.e.as_poset()),
+                    IsForest => self.e.as_graph().is_forest(),
                     Debug => debug::debug(self.e.as_graph()),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);

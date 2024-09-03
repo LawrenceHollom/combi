@@ -75,6 +75,7 @@ pub enum BoolOperation {
     NumLinearExtensionsLessThan(usize),
     IsHeuristicallyBalanced,
     HasMaximalN,
+    IsForest,
     Debug,
 }
 
@@ -207,6 +208,7 @@ impl BoolOperation {
                     "num_extensions_less_than" => Some(NumLinearExtensionsLessThan(args[0].parse().unwrap())),
                     "heuristically_balanced" => Some(IsHeuristicallyBalanced),
                     "has_maximal_n" => Some(HasMaximalN),
+                    "is_forest" => Some(IsForest),
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -349,7 +351,8 @@ impl fmt::Display for BoolOperation {
             HasAlmostTwinElementsIgnoreMaximal => "Has non-maximal almost-twins".to_owned(),
             NumLinearExtensionsLessThan(k) => format!("Has at most {} linear extensions", k),
             IsHeuristicallyBalanced => "Is heuristically balanced".to_owned(),
-            HasMaximalN => "Has maximal N".to_owned(),
+            HasMaximalN => "Does this poset have a maximal N".to_owned(),
+            IsForest => "Is a forest".to_owned(),
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };
         write!(f, "{}", name)
