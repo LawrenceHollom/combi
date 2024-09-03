@@ -124,6 +124,7 @@ impl Dossier {
                     NumCutvertices => connectedness::num_cutvertices(self.e.as_graph()),
                     NumLinearExtensions => poset_balance::num_linear_extensions(self.e.as_poset()),
                     MaxMatching => matching::max_matching_size(self.e.as_graph()),
+                    MinNorineDistance => norine::min_antipode_distance(self.e.as_graph()),
                     Number(k) => *k,
                 };
                 self.previous_int_values.insert(*operation, value);
@@ -313,7 +314,7 @@ impl Dossier {
             PosetHasseDiagram => self.e.as_poset().print_hasse(),
             BalancedHeuristics => poset_balance::print_heuristics(self.e.as_poset()),
             PosetPrintBalanceAsCap => poset_balance::print_cap_balance(self.e.as_poset()),
-            NorineHypercubeColourings => norine::partition_colourings(self.e.as_graph()),
+            PrintNorineHypercubeColourings => norine::partition_colourings(self.e.as_graph()),
             Unit => (),
         }
     }

@@ -1,5 +1,6 @@
 use std::{io::{self, Write}, ops::{Index, IndexMut}, u32};
 
+use rand::{thread_rng, Rng};
 use utilities::{edge_tools::*, vertex_tools::*};
 
 use crate::entity::graph::*;
@@ -338,4 +339,62 @@ pub fn partition_colourings(g: &Graph) {
     println!("There are {} colourings in total, of which {} survived reduction", num_colourings, num_colourings_after_reduction);
     println!("Max choosable dist = {}", max_choosable_dist);
     println!("Max unchoosable dist = {}", max_unchoosable_dist);
+}
+
+/**
+ * 
+ */
+fn get_random_shell_colouring(g: &Graph) -> BigEdgeSet {
+    let mut rng = thread_rng();
+    let indexer = EdgeIndexer::new(&g.adj_list);
+    let num_starters: usize = 10;
+    let mut step = BigVertexSet::new(g.n);
+    let mut next_step;
+    for _i in 0..num_starters {
+        let v = Vertex::of_usize(rng.gen_range(0..g.n.to_usize()));
+        step.add_vert(v);
+    }
+    let mut reds = BigEdgeSet::new(&indexer);
+    let mut coloured = BigEdgeSet::new(&indexer);
+    let mut is_red_step = true;
+    while !step.is_empty() {
+        next_step = BigVertexSet::new(g.n);
+        for v in step.iter() {
+            for w in g.adj_list[v].iter() {
+                let e = Edge::of_pair(v, *w);
+                if !coloured.has_edge(e) {
+                    // We need to colour this edge.
+                    coloured.add_edge(e);
+                    if is_red_step {
+                        reds.add_edge(e);
+                    }
+                    if !step.has_vert(*w) {
+                        next_step.add_vert(*w);
+                    }
+                }
+            }
+        }
+        step = next_step.to_owned();
+        is_red_step = !is_red_step
+    }
+    reds
+}
+
+/**
+ * Just runs a direct check on all antipodal pairs and finds the furthers away pair.
+ * Here, furthest of course means distance in terms of min colour swaps.
+ * 
+ * We apply this to a random colouring, which is produced by colouring in shells.
+ */
+pub fn min_antipode_distance(g: &Graph) -> u32 {
+    let reds = get_random_shell_colouring(g);
+    let mut min_dist = u32::MAX;
+    let mut total_distance = 0;
+    for v in g.n.div(2).iter_verts() {
+        let dists = distance_to_antipode(g, v, &reds, false);
+        min_dist = dists.min().min(min_dist);
+        total_distance += dists.min();
+    }
+    println!("Average distance = {:.3}", (total_distance as f64) / ((g.n.to_usize() / 2) as f64));
+    min_dist
 }

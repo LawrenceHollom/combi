@@ -45,6 +45,7 @@ pub enum IntOperation {
     Width,
     NumLinearExtensions,
     MaxMatching,
+    MinNorineDistance,
     Number(u32),
 }
 
@@ -100,6 +101,7 @@ impl IntOperation {
             "width" => Some(Width),
             "num_extensions" => Some(NumLinearExtensions),
             "max_matching" => Some(MaxMatching),
+            "norine" => Some(MinNorineDistance),
             str => str.parse().ok().map(Number),
         }
     }
@@ -151,6 +153,7 @@ impl fmt::Display for IntOperation {
             Width => "Poset width",
             NumLinearExtensions => "Number of linear extensions",
             MaxMatching => "Max matching size in a bipartite graph",
+            MinNorineDistance => "Min Norine distance between antipodes in random colouring of Q_n ",
             Number(n) => {
                 sta = n.to_string();
                 sta.as_str()

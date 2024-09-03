@@ -21,6 +21,11 @@ pub struct Graph {
     pub constructor: Constructor,
 }
 
+pub struct EdgeIterator<'a> {
+    g: &'a Graph,
+    sub_iter: VertexPairIterator,
+}
+
 impl Graph {
     pub fn of_adj_list(adj_list: VertexVec<Vec<Vertex>>, constructor: Constructor) -> Graph {
         let n = adj_list.len();
@@ -227,6 +232,10 @@ impl Graph {
 
     pub fn iter_pairs(&self) -> impl Iterator<Item = (Vertex, Vertex)> {
         self.n.iter_pairs()
+    }
+
+    pub fn iter_edges(&self) -> EdgeIterator {
+        EdgeIterator::new(self)
     }
 
     pub fn is_isomorphic_to(&self, g: &Graph) -> bool {
@@ -743,5 +752,35 @@ impl Iterator for BFSIterator<'_> {
                 process_v(self, self.next_vert)
             }
         }
+    }
+}
+
+impl EdgeIterator<'_> {
+    fn new(g: &Graph) -> EdgeIterator<'_> {
+        EdgeIterator {
+            g,
+            sub_iter: VertexPairIterator::new(g.n),
+        }
+    }
+}
+
+impl Iterator for EdgeIterator<'_> {
+    type Item = Edge;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut pair = self.sub_iter.next();
+        let mut e = None;
+        loop {
+            if let Some((x, y)) = pair {
+                if self.g.adj[x][y] {
+                    e = Some(Edge::of_pair(x, y));
+                    break;
+                }
+            } else {
+                break;
+            }
+            pair = self.sub_iter.next();
+        }
+        e
     }
 }

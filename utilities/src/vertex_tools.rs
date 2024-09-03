@@ -35,6 +35,12 @@ pub struct VertexSetIterator {
     i: Vertex,
 }
 
+#[derive(Clone, PartialEq, Eq)]
+pub struct BigVertexSetIterator<'a> {
+    verts: &'a BigVertexSet,
+    i: Vertex,
+}
+
 #[derive(Clone, Debug)]
 pub struct VertexSetVec<T: Debug + Clone> {
     vec: Vec<T>,
@@ -558,7 +564,7 @@ impl BigVertexSet {
     const BITS: usize = 128;
     
     pub fn new(n: Order) -> BigVertexSet {
-        let num_pars: usize = n.to_usize() / Self::BITS;
+        let num_pars: usize = (n.to_usize() + Self::BITS - 1) / Self::BITS;
         BigVertexSet{ verts: vec![0; num_pars], n }
     }
 
@@ -615,6 +621,10 @@ impl BigVertexSet {
         }
         return true
     }
+
+    pub fn iter(&self) -> BigVertexSetIterator {
+        BigVertexSetIterator::new(self)
+    }
     
     pub fn print(&self) {
         for v in self.n.iter_verts() {
@@ -631,6 +641,15 @@ impl BigVertexSet {
 impl VertexSetIterator {
     pub fn new(verts: VertexSet) -> VertexSetIterator {
         VertexSetIterator { 
+            verts, 
+            i: Vertex::ZERO 
+        }
+    }
+}
+
+impl BigVertexSetIterator<'_> {
+    pub fn new(verts: &BigVertexSet) -> BigVertexSetIterator {
+        BigVertexSetIterator { 
             verts, 
             i: Vertex::ZERO 
         }
@@ -678,6 +697,23 @@ impl fmt::Display for VertexSet {
 }
 
 impl Iterator for VertexSetIterator {
+    type Item = Vertex;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while !self.i.is_n(self.verts.n) && !self.verts.has_vert(self.i) {
+            self.i.incr_inplace();
+        }
+        if self.i.is_n(self.verts.n) {
+            None
+        } else {
+            let out = self.i;
+            self.i.incr_inplace();
+            Some(out)
+        }
+    }
+}
+
+impl Iterator for BigVertexSetIterator<'_> {
     type Item = Vertex;
 
     fn next(&mut self) -> Option<Self::Item> {

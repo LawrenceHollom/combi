@@ -254,7 +254,7 @@ impl BigEdgeSet {
     const BITS: usize = 128;
 
     pub fn new(indexer: &EdgeIndexer) -> BigEdgeSet {
-        let parts = indexer.num_edges / Self::BITS;
+        let parts = (indexer.num_edges + Self::BITS - 1) / Self::BITS;
         BigEdgeSet { 
             edges: vec![0; parts],
             indexer: indexer.to_owned(),
