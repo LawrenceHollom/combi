@@ -20,7 +20,6 @@ pub struct EdgeSet {
 pub struct BigEdgeSet {
     edges: Vec<u128>,
     indexer: EdgeIndexer,
-    indexer_hash: u64,
 }
 
 #[derive(Clone, PartialEq, Eq, Hash)]
@@ -259,10 +258,16 @@ impl BigEdgeSet {
         BigEdgeSet { 
             edges: vec![0; parts],
             indexer: indexer.to_owned(),
-            indexer_hash: indexer.hash,
         }
     }
-    
+
+    pub fn of_edge_set(edge_set: EdgeSet, indexer: &EdgeIndexer) -> BigEdgeSet {
+        BigEdgeSet {
+            edges: vec![edge_set.edges],
+            indexer: indexer.to_owned(),
+        }
+    }
+
     pub fn add_edge(&mut self, e: Edge) {
         let code = self.indexer[e].unwrap();
         let part = code / Self::BITS;

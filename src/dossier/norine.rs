@@ -102,7 +102,7 @@ impl Distances {
  * Run a flood-fill to find the minimal number of flips to the antipode.
  * Can use efficient algorithms because all "distances" are 0 or 1.
  */
-fn distance_to_antipode(g: &Graph, indexer: &EdgeIndexer, v: Vertex, reds: EdgeSet, print_debug: bool) -> Distances {
+fn distance_to_antipode(g: &Graph, v: Vertex, reds: &BigEdgeSet, print_debug: bool) -> Distances {
     use Colour::*;
     let target = cube_antipode(g, v);
     // Blue dists is for paths starting with a blue edge.
@@ -114,7 +114,7 @@ fn distance_to_antipode(g: &Graph, indexer: &EdgeIndexer, v: Vertex, reds: EdgeS
     for u_sta in g.adj_list[Vertex::ZERO].iter() {
         let u = u_sta.xor(v);
         let e = Edge::of_pair(v, u);
-        if reds.has_edge(e, indexer) {
+        if reds.has_edge(e) {
             red_dists[u][Red] = 0;
         } else {
             blue_dists[u][Blue] = 0;
@@ -138,7 +138,7 @@ fn distance_to_antipode(g: &Graph, indexer: &EdgeIndexer, v: Vertex, reds: EdgeS
                 continue 'iter_nbrs;
             }
             let e = Edge::of_pair(u, *w);
-            let e_col = Colour::of_bool(reds.has_edge(e, indexer));
+            let e_col = Colour::of_bool(reds.has_edge(e));
             let other_col = Colour::other(e_col);
             
             let new_red_dist = red_dists[*w][e_col].min(red_dists[*w][other_col] + 1);
@@ -292,13 +292,15 @@ pub fn partition_colourings(g: &Graph) {
             continue 'iter_colourings;
         }
 
+        let big_reds = BigEdgeSet::of_edge_set(reds, &indexer);
+
         let choosable = is_choosable(g, &indexer, reds);
 
         num_colourings_after_reduction += 1;
         let mut total_antipode_distance = 0;
         let mut total_alternating_distance = 0;
         for v in g.n.div(2).iter_verts() {
-            let dists = distance_to_antipode(g, &indexer, v, reds, false);
+            let dists = distance_to_antipode(g, v, &big_reds, false);
             total_antipode_distance += dists.min();
             total_alternating_distance += dists.max_alternating();
         }
