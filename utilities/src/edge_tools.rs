@@ -16,6 +16,13 @@ pub struct EdgeSet {
     indexer_hash: u64,
 }
 
+#[derive(Hash, Clone, PartialEq, Eq)]
+pub struct BigEdgeSet {
+    edges: Vec<u128>,
+    indexer: EdgeIndexer,
+    indexer_hash: u64,
+}
+
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct EdgeIndexer {
     indexer: Vec<Option<usize>>,
@@ -241,6 +248,52 @@ impl EdgeSet {
         } else {
             panic!("Cannot intersect EdgeSets corresponding to different graphs!")
         }
+    }
+}
+
+impl BigEdgeSet {
+    const BITS: usize = 128;
+
+    pub fn new(indexer: &EdgeIndexer) -> BigEdgeSet {
+        let parts = indexer.num_edges / Self::BITS;
+        BigEdgeSet { 
+            edges: vec![0; parts],
+            indexer: indexer.to_owned(),
+            indexer_hash: indexer.hash,
+        }
+    }
+    
+    pub fn add_edge(&mut self, e: Edge) {
+        let code = self.indexer[e].unwrap();
+        let part = code / Self::BITS;
+        self.edges[part] |= 1 << code % Self::BITS;
+    }
+
+    pub fn remove_edge(&mut self, e: Edge) {
+        let code = self.indexer[e].unwrap();
+        let part = code / Self::BITS;
+        self.edges[part] &= !(1 << code % Self::BITS);
+    }
+
+    pub fn flip_edge(&mut self, e: Edge) {
+        let code = self.indexer[e].unwrap();
+        let part = code / Self::BITS;
+        self.edges[part] ^= 1 << code % Self::BITS;
+    }
+
+    pub fn has_edge(&self, e: Edge) -> bool {
+        let code = self.indexer[e].unwrap();
+        let part = code / Self::BITS;
+        (self.edges[part] >> code % Self::BITS) % 2 == 1
+    }
+
+    pub fn is_empty(&self) -> bool {
+        for part in self.edges.iter() {
+            if *part != 0 {
+                return false
+            }
+        }
+        return true
     }
 }
 

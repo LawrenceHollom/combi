@@ -174,6 +174,7 @@ fn print_colouring(indexer: &EdgeIndexer, reds: EdgeSet) {
 
 /**
  * Is this colouring a representative of its symmetry class?
+ * Used to speed up computation, as we only need to check representatives
  */
 fn is_colouring_representative(g: &Graph, indexer: &EdgeIndexer, reds: EdgeSet) -> bool {
     let mut is_red = false;
@@ -208,6 +209,10 @@ fn is_colouring_representative(g: &Graph, indexer: &EdgeIndexer, reds: EdgeSet) 
     true
 }
 
+/**
+ * Is there, for every v in V(g) with antipode u, a path from v to u starting on red
+ * and finishing on blue, and also a path starting on blue and finishing on red?
+ */
 fn is_choosable(g: &Graph, indexer: &EdgeIndexer, reds: EdgeSet) -> bool {
     for v in g.n.div(2).iter_verts() {
         let u = cube_antipode(g, v);

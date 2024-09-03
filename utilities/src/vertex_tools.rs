@@ -23,6 +23,12 @@ pub struct VertexSet {
     n: Order,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct BigVertexSet {
+    verts: Vec<u128>,
+    n: Order,
+}
+
 #[derive(Clone, PartialEq, Eq)]
 pub struct VertexSetIterator {
     verts: VertexSet,
@@ -536,6 +542,80 @@ impl VertexSet {
         VertexSetIterator::new(*self)
     }
 
+    pub fn print(&self) {
+        for v in self.n.iter_verts() {
+            if self.has_vert(v) {
+                print!("1");
+            } else {
+                print!("0");
+            }
+        }
+        println!();
+    }
+}
+
+impl BigVertexSet {
+    const BITS: usize = 128;
+    
+    pub fn new(n: Order) -> BigVertexSet {
+        let num_pars: usize = n.to_usize() / Self::BITS;
+        BigVertexSet{ verts: vec![0; num_pars], n }
+    }
+
+    pub fn of_vec(n: Order, vs: &Vec<Vertex>) -> BigVertexSet {
+        let mut set = BigVertexSet::new(n);
+        for v in vs.iter() {
+            set.add_vert(*v)
+        }
+        set
+    }
+
+    pub fn to_vec(&self) -> VertexVec<bool> {
+        let mut out = VertexVec::new(self.n, &false);
+        for v in self.n.iter_verts() {
+            if self.has_vert(v) {
+                out[v] = true
+            }
+        }
+        out
+    }
+
+    pub fn add_vert(&mut self, v: Vertex) {
+        let part = v.0 / Self::BITS;
+        self.verts[part] |= 1 << (v.0 % Self::BITS);
+    }
+
+    pub fn remove_vert(&mut self, v: Vertex) {
+        let part = v.0 / Self::BITS;
+        self.verts[part] &= !(1 << (v.0 % Self::BITS))
+    }
+
+    pub fn add_all(&mut self, vs: BigVertexSet) {
+        for (i, part) in self.verts.iter_mut().enumerate() {
+            *part |= vs.verts[i];
+        }
+    }
+
+    pub fn remove_all(&mut self, vs: BigVertexSet) {
+        for (i, part) in self.verts.iter_mut().enumerate() {
+            *part &= !vs.verts[i];
+        }
+    }
+
+    pub fn has_vert(&self, v: Vertex) -> bool {
+        let part = v.0 / Self::BITS;
+        (self.verts[part] >> (v.0 % Self::BITS)) % 2 == 1
+    }
+
+    pub fn is_empty(&self) -> bool {
+        for part in self.verts.iter() {
+            if *part != 0 {
+                return false
+            }
+        }
+        return true
+    }
+    
     pub fn print(&self) {
         for v in self.n.iter_verts() {
             if self.has_vert(v) {
