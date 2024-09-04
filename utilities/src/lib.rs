@@ -247,19 +247,31 @@ pub fn parse_infix_like(text: &str) -> Option<(&str, &str, &str)> {
     parse_infix_like_restricted(text, infix_symbols)
 }
 
-pub fn pretty_print_int(x: usize, end: &str) {
+/**
+ * Returns true if the number is a single-digit multiple of a power of 10
+ */
+pub fn is_round_number(x: usize) -> bool {
+    let log = (x as f64).log10() + 0.000001;
+    let pow = 10_usize.pow(log as u32);
+    x % pow == 0
+}
+
+pub fn pretty_format_int(x: usize) -> String {
     if x < 10_000 {
-        print!("{}", x)
+        format!("{}", x)
     } else if x < 100_000 {
-        print!("{}k{}", x / 1_000, (x % 1_000) / 100)
+        format!("{}k{}", x / 1_000, (x % 1_000) / 100)
     } else if x < 1_000_000 {
-        print!("{}k", x / 1_000)
+        format!("{}k", x / 1_000)
     } else if x < 100_000_000 {
-        print!("{}m{}", x / 1_000_000, (x % 1_000_000) / 100_000)
+        format!("{}m{}", x / 1_000_000, (x % 1_000_000) / 100_000)
     } else {
-        print!("{}m", x / 1_000_000)
+        format!("{}m", x / 1_000_000)
     }
-    print!("{}", end)
+}
+
+pub fn pretty_print_int(x: usize, end: &str) {
+    print!("{}{}", pretty_format_int(x), end)
 }
 
 pub fn print_table(titles: Vec<String>, rows: Vec<(String, Vec<String>)>) {

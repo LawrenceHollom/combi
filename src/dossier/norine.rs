@@ -2,7 +2,7 @@ use std::{io::{self, Write}, ops::{Index, IndexMut}, u32};
 
 use queues::*;
 use rand::{thread_rng, Rng};
-use utilities::{edge_tools::*, rational::Rational, vertex_tools::*};
+use utilities::{*, edge_tools::*, rational::Rational, vertex_tools::*};
 
 use crate::entity::graph::*;
 
@@ -343,7 +343,9 @@ pub fn partition_colourings(g: &Graph) {
 }
 
 /**
- * 
+ * Produces a random colouring of the graph G by picking a few seed points and then colouring
+ * out from them in shells.
+ * Returns the set of red edges.
  */
 fn get_random_shell_colouring(g: &Graph) -> BigEdgeSet {
     let indexer = EdgeIndexer::new(&g.adj_list);
@@ -380,6 +382,24 @@ fn get_random_shell_colouring(g: &Graph) -> BigEdgeSet {
         step = next_step.to_owned();
         is_red_step = !is_red_step
     }
+    reds
+}
+
+/**
+ * Produces a random colouring by sampling each edge independently with probability 1/2.
+ * Returns the set of red edges.
+ */
+fn get_uniform_random_colouring(g: &Graph) -> BigEdgeSet {
+    let indexer = EdgeIndexer::new(&g.adj_list);
+    let mut rng = thread_rng();
+    let mut reds = BigEdgeSet::new(&indexer);
+
+    for e in g.iter_edges() {
+        if rng.gen_bool(0.5) {
+            reds.add_edge(e)
+        }
+    }
+
     reds
 }
 
@@ -433,23 +453,23 @@ fn get_colouring_component_graph(g: &Graph, reds: &BigEdgeSet) -> Graph {
  * We apply this to a random colouring, which is produced by colouring in shells.
  */
 pub fn min_antipode_distance(g: &Graph) -> u32 {
-    println!("Ding!");
-    let mut reds = get_random_shell_colouring(g);
-    println!("Dong!");
+    let mut reds = get_uniform_random_colouring(g);//get_random_shell_colouring(g);
 
     let mut i = 0;
     while get_colouring_component_graph(g, &reds).is_forest() {
-        println!("Fail! {}", i);
-        reds = get_random_shell_colouring(g);
+        if is_round_number(i as usize) {
+            println!("Fail! {}", pretty_format_int(i));
+        }
+        reds = get_uniform_random_colouring(g);// get_random_shell_colouring(g);
         i += 1;
     }
 
     println!("Component graph:");
     get_colouring_component_graph(g, &reds).print();
 
-/*    for e in g.iter_edges() {
+    for e in g.iter_edges() {
         println!("{} : {}", e, if reds.has_edge(e) { "Red" } else { "Blue" })
-    }*/
+    }
 
     let mut min_dist = u32::MAX;
     'test_verts: for v in g.n.div(2).iter_verts() {
