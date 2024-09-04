@@ -274,6 +274,29 @@ pub fn pretty_print_int(x: usize, end: &str) {
     print!("{}{}", pretty_format_int(x), end)
 }
 
+pub fn pretty_format_time(nanos: u128) -> String {
+    let mics = nanos / 1000;
+    let millis = mics / 1000;
+    let secs = millis / 1000;
+    if nanos < 1000 {
+        format!("{} ns", nanos)
+    } else if mics < 10 {
+        format!("{}.{:0>2} μs", mics, (nanos % 1000) / 10)
+    } else if mics < 100 {
+        format!("{}.{} μs", mics, (nanos % 1000) / 100)
+    } else if mics < 1000 {
+        format!("{} μs", mics)
+    } else if millis < 10 {
+        format!("{}.{:0>2} ms", millis, (mics % 1000) / 10)
+    } else if millis < 100 {
+        format!("{}.{} ms", millis, (mics % 1000) / 100)
+    } else if millis < 1000 {
+        format!("{} ms", millis)
+    } else {
+        format!("{}.{:0>2} s", secs, (millis % 1000) / 10)
+    } 
+}
+
 pub fn print_table(titles: Vec<String>, rows: Vec<(String, Vec<String>)>) {
     let n = rows[0].1.len();
     let mut widths = vec![0; n];

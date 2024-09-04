@@ -623,22 +623,15 @@ fn print_colouring(g: &Graph, reds: &BigEdgeSet) {
 pub fn min_antipode_distance(g: &Graph, colouring_type: usize) -> u32 {
     let mut reds = get_random_colouring(g, colouring_type);
 
-    let mut i = 0;
+    // let mut i = 0;
     let (mut h, mut component_sizes) = get_colouring_component_graph(g, &reds);
     while h.is_forest() {
-        if is_round_number(i as usize) {
-            println!("Fail! {}", pretty_format_int(i));
-        }
+        // if is_round_number(i as usize) {
+        //     println!("Fail! {}", pretty_format_int(i));
+        // }
         reds = get_random_colouring(g, colouring_type);
-        i += 1;
+        // i += 1;
         (h, component_sizes) = get_colouring_component_graph(g, &reds);
-    }
-
-    println!("Component graph:");
-    h.print();
-    println!("Component sizes:");
-    for (v, size) in component_sizes.iter_enum() {
-        println!("{} : {}", v, size)
     }
 
     let mut min_dist = u32::MAX;
@@ -646,9 +639,18 @@ pub fn min_antipode_distance(g: &Graph, colouring_type: usize) -> u32 {
         let dist = distance_to_antipode(g, v, &reds, false).min();
         min_dist = dist.min(min_dist);
         if dist == 0 {
-            println!("Found zero: {} (binary = {})", v, v.to_binary_string());
             break 'test_verts
         }
+    }
+
+    if min_dist >= 1 {
+        println!("Component graph:");
+        h.print();
+        println!("Component sizes:");
+        for (v, size) in component_sizes.iter_enum() {
+            println!("{} : {}", v, size)
+        }
+        print_colouring(g, &reds)
     }
     min_dist
 }
@@ -666,13 +668,6 @@ pub fn average_antipode_distance(g: &Graph, colouring_type: usize) -> Rational {
     for v in g.n.div(2).iter_verts() {
         let dist = distance_to_antipode(g, v, &reds, false).min();
         total_dist += dist
-    }
-    if total_dist == 0 {
-        let (h, component_sizes) = get_colouring_component_graph(g, &reds);
-        h.print();
-        println!("comp sizes: {:?}", component_sizes);
-        print_colouring(g, &reds);
-        panic!("wtf?? Literally every distance is zero???")
     }
     Rational::new_fraction(total_dist as usize, g.n.to_usize() / 2)
 }

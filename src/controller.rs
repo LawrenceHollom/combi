@@ -536,16 +536,16 @@ impl Controller {
             }
             let propn = f(num_passing_step[0], rep);
             let ns = total_time_spent[0] / (rep as u128);
-            println!("SUCCESS RATES:\n\t[0. {}: {} ; {:.1}% ; ~{} ns/rep]", conditions[0], num_passing_step[0], propn, ns);
+            println!("SUCCESS RATES:\n\t[0. {}: {} ; {:.1}% ; ~{}/rep]", conditions[0], num_passing_step[0], propn, pretty_format_time(ns));
             for (i, condition) in conditions.iter().enumerate().skip(1) {
                 let propn = f(num_passing_step[i], num_passing_step[i - 1]);
                 let ns = 
                     if num_passing_step[i - 1] == 0 {
                         "??".to_owned()
                     } else {
-                        format!("{}", total_time_spent[i] / (num_passing_step[i - 1] as u128))
+                        pretty_format_time(total_time_spent[i] / (num_passing_step[i - 1] as u128))
                     };
-                println!("\t[{}. {}: {} ; {:.1}% ; ~{} ns/rep]", i, condition, num_passing_step[i], propn, ns)
+                println!("\t[{}. {}: {} ; {:.1}% ; ~{}/rep]", i, condition, num_passing_step[i], propn, ns)
             }
         }
 
@@ -556,7 +556,7 @@ impl Controller {
         let mut checkpoint_time = SystemTime::now();
         let start_time = checkpoint_time;
         let mut required_steps = 0;
-        let mut regular_rep_printing = 1000;
+        let mut regular_rep_printing = 10;
         let mut num_passing_step = vec![0; conditions.len()];
         let mut time_spent = vec![0; conditions.len()];
         let mut total_operation_time_spent = 0;
@@ -632,7 +632,7 @@ impl Controller {
                 print_success_proportions(conditions, &num_passing_step, &time_spent, rep);
                 let op_time = total_operation_time_spent / (rep as u128);
                 let net_time = (SystemTime::now().duration_since(start_time).unwrap().as_nanos()) / (rep as u128);
-                println!("Total ns/rep: \t operations: {}\t total: {}", op_time, net_time);
+                println!("Total time/rep: \t operations: {}\t total: {}", pretty_format_time(op_time), pretty_format_time(net_time));
             }
             if all_satisfied {
                 if !forever {
