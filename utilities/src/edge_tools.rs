@@ -22,6 +22,21 @@ pub struct BigEdgeSet {
     indexer: EdgeIndexer,
 }
 
+#[derive(Clone, PartialEq, Eq)]
+pub struct EdgeSetIterator<'a> {
+    edges: EdgeSet,
+    indexer: &'a EdgeIndexer,
+    i: usize,
+}
+
+
+#[derive(Clone, PartialEq, Eq)]
+pub struct BigEdgeSetIterator<'a> {
+    edges: &'a BigEdgeSet,
+    indexer: &'a EdgeIndexer,
+    i: usize,
+}
+
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct EdgeIndexer {
     indexer: Vec<Option<usize>>,
@@ -31,7 +46,7 @@ pub struct EdgeIndexer {
 }
 
 #[derive(Clone, PartialEq, Eq)]
-pub struct EdgeSetIterator {
+pub struct AllEdgeSetsIterator {
     indexer: EdgeIndexer,
     edges: u128,
 }
@@ -161,13 +176,37 @@ impl EdgeIndexer {
     pub fn iter_edges(&self) -> impl Iterator<Item = &Edge> {
         self.indexer_inv.iter()
     }
+
+    pub fn len(&self) -> usize {
+        return self.indexer_inv.len()
+    }
 }
 
-impl EdgeSetIterator {
-    pub fn new(adj_list: &VertexVec<Vec<Vertex>>) -> EdgeSetIterator {
-        EdgeSetIterator {
+impl AllEdgeSetsIterator {
+    pub fn new(adj_list: &VertexVec<Vec<Vertex>>) -> AllEdgeSetsIterator {
+        AllEdgeSetsIterator {
             indexer: EdgeIndexer::new(adj_list),
             edges: 0,
+        }
+    }
+}
+
+impl EdgeSetIterator<'_> {
+    pub fn new(edges: EdgeSet, indexer: &EdgeIndexer) -> EdgeSetIterator {
+        EdgeSetIterator {
+            edges,
+            indexer,
+            i: 0
+        }
+    }
+}
+
+impl BigEdgeSetIterator<'_> {
+    pub fn new<'a>(edges: &'a BigEdgeSet, indexer: &'a EdgeIndexer) -> BigEdgeSetIterator<'a> {
+        BigEdgeSetIterator {
+            edges,
+            indexer,
+            i: 0
         }
     }
 }
@@ -248,6 +287,10 @@ impl EdgeSet {
             panic!("Cannot intersect EdgeSets corresponding to different graphs!")
         }
     }
+
+    pub fn iter<'a>(&self, indexer: &'a EdgeIndexer) -> EdgeSetIterator<'a> {
+        EdgeSetIterator::new(*self, indexer)
+    }
 }
 
 impl BigEdgeSet {
@@ -300,6 +343,10 @@ impl BigEdgeSet {
         }
         return true
     }
+
+    pub fn iter(&self) -> BigEdgeSetIterator {
+        BigEdgeSetIterator::new(self, &self.indexer)
+    }
 }
 
 impl<T: Debug + Copy> EdgeVec<T> {
@@ -308,6 +355,13 @@ impl<T: Debug + Copy> EdgeVec<T> {
         let num_edges = indexer.num_edges;
         EdgeVec {
             indexer,
+            vec: vec![value; num_edges],
+        }
+    }
+    pub fn new_with_indexer(indexer: &EdgeIndexer, value: T) -> EdgeVec<T> {
+        let num_edges = indexer.num_edges;
+        EdgeVec {
+            indexer: indexer.to_owned(),
             vec: vec![value; num_edges],
         }
     }
@@ -334,6 +388,10 @@ impl<T: Debug + Copy> EdgeVec<T> {
 
     pub fn get(&self, e: Edge) -> T {
         self.vec[self.indexer.index_unwrap(e)]
+    }
+
+    pub fn get_indexer(&self) -> &EdgeIndexer {
+        &self.indexer
     }
 
     pub fn find_max(&self, min: T, cmp: fn(&T, &T) -> Ordering) -> Option<Edge> {
@@ -425,7 +483,7 @@ impl<T: Debug + Copy> IndexMut<Edge> for EdgeVec<T> {
     }
 }
 
-impl Iterator for EdgeSetIterator {
+impl Iterator for AllEdgeSetsIterator {
     type Item = EdgeSet;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -436,6 +494,42 @@ impl Iterator for EdgeSetIterator {
         } else {
             self.edges += 1;
             Some(EdgeSet::of_int(edges, &self.indexer))
+        }
+    }
+}
+
+impl Iterator for EdgeSetIterator<'_> {
+    type Item = Edge;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // Trundle through edges until we find something in the set.
+        while self.i < self.indexer.len() && !self.edges.has_edge(self.indexer.indexer_inv[self.i], &self.indexer) {
+            self.i += 1;
+        }
+        if self.i >= self.indexer.len() {
+            None
+        } else {
+            let out = self.indexer.indexer_inv[self.i];
+            self.i += 1;
+            Some(out)
+        }
+    }
+}
+
+impl Iterator for BigEdgeSetIterator<'_> {
+    type Item = Edge;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // Trundle through edges until we find something in the set.
+        while self.i < self.indexer.len() && !self.edges.has_edge(self.indexer.indexer_inv[self.i]) {
+            self.i += 1;
+        }
+        if self.i >= self.indexer.len() {
+            None
+        } else {
+            let out = self.indexer.indexer_inv[self.i];
+            self.i += 1;
+            Some(out)
         }
     }
 }

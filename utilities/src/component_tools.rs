@@ -159,6 +159,9 @@ impl <T: Debug + Copy> EdgeComponentVec<T> {
     pub fn new(adj_list: &VertexVec<Vec<Vertex>>, value: T) -> EdgeComponentVec<T> {
         EdgeComponentVec(EdgeVec::new(adj_list, value))
     }
+    pub fn new_with_indexer(indexer: &EdgeIndexer, value: T) -> EdgeComponentVec<T> {
+        EdgeComponentVec(EdgeVec::new_with_indexer(indexer, value))
+    }
 }
 
 impl UnionFind {
@@ -213,7 +216,7 @@ impl UnionFind {
         let mut found = ComponentVec::new(n, &false);
         let mut reps = VertexSet::new(n);
         for (v, comp_v) in self.vec.iter_enum() {
-            let comp = Component::of_vertex(*comp_v);
+            let comp = self.get_component(*comp_v);
             if !found[comp] {
                 found[comp] = true;
                 reps.add_vert(v);
@@ -279,6 +282,23 @@ impl EdgeUnionFind {
     pub fn get_component_size(&self, e: Edge) -> usize {
         let comp = self.get_component(e);
         self.component_sizes[comp]
+    }
+
+    /**
+     * Returns a BigEdgeSet containing precisely one edge from each component.
+     */
+    pub fn get_representatives(&self) -> BigEdgeSet {
+        let indexer = self.vec.get_indexer();
+        let mut found = EdgeComponentVec::new_with_indexer(indexer, false);
+        let mut representatives = BigEdgeSet::new(indexer);
+        for (e, component_edge) in self.vec.iter_enum() {
+            let comp = self.get_component(*component_edge);
+            if !found[comp] {
+                found[comp] = true;
+                representatives.add_edge(e);
+            }
+        }
+        representatives
     }
 }
 

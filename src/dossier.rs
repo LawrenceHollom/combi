@@ -127,7 +127,7 @@ impl Dossier {
                     NumCutvertices => connectedness::num_cutvertices(self.e.as_graph()),
                     NumLinearExtensions => poset_balance::num_linear_extensions(self.e.as_poset()),
                     MaxMatching => matching::max_matching_size(self.e.as_graph()),
-                    MinNorineDistance => norine::min_antipode_distance(self.e.as_graph()),
+                    MinNorineDistance(colouring_type) => norine::min_antipode_distance(self.e.as_graph(), *colouring_type),
                     Number(k) => *k,
                 };
                 self.previous_int_values.insert(*operation, value);

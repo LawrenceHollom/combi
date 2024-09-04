@@ -1,7 +1,8 @@
 use std::{io::{self, Write}, ops::{Index, IndexMut}, u32};
 
+use component_tools::*;
 use queues::*;
-use rand::{thread_rng, Rng};
+use rand::{seq::SliceRandom, thread_rng, Rng};
 use utilities::{*, edge_tools::*, rational::Rational, vertex_tools::*};
 
 use crate::entity::graph::*;
@@ -403,6 +404,89 @@ fn get_uniform_random_colouring(g: &Graph) -> BigEdgeSet {
     reds
 }
 
+/**
+ * Produces a colouring where edges are weighted away from matching their neighbours.
+ * This is not uniform or particularly easy to model analytically.
+ * Needs to shuffle the order of the edges, and so runs in m log m time.
+ * Returns the set of red edges.
+ */
+fn get_unfriendly_random_colouring(g: &Graph) -> BigEdgeSet {
+    /**
+     * If we have red components of size summing to r, and blues summing to b around an edge e,
+     * what should the probability be that we make the edge red?
+     * This should be symmetric, i.e. get_red_prob(x, y) + get_red_prob(y, x) = 1.
+     * 
+     * Currently very aggressively weights towards classes of the same size.
+     */
+    fn get_red_prob(r: usize, b: usize) -> f64 {
+        (b as f64 + 1.0) / ((b + r) as f64 + 2.0)
+    }
+
+    /**
+     * Returns the size of the component of class-colour at v.
+     * Assumes that all these classes have already been nicely unioned.
+     */
+    fn get_comp_size_at_vertex(g: &Graph, class: &BigEdgeSet, components: &EdgeUnionFind, v: Vertex) -> usize {
+        for u in g.adj_list[v].iter() {
+            let e = Edge::of_pair(*u, v);
+            if class.has_edge(e) {
+                return components.get_component_size(e)
+            }
+        }
+        0
+    }
+
+    /**
+     * Merge all edges in class around e together into the same component.
+     * This is called when e is added to this class.
+     */
+    fn merge_components_at_edge(g: &Graph, class: &BigEdgeSet, components: &mut EdgeUnionFind, e: Edge) {
+        fn merge_components_at_vertex(g: &Graph, class: &BigEdgeSet, components: &mut EdgeUnionFind, e: Edge, u: Vertex) {
+            for v in g.adj_list[u].iter() {
+                let f = Edge::of_pair(u, *v);
+                if e != f && class.has_edge(f) {
+                    components.merge(e, f)
+                }
+            }
+        }
+        
+        merge_components_at_vertex(g, class, components, e, e.fst());
+        merge_components_at_vertex(g, class, components, e, e.snd());
+    }
+
+    let indexer = EdgeIndexer::new(&g.adj_list);
+    let mut rng = thread_rng();
+    let mut reds = BigEdgeSet::new(&indexer);
+    let mut blues = BigEdgeSet::new(&indexer);
+    let mut components = EdgeUnionFind::new(&g.adj_list);
+
+    let mut shuffled_edges = g.iter_edges().collect::<Vec<Edge>>();
+    shuffled_edges.shuffle(&mut rng);
+
+    for e in shuffled_edges.iter() {
+        let red_size = get_comp_size_at_vertex(g, &reds, &components, e.fst()) 
+            + get_comp_size_at_vertex(g, &reds, &components, e.snd());
+        let blue_size = get_comp_size_at_vertex(g, &blues, &components, e.fst()) 
+            + get_comp_size_at_vertex(g, &blues, &components, e.snd());
+        let p = get_red_prob(red_size, blue_size);
+        if rng.gen_bool(p) {
+            reds.add_edge(*e);
+            merge_components_at_edge(g, &reds, &mut components, *e);
+        } else {
+            blues.add_edge(*e);
+            merge_components_at_edge(g, &blues, &mut components, *e);
+        }
+    }
+
+    println!("Component sizes: ");
+    let representatives = components.get_representatives();
+    for e in representatives.iter() {
+        println!("{} : {}", e, components.get_component_size(e))
+    }
+
+    reds
+}
+
 fn get_colouring_component_graph(g: &Graph, reds: &BigEdgeSet) -> Graph {
     let mut comp_adj = vec![];
     let mut components = EdgeVec::new(&g.adj_list, None);
@@ -446,21 +530,30 @@ fn get_colouring_component_graph(g: &Graph, reds: &BigEdgeSet) -> Graph {
     Graph::of_matrix_to_be_symmetrised(adj, crate::constructor::Constructor::Special)
 }
 
+fn get_random_colouring(g: &Graph, colouring_type: usize) -> BigEdgeSet {
+    match colouring_type {
+        0 => get_uniform_random_colouring(g),
+        1 => get_random_shell_colouring(g),
+        2 => get_unfriendly_random_colouring(g),
+        _ => panic!("Unknown colouring type!"),
+    }
+}
+
 /**
  * Just runs a direct check on all antipodal pairs and finds the furthers away pair.
  * Here, furthest of course means distance in terms of min colour swaps.
  * 
  * We apply this to a random colouring, which is produced by colouring in shells.
  */
-pub fn min_antipode_distance(g: &Graph) -> u32 {
-    let mut reds = get_uniform_random_colouring(g);//get_random_shell_colouring(g);
+pub fn min_antipode_distance(g: &Graph, colouring_type: usize) -> u32 {
+    let mut reds = get_random_colouring(g, colouring_type);
 
     let mut i = 0;
     while get_colouring_component_graph(g, &reds).is_forest() {
         if is_round_number(i as usize) {
             println!("Fail! {}", pretty_format_int(i));
         }
-        reds = get_uniform_random_colouring(g);// get_random_shell_colouring(g);
+        reds = get_random_colouring(g, colouring_type);
         i += 1;
     }
 

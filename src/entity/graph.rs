@@ -676,8 +676,8 @@ impl Graph {
         VertexSubsetIterator::new(self.n)
     }
 
-    pub fn iter_edge_sets(&self) -> EdgeSetIterator {
-        EdgeSetIterator::new(&self.adj_list)
+    pub fn iter_edge_sets(&self) -> AllEdgeSetsIterator {
+        AllEdgeSetsIterator::new(&self.adj_list)
     }
 
     pub fn iter_verts_bfs(&self) -> BFSIterator<'_> {

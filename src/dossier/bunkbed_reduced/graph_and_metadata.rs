@@ -4,7 +4,7 @@ use super::super::connectedness;
 
 use rand::{rngs::ThreadRng, Rng};
 
-use utilities::{*, vertex_tools::*, edge_tools::{EdgeIndexer, EdgeSetIterator}};
+use utilities::{*, vertex_tools::*, edge_tools::*};
 
 /**
  * g is guaranteed to be spinal. We return the set of all non-spinal vertices.
@@ -320,7 +320,7 @@ impl GraphAndMetadata {
         self.targets.iter()
     }
 
-    pub fn iter_edge_sets(&self) -> EdgeSetIterator {
+    pub fn iter_edge_sets(&self) -> AllEdgeSetsIterator {
         self.g.iter_edge_sets()
     }
 
