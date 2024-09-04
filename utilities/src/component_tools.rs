@@ -7,18 +7,41 @@ use rand::rngs::ThreadRng;
 
 use crate::*;
 use crate::vertex_tools::*;
+use crate::edge_tools::*;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Component(Vertex);
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct EdgeComponent(Edge);
 
 #[derive(Clone, Debug)]
 pub struct ComponentVec<T: Debug + Clone> {
     vec: VertexVec<T>
 }
 
+#[derive(Clone)]
+pub struct EdgeComponentVec<T: Debug + Copy>(EdgeVec<T>);
+
+/**
+ * Currently refers to VertexSet, so requires there to be at most 128 vertices.
+ * (Which is silly because this whole thing's aim is to be fast for large n)
+ */
 #[derive(Clone, Debug)]
 pub struct UnionFind {
     vec: VertexVec<Vertex>
+}
+
+/**
+ * Uses BigEdgeSet, so has no size limits, but does need an EdgeIndexer, so has
+ * some overheads.
+ * vec: The parent edge in the UnionFind tree
+ * component_sizes: Stores and updates the sizes of componenets, indexed by the root nodes.
+ */
+#[derive(Clone)]
+pub struct EdgeUnionFind {
+    vec: EdgeVec<Edge>,
+    component_sizes: EdgeComponentVec<usize>,
 }
 
 impl Component {
@@ -38,6 +61,20 @@ impl Component {
 
     pub fn incr_inplace(&mut self) {
         self.0.incr_inplace()
+    }
+}
+
+impl EdgeComponent {
+    pub fn of_edge(e: Edge) -> EdgeComponent {
+        EdgeComponent(e)
+    }
+
+    pub fn to_edge(&self) -> Edge {
+        self.0
+    }
+
+    pub fn is_edge(&self, e: Edge) -> bool {
+        self.0 == e
     }
 }
 
@@ -118,6 +155,12 @@ impl <T: Debug + Clone> ComponentVec<T> {
     }
 }
 
+impl <T: Debug + Copy> EdgeComponentVec<T> {
+    pub fn new(adj_list: &VertexVec<Vec<Vertex>>, value: T) -> EdgeComponentVec<T> {
+        EdgeComponentVec(EdgeVec::new(adj_list, value))
+    }
+}
+
 impl UnionFind {
     pub fn new(n: Order) -> UnionFind {
         UnionFind { vec: VertexVec::new_fn(n, |x| x) }
@@ -180,6 +223,65 @@ impl UnionFind {
     }
 }
 
+impl EdgeUnionFind {
+    pub fn new(adj_list: &VertexVec<Vec<Vertex>>) -> EdgeUnionFind {
+        EdgeUnionFind { 
+            vec: EdgeVec::new_fn(adj_list, |e| e),
+            component_sizes: EdgeComponentVec::new(adj_list, 1),
+        }
+    }
+
+    fn flatten_to(&mut self, x: Edge, root: Edge) {
+        let mut z = x;
+        while self.vec[z] != root {
+            let sta = self.vec[z];
+            self.vec[z] = root;
+            z = sta;
+        }
+    }
+
+    /**
+     * Combine the components of the edges x and y
+     */
+    pub fn merge(&mut self, x: Edge, y: Edge) {
+        let mut root = x;
+        while root != self.vec[root] {
+            root = self.vec[root];
+        }
+        let mut other_root = y;
+        while other_root != self.vec[other_root] {
+            other_root = self.vec[other_root];
+        }
+        // root is the new parent of the joint component.
+        self.flatten_to(x, root);
+        self.flatten_to(y, root);
+        if root != other_root {
+            // The components are different and so we need to combine sizes.
+            let other_size = self.component_sizes[EdgeComponent::of_edge(other_root)];
+            self.component_sizes[EdgeComponent::of_edge(root)] += other_size;
+        }
+    }
+
+    /**
+     * Returns the component of the edge e.
+     */
+    pub fn get_component(&self, e: Edge) -> EdgeComponent {
+        let mut x = self.vec[e];
+        while x != self.vec[x] {
+            x = self.vec[x];
+        }
+        EdgeComponent::of_edge(x)
+    }
+
+    /**
+     * Returns the number of edges in the component containing e.
+     */
+    pub fn get_component_size(&self, e: Edge) -> usize {
+        let comp = self.get_component(e);
+        self.component_sizes[comp]
+    }
+}
+
 impl<T: Debug + Clone> Index<Component> for ComponentVec<T> {
     type Output = T;
 
@@ -191,5 +293,19 @@ impl<T: Debug + Clone> Index<Component> for ComponentVec<T> {
 impl<T: Debug + Clone> IndexMut<Component> for ComponentVec<T> {
     fn index_mut(&mut self, index: Component) -> &mut Self::Output {
         &mut self.vec[index.0]
+    }
+}
+
+impl<T: Debug + Copy> Index<EdgeComponent> for EdgeComponentVec<T> {
+    type Output = T;
+
+    fn index(&self, index: EdgeComponent) -> &Self::Output {
+        &self.0[index.0]
+    }
+}
+
+impl<T: Debug + Copy> IndexMut<EdgeComponent> for EdgeComponentVec<T> {
+    fn index_mut(&mut self, index: EdgeComponent) -> &mut Self::Output {
+        &mut self.0[index.0]
     }
 }
