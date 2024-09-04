@@ -166,16 +166,6 @@ fn distance_to_antipode(g: &Graph, v: Vertex, reds: &BigEdgeSet, print_debug: bo
 }
 
 /**
- * Prints the colouring of g in a human readable manner.
- */
-fn print_colouring(indexer: &EdgeIndexer, reds: EdgeSet) {
-    for e in indexer.iter_edges() {
-        let col = Colour::of_bool(reds.has_edge(*e, indexer));
-        println!("({}, {}): {:?}", e.fst().to_binary_string(), e.snd().to_binary_string(), col);
-    }
-}
-
-/**
  * Is this colouring a representative of its symmetry class?
  * Used to speed up computation, as we only need to check representatives
  */
@@ -311,7 +301,7 @@ pub fn partition_colourings(g: &Graph) {
             num_extremal = 1;
             max_dist = total_antipode_distance;
             println!("New maximum!");
-            print_colouring(&indexer, reds);
+            //print_colouring(g, &reds);
             println!("Total antipode distance = {}\n", total_antipode_distance);
 
             //distance_to_antipode(g, &indexer, Vertex::ZERO, reds, true);
@@ -324,7 +314,7 @@ pub fn partition_colourings(g: &Graph) {
             max_choosable_dist = total_alternating_distance;
 
             println!("New choosable maximum!");
-            print_colouring(&indexer, reds);
+            //print_colouring(&indexer, reds);
             println!("Total alternating distance = {} (antipode = {})\n", total_alternating_distance, total_antipode_distance);
         }
         if !choosable && total_antipode_distance > max_unchoosable_dist {
@@ -334,7 +324,7 @@ pub fn partition_colourings(g: &Graph) {
         if is_bad {
             num_bad += 1;
             println!("Found {} bad ones!", num_bad);
-            print_colouring(&indexer, reds);
+            //print_colouring(&indexer, reds);
         }
     }
     println!("\nNum extremal configurations: {}", num_extremal);
@@ -412,28 +402,96 @@ fn get_uniform_random_colouring(g: &Graph) -> BigEdgeSet {
  */
 fn get_unfriendly_random_colouring(g: &Graph) -> BigEdgeSet {
     /**
-     * If we have red components of size summing to r, and blues summing to b around an edge e,
+     * Produce the probability that an edge is red given what the resulting sizes
+     * of the red and blue components would be if the edge was red or blue respectively.
+     * 
+     * Weights towards trying to make lots of small components, but it's not clear how
+     * best to do this.
+     */
+    fn get_raw_red_prob(n: Order, r: usize, b: usize) -> f64 {
+        fn make_big_components(r: usize, b: usize) -> f64 {
+            (r as f64) / ((r + b) as f64)
+        }
+        fn make_small_components(r: usize, b: usize) -> f64 {
+            // This does it really quickly:
+            if r > b {
+                // r is bigger, so don't make the edge red.
+                return 0.0
+            } else {
+                return 1.0
+            }
+        }
+        fn magic_cutoff(n: Order) -> usize {
+            (n.to_usize() as f64).sqrt() as usize
+        }
+        if r + b < magic_cutoff(n) {
+            // If the components are small, we try to make them bigger
+            make_big_components(r, b)
+        } else {
+            // If the components are big, we try to avoid joining together the big ones.
+            make_small_components(r, b)
+        }
+    }
+
+    /**
+     * Go for whichever of the things has the smaller product
+     */
+    fn get_raw_red_prob_2(r0: usize, b0: usize, r1: usize, b1: usize) -> f64 {
+        if r0 * r1 > b0 * b1 {
+            0.0
+        } else if r0 * r1 < b0 * b1 {
+            1.0
+        } else { // They are equal.
+            0.5
+        }
+    }
+
+    /**
+     * If we have red components of sizes r0 and r1, and blues of b0 and b1 around an edge e,
      * what should the probability be that we make the edge red?
      * This should be symmetric, i.e. get_red_prob(x, y) + get_red_prob(y, x) = 1.
      * 
-     * Currently very aggressively weights towards classes of the same size.
+     * If the connection bools are false, that means that there are genuine different components
+     * at both ends. If these variables are true, then the components might be empty.
+     * 
+     * Currently tries to avoid joining components together
      */
-    fn get_red_prob(r: usize, b: usize) -> f64 {
-        (b as f64 + 1.0) / ((b + r) as f64 + 2.0)
+    fn get_red_prob(n: Order, r0: usize, b0: usize, r1: usize, b1: usize, are_red_joined: bool, are_blue_joined: bool) -> f64 {
+        match (are_red_joined, are_blue_joined) {
+            (false, false) => get_raw_red_prob_2(r0, b0, r1, b1),//get_raw_red_prob(n, r0 + r1 + 1, b0 + b1 + 1),
+            (true, false) => get_raw_red_prob_2(r0.max(r1), b0, 1, b1),
+            (false, true) => get_raw_red_prob_2(r0, b0.max(b1), r1, 1),
+            (true, true) => get_raw_red_prob(n, r0.max(r1) + 1, b0.max(b1) + 1),
+        }
+    }
+
+    /**
+     * Returns an edge at the given vertex in the given class.
+     */
+    fn get_component_at_vertex(g: &Graph, class: &BigEdgeSet, components: &EdgeUnionFind, v: Vertex) -> Option<EdgeComponent> {
+        for u in g.adj_list[v].iter() {
+            let e = Edge::of_pair(*u, v);
+            if class.has_edge(e) {
+                return Some(components.get_component(e))
+            }
+        }
+        None
     }
 
     /**
      * Returns the size of the component of class-colour at v.
      * Assumes that all these classes have already been nicely unioned.
      */
-    fn get_comp_size_at_vertex(g: &Graph, class: &BigEdgeSet, components: &EdgeUnionFind, v: Vertex) -> usize {
-        for u in g.adj_list[v].iter() {
-            let e = Edge::of_pair(*u, v);
-            if class.has_edge(e) {
-                return components.get_component_size(e)
-            }
-        }
-        0
+    fn get_comp_size(components: &EdgeUnionFind, e: Option<EdgeComponent>) -> usize {
+        e.map_or(0, |e| components.get_component_size(e))
+    }
+
+    /**
+     * Returns whether the two components are joined. If either component is None,
+     * then we return true; we only return false if both components exist and are different.
+     */
+    fn are_components_joined(c1: Option<EdgeComponent>, c2: Option<EdgeComponent>) -> bool {
+        c1.map_or(true, |c1| c2.map_or(true, |c2| c1 == c2))
     }
 
     /**
@@ -464,11 +522,17 @@ fn get_unfriendly_random_colouring(g: &Graph) -> BigEdgeSet {
     shuffled_edges.shuffle(&mut rng);
 
     for e in shuffled_edges.iter() {
-        let red_size = get_comp_size_at_vertex(g, &reds, &components, e.fst()) 
-            + get_comp_size_at_vertex(g, &reds, &components, e.snd());
-        let blue_size = get_comp_size_at_vertex(g, &blues, &components, e.fst()) 
-            + get_comp_size_at_vertex(g, &blues, &components, e.snd());
-        let p = get_red_prob(red_size, blue_size);
+        let fst_red_comp = get_component_at_vertex(g, &reds, &components, e.fst()) ;
+        let snd_red_comp = get_component_at_vertex(g, &reds, &components, e.snd());
+        let fst_blue_comp = get_component_at_vertex(g, &blues, &components, e.fst());
+        let snd_blue_comp = get_component_at_vertex(g, &blues, &components, e.snd());
+        let r0 = get_comp_size(&components, fst_red_comp);
+        let r1 = get_comp_size(&components, snd_red_comp);
+        let b0 = get_comp_size(&components, fst_blue_comp);
+        let b1 = get_comp_size(&components, snd_blue_comp);
+        let are_red_joined = are_components_joined(fst_red_comp, snd_red_comp);
+        let are_blue_joined = are_components_joined(fst_blue_comp, snd_blue_comp);
+        let p = get_red_prob(g.n, r0, b0, r1, b1, are_red_joined, are_blue_joined);
         if rng.gen_bool(p) {
             reds.add_edge(*e);
             merge_components_at_edge(g, &reds, &mut components, *e);
@@ -478,23 +542,25 @@ fn get_unfriendly_random_colouring(g: &Graph) -> BigEdgeSet {
         }
     }
 
-    println!("Component sizes: ");
-    let representatives = components.get_representatives();
-    for e in representatives.iter() {
-        println!("{} : {}", e, components.get_component_size(e))
-    }
+    // println!("Component sizes: ");
+    // let representatives = components.get_representatives();
+    // for e in representatives.iter() {
+    //     println!("{} : {}", e, components.get_component_size_from_edge(e))
+    // }
 
     reds
 }
 
-fn get_colouring_component_graph(g: &Graph, reds: &BigEdgeSet) -> Graph {
+fn get_colouring_component_graph(g: &Graph, reds: &BigEdgeSet) -> (Graph, VertexVec<usize>) {
     let mut comp_adj = vec![];
     let mut components = EdgeVec::new(&g.adj_list, None);
+    let mut component_sizes = vec![];
     let mut next_component = Vertex::ZERO;
     for e in g.iter_edges() {
         if components[e].is_none() {
             components[e] = Some(next_component);
             let mut adj = BigVertexSet::new(g.n);
+            let mut size = 1;
             // Starting from this edge, flood fill to find the colour component.
             let mut q = queue![];
             let _ = q.add(e.fst());
@@ -511,7 +577,8 @@ fn get_colouring_component_graph(g: &Graph, reds: &BigEdgeSet) -> Graph {
                             adj.add_vert(other_comp)
                         }
                     } else if reds.has_edge(f) == colour {
-                        // This edge hasn't been processed yet.
+                        // This edge is in the component and hasn't been processed yet.
+                        size += 1;
                         components[f] = Some(next_component);
                         if !found_verts.has_vert(*u) {
                             let _ = q.add(*u);
@@ -521,13 +588,15 @@ fn get_colouring_component_graph(g: &Graph, reds: &BigEdgeSet) -> Graph {
                 }
             }
             comp_adj.push(adj.to_vec());
+            component_sizes.push(size);
             next_component.incr_inplace()
         }
     }
 
     let adj = VertexVec::of_vec(comp_adj);
-
-    Graph::of_matrix_to_be_symmetrised(adj, crate::constructor::Constructor::Special)
+    let h = Graph::of_matrix_to_be_symmetrised(adj, crate::constructor::Constructor::Special);
+    let sizes = VertexVec::of_vec(component_sizes);
+    (h, sizes)
 }
 
 fn get_random_colouring(g: &Graph, colouring_type: usize) -> BigEdgeSet {
@@ -536,6 +605,12 @@ fn get_random_colouring(g: &Graph, colouring_type: usize) -> BigEdgeSet {
         1 => get_random_shell_colouring(g),
         2 => get_unfriendly_random_colouring(g),
         _ => panic!("Unknown colouring type!"),
+    }
+}
+
+fn print_colouring(g: &Graph, reds: &BigEdgeSet) {
+    for e in g.iter_edges() {
+        println!("{} : {}", e, if reds.has_edge(e) { "Red" } else { "Blue" })
     }
 }
 
@@ -549,19 +624,21 @@ pub fn min_antipode_distance(g: &Graph, colouring_type: usize) -> u32 {
     let mut reds = get_random_colouring(g, colouring_type);
 
     let mut i = 0;
-    while get_colouring_component_graph(g, &reds).is_forest() {
+    let (mut h, mut component_sizes) = get_colouring_component_graph(g, &reds);
+    while h.is_forest() {
         if is_round_number(i as usize) {
             println!("Fail! {}", pretty_format_int(i));
         }
         reds = get_random_colouring(g, colouring_type);
         i += 1;
+        (h, component_sizes) = get_colouring_component_graph(g, &reds);
     }
 
     println!("Component graph:");
-    get_colouring_component_graph(g, &reds).print();
-
-    for e in g.iter_edges() {
-        println!("{} : {}", e, if reds.has_edge(e) { "Red" } else { "Blue" })
+    h.print();
+    println!("Component sizes:");
+    for (v, size) in component_sizes.iter_enum() {
+        println!("{} : {}", v, size)
     }
 
     let mut min_dist = u32::MAX;
@@ -576,13 +653,26 @@ pub fn min_antipode_distance(g: &Graph, colouring_type: usize) -> u32 {
     min_dist
 }
 
-pub fn average_antipode_distance(g: &Graph) -> Rational {
-    let reds = get_random_shell_colouring(g);
+pub fn average_antipode_distance(g: &Graph, colouring_type: usize) -> Rational {
+    let mut reds = get_random_colouring(g, colouring_type);
+
+    let (mut h, mut _component_sizes) = get_colouring_component_graph(g, &reds);
+    while h.is_forest() {
+        reds = get_random_colouring(g, colouring_type);
+        (h, _component_sizes) = get_colouring_component_graph(g, &reds);
+    }
 
     let mut total_dist = 0;
     for v in g.n.div(2).iter_verts() {
         let dist = distance_to_antipode(g, v, &reds, false).min();
         total_dist += dist
+    }
+    if total_dist == 0 {
+        let (h, component_sizes) = get_colouring_component_graph(g, &reds);
+        h.print();
+        println!("comp sizes: {:?}", component_sizes);
+        print_colouring(g, &reds);
+        panic!("wtf?? Literally every distance is zero???")
     }
     Rational::new_fraction(total_dist as usize, g.n.to_usize() / 2)
 }

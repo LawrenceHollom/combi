@@ -276,12 +276,12 @@ impl EdgeUnionFind {
         EdgeComponent::of_edge(x)
     }
 
-    /**
-     * Returns the number of edges in the component containing e.
-     */
-    pub fn get_component_size(&self, e: Edge) -> usize {
-        let comp = self.get_component(e);
+    pub fn get_component_size(&self, comp: EdgeComponent) -> usize {
         self.component_sizes[comp]
+    }
+
+    pub fn get_component_size_from_edge(&self, e: Edge) -> usize {
+        self.component_sizes[self.get_component(e)]
     }
 
     /**

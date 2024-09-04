@@ -1,5 +1,6 @@
 use std::fmt;
 
+use utilities::parse_function_like;
 use utilities::parse_infix_like;
 
 use crate::operation::bool_operation::*;
@@ -23,7 +24,7 @@ pub enum RationalOperation {
     PosetBalance,
     PosetCapBalance,
     PosetBalanceWithMinimal,
-    NorineAverageDistance,
+    NorineAverageDistance(usize),
 }
 
 impl RationalOperation {
@@ -50,13 +51,14 @@ impl RationalOperation {
             }
             None => {
                 use RationalOperation::*;
-                match text.trim().to_lowercase().as_str() {
+                let (func, args) = parse_function_like(text);
+                match func.trim().trim_end_matches(')').to_lowercase().as_str() {
                     "domination_redundancy" | "gamma_red" => Some(DominationRedundancy),
                     "grabbing_coleaf_difference" | "gcwd" => Some(GrabbingColeafWeightedDifference),
                     "balance" => Some(PosetBalance),
                     "poset_cap_balance" => Some(PosetCapBalance),
                     "balance_with_min" => Some(PosetBalanceWithMinimal),
-                    "avg_norine" => Some(NorineAverageDistance),
+                    "avg_norine" => Some(NorineAverageDistance(args[0].parse().unwrap_or(0))),
                     &_ => IntOperation::of_string_result(text).map(OfInt),
                 }
             }
@@ -97,7 +99,7 @@ impl fmt::Display for RationalOperation {
             PosetBalance => "Balance constant of the poset".to_owned(),
             PosetCapBalance => "Balance constant as the cap of a ladder".to_owned(),
             PosetBalanceWithMinimal => "Balance among pairs including a min".to_owned(),
-            NorineAverageDistance => "Average Norine distance between antipodes".to_owned(),
+            NorineAverageDistance(_) => "Average Norine distance between antipodes".to_owned(),
         };
         write!(f, "{}", name)
     }
