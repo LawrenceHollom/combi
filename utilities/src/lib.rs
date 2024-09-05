@@ -297,6 +297,10 @@ pub fn pretty_format_time(nanos: u128) -> String {
     } 
 }
 
+pub fn pretty_print_time(nanos: u128, end: &str) {
+    print!("{}{}", pretty_format_time(nanos), end)
+}
+
 pub fn print_table(titles: Vec<String>, rows: Vec<(String, Vec<String>)>) {
     let n = rows[0].1.len();
     let mut widths = vec![0; n];
