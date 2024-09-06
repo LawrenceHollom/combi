@@ -319,6 +319,7 @@ impl Dossier {
             BalancedHeuristics => poset_balance::print_heuristics(self.e.as_poset()),
             PosetPrintBalanceAsCap => poset_balance::print_cap_balance(self.e.as_poset()),
             PrintNorineHypercubeColourings => norine::partition_colourings(self.e.as_graph()),
+            PrintSymmetricNorineHypercubeColourings(slice, out_of) => norine::partition_symmetric_colourings(self.e.as_graph(), *slice, *out_of),
             Unit => (),
         }
     }

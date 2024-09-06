@@ -1,4 +1,4 @@
-use std::{io::{self, Write}, ops::{Index, IndexMut}, u32};
+use std::{io::{self, Write}, ops::{Index, IndexMut}, time::SystemTime, u32};
 
 use component_tools::*;
 use queues::*;
@@ -172,6 +172,7 @@ fn distance_to_antipode(g: &Graph, v: Vertex, reds: &BigEdgeSet, print_debug: bo
 fn is_colouring_representative(g: &Graph, indexer: &EdgeIndexer, reds: EdgeSet) -> bool {
     let mut is_red = false;
     let mut num_blue = 0;
+    // Firstly a quick check which should rule out a lot of things.
     for v in g.adj_list[Vertex::ZERO].iter() {
         let e = Edge::of_pair(Vertex::ZERO, *v);
         if is_red {
@@ -187,18 +188,39 @@ fn is_colouring_representative(g: &Graph, indexer: &EdgeIndexer, reds: EdgeSet) 
     }
 
     // Check that ZERO is the maximally blue vertex.
+    // Also get some degrees while we're at it.
+    let mut red_degs = VertexVec::new(g.n, &0);
     for v in g.iter_verts().skip(1) {
         let mut this_num_blue = 0;
         for w in g.adj_list[v].iter() {
             let e = Edge::of_pair(v, *w);
             if !reds.has_edge(e, indexer) {
                 this_num_blue += 1;
+            } else {
+                red_degs[v] += 1;
             }
         }
         if this_num_blue > num_blue {
             return false
         }
     }
+
+    // Check that the neighbours of ZERO are in a particular order with regards to some
+    // deterministic hash.
+    let primes = [2, 3, 5, 7, 11, 13, 17, 19];
+    let mut last_hash = 0;
+    for v in g.adj_list[Vertex::ZERO].iter() {
+        let mut hash = 1;
+        for u in g.adj_list[*v].iter() {
+            hash *= primes[red_degs[*u]]
+        }
+        if hash < last_hash {
+            // They're not in a canonical ordering.
+            return false;
+        }
+        last_hash = hash
+    }
+
     true
 }
 
@@ -252,13 +274,15 @@ fn is_choosable(g: &Graph, indexer: &EdgeIndexer, reds: EdgeSet) -> bool {
 /**
  * Print some information about what percentage of the way there we are.
  */
-fn print_update_info(num_colourings_found: u64, num_colourings: u64, last_percentage: &mut u64) {
-    let percentage = (num_colourings_found * 100) / num_colourings;
+fn print_update_info(num_colourings_found: u64, num_colourings: u64, last_percentage: &mut u64, resolution: u64) -> bool {
+    let percentage = (num_colourings_found * resolution) / num_colourings;
     if percentage > *last_percentage {
-        print!("{}% ", percentage);
+        print!("{}/{} ", percentage, pretty_format_int(resolution as usize));
         let _ = io::stdout().flush();
         *last_percentage = percentage;
+        return true;
     }
+    false
 }
 
 /**
@@ -280,7 +304,7 @@ pub fn partition_colourings(g: &Graph) {
     let num_colourings = 2_u64.pow(g.size() as u32);
     'iter_colourings: for reds in g.iter_edge_sets() {
         num_colourings_found += 1;
-        print_update_info(num_colourings_found, num_colourings, &mut last_percentage);
+        print_update_info(num_colourings_found, num_colourings, &mut last_percentage, 100);
         if !is_colouring_representative(g, &indexer, reds) {
             continue 'iter_colourings;
         }
@@ -301,7 +325,7 @@ pub fn partition_colourings(g: &Graph) {
             num_extremal = 1;
             max_dist = total_antipode_distance;
             println!("New maximum!");
-            //print_colouring(g, &reds);
+            print_colouring(g, &big_reds);
             println!("Total antipode distance = {}\n", total_antipode_distance);
 
             //distance_to_antipode(g, &indexer, Vertex::ZERO, reds, true);
@@ -331,6 +355,111 @@ pub fn partition_colourings(g: &Graph) {
     println!("There are {} colourings in total, of which {} survived reduction", num_colourings, num_colourings_after_reduction);
     println!("Max choosable dist = {}", max_choosable_dist);
     println!("Max unchoosable dist = {}", max_unchoosable_dist);
+}
+
+/**
+ * Must be given a hypercube as input.
+ * We then iterate over *symmetric* edge colourings, and decide whether they are good or bad.
+ * The vertices are adjacent by binary digits (excellent!)
+ */
+pub fn partition_symmetric_colourings(g: &Graph, slice: usize, out_of: usize) {
+    fn antipode_edge(g: &Graph, e: Edge) -> Edge {
+        Edge::of_pair(cube_antipode(g, e.fst()), cube_antipode(g, e.snd()))
+    }
+
+    fn get_reds_from_index(g: &Graph, index: u64, half_edges: &Vec<Edge>, indexer: &EdgeIndexer) -> EdgeSet {
+        let mut sta = index;
+        let mut i = 0;
+        let mut out = EdgeSet::new(indexer);
+        while sta > 0 {
+            if sta % 2 == 1 {
+                out.add_edge(half_edges[i], indexer);
+                out.add_edge(antipode_edge(g, half_edges[i]), indexer);
+            }
+            i += 1;
+            sta /= 2;
+        }
+        out
+    }
+
+    let indexer = EdgeIndexer::new(&g.adj_list);
+    let start_time = SystemTime::now();
+
+    // We produce a vec of representatives of antipodal edge symmetry classes.
+    let mut half_edges = vec![];
+    let mut found = EdgeSet::new(&indexer);
+    for e in g.iter_edges() {
+        if !found.has_edge(e, &indexer) {
+            found.add_edge(e, &indexer);
+            found.add_edge(antipode_edge(g, e), &indexer);
+            half_edges.push(e);
+        }
+    }
+
+    let mut last_percentage = 0;
+    let num_colourings = 2_u64.pow((g.size() / 2) as u32); // Symmetrised.
+    let mut num_colourings_after_reduction = 0;
+    let mut num_colourings_found = 0;
+    let mut max_dist = 0;
+    let mut best_dist_index = 0;
+    let mut max_num_at_least_two = 0;
+    let mut best_count_index = 0;
+    let resolution = if g.n.to_usize() > 24 { 1_000 } else { 100 };
+
+    let start = slice as u64 * (num_colourings / (out_of as u64));
+    let end = if slice == out_of - 1 { num_colourings } else { (slice as u64 + 1) * (num_colourings / (out_of as u64)) };
+
+    'iter_colourings: for index in start..end {
+        // We need to convert index into an actual colouring.
+        let small_reds = get_reds_from_index(g, index, &half_edges, &indexer);
+        num_colourings_found += 1;
+        if !is_colouring_representative(g, &indexer, small_reds) {
+            continue 'iter_colourings;
+        }
+
+        if print_update_info(num_colourings_found, num_colourings / (out_of as u64), &mut last_percentage, resolution) {
+            let duration = SystemTime::now().duration_since(start_time).unwrap().as_nanos();
+            println!("Time per operation: {}", pretty_format_time(duration / ((index - start) as u128)));
+        }
+        let reds = BigEdgeSet::of_edge_set(small_reds, &indexer);
+        num_colourings_after_reduction += 1;
+        let mut total_antipode_distance = 0;
+        let mut num_at_least_two = 0;
+
+        for v in g.n.div(2).iter_verts() {
+            let dist = distance_to_antipode(g, v, &reds, false).min();
+            total_antipode_distance += dist;
+            if dist >= 2 {
+                num_at_least_two += 1;
+            }
+        }
+        if total_antipode_distance > max_dist || num_at_least_two > max_num_at_least_two {
+            if total_antipode_distance > max_dist {
+                best_dist_index = index;
+                max_dist = total_antipode_distance;
+            }
+            if num_at_least_two > max_num_at_least_two {
+                best_count_index = index;
+                max_num_at_least_two = num_at_least_two;
+            }
+
+            println!("\n\nNew maximum! Index = {}", index);
+            println!("There are {} colourings in total, of which {} survived reduction", num_colourings_found, num_colourings_after_reduction);
+            print_colouring(g, &reds);
+            println!("Total antipode distance = {} (max = {} with index {})", total_antipode_distance, max_dist, best_dist_index);
+            println!("Num dists at least two = {} (max = {} with index {})\n", num_at_least_two, max_num_at_least_two, best_count_index);
+
+            //distance_to_antipode(g, &indexer, Vertex::ZERO, reds, true);
+        }
+    }
+
+    println!("\nThere are {} symmetric colourings in total, of which {} survived reduction", num_colourings, num_colourings_after_reduction);
+    println!("Max total antipode distance = {} with index {}", max_dist, best_dist_index);
+    println!("Max num dists at least two = {} with index {}\n", max_num_at_least_two, best_count_index);
+    let mut lines = vec![];
+    lines.push(format!("Max total antipode distance = {} with index {}", max_dist, best_dist_index));
+    lines.push(format!("Max num dists at least two = {} with index {}\n", max_num_at_least_two, best_count_index));
+    file_write::write("norine", "out", lines, true)
 }
 
 /**

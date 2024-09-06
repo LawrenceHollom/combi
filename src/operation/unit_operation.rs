@@ -35,6 +35,7 @@ pub enum UnitOperation {
     BalancedHeuristics,
     PosetPrintBalanceAsCap,
     PrintNorineHypercubeColourings,
+    PrintSymmetricNorineHypercubeColourings(usize, usize),
     Signature,
     Unit,
 }
@@ -85,6 +86,11 @@ impl UnitOperation {
             "balance_heuristics" => Some(BalancedHeuristics),
             "print_cap_balance" => Some(PosetPrintBalanceAsCap),
             "print_norine" => Some(PrintNorineHypercubeColourings),
+            "print_symm_norine" => {
+                let slice = args.get(0).map_or(0, |str| str.parse().unwrap());
+                let out_of = args.get(1).map_or(0, |str| str.parse().unwrap());
+                Some(PrintSymmetricNorineHypercubeColourings(slice, out_of))
+            }
             "()" | "(" => Some(Unit),
             &_ => None,
         }
@@ -145,6 +151,7 @@ impl fmt::Display for UnitOperation {
             BalancedHeuristics => "Heuristics about whether the poset has balanced vertices",
             PosetPrintBalanceAsCap => "Print table of balance probabilities as a cap",
             PrintNorineHypercubeColourings => "Print info about good and bad Norine colourings",
+            PrintSymmetricNorineHypercubeColourings(_, _) => "Print info about good and bad Norine symmetric colourings",
             Unit => "Do nothing",
         };
         write!(f, "{}", name)

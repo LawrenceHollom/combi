@@ -11,6 +11,7 @@ pub mod edge_tools;
 pub mod vertex_tools;
 pub mod component_tools;
 pub mod chromatic_tools;
+pub mod file_write;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Order(usize);
