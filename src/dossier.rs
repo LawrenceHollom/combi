@@ -209,7 +209,9 @@ impl Dossier {
                     IsTriangleFree => subgraphs::is_triangle_free(self.e.as_graph()),
                     CanBeEdgePartitionedIntoLinearForestAndMatching => edge_partitions::edge_partition_forest_and_matching(self.e.as_graph()),
                     GoodCubicDominationBase => cubic_domination::is_good(self.e.as_graph()),
-                    GameChromaticWinner(k) => chromatic::maker_wins_chromatic_game(self.e.as_graph(), &mut self.unbox(ann_box), *k, false, false),
+                    GameChromaticWinner(k) => {
+                        chromatic::maker_wins_chromatic_game(self.e.as_graph(), &mut self.unbox(ann_box), *k, false, false)
+                    }
                     IsChromaticGameMonotone => chromatic::game_chromatic_colour_monotone(self.e.as_graph(), &mut self.unbox(ann_box)),
                     IsChromaticGameStronglyMonotone => {
                         chromatic::chromatic_game_strong_monotonicity(self.e.as_graph(), &mut self.unbox(ann_box))
@@ -222,7 +224,9 @@ impl Dossier {
                     ChromaticGameSubsetMonotonicity(k) => chromatic::is_some_subset_non_monotone(self.e.as_graph(), &mut self.unbox(ann_box), *k),
                     LinearGameChromaticWinner(k) => chromatic_linear::does_maker_win_linear_chromatic_game(self.e.as_graph(), *k),
                     GameGrundyWinner(k) => grundy::does_maker_win_grundy_game(self.e.as_graph(), &mut self.unbox(ann_box), *k),
-                    MakerWinsConnectedChromaticGame(k) => chromatic::maker_wins_chromatic_game(self.e.as_graph(), &mut self.unbox(ann_box), *k, true, false),
+                    MakerWinsConnectedChromaticGame(k) => {
+                        chromatic::maker_wins_chromatic_game(self.e.as_graph(), &mut self.unbox(ann_box), *k, true, false)
+                    }
                     IsBipartite => chromatic::is_bipartite(self.e.as_graph()),
                     MakerWinsChromaticGameGreedily(k) => chromatic::alice_greedy_wins_chromatic_game(self.e.as_graph(), &mut self.unbox(ann_box), *k),
                     HasSeymourVertex => seymour::has_seymour_vertex(self.e.as_graph()),
@@ -233,7 +237,9 @@ impl Dossier {
                     BunkbedSiteHasBadConditioning => bunkbed_sites::has_bad_conditioning(self.e.as_graph()),
                     ContradictsBunkbedSiteConjecture => bunkbed_sites::contradicts_bb_site_conjecture(self.e.as_graph()),
                     ContradictsReducedBunkbedConjecture => bunkbed_reduced::contradicts_reduced_bunkbed_conjecture(self.e.as_graph()),
-                    ApproxContradictsReducedBunkbedConjecture(samples) => bunkbed_reduced::approx_contradicts_reduced_bunkbed_conjecture(self.e.as_graph(), *samples),
+                    ApproxContradictsReducedBunkbedConjecture(samples) => {
+                        bunkbed_reduced::approx_contradicts_reduced_bunkbed_conjecture(self.e.as_graph(), *samples)
+                    }
                     ContradictsReducedConditionedBunkbedConjecture => bunkbed_reduced::contradicts_reduced_conditioned_bunkbed_conjecture(self.e.as_graph()),
                     IsBunkbedReducible => bunkbed_reduced::is_bunkbed_reducible(self.e.as_graph()),
                     BunkbedGadget => bunkbed_reduced::is_contradictory_3_gadget(self.e.as_graph()),
