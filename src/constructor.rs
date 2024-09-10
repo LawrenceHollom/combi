@@ -93,7 +93,7 @@ pub enum PosetConstructor {
 #[derive(Clone)]
 pub enum DigraphConstructor {
     OfGraph(Box<Constructor>),
-    Oriented(Order, f64),
+    Oriented(Order, f64, f64),
 }
 
 #[derive(Clone)]
@@ -294,7 +294,11 @@ impl Constructor {
                 PosetConstr(CorrelatedIntersection(order, k, prob))
             }
             "digraph" => DigraphConstr(OfGraph(Box::new(Self::of_string(args[0])))),
-            "oriented" => DigraphConstr(Oriented(Order::of_string(args[0]), args[1].parse().unwrap())),
+            "oriented" => {
+                let min_p = args.get(1).map_or(0.0, |str| str.parse().unwrap());
+                let max_p = args.get(2).map_or(1.0, |str| str.parse().unwrap());
+                DigraphConstr(Oriented(Order::of_string(args[0]), min_p, max_p))
+            }
             str => File(str.to_owned()),
         }
     }
@@ -375,9 +379,9 @@ impl Constructor {
             PosetConstr(CorrelatedIntersection(order, k, prob)) => p(random_posets::new_correlated_intersection(*order, *k, *prob)),
             DigraphConstr(OfGraph(constr)) => {
                 let g = constr.new_entity().as_owned_graph();
-                d(Digraph::of_matrix(g.adj))
+                d(Digraph::of_matrix(g.adj, vec![]))
             }
-            DigraphConstr(Oriented(order, p)) => d(random_digraphs::new_oriented(*order, *p)),
+            DigraphConstr(Oriented(order, min_p, max_p)) => d(random_digraphs::new_oriented(*order, *min_p, *max_p)),
             File(filename) => from_file::new_entity(filename),
             Serialised(code) => g(Graph::deserialise(code)),
             Special => panic!("Cannot directly construct Special graph!"),
@@ -423,7 +427,7 @@ impl DigraphConstructor {
         use DigraphConstructor::*;
         match self {
             OfGraph(constr) => constr.is_random(),
-            Oriented(_, _) => true,
+            Oriented(_, _, _) => true,
         }
     }
 }
@@ -610,7 +614,7 @@ impl fmt::Display for DigraphConstructor {
         use DigraphConstructor::*;
         match self {
             OfGraph(digraph) => write!(f, "Digraph of ({})", *digraph),
-            Oriented(n, p) => write!(f, "Random orientation of G({}, {})", n, p),
+            Oriented(n, min_p, max_p) => write!(f, "Random orientation of G({}, [{}, {}])", n, min_p, max_p),
         }
     }
 }

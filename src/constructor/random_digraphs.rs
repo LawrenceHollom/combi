@@ -5,9 +5,10 @@ use utilities::vertex_tools::*;
 use super::*;
 
 
-pub fn new_oriented(n: Order, p: f64) -> Digraph {
+pub fn new_oriented(n: Order, min_p: f64, max_p: f64) -> Digraph {
     let mut rng = thread_rng();
     let mut adj_list = VertexVec::new(n, &vec![]);
+    let p = rng.gen_range(min_p..max_p);
 
     for (x, y) in n.iter_pairs() {
         if rng.gen_bool(p) {
@@ -19,5 +20,5 @@ pub fn new_oriented(n: Order, p: f64) -> Digraph {
         }
     }
 
-    Digraph::of_out_adj_list(adj_list)//, Constructor::DigraphConstr(DigraphConstructor::Oriented(n, p)))
+    Digraph::of_out_adj_list(adj_list, vec![p])//, Constructor::DigraphConstr(DigraphConstructor::Oriented(n, p)))
 }

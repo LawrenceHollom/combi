@@ -69,7 +69,7 @@ fn new_digraph(contents: String) -> Digraph {
         }
     }
 
-    Digraph::of_matrix(adj)
+    Digraph::of_matrix(adj, vec![])
 }
 
 fn new_poset(contents: String, filename: &String) -> Poset {

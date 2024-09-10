@@ -14,10 +14,11 @@ pub struct Digraph {
     pub in_adj_list: VertexVec<Vec<Vertex>>,
     pub out_deg: VertexVec<Degree>,
     pub in_deg: VertexVec<Degree>,
+    pub parameters: Vec<f64>,
 }
 
 impl Digraph {
-    pub fn of_matrix(adj: VertexVec<VertexVec<bool>>) -> Digraph {
+    pub fn of_matrix(adj: VertexVec<VertexVec<bool>>, parameters: Vec<f64>) -> Digraph {
         let n = adj.len();
         let mut out_adj_list = VertexVec::new(n, &vec![]);
         let mut in_adj_list = VertexVec::new(n, &vec![]);
@@ -35,10 +36,10 @@ impl Digraph {
             }
         }
 
-        Digraph { n, adj, out_adj_list, in_adj_list, out_deg, in_deg }
+        Digraph { n, adj, out_adj_list, in_adj_list, out_deg, in_deg, parameters }
     }
 
-    pub fn of_out_adj_list(out_adj_list: VertexVec<Vec<Vertex>>) -> Digraph {
+    pub fn of_out_adj_list(out_adj_list: VertexVec<Vec<Vertex>>, parameters: Vec<f64>) -> Digraph {
         let n = out_adj_list.len();
         let mut in_adj_list = VertexVec::new(n, &vec![]);
         let mut out_deg = VertexVec::new(n, &Degree::ZERO);
@@ -54,7 +55,7 @@ impl Digraph {
             }
         }
 
-        Digraph { n, adj, out_adj_list, in_adj_list, out_deg, in_deg }
+        Digraph { n, adj, out_adj_list, in_adj_list, out_deg, in_deg, parameters }
     }
 
     pub fn reverse_edge(&mut self, e: Edge) {
@@ -100,7 +101,7 @@ impl Digraph {
                 }
             }
         }
-        Digraph::of_matrix(adj)
+        Digraph::of_matrix(adj, vec![bidirectional_prob])
     }
 
     pub fn random_orientation(g: &Graph) -> Digraph {
@@ -115,7 +116,7 @@ impl Digraph {
                 }
             }
         }
-        Digraph::of_matrix(adj)
+        Digraph::of_matrix(adj, vec![])
     }
 
     /**
@@ -160,6 +161,7 @@ impl Digraph {
         println!("n: {}", self.n);
         println!("in degs: {:?}", self.in_deg.iter().map(|x| x.to_usize()).collect::<Vec<usize>>());
         println!("out degs: {:?}", self.out_deg.iter().map(|x| x.to_usize()).collect::<Vec<usize>>());
+        println!("parameters: {:?}", self.parameters);
         for u in self.n.iter_verts() {
             if self.out_deg[u].at_least(1) {
                 print!("{} -> ", u);

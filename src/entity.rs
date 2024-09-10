@@ -56,7 +56,7 @@ impl Entity {
     pub fn as_owned_digraph(self) -> Digraph {
         use Entity::*;
         match self {
-            Graph(g) => digraph::Digraph::of_matrix(g.adj),
+            Graph(g) => digraph::Digraph::of_matrix(g.adj, vec![]),
             Digraph(d) => d,
             Poset(_) => panic!("Cannot convert poset to digraph!"),
         }

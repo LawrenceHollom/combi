@@ -4,7 +4,7 @@ use utilities::vertex_tools::*;
 
 pub fn min_kernel_size(d: &Digraph, print_min: bool) -> u32 {
     let out_nbrs = d.get_out_nbhds();
-    let in_nbrs = d.get_out_nbhds();
+    let in_nbrs = d.get_in_nbhds();
     let mut covers = VertexVec::new(d.n, &VertexSet::new(d.n));
     for x in d.iter_verts() {
         covers[x].add_vert(x);
@@ -47,7 +47,7 @@ pub fn min_kernel_size(d: &Digraph, print_min: bool) -> u32 {
     }
 
     if print_min {
-        println!("Minimal 2-kernel: ");
+        println!("Minimal kernel:");
         optimal_set.print_hum();
     }
 
