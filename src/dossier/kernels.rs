@@ -47,7 +47,7 @@ pub fn min_kernel_size(d: &Digraph, print_min: bool) -> u32 {
     }
 
     if print_min {
-        println!("Optimal set: ");
+        println!("Minimal 2-kernel: ");
         optimal_set.print_hum();
     }
 

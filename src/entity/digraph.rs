@@ -162,7 +162,7 @@ impl Digraph {
         println!("out degs: {:?}", self.out_deg.iter().map(|x| x.to_usize()).collect::<Vec<usize>>());
         for i in self.n.iter_verts() {
             if self.out_deg[i].at_least(1) {
-                print!("{} ~ ", i);
+                print!("{} -> ", i);
                 for j in self.out_adj_list[i].iter() {
                     print!("{} ", j);
                 }
