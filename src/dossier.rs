@@ -29,6 +29,7 @@ mod poset_balance;
 mod twins;
 mod matching;
 mod norine;
+mod kernels;
 
 use std::collections::HashMap;
 
@@ -128,6 +129,7 @@ impl Dossier {
                     NumLinearExtensions => poset_balance::num_linear_extensions(self.e.as_poset()),
                     MaxMatching => matching::max_matching_size(self.e.as_graph()),
                     MinNorineDistance(colouring_type) => norine::min_antipode_distance(self.e.as_graph(), *colouring_type),
+                    MinKernelSize => kernels::min_kernel_size(self.e.as_digraph(), false),
                     Number(k) => *k,
                 };
                 self.previous_int_values.insert(*operation, value);
@@ -298,30 +300,55 @@ impl Dossier {
             PercolationPolys => percolate::print_polynomials(self.e.as_graph()),
             BunkbedCuts(u) => bunkbed::compute_problem_cuts(self.e.as_graph(), *u),
             BunkbedDists => bunkbed::print_distance_polynomials(self.e.as_graph()),
-            BunkbedDiffs(u, print_size) => bunkbed::interesting_configurations(self.e.as_graph(), *u, *print_size),
+            BunkbedDiffs(u, print_size) => {
+                bunkbed::interesting_configurations(self.e.as_graph(), *u, *print_size)
+            }
             PrintIntervalColoring => interval_coloring::print_interval_coloring(self.e.as_graph()),
             PrintDominatingSet => domination::print_random_dominator(self.e.as_graph()),
-            GameChromaticTable => chromatic::print_game_chromatic_table(self.e.as_graph(), ann.get_annotations(self.e.as_graph())),
-            GameChromaticStrategy(k) => chromatic::print_chromatic_game_strategy(self.e.as_graph(), ann.get_annotations(self.e.as_graph()), *k, false),
-            ConnectedGameChromaticStrategy(k) => chromatic::print_chromatic_game_strategy(self.e.as_graph(), ann.get_annotations(self.e.as_graph()), *k, true),
+            GameChromaticTable => {
+                chromatic::print_game_chromatic_table(self.e.as_graph(), ann.get_annotations(self.e.as_graph()))
+            }
+            GameChromaticStrategy(k) => {
+                chromatic::print_chromatic_game_strategy(self.e.as_graph(), ann.get_annotations(self.e.as_graph()), *k, false)
+            }
+            ConnectedGameChromaticStrategy(k) => {
+                chromatic::print_chromatic_game_strategy(self.e.as_graph(), ann.get_annotations(self.e.as_graph()), *k, true)
+            }
             PrintAutomorphisms => print_automorphism_info(self.e.as_graph()),
 	        BunkbedPostRemoval => bunkbed_reduced::test_post_removal_induction(self.e.as_graph()),
             Signature => signature::print_signature(&self.e),
-            PrintMarkingGameStrat => marking_game::print_marking_game_strat(self.e.as_graph(), false),
-            PrintConnectedMarkingGameStrat => marking_game::print_marking_game_strat(self.e.as_graph(), true),
+            PrintMarkingGameStrat => {
+                marking_game::print_marking_game_strat(self.e.as_graph(), false)
+            }
+            PrintConnectedMarkingGameStrat => {
+                marking_game::print_marking_game_strat(self.e.as_graph(), true)
+            }
             PrintBobWinGrabbingWeighting => grabbing::print_bob_win_weighting(self.e.as_graph()),
             GrabbingHypothesisTest => grabbing::hypothesis_testing(self.e.as_graph()),
             BunkbedSiteCOunts => bunkbed_sites::print_counts(self.e.as_graph()),
-            BunkbedReducedConnectionCounts(k) => bunkbed_reduced::print_connection_counts(self.e.as_graph(), *k),
-            BunkbedReducedConnectionSimulation(num_reps, k) => bunkbed_reduced::simulate_connection_count_ratios_naive(self.e.as_graph(), *num_reps, *k),
-            BunkbedReducedConnectionDP(num_reps, k, edge_type) => bunkbed_reduced::bunkbed_connection_counts_dp(self.e.as_graph(), *num_reps, *k, *edge_type),
-            BunkbedCounterexampleSearch(edge_type) => bunkbed_reduced::search_for_counterexample(self.e.as_graph(), *edge_type),
+            BunkbedReducedConnectionCounts(k) => {
+                bunkbed_reduced::print_connection_counts(self.e.as_graph(), *k)
+            }
+            BunkbedReducedConnectionSimulation(num_reps, k) => {
+                bunkbed_reduced::simulate_connection_count_ratios_naive(self.e.as_graph(), *num_reps, *k)
+            }
+            BunkbedReducedConnectionDP(num_reps, k, edge_type) => {
+                bunkbed_reduced::bunkbed_connection_counts_dp(self.e.as_graph(), *num_reps, *k, *edge_type)
+            }
+            BunkbedCounterexampleSearch(edge_type) => {
+                bunkbed_reduced::search_for_counterexample(self.e.as_graph(), *edge_type)
+            }
             PosetRelationProbabilities => poset_balance::print_relation_probabilities(self.e.as_poset()),
             PosetHasseDiagram => self.e.as_poset().print_hasse(),
             BalancedHeuristics => poset_balance::print_heuristics(self.e.as_poset()),
             PosetPrintBalanceAsCap => poset_balance::print_cap_balance(self.e.as_poset()),
             PrintNorineHypercubeColourings => norine::partition_colourings(self.e.as_graph()),
-            PrintSymmetricNorineHypercubeColourings(slice, out_of) => norine::partition_symmetric_colourings(self.e.as_graph(), *slice, *out_of),
+            PrintSymmetricNorineHypercubeColourings(slice, out_of) => {
+                norine::partition_symmetric_colourings(self.e.as_graph(), *slice, *out_of)
+            }
+            PrintMinKernel => {
+                let _ = kernels::min_kernel_size(self.e.as_digraph(), true);
+            }
             Unit => (),
         }
     }

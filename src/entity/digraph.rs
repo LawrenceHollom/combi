@@ -152,6 +152,10 @@ impl Digraph {
         self.n.iter_pairs()
     }
 
+    pub fn iter_vertex_subsets(&self) -> VertexSubsetIterator {
+        VertexSubsetIterator::new(self.n)
+    }
+
     pub fn print(&self) {
         println!("n: {}", self.n);
         println!("in degs: {:?}", self.in_deg.iter().map(|x| x.to_usize()).collect::<Vec<usize>>());

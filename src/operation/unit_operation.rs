@@ -36,6 +36,7 @@ pub enum UnitOperation {
     PosetPrintBalanceAsCap,
     PrintNorineHypercubeColourings,
     PrintSymmetricNorineHypercubeColourings(usize, usize),
+    PrintMinKernel,
     Signature,
     Unit,
 }
@@ -91,6 +92,7 @@ impl UnitOperation {
                 let out_of = args.get(1).map_or(0, |str| str.parse().unwrap());
                 Some(PrintSymmetricNorineHypercubeColourings(slice, out_of))
             }
+            "print_min_kernel" => Some(PrintMinKernel),
             "()" | "(" => Some(Unit),
             &_ => None,
         }
@@ -152,6 +154,7 @@ impl fmt::Display for UnitOperation {
             PosetPrintBalanceAsCap => "Print table of balance probabilities as a cap",
             PrintNorineHypercubeColourings => "Print info about good and bad Norine colourings",
             PrintSymmetricNorineHypercubeColourings(_, _) => "Print info about good and bad Norine symmetric colourings",
+            PrintMinKernel => "Print a minimal 2-kernel in digraph",
             Unit => "Do nothing",
         };
         write!(f, "{}", name)

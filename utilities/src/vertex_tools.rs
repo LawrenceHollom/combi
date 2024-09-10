@@ -465,16 +465,26 @@ impl VertexSet {
         VertexSet{ verts: self.verts | other.verts, n: self.n }
     }
 
+    /**
+     * Return a VertexSet consisting of the intersection of self with other.
+     */
     pub fn inter(&self, other: &VertexSet) -> VertexSet {
         VertexSet{ verts: self.verts & other.verts, n: self.n }
     }
 
+    /**
+     * Returns the set of vertices present in exactly one of self and other.
+     */
     pub fn xor(&self, other: &VertexSet) -> VertexSet {
         VertexSet { verts: self.verts ^ other.verts, n: self.n }
     }
 
+    /**
+     * Inverts the vertices in the set (up to n).
+     */
     pub fn not(&self) -> VertexSet {
-        VertexSet { verts: !self.verts, n: self.n }
+        let everything = (1 << self.n.to_usize()) - 1;
+        VertexSet { verts: everything & !self.verts, n: self.n }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -485,6 +495,9 @@ impl VertexSet {
         self.verts != 0
     }
 
+    /**
+     * Is every vertex from 0 to n-1 in the set?
+     */
     pub fn is_everything(&self) -> bool {
         let everything = (1 << self.n.to_usize()) - 1;
         self.verts & everything == everything
@@ -557,6 +570,23 @@ impl VertexSet {
             }
         }
         println!();
+    }
+
+    pub fn print_hum(&self) {
+        print!("{{ ");
+        let mut is_first = true;
+        for v in self.n.iter_verts() {
+            if self.has_vert(v) {
+                if is_first {
+                    print!("{}", v);
+                    is_first = false
+                } else {
+                    print!(", {}", v);
+                }
+            }
+        }
+        println!(" }}");
+
     }
 }
 
