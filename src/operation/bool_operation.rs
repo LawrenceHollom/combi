@@ -76,6 +76,8 @@ pub enum BoolOperation {
     IsHeuristicallyBalanced,
     HasMaximalN,
     IsForest,
+    HasSource,
+    HasSink,
     Debug,
 }
 
@@ -209,6 +211,8 @@ impl BoolOperation {
                     "heuristically_balanced" => Some(IsHeuristicallyBalanced),
                     "has_maximal_n" => Some(HasMaximalN),
                     "is_forest" => Some(IsForest),
+                    "has_source" => Some(HasSource),
+                    "has_sink" => Some(HasSink),
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -353,6 +357,8 @@ impl fmt::Display for BoolOperation {
             IsHeuristicallyBalanced => "Is heuristically balanced".to_owned(),
             HasMaximalN => "Does this poset have a maximal N".to_owned(),
             IsForest => "Is a forest".to_owned(),
+            HasSource => "Has a source vertex".to_owned(),
+            HasSink => "Has a sink vertex".to_owned(),
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };
         write!(f, "{}", name)

@@ -4,6 +4,8 @@ use utilities::{*, vertex_tools::*, edge_tools::*};
 
 use crate::entity::graph::*;
 
+mod standard;
+
 #[derive(Clone)]
 pub struct Digraph {
     pub n: Order,

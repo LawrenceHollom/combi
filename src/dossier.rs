@@ -243,6 +243,8 @@ impl Dossier {
                     IsHeuristicallyBalanced => poset_balance::is_heuristically_balanced(self.e.as_poset()),
                     HasMaximalN => poset_balance::has_maximal_n(self.e.as_poset()),
                     IsForest => self.e.as_graph().is_forest(),
+                    HasSource => self.e.as_digraph().has_source(),
+                    HasSink => self.e.as_digraph().has_sink(),
                     Debug => debug::debug(self.e.as_graph()),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);
