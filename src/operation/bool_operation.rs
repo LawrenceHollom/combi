@@ -78,6 +78,7 @@ pub enum BoolOperation {
     IsForest,
     HasSource,
     HasSink,
+    HasKernelOfSizeAtMost(usize),
     Debug,
 }
 
@@ -213,6 +214,7 @@ impl BoolOperation {
                     "is_forest" => Some(IsForest),
                     "has_source" => Some(HasSource),
                     "has_sink" => Some(HasSink),
+                    "has_kernel_at_most" => Some(HasKernelOfSizeAtMost(args[0].parse().unwrap())),
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -359,6 +361,7 @@ impl fmt::Display for BoolOperation {
             IsForest => "Is a forest".to_owned(),
             HasSource => "Has a source vertex".to_owned(),
             HasSink => "Has a sink vertex".to_owned(),
+            HasKernelOfSizeAtMost(size) => format!("Has a 2-kernel of size at most {}", size),
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };
         write!(f, "{}", name)

@@ -2,7 +2,7 @@ use crate::entity::digraph::*;
 
 use utilities::vertex_tools::*;
 
-pub fn min_kernel_size(d: &Digraph, print_min: bool) -> u32 {
+fn min_kernel_internal(d: &Digraph, stop_threshold: usize) -> VertexSet {
     let out_nbrs = d.get_out_nbhds();
     let in_nbrs = d.get_in_nbhds();
     let mut covers = VertexVec::new(d.n, &VertexSet::new(d.n));
@@ -21,7 +21,6 @@ pub fn min_kernel_size(d: &Digraph, print_min: bool) -> u32 {
     let mut s = VertexSet::of_vert(d.n, Vertex::ZERO);
 
     'iter_subsets: while s.is_in_range() {
-        
         for v in s.iter_rev() {
             let inter = out_nbrs[v].inter(&s);
             if inter.is_nonempty() {
@@ -51,14 +50,29 @@ pub fn min_kernel_size(d: &Digraph, print_min: bool) -> u32 {
             // This is a kernel.
             min_kernel_size = size;
             optimal_set = s;
+            if size <= stop_threshold {
+                // We've found something small *enough*, so pass it back.
+                return optimal_set;
+            }
         }
         s.incr_inplace();
     }
+
+    optimal_set
+}
+
+pub fn min_kernel_size(d: &Digraph, print_min: bool) -> u32 {
+    let optimal_set = min_kernel_internal(d, 0);
 
     if print_min {
         print!("Minimal 2-kernel: ");
         optimal_set.print_hum();
     }
 
-    min_kernel_size as u32
+    optimal_set.size() as u32
+}
+
+pub fn has_kernel_of_size_at_most(d: &Digraph, size: usize) -> bool {
+    let optimal_set = min_kernel_internal(d, size);
+    optimal_set.size() <= size
 }

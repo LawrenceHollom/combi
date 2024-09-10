@@ -247,6 +247,7 @@ impl Dossier {
                     IsForest => self.e.as_graph().is_forest(),
                     HasSource => self.e.as_digraph().has_source(),
                     HasSink => self.e.as_digraph().has_sink(),
+                    HasKernelOfSizeAtMost(size) => kernels::has_kernel_of_size_at_most(self.e.as_digraph(), *size),
                     Debug => debug::debug(self.e.as_graph()),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);
