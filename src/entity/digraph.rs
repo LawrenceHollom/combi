@@ -38,6 +38,25 @@ impl Digraph {
         Digraph { n, adj, out_adj_list, in_adj_list, out_deg, in_deg }
     }
 
+    pub fn of_out_adj_list(out_adj_list: VertexVec<Vec<Vertex>>) -> Digraph {
+        let n = out_adj_list.len();
+        let mut in_adj_list = VertexVec::new(n, &vec![]);
+        let mut out_deg = VertexVec::new(n, &Degree::ZERO);
+        let mut in_deg = VertexVec::new(n, &Degree::ZERO);
+        let mut adj = VertexVec::new(n, &VertexVec::new(n, &false));
+
+        for (i, nbrs) in out_adj_list.iter_enum() {
+            for j in nbrs.iter() {
+                in_adj_list[*j].push(i);
+                out_deg[i].incr_inplace();
+                in_deg[*j].incr_inplace();
+                adj[i][*j] = true;
+            }
+        }
+
+        Digraph { n, adj, out_adj_list, in_adj_list, out_deg, in_deg }
+    }
+
     pub fn reverse_edge(&mut self, e: Edge) {
         let (x, y) = if self.adj[e.fst()][e.snd()] {
                 (e.fst(), e.snd())
