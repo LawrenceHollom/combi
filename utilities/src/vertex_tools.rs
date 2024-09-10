@@ -36,6 +36,13 @@ pub struct VertexSetIterator {
 }
 
 #[derive(Clone, PartialEq, Eq)]
+pub struct ReverseVertexSetIterator {
+    verts: VertexSet,
+    i: Vertex,
+    finished: bool,
+}
+
+#[derive(Clone, PartialEq, Eq)]
 pub struct BigVertexSetIterator<'a> {
     verts: &'a BigVertexSet,
     i: Vertex,
@@ -492,7 +499,16 @@ impl VertexSet {
     }
 
     pub fn is_nonempty(&self) -> bool {
-        self.verts != 0
+        let everything = (1 << self.n.to_usize()) - 1;
+        self.verts & everything != 0
+    }
+
+    /**
+     * For use when manually iterating. Will return false when this VertexSet has
+     * been incremented to 1 << n or beyond.
+     */
+    pub fn is_in_range(&self) -> bool {
+        self.verts < (1 << self.n.to_usize())
     }
 
     /**
@@ -543,6 +559,9 @@ impl VertexSet {
         size as usize
     }
 
+    /**
+     * Returns the Vertex in self with the smallest index, or None if self is empty.
+     */
     pub fn get_first_element(&self) -> Option<Vertex> {
         let mut sta = self.verts;
         if sta == 0 {
@@ -557,8 +576,49 @@ impl VertexSet {
         }
     }
 
+    /**
+     * Returns the vertex in self with the largest index, or None if self is empty.
+     * This is very fast due to ilog2
+     */
+    pub fn get_biggest_element(&self) -> Option<Vertex> {
+        if self.verts == 0 {
+            None
+        } else {
+            Some(Vertex::of_usize(self.verts.ilog2() as usize))
+        }
+    }
+
+    /**
+     * Only use this if you're really sure that you want to (e.g. you're manually iterating.)
+     * Increments to the next vertex set in the binary ordering.
+     */
+    pub fn incr_inplace(&mut self) {
+        self.verts += 1;
+    }
+
+    /**
+     * Changes self to the minimal VertexSet (in the binary ordering) after self which does
+     * not contain the vertex v. This is done by blanking out everything strictly after v,
+     * and then adding v to the raw vertex set.
+     * If v is not in the set, then nothing is done. (Beware of infinite loops if calling this!)
+     */
+    pub fn incr_inplace_to_remove_vertex(&mut self, v: Vertex) {
+        if self.has_vert(v) {
+            let mask = (1 << self.n.to_usize()) - (1 << v.0);
+            self.verts &= mask;
+            self.verts += 1 << v.0;
+        }
+    }
+
     pub fn iter(&self) -> VertexSetIterator {
         VertexSetIterator::new(*self)
+    }
+
+    /**
+     * Manually iterates in the reverse order. Just as fast as iter. Probably.
+     */
+    pub fn iter_rev(&self) -> ReverseVertexSetIterator {
+        ReverseVertexSetIterator::new(*self)
     }
 
     pub fn print(&self) {
@@ -677,6 +737,16 @@ impl VertexSetIterator {
     }
 }
 
+impl ReverseVertexSetIterator {
+    pub fn new(verts: VertexSet) -> ReverseVertexSetIterator {
+        ReverseVertexSetIterator { 
+            verts, 
+            i: verts.n.to_max_vertex(),
+            finished: false 
+        }
+    }
+}
+
 impl BigVertexSetIterator<'_> {
     pub fn new(verts: &BigVertexSet) -> BigVertexSetIterator {
         BigVertexSetIterator { 
@@ -723,6 +793,31 @@ impl<T: Debug + Clone> IndexMut<VertexSet> for VertexSetVec<T> {
 impl fmt::Display for VertexSet {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.verts)
+    }
+}
+
+impl Iterator for ReverseVertexSetIterator {
+    type Item = Vertex;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.finished {
+            return None;
+        }
+        while !self.i.is_zero() && !self.verts.has_vert(self.i) {
+            self.i.decr_inplace();
+        }
+        if self.i.is_zero() {
+            self.finished = true;
+            if self.verts.has_vert(self.i) {
+                Some(self.i)
+            } else {
+                None
+            }
+        } else {
+            let out = self.i;
+            self.i.decr_inplace();
+            Some(out)
+        }
     }
 }
 
