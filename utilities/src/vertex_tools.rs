@@ -184,6 +184,9 @@ impl Iterator for VertexPairIterator {
     type Item = (Vertex, Vertex);
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.n.at_most(1) {
+            return None
+        }
         let i = self.curr.0;
         let j = self.curr.1;
 
