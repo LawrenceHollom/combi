@@ -30,6 +30,7 @@ mod twins;
 mod matching;
 mod norine;
 mod kernels;
+mod kuramoto;
 
 use std::collections::HashMap;
 
@@ -356,6 +357,7 @@ impl Dossier {
             PrintMinKernel => {
                 let _ = kernels::min_kernel_size(self.e.as_digraph(), true);
             }
+            SimulateKuramoto => kuramoto::simulate(self.e.as_graph()),
             Unit => (),
         }
     }

@@ -27,12 +27,20 @@ fn print_general_signature(mut dossier: Dossier, int_operations: Vec<IntOperatio
 }
 
 fn print_graph_signature(g: &Graph) {
-    let int_operations = 
+    let is_big = g.n.at_least(25);
+    let int_operations = if is_big {
+        vec![Order, Size, NumComponents, MinDegree, MaxDegree, 
+        Diameter, Radius]
+    } else {
         vec![Order, Size, NumComponents, MinDegree, MaxDegree, 
         DominationNumber, ChromaticNumber, Girth, Connectedness,
-        Diameter, Radius, Degeneracy];
-    let bool_operations =
-        vec![IsPlanar, IsTriangleFree];
+        Diameter, Radius, Degeneracy]
+    };
+    let bool_operations = if is_big {
+        vec![IsTriangleFree]
+    } else {
+        vec![IsPlanar, IsTriangleFree]
+    };
     let dossier = Dossier::new(Entity::Graph(g.to_owned()));
     print_general_signature(dossier, int_operations, bool_operations)
 }
