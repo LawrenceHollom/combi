@@ -12,4 +12,5 @@ regex = "1.4.5"
 strum = { version = "0.21", features = ["derive"] }
 colored = "2"
 fs2 = "0.4.3"
+image = "0.25.2"
 utilities = { path = "utilities" }

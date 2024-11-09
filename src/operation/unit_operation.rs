@@ -38,6 +38,7 @@ pub enum UnitOperation {
     PrintSymmetricNorineHypercubeColourings(usize, usize),
     PrintMinKernel,
     SimulateKuramoto,
+    PrettyPrint,
     Signature,
     Unit,
 }
@@ -95,6 +96,7 @@ impl UnitOperation {
             }
             "print_min_kernel" => Some(PrintMinKernel),
             "kuramoto" => Some(SimulateKuramoto),
+            "pretty" => Some(PrettyPrint),
             "()" | "(" => Some(Unit),
             &_ => None,
         }
@@ -158,6 +160,7 @@ impl fmt::Display for UnitOperation {
             PrintSymmetricNorineHypercubeColourings(_, _) => "Print info about good and bad Norine symmetric colourings",
             PrintMinKernel => "Print a minimal 2-kernel in digraph",
             SimulateKuramoto => "Simulate Kuramoto model with random seeds",
+            PrettyPrint => "Produce image of the graph",
             Unit => "Do nothing",
         };
         write!(f, "{}", name)
