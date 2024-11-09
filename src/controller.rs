@@ -530,13 +530,22 @@ impl Controller {
     }
 
     fn execute_until(&self, constr: &Constructor, conditions: &[BoolOperation], forever: bool) {
-        fn print_success_proportions(conditions: &[BoolOperation], num_passing_step: &Vec<usize>, rep: usize) {
+        fn print_success_proportions(conditions: &[BoolOperation], num_passing_step: &Vec<usize>, total_time_spent: &Vec<u128>, rep: usize) {
             fn f(x: usize, y: usize) -> f64 {
                 (100.0 * x as f64) / (y as f64)
             }
-            println!("SUCCESS RATES:\n\t[0. {}: {} ; {:.1}%]", conditions[0], num_passing_step[0], f(num_passing_step[0], rep));
+            let propn = f(num_passing_step[0], rep);
+            let ns = total_time_spent[0] / (rep as u128);
+            println!("SUCCESS RATES:\n\t[0. {}: {} ; {:.1}% ; ~{}/rep]", conditions[0], num_passing_step[0], propn, pretty_format_time(ns));
             for (i, condition) in conditions.iter().enumerate().skip(1) {
-                println!("\t[{}. {}: {} ; {:.1}%]", i, condition, num_passing_step[i], f(num_passing_step[i], num_passing_step[i - 1]))
+                let propn = f(num_passing_step[i], num_passing_step[i - 1]);
+                let ns = 
+                    if num_passing_step[i - 1] == 0 {
+                        "??".to_owned()
+                    } else {
+                        pretty_format_time(total_time_spent[i] / (num_passing_step[i - 1] as u128))
+                    };
+                println!("\t[{}. {}: {} ; {:.1}% ; ~{}/rep]", i, condition, num_passing_step[i], propn, ns)
             }
         }
 
@@ -545,9 +554,12 @@ impl Controller {
         let mut lines_printed = 0;
         let mut round_lines_printed = 0;
         let mut checkpoint_time = SystemTime::now();
+        let start_time = checkpoint_time;
         let mut required_steps = 0;
-        let mut regular_rep_printing = 1000;
+        let mut regular_rep_printing = 10;
         let mut num_passing_step = vec![0; conditions.len()];
+        let mut time_spent = vec![0; conditions.len()];
+        let mut total_operation_time_spent = 0;
         while !satisfied || forever {
             let mut checkpointed = false;
             if lines_printed >= 30 {
@@ -587,7 +599,12 @@ impl Controller {
             let mut all_satisfied = true;
             let mut num_satisfied = 0;
             'test_conditions: for condition in conditions.iter() {
-                if dossier.operate_bool(&mut ann, condition) {
+                let start_time = SystemTime::now();
+                let operation_result = dossier.operate_bool(&mut ann, condition);
+                let duration = SystemTime::now().duration_since(start_time).unwrap().as_nanos();
+                time_spent[num_satisfied] += duration;
+                total_operation_time_spent += duration;
+                if operation_result {
                     num_passing_step[num_satisfied] += 1;
                     num_satisfied += 1;
                     if num_satisfied >= required_steps {
@@ -612,7 +629,10 @@ impl Controller {
                 dossier.print_all();
             }
             if printed_round_number {
-                print_success_proportions(conditions, &num_passing_step, rep);
+                print_success_proportions(conditions, &num_passing_step, &time_spent, rep);
+                let op_time = total_operation_time_spent / (rep as u128);
+                let net_time = (SystemTime::now().duration_since(start_time).unwrap().as_nanos()) / (rep as u128);
+                println!("Total time/rep: \t operations: {}\t total: {}", pretty_format_time(op_time), pretty_format_time(net_time));
             }
             if all_satisfied {
                 if !forever {
@@ -620,7 +640,9 @@ impl Controller {
                     println!("Entity: ");
                     dossier.print_entity();
                 }
-                self.compute_and_print(&mut dossier, &mut ann);
+                if self.operations.len() > 0 {
+                    self.compute_and_print(&mut dossier, &mut ann);
+                }
                 satisfied = true;
             }
         }

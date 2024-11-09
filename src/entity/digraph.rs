@@ -4,6 +4,8 @@ use utilities::{*, vertex_tools::*, edge_tools::*};
 
 use crate::entity::graph::*;
 
+mod standard;
+
 #[derive(Clone)]
 pub struct Digraph {
     pub n: Order,
@@ -12,10 +14,11 @@ pub struct Digraph {
     pub in_adj_list: VertexVec<Vec<Vertex>>,
     pub out_deg: VertexVec<Degree>,
     pub in_deg: VertexVec<Degree>,
+    pub parameters: Vec<f64>,
 }
 
 impl Digraph {
-    pub fn of_matrix(adj: VertexVec<VertexVec<bool>>) -> Digraph {
+    pub fn of_matrix(adj: VertexVec<VertexVec<bool>>, parameters: Vec<f64>) -> Digraph {
         let n = adj.len();
         let mut out_adj_list = VertexVec::new(n, &vec![]);
         let mut in_adj_list = VertexVec::new(n, &vec![]);
@@ -33,7 +36,26 @@ impl Digraph {
             }
         }
 
-        Digraph { n, adj, out_adj_list, in_adj_list, out_deg, in_deg }
+        Digraph { n, adj, out_adj_list, in_adj_list, out_deg, in_deg, parameters }
+    }
+
+    pub fn of_out_adj_list(out_adj_list: VertexVec<Vec<Vertex>>, parameters: Vec<f64>) -> Digraph {
+        let n = out_adj_list.len();
+        let mut in_adj_list = VertexVec::new(n, &vec![]);
+        let mut out_deg = VertexVec::new(n, &Degree::ZERO);
+        let mut in_deg = VertexVec::new(n, &Degree::ZERO);
+        let mut adj = VertexVec::new(n, &VertexVec::new(n, &false));
+
+        for (i, nbrs) in out_adj_list.iter_enum() {
+            for j in nbrs.iter() {
+                in_adj_list[*j].push(i);
+                out_deg[i].incr_inplace();
+                in_deg[*j].incr_inplace();
+                adj[i][*j] = true;
+            }
+        }
+
+        Digraph { n, adj, out_adj_list, in_adj_list, out_deg, in_deg, parameters }
     }
 
     pub fn reverse_edge(&mut self, e: Edge) {
@@ -79,7 +101,7 @@ impl Digraph {
                 }
             }
         }
-        Digraph::of_matrix(adj)
+        Digraph::of_matrix(adj, vec![bidirectional_prob])
     }
 
     pub fn random_orientation(g: &Graph) -> Digraph {
@@ -94,7 +116,7 @@ impl Digraph {
                 }
             }
         }
-        Digraph::of_matrix(adj)
+        Digraph::of_matrix(adj, vec![])
     }
 
     /**
@@ -131,15 +153,24 @@ impl Digraph {
         self.n.iter_pairs()
     }
 
+    pub fn iter_vertex_subsets(&self) -> VertexSubsetIterator {
+        VertexSubsetIterator::new(self.n)
+    }
+
     pub fn print(&self) {
         println!("n: {}", self.n);
         println!("in degs: {:?}", self.in_deg.iter().map(|x| x.to_usize()).collect::<Vec<usize>>());
         println!("out degs: {:?}", self.out_deg.iter().map(|x| x.to_usize()).collect::<Vec<usize>>());
-        for i in self.n.iter_verts() {
-            if self.out_deg[i].at_least(1) {
-                print!("{} ~ ", i);
-                for j in self.out_adj_list[i].iter() {
-                    print!("{} ", j);
+        println!("parameters: {:?}", self.parameters);
+        for u in self.n.iter_verts() {
+            if self.out_deg[u].at_least(1) {
+                print!("{} -> ", u);
+                for (i, v) in self.out_adj_list[u].iter().enumerate() {
+                    if i == 0 {
+                        print!("{}", v)
+                    } else {
+                        print!(", {}", v)
+                    }
                 }
                 println!();
             }

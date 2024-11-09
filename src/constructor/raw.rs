@@ -10,15 +10,12 @@ pub fn new_cube(dimension: usize) -> Graph {
     let order = Order::of_usize(n);
     let mut adj_list: VertexVec<Vec<Vertex>> = VertexVec::new(order, &vec![]);
 
-    for (i, j) in order.iter_pairs() {
-        let mut delta = i.xor(j);
-        while delta.rem(2).is_zero() {
-            delta.div_inplace(2);
-        }
-        if delta == Vertex::of_usize(1) {
-            // They are adjacent in the cube.
-            adj_list[i].push(j);
-            adj_list[j].push(i);
+    for x in order.iter_verts() {
+        let mut direction = 1;
+        for _i in 0..dimension {
+            let y = x.xor(Vertex::of_usize(direction));
+            direction *= 2;
+            adj_list[x].push(y);
         }
     }
     

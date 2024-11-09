@@ -21,6 +21,8 @@ mod semiregular;
 mod corona;
 mod random_bfs;
 mod strucutral;
+mod random_posets;
+mod random_digraphs;
 
 #[derive(Clone)]
 pub enum ProductConstructor {
@@ -92,11 +94,13 @@ pub enum PosetConstructor {
     Chain(Order),
     Antichain(Order),
     ChainIntersection(Order, usize),
+    CorrelatedIntersection(Order, usize, f64),
 }
 
 #[derive(Clone)]
 pub enum DigraphConstructor {
-    OfGraph(Box<Constructor>)
+    OfGraph(Box<Constructor>),
+    Oriented(Order, f64, f64),
 }
 
 #[derive(Clone)]
@@ -294,7 +298,18 @@ impl Constructor {
                 let k = args[1].parse().unwrap();
                 PosetConstr(ChainIntersection(order, k))
             }
+            "correlated_inter" => {
+                let order = Order::of_string(args[0]);
+                let k = args[1].parse().unwrap();
+                let prob = args[2].parse().unwrap();
+                PosetConstr(CorrelatedIntersection(order, k, prob))
+            }
             "digraph" => DigraphConstr(OfGraph(Box::new(Self::of_string(args[0])))),
+            "oriented" => {
+                let min_p = args.get(1).map_or(0.0, |str| str.parse().unwrap());
+                let max_p = args.get(2).map_or(1.0, |str| str.parse().unwrap());
+                DigraphConstr(Oriented(Order::of_string(args[0]), min_p, max_p))
+            }
             str => File(str.to_owned()),
         }
     }
@@ -380,11 +395,13 @@ impl Constructor {
             }
             PosetConstr(Chain(order)) => p(Poset::new_chain(*order)),
             PosetConstr(Antichain(order)) => p(Poset::new_antichain(*order)),
-            PosetConstr(ChainIntersection(order, k)) => p(Poset::new_random_intersection(*order, *k)),
+            PosetConstr(ChainIntersection(order, k)) => p(random_posets::new_random_intersection(*order, *k)),
+            PosetConstr(CorrelatedIntersection(order, k, prob)) => p(random_posets::new_correlated_intersection(*order, *k, *prob)),
             DigraphConstr(OfGraph(constr)) => {
                 let g = constr.new_entity().as_owned_graph();
-                d(Digraph::of_matrix(g.adj))
+                d(Digraph::of_matrix(g.adj, vec![]))
             }
+            DigraphConstr(Oriented(order, min_p, max_p)) => d(random_digraphs::new_oriented(*order, *min_p, *max_p)),
             File(filename) => from_file::new_entity(filename),
             Serialised(code) => g(Graph::deserialise(code)),
             Special => panic!("Cannot directly construct Special graph!"),
@@ -421,7 +438,7 @@ impl PosetConstructor {
         use PosetConstructor::*;
         match self {
             Chain(_) | Antichain(_) => false,
-            ChainIntersection(_, _) => true,
+            ChainIntersection(_, _) | CorrelatedIntersection(_, _, _) => true,
         }
     }
 }
@@ -431,6 +448,7 @@ impl DigraphConstructor {
         use DigraphConstructor::*;
         match self {
             OfGraph(constr) => constr.is_random(),
+            Oriented(_, _, _) => true,
         }
     }
 }
@@ -616,6 +634,9 @@ impl fmt::Display for PosetConstructor {
             ChainIntersection(order, k) => {
                 write!(f, "Intersection of {} random chains of {} elements", k, order)
             }
+            CorrelatedIntersection(order, k, prob) => {
+                write!(f, "Intersection of {} correlated (prob {} of swaps) random chains of {} elements", k, prob, order)
+            }
         }
     }
 }
@@ -625,6 +646,7 @@ impl fmt::Display for DigraphConstructor {
         use DigraphConstructor::*;
         match self {
             OfGraph(digraph) => write!(f, "Digraph of ({})", *digraph),
+            Oriented(n, min_p, max_p) => write!(f, "Random orientation of G({}, [{}, {}])", n, min_p, max_p),
         }
     }
 }

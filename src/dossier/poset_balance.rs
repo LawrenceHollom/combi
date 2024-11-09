@@ -11,7 +11,7 @@ fn iterate_extensions_rec(p: &Poset, placed: VertexSet, num_placed: usize, gt_co
     for v in p.iter_verts() {
         if !placed.has_vert(v) {
             let mut can_place = true;
-            'test_coverees: for u in p.covered_by[v].iter() {
+            'test_coverees: for u in p.lower_covers[v].iter() {
                 if !placed.has_vert(u) {
                     can_place = false;
                     break 'test_coverees;
@@ -40,8 +40,9 @@ pub fn print_relation_probabilities(p: &Poset) {
     let count = iterate_extensions_rec(p, VertexSet::new(p.order), 0, &mut gt_count);
     println!("There are {} linear extensions of the poset.", count);
     println!("Counts of how many times we have u > v (u = y_axis, v = x_axis):");
-    let rows = gt_count.iter().map(
-        |row| ("Row!", row.to_vec_of_strings())
+    let names: Vec<String> = p.order.iter_verts().map(|v| v.to_string()).collect();
+    let rows = gt_count.iter().enumerate().map(
+        |(i, row)| (names[i].as_str(), row.to_vec_of_strings())
     ).collect::<Vec<(&str, VertexVec<String>)>>();
     print_vertex_table(rows);
     let mut max_balance = 0;
@@ -82,7 +83,7 @@ fn count_extensions_up_to_cap_rec(p: &Poset, placed: VertexSet, num_placed: usiz
     for v in p.iter_verts() {
         if !placed.has_vert(v) {
             let mut can_place = true;
-            'test_coverees: for u in p.covered_by[v].iter() {
+            'test_coverees: for u in p.lower_covers[v].iter() {
                 if !placed.has_vert(u) {
                     can_place = false;
                     break 'test_coverees;
@@ -113,60 +114,6 @@ pub fn is_num_extensions_less_than(p: &Poset, k: usize) -> bool {
  * Prints some heuristics about whether we expect the poset to be balanced or not.
  */
 pub fn print_heuristics(p: &Poset) {
-    fn count_permutations_rec(p: &Poset, placed: VertexSet, num_placed: usize, num_perms: &mut [u64; 5], interesting_order: u32, num_interesting_placed: u32) -> u64{
-        if num_placed == p.order.to_usize() {
-            // Check what order elements 6, 7, 8, 9 are in.
-            match interesting_order {
-                8967 => num_perms[0] += 1,
-                8976 => num_perms[1] += 1,
-                9867 => num_perms[2] += 1,
-                9876 => num_perms[3] += 1,
-                9786 => num_perms[4] += 1,
-                _ => panic!("My god you are an idiot. {}", interesting_order),
-            }
-            return 1;
-        }
-        let mut count = 0;
-        for v in p.iter_verts() {
-            if !placed.has_vert(v) {
-                let mut can_place = true;
-                'test_coverees: for u in p.covered_by[v].iter() {
-                    if !placed.has_vert(u) {
-                        can_place = false;
-                        break 'test_coverees;
-                    }
-                }
-                if can_place {
-                    // sub_count is how many extensions there are with v placed.
-                    let mut new_num_interesting_placed = num_interesting_placed;
-                    let mut new_interesting_order = interesting_order;
-                    if v == Vertex::of_usize(6) {
-                        new_interesting_order += num_interesting_placed * 6;
-                        new_num_interesting_placed *= 10;
-                    } else if v == Vertex::of_usize(7) {
-                        new_interesting_order += num_interesting_placed * 7;
-                        new_num_interesting_placed *= 10;
-                    } else if v == Vertex::of_usize(8) {
-                        new_interesting_order += num_interesting_placed * 8;
-                        new_num_interesting_placed *= 10;
-                    } else if v == Vertex::of_usize(9) {
-                        new_interesting_order += num_interesting_placed * 9;
-                        new_num_interesting_placed *= 10;
-                    }
-                    let new_placed = placed.add_vert_immutable(v);
-                    let sub_count = count_permutations_rec(p, new_placed, num_placed + 1, num_perms, new_interesting_order, new_num_interesting_placed);
-                    count += sub_count;
-                }
-            }
-        }
-        count
-    }
-    println!("Comparably balanced pairs:");
-    for (u, v) in p.iter_pairs() {
-        if p.incomparable(u, v) && p.downsets[u].size() + p.upsets[v].size() == p.upsets[u].size() + p.downsets[v].size() {
-            println!("({}, {})", u, v)
-        }
-    }
     let mut width_3_levels = 0;
     let mut h_count = vec![0; p.height];
     for v in p.iter_verts() {
@@ -177,10 +124,6 @@ pub fn print_heuristics(p: &Poset) {
         }
     }
     println!("{} levels of width 3", width_3_levels);
-
-    let mut num_perms = [0; 5];
-    count_permutations_rec(p, VertexSet::new(p.order), 0, &mut num_perms, 0, 1);
-    println!("Num perms = {:?}", num_perms);
 }
 
 /**
@@ -201,18 +144,11 @@ struct NStructure {
     top_left: Vertex,
     top_right: Vertex,
     bottom_left: Vertex,
-    bottom_right: Vertex,
+    // bottom_right: Vertex,
 }
 
-/**
- * Assuming that P has a maximal N, we attach the start of a ladder to
- * this N so that that top bit can't count as unbalanced, and don't
- * count the new top elements.
- * We construct a new poset Q with a bit of the ladder attached.
- */
-pub fn balance_as_cap(p: &Poset) -> Rational {
+fn attach_cap(p: &Poset) -> Poset {
     let n_struct = self::find_maximal_n(p).expect("Can only call balance_as_cap on posets with maximal N!");
-    println!("Found N: {:?}", n_struct);
     let order = p.order.incr_by(4);
     let mut gt = VertexVec::new(order, &VertexVec::new(order, &false));
     for (x, y) in p.order.iter_pairs() {
@@ -235,11 +171,21 @@ pub fn balance_as_cap(p: &Poset) -> Rational {
     gt[br][n_struct.bottom_left] = true;
 
     // Construct our new poset, with the ladder attached.
-    let q = Poset::of_transitive_closure(gt, crate::constructor::Constructor::Special);
+    Poset::of_transitive_closure(gt, crate::constructor::Constructor::Special)
+}
 
-    let mut gt_count = VertexVec::new(order, &VertexVec::new(order, &0));
-    let count = iterate_extensions_rec(&q, VertexSet::new(order), 0, &mut gt_count);
-    println!("Counted as cap; there are {} extensions.", count);
+/**
+ * Assuming that P has a maximal N, we attach the start of a ladder to
+ * this N so that that top bit can't count as unbalanced, and don't
+ * count the new top elements.
+ * We construct a new poset Q with a bit of the ladder attached.
+ */
+pub fn balance_as_cap(p: &Poset) -> Rational {
+    let q = attach_cap(p);
+
+    let mut gt_count = VertexVec::new(q.order, &VertexVec::new(q.order, &0));
+    let count = iterate_extensions_rec(&q, VertexSet::new(q.order), 0, &mut gt_count);
+    // println!("Counted as cap; there are {} extensions.", count);
 
     let mut balance: u64 = 0;
     // Now check for balancedness, but ignore the top two vertices.
@@ -248,6 +194,35 @@ pub fn balance_as_cap(p: &Poset) -> Rational {
         balance = balance.max(this_balance);
     }
     Rational::new_fraction(balance as usize, count as usize)
+}
+
+/**
+ * Get the most balanced pair, considering only those pairs in which one
+ * element is minimal in P.
+ */
+pub fn balance_with_min(p: &Poset) -> Rational {
+    let mut gt_count = VertexVec::new(p.order, &VertexVec::new(p.order, &0));
+    let count = iterate_extensions_rec(&p, VertexSet::new(p.order), 0, &mut gt_count);
+    let mut balance = 0;
+    for (u, v) in p.iter_pairs() {
+        // We only care if one of u and v is minimal.
+        if p.downsets[u].is_empty() || p.downsets[v].is_empty() {
+            let this_balance = gt_count[u][v].min(count - gt_count[u][v]);
+            balance = balance.max(this_balance);
+        }
+    }
+    Rational::new_fraction(balance as usize, count as usize)
+}
+
+pub fn print_cap_balance(p: &Poset) {
+    let q = attach_cap(p);
+    
+    println!("\n ~~~~~~~~ ORIGINAL POSET ~~~~~~~~ \n");
+    p.print_hasse();
+    println!("\n ~~~~~~~~ CAPPED POSET ~~~~~~~~ \n");
+    q.print_hasse();
+    
+    print_relation_probabilities(&q);
 }
 
 /**
@@ -265,8 +240,8 @@ fn find_maximal_n(p: &Poset) -> Option<NStructure> {
     }
     let x = maximal_elements[0];
     let y = maximal_elements[1];
-    let inter = p.covered_by[x].inter(&p.covered_by[y]);
-    let sides = p.covered_by[x].xor(&p.covered_by[y]);
+    let inter = p.lower_covers[x].inter(&p.lower_covers[y]);
+    let sides = p.lower_covers[x].xor(&p.lower_covers[y]);
     if inter.is_empty() {
         return None
     }
@@ -278,14 +253,14 @@ fn find_maximal_n(p: &Poset) -> Option<NStructure> {
                         top_left: x,
                         top_right: y,
                         bottom_left: u,
-                        bottom_right: v,
+                        // bottom_right: v,
                     })
                 } else {
                     return Some(NStructure {
                         top_left: y,
                         top_right: x,
                         bottom_left: u,
-                        bottom_right: v,
+                        // bottom_right: v,
                     })
                 }
             }

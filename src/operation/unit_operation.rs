@@ -33,6 +33,10 @@ pub enum UnitOperation {
     PosetRelationProbabilities,
     PosetHasseDiagram,
     BalancedHeuristics,
+    PosetPrintBalanceAsCap,
+    PrintNorineHypercubeColourings,
+    PrintSymmetricNorineHypercubeColourings(usize, usize),
+    PrintMinKernel,
     Signature,
     Unit,
 }
@@ -81,6 +85,14 @@ impl UnitOperation {
             "print_balance" => Some(PosetRelationProbabilities),
             "hasse" => Some(PosetHasseDiagram),
             "balance_heuristics" => Some(BalancedHeuristics),
+            "print_cap_balance" => Some(PosetPrintBalanceAsCap),
+            "print_norine" => Some(PrintNorineHypercubeColourings),
+            "print_symm_norine" => {
+                let slice = args.get(0).map_or(0, |str| str.parse().unwrap());
+                let out_of = args.get(1).map_or(0, |str| str.parse().unwrap());
+                Some(PrintSymmetricNorineHypercubeColourings(slice, out_of))
+            }
+            "print_min_kernel" => Some(PrintMinKernel),
             "()" | "(" => Some(Unit),
             &_ => None,
         }
@@ -139,6 +151,10 @@ impl fmt::Display for UnitOperation {
             PosetRelationProbabilities => "Print table of balance probabilities for a poset",
             PosetHasseDiagram => "Print Hasse diagram of poset",
             BalancedHeuristics => "Heuristics about whether the poset has balanced vertices",
+            PosetPrintBalanceAsCap => "Print table of balance probabilities as a cap",
+            PrintNorineHypercubeColourings => "Print info about good and bad Norine colourings",
+            PrintSymmetricNorineHypercubeColourings(_, _) => "Print info about good and bad Norine symmetric colourings",
+            PrintMinKernel => "Print a minimal 2-kernel in digraph",
             Unit => "Do nothing",
         };
         write!(f, "{}", name)

@@ -11,6 +11,7 @@ pub mod edge_tools;
 pub mod vertex_tools;
 pub mod component_tools;
 pub mod chromatic_tools;
+pub mod file_write;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Order(usize);
@@ -247,19 +248,58 @@ pub fn parse_infix_like(text: &str) -> Option<(&str, &str, &str)> {
     parse_infix_like_restricted(text, infix_symbols)
 }
 
-pub fn pretty_print_int(x: usize, end: &str) {
+/**
+ * Returns true if the number is a single-digit multiple of a power of 10
+ */
+pub fn is_round_number(x: usize) -> bool {
+    let log = (x as f64).log10() + 0.000001;
+    let pow = 10_usize.pow(log as u32);
+    x % pow == 0
+}
+
+pub fn pretty_format_int(x: usize) -> String {
     if x < 10_000 {
-        print!("{}", x)
+        format!("{}", x)
     } else if x < 100_000 {
-        print!("{}k{}", x / 1_000, (x % 1_000) / 100)
+        format!("{}k{}", x / 1_000, (x % 1_000) / 100)
     } else if x < 1_000_000 {
-        print!("{}k", x / 1_000)
+        format!("{}k", x / 1_000)
     } else if x < 100_000_000 {
-        print!("{}m{}", x / 1_000_000, (x % 1_000_000) / 100_000)
+        format!("{}m{}", x / 1_000_000, (x % 1_000_000) / 100_000)
     } else {
-        print!("{}m", x / 1_000_000)
+        format!("{}m", x / 1_000_000)
     }
-    print!("{}", end)
+}
+
+pub fn pretty_print_int(x: usize, end: &str) {
+    print!("{}{}", pretty_format_int(x), end)
+}
+
+pub fn pretty_format_time(nanos: u128) -> String {
+    let mics = nanos / 1000;
+    let millis = mics / 1000;
+    let secs = millis / 1000;
+    if nanos < 1000 {
+        format!("{} ns", nanos)
+    } else if mics < 10 {
+        format!("{}.{:0>2} μs", mics, (nanos % 1000) / 10)
+    } else if mics < 100 {
+        format!("{}.{} μs", mics, (nanos % 1000) / 100)
+    } else if mics < 1000 {
+        format!("{} μs", mics)
+    } else if millis < 10 {
+        format!("{}.{:0>2} ms", millis, (mics % 1000) / 10)
+    } else if millis < 100 {
+        format!("{}.{} ms", millis, (mics % 1000) / 100)
+    } else if millis < 1000 {
+        format!("{} ms", millis)
+    } else {
+        format!("{}.{:0>2} s", secs, (millis % 1000) / 10)
+    } 
+}
+
+pub fn pretty_print_time(nanos: u128, end: &str) {
+    print!("{}{}", pretty_format_time(nanos), end)
 }
 
 pub fn print_table(titles: Vec<String>, rows: Vec<(String, Vec<String>)>) {

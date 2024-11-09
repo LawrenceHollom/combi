@@ -35,6 +35,43 @@ fn new_graph(contents: String, filename: &String) -> Graph {
     g
 }
 
+fn new_digraph(contents: String) -> Digraph {
+    let lines = contents.trim().lines().collect::<Vec<&str>>();
+    let n: usize = lines[0].parse().unwrap();
+    let order = Order::of_usize(n);
+    let mut adj: VertexVec<VertexVec<bool>> = VertexVec::new(order, &VertexVec::new(order, &false));
+
+    for line in lines.iter().skip(1) {
+        if line.contains("<->") {
+            let pars: Vec<&str> = line.split("<->").collect();
+            let u: Vertex = Vertex::of_string(pars[0]);
+            for v_str in pars[1].split(',') {
+                let v: Vertex = Vertex::of_string(v_str);
+                adj[u][v] = true;
+                adj[v][u] = true;
+            }
+        } else if line.contains("->") {
+            let pars: Vec<&str> = line.split("->").collect();
+            let u: Vertex = Vertex::of_string(pars[0]);
+            for v_str in pars[1].split(',') {
+                let v: Vertex = Vertex::of_string(v_str);
+                adj[u][v] = true;
+            }
+        } else if line.contains("<-") {
+            let pars: Vec<&str> = line.split("<-").collect();
+            let u: Vertex = Vertex::of_string(pars[0]);
+            for v_str in pars[1].split(',') {
+                let v: Vertex = Vertex::of_string(v_str);
+                adj[v][u] = true;
+            }
+        } else {
+            panic!("Unknown digraph line format! {}", line)
+        }
+    }
+
+    Digraph::of_matrix(adj, vec![])
+}
+
 fn new_poset(contents: String, filename: &String) -> Poset {
     let lines = contents.trim().lines().collect::<Vec<&str>>();
     let n: usize = lines[0].parse().unwrap();
@@ -88,6 +125,8 @@ pub fn new_entity(filename: &String) -> Entity {
     graph_pathbuf.push(format!("manual/{}.gph", filename));
     let mut poset_pathbuf = pathbuf.to_owned();
     poset_pathbuf.push(format!("manual/{}.pst", filename));
+    let mut digraph_pathbuf = pathbuf.to_owned();
+    digraph_pathbuf.push(format!("manual/{}.dig", filename));
 
     if graph_pathbuf.exists() {
         println!("Found graph file!");
@@ -99,6 +138,11 @@ pub fn new_entity(filename: &String) -> Entity {
         match fs::read_to_string(poset_pathbuf) {
             Ok(contents) => Entity::Poset(new_poset(contents, filename)),
             Err(e) => panic!("Cannot find poset constructor {} (Error: {})", filename, e),
+        }
+    } else if digraph_pathbuf.exists() {
+        match fs::read_to_string(digraph_pathbuf) {
+            Ok(contents) => Entity::Digraph(new_digraph(contents)),
+            Err(e) => panic!("Cannot find digraph constructor {} (Error: {})", filename, e),
         }
     } else {
         panic!("Could not find constructor {}", filename)

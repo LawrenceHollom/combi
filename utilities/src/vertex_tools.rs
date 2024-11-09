@@ -23,9 +23,28 @@ pub struct VertexSet {
     n: Order,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct BigVertexSet {
+    verts: Vec<u128>,
+    n: Order,
+}
+
 #[derive(Clone, PartialEq, Eq)]
 pub struct VertexSetIterator {
     verts: VertexSet,
+    i: Vertex,
+}
+
+#[derive(Clone, PartialEq, Eq)]
+pub struct ReverseVertexSetIterator {
+    verts: VertexSet,
+    i: Vertex,
+    finished: bool,
+}
+
+#[derive(Clone, PartialEq, Eq)]
+pub struct BigVertexSetIterator<'a> {
+    verts: &'a BigVertexSet,
     i: Vertex,
 }
 
@@ -148,6 +167,10 @@ impl Vertex {
 
     pub fn num_verts_after(&self, n: Order) -> usize {
         n.to_usize() - self.0 - 1
+    }
+
+    pub fn to_binary_string(&self) -> String {
+        format!("{:04b}", self.0)
     }
 }
 
@@ -449,16 +472,26 @@ impl VertexSet {
         VertexSet{ verts: self.verts | other.verts, n: self.n }
     }
 
+    /**
+     * Return a VertexSet consisting of the intersection of self with other.
+     */
     pub fn inter(&self, other: &VertexSet) -> VertexSet {
         VertexSet{ verts: self.verts & other.verts, n: self.n }
     }
 
+    /**
+     * Returns the set of vertices present in exactly one of self and other.
+     */
     pub fn xor(&self, other: &VertexSet) -> VertexSet {
         VertexSet { verts: self.verts ^ other.verts, n: self.n }
     }
 
+    /**
+     * Inverts the vertices in the set (up to n).
+     */
     pub fn not(&self) -> VertexSet {
-        VertexSet { verts: !self.verts, n: self.n }
+        let everything = (1 << self.n.to_usize()) - 1;
+        VertexSet { verts: everything & !self.verts, n: self.n }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -466,9 +499,21 @@ impl VertexSet {
     }
 
     pub fn is_nonempty(&self) -> bool {
-        self.verts != 0
+        let everything = (1 << self.n.to_usize()) - 1;
+        self.verts & everything != 0
     }
 
+    /**
+     * For use when manually iterating. Will return false when this VertexSet has
+     * been incremented to 1 << n or beyond.
+     */
+    pub fn is_in_range(&self) -> bool {
+        self.verts < (1 << self.n.to_usize())
+    }
+
+    /**
+     * Is every vertex from 0 to n-1 in the set?
+     */
     pub fn is_everything(&self) -> bool {
         let everything = (1 << self.n.to_usize()) - 1;
         self.verts & everything == everything
@@ -514,6 +559,9 @@ impl VertexSet {
         size as usize
     }
 
+    /**
+     * Returns the Vertex in self with the smallest index, or None if self is empty.
+     */
     pub fn get_first_element(&self) -> Option<Vertex> {
         let mut sta = self.verts;
         if sta == 0 {
@@ -528,10 +576,146 @@ impl VertexSet {
         }
     }
 
+    /**
+     * Returns the vertex in self with the largest index, or None if self is empty.
+     * This is very fast due to ilog2
+     */
+    pub fn get_biggest_element(&self) -> Option<Vertex> {
+        if self.verts == 0 {
+            None
+        } else {
+            Some(Vertex::of_usize(self.verts.ilog2() as usize))
+        }
+    }
+
+    /**
+     * Only use this if you're really sure that you want to (e.g. you're manually iterating.)
+     * Increments to the next vertex set in the binary ordering.
+     */
+    pub fn incr_inplace(&mut self) {
+        self.verts += 1;
+    }
+
+    /**
+     * Changes self to the minimal VertexSet (in the binary ordering) after self which does
+     * not contain the vertex v. This is done by blanking out everything strictly after v,
+     * and then adding v to the raw vertex set.
+     * If v is not in the set, then nothing is done. (Beware of infinite loops if calling this!)
+     */
+    pub fn incr_inplace_to_remove_vertex(&mut self, v: Vertex) {
+        if self.has_vert(v) {
+            let mask = (1 << self.n.to_usize()) - (1 << v.0);
+            self.verts &= mask;
+            self.verts += 1 << v.0;
+        }
+    }
+
     pub fn iter(&self) -> VertexSetIterator {
         VertexSetIterator::new(*self)
     }
 
+    /**
+     * Manually iterates in the reverse order. Just as fast as iter. Probably.
+     */
+    pub fn iter_rev(&self) -> ReverseVertexSetIterator {
+        ReverseVertexSetIterator::new(*self)
+    }
+
+    pub fn print(&self) {
+        for v in self.n.iter_verts() {
+            if self.has_vert(v) {
+                print!("1");
+            } else {
+                print!("0");
+            }
+        }
+        println!();
+    }
+
+    pub fn print_hum(&self) {
+        print!("{{ ");
+        let mut is_first = true;
+        for v in self.n.iter_verts() {
+            if self.has_vert(v) {
+                if is_first {
+                    print!("{}", v);
+                    is_first = false
+                } else {
+                    print!(", {}", v);
+                }
+            }
+        }
+        println!(" }}");
+
+    }
+}
+
+impl BigVertexSet {
+    const BITS: usize = 128;
+    
+    pub fn new(n: Order) -> BigVertexSet {
+        let num_pars: usize = (n.to_usize() + Self::BITS - 1) / Self::BITS;
+        BigVertexSet{ verts: vec![0; num_pars], n }
+    }
+
+    pub fn of_vec(n: Order, vs: &Vec<Vertex>) -> BigVertexSet {
+        let mut set = BigVertexSet::new(n);
+        for v in vs.iter() {
+            set.add_vert(*v)
+        }
+        set
+    }
+
+    pub fn to_vec(&self) -> VertexVec<bool> {
+        let mut out = VertexVec::new(self.n, &false);
+        for v in self.n.iter_verts() {
+            if self.has_vert(v) {
+                out[v] = true
+            }
+        }
+        out
+    }
+
+    pub fn add_vert(&mut self, v: Vertex) {
+        let part = v.0 / Self::BITS;
+        self.verts[part] |= 1 << (v.0 % Self::BITS);
+    }
+
+    pub fn remove_vert(&mut self, v: Vertex) {
+        let part = v.0 / Self::BITS;
+        self.verts[part] &= !(1 << (v.0 % Self::BITS))
+    }
+
+    pub fn add_all(&mut self, vs: BigVertexSet) {
+        for (i, part) in self.verts.iter_mut().enumerate() {
+            *part |= vs.verts[i];
+        }
+    }
+
+    pub fn remove_all(&mut self, vs: BigVertexSet) {
+        for (i, part) in self.verts.iter_mut().enumerate() {
+            *part &= !vs.verts[i];
+        }
+    }
+
+    pub fn has_vert(&self, v: Vertex) -> bool {
+        let part = v.0 / Self::BITS;
+        (self.verts[part] >> (v.0 % Self::BITS)) % 2 == 1
+    }
+
+    pub fn is_empty(&self) -> bool {
+        for part in self.verts.iter() {
+            if *part != 0 {
+                return false
+            }
+        }
+        return true
+    }
+
+    pub fn iter(&self) -> BigVertexSetIterator {
+        BigVertexSetIterator::new(self)
+    }
+    
     pub fn print(&self) {
         for v in self.n.iter_verts() {
             if self.has_vert(v) {
@@ -547,6 +731,25 @@ impl VertexSet {
 impl VertexSetIterator {
     pub fn new(verts: VertexSet) -> VertexSetIterator {
         VertexSetIterator { 
+            verts, 
+            i: Vertex::ZERO 
+        }
+    }
+}
+
+impl ReverseVertexSetIterator {
+    pub fn new(verts: VertexSet) -> ReverseVertexSetIterator {
+        ReverseVertexSetIterator { 
+            verts, 
+            i: verts.n.to_max_vertex(),
+            finished: false 
+        }
+    }
+}
+
+impl BigVertexSetIterator<'_> {
+    pub fn new(verts: &BigVertexSet) -> BigVertexSetIterator {
+        BigVertexSetIterator { 
             verts, 
             i: Vertex::ZERO 
         }
@@ -593,7 +796,49 @@ impl fmt::Display for VertexSet {
     }
 }
 
+impl Iterator for ReverseVertexSetIterator {
+    type Item = Vertex;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.finished {
+            return None;
+        }
+        while !self.i.is_zero() && !self.verts.has_vert(self.i) {
+            self.i.decr_inplace();
+        }
+        if self.i.is_zero() {
+            self.finished = true;
+            if self.verts.has_vert(self.i) {
+                Some(self.i)
+            } else {
+                None
+            }
+        } else {
+            let out = self.i;
+            self.i.decr_inplace();
+            Some(out)
+        }
+    }
+}
+
 impl Iterator for VertexSetIterator {
+    type Item = Vertex;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while !self.i.is_n(self.verts.n) && !self.verts.has_vert(self.i) {
+            self.i.incr_inplace();
+        }
+        if self.i.is_n(self.verts.n) {
+            None
+        } else {
+            let out = self.i;
+            self.i.incr_inplace();
+            Some(out)
+        }
+    }
+}
+
+impl Iterator for BigVertexSetIterator<'_> {
     type Item = Vertex;
 
     fn next(&mut self) -> Option<Self::Item> {

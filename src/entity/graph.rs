@@ -21,6 +21,11 @@ pub struct Graph {
     pub constructor: Constructor,
 }
 
+pub struct EdgeIterator<'a> {
+    g: &'a Graph,
+    sub_iter: VertexPairIterator,
+}
+
 impl Graph {
     pub fn of_adj_list(adj_list: VertexVec<Vec<Vertex>>, constructor: Constructor) -> Graph {
         let n = adj_list.len();
@@ -53,6 +58,36 @@ impl Graph {
                 adj_list[j].push(i);
                 deg[i].incr_inplace();
                 deg[j].incr_inplace();
+            }
+        }
+
+        Graph { 
+            n,
+            adj,
+            adj_list,
+            deg,
+            constructor
+        }
+    }
+
+    /**
+     * For when we have a partial adjacency matrix, but it is not yet symmetric.
+     * This constructs a symmetric version (adj | adj^T), and builds the graph from that.
+     */
+    pub fn of_matrix_to_be_symmetrised(assym: VertexVec<VertexVec<bool>>, constructor: Constructor) -> Graph {
+        let n = assym.len();
+        let mut adj = VertexVec::new(n, &VertexVec::new(n, &false));
+        let mut adj_list = VertexVec::new(n, &vec![]);
+        let mut deg = VertexVec::new(n, &Degree::ZERO);
+
+        for (x, y) in n.iter_pairs() {
+            if assym[x][y] || assym[y][x] {
+                adj[x][y] = true;
+                adj[y][x] = true;
+                adj_list[x].push(y);
+                adj_list[y].push(x);
+                deg[x].incr_inplace();
+                deg[y].incr_inplace();
             }
         }
 
@@ -227,6 +262,10 @@ impl Graph {
 
     pub fn iter_pairs(&self) -> impl Iterator<Item = (Vertex, Vertex)> {
         self.n.iter_pairs()
+    }
+
+    pub fn iter_edges(&self) -> EdgeIterator {
+        EdgeIterator::new(self)
     }
 
     pub fn is_isomorphic_to(&self, g: &Graph) -> bool {
@@ -589,15 +628,6 @@ impl Graph {
             self.delete_edge(max_edge);
         }
     }
-
-    pub fn remove_all_k_cycles(&mut self, k: usize) {    
-        cycles::remove_all_k_cycles(self, k)
-    }
-
-    pub fn is_filtered_acyclic(&self, filter: EdgeSet, indexer: &EdgeIndexer) -> bool {
-        cycles::is_filtered_acyclic(self, filter, indexer)
-    }
-
     pub fn open_nbhd(&self, v: Vertex) -> VertexSet {
         let mut nbhd = VertexSet::new(self.n);
         for u in self.adj_list[v].iter() {
@@ -646,8 +676,8 @@ impl Graph {
         VertexSubsetIterator::new(self.n)
     }
 
-    pub fn iter_edge_sets(&self) -> EdgeSetIterator {
-        EdgeSetIterator::new(&self.adj_list)
+    pub fn iter_edge_sets(&self) -> AllEdgeSetsIterator {
+        AllEdgeSetsIterator::new(&self.adj_list)
     }
 
     pub fn iter_verts_bfs(&self) -> BFSIterator<'_> {
@@ -743,5 +773,35 @@ impl Iterator for BFSIterator<'_> {
                 process_v(self, self.next_vert)
             }
         }
+    }
+}
+
+impl EdgeIterator<'_> {
+    fn new(g: &Graph) -> EdgeIterator<'_> {
+        EdgeIterator {
+            g,
+            sub_iter: VertexPairIterator::new(g.n),
+        }
+    }
+}
+
+impl Iterator for EdgeIterator<'_> {
+    type Item = Edge;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut pair = self.sub_iter.next();
+        let mut e = None;
+        loop {
+            if let Some((x, y)) = pair {
+                if self.g.adj[x][y] {
+                    e = Some(Edge::of_pair(x, y));
+                    break;
+                }
+            } else {
+                break;
+            }
+            pair = self.sub_iter.next();
+        }
+        e
     }
 }
