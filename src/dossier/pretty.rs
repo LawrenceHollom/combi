@@ -1,6 +1,6 @@
 use std::ops::{Add, Div, Sub};
 
-use image::{DynamicImage, ImageBuffer, ImageReader, Rgb};
+use image::{ImageBuffer, ImageReader, Rgba};
 use rand::{rngs::ThreadRng, thread_rng, Rng};
 
 use crate::entity::graph::*;
@@ -17,8 +17,8 @@ struct Embedding {
 }
 
 struct Printer {
-    node_bg: DynamicImage,
-    numbers: DynamicImage,
+    node_bg: ImageBuffer<Rgba<u8>, Vec<u8>>,
+    numbers: ImageBuffer<Rgba<u8>, Vec<u8>>,
     width: u32,
     height: u32,
 }
@@ -37,6 +37,11 @@ impl Point {
         let x = (width as f64) * (self.x + 0.1) / 1.2;
         let y = (height as f64) * (self.y + 0.1) / 1.2;
         Point { x, y }
+    }
+
+    pub fn to_int_coords(&self, width: u32, height: u32) -> (u32, u32) {
+        let px = self.to_pixel_coords(width, height);
+        (px.x.round() as u32, px.y.round() as u32)
     }
 
     pub fn length(&self) -> f64 {
@@ -64,8 +69,8 @@ impl Embedding {
 }
 
 impl Printer {
-    const WHITE: Rgb<u8> = Rgb([255, 255, 255]);
-    const BLACK: Rgb<u8> = Rgb([0, 0, 0]);
+    const WHITE: Rgba<u8> = Rgba([255, 255, 255, 255]);
+    const BLACK: Rgba<u8> = Rgba([0, 0, 0, 255]);
 
     pub fn new() -> Printer {
         Printer {
@@ -76,7 +81,7 @@ impl Printer {
         }
     }
 
-    fn draw_line(&self, imgbuf: &mut ImageBuffer<Rgb<u8>, Vec<u8>>, start_point: Point, end_point: Point) {
+    fn draw_line(&self, imgbuf: &mut ImageBuffer<Rgba<u8>, Vec<u8>>, start_point: Point, end_point: Point) {
         let start = start_point.to_pixel_coords(self.width, self.height);
         let end = end_point.to_pixel_coords(self.width, self.height);
         let length = (end - start).length();
@@ -91,12 +96,32 @@ impl Printer {
         }
     }
 
-    fn draw_node(&self, imgbuf: &mut ImageBuffer<Rgb<u8>, Vec<u8>>, name: String, start: Point) {
+    fn draw_img_at_point(&self, imgbuf: &mut ImageBuffer<Rgba<u8>, Vec<u8>>, img: &ImageBuffer<Rgba<u8>, Vec<u8>>, x: u32, y: u32, atlas_x: u32, atlas_size: u32) {
+        let sx = x - img.width() / (2 * atlas_size);
+        let sy = y - img.height() / 2;
+        let width = img.width();
+        let min_x = (width / atlas_size) * atlas_x;
+        let max_x = min_x + (width / atlas_size);
+        for (x, y, px) in img.enumerate_pixels() {
+            if x >= min_x && x < max_x && px.0[3] >= 1 {
+                imgbuf.put_pixel(sx + x - min_x, sy + y, *px);
+            }
+        }
+    }
 
+    fn draw_node(&self, imgbuf: &mut ImageBuffer<Rgba<u8>, Vec<u8>>, name: String, point: Point) {
+        let (x, y) = point.to_int_coords(self.width, self.height);
+        self.draw_img_at_point(imgbuf, &self.node_bg, x, y, 0, 1);
+        let name_len = name.len() as u32;
+        for (i, c) in name.chars().enumerate() {
+            let digit_x = x + (10 * i as u32) - ((name_len - 1) * 5);
+            let digit = (c as u8 - '0' as u8) as u32;
+            self.draw_img_at_point(imgbuf, &self.numbers, digit_x, y, digit, 10);
+        }
     }
 
     pub fn print_graph(&self, g: &Graph, embedding: &Embedding) {
-        let mut imgbuf: ImageBuffer<Rgb<u8>, Vec<u8>> = image::ImageBuffer::new(self.width, self.height);
+        let mut imgbuf: ImageBuffer<Rgba<u8>, Vec<u8>> = image::ImageBuffer::new(self.width, self.height);
 
         for px in imgbuf.pixels_mut() {
             *px = Self::WHITE;
@@ -128,13 +153,13 @@ pub fn print_graph(g: &Graph) {
     printer.print_graph(g, &embedding);
 }
 
-pub fn read_image(filename: &str) -> DynamicImage {
+pub fn read_image(filename: &str) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
     let filename = format!("images/{}.png", filename);
     let img = ImageReader::open(filename).unwrap().decode().unwrap();
-    img
+    img.as_rgba8().unwrap().clone()
 }
 
-pub fn save_buffer(imgbuf: &ImageBuffer<image::Rgb<u8>, Vec<u8>>, filename: &str) {
+pub fn save_buffer(imgbuf: &ImageBuffer<image::Rgba<u8>, Vec<u8>>, filename: &str) {
     let filename = format!("images/{}.png", filename);
     imgbuf.save(filename).unwrap()
 }
