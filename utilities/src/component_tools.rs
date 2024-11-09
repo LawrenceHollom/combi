@@ -87,6 +87,15 @@ impl <T: Debug + Clone> ComponentVec<T> {
         ComponentVec { vec: VertexVec::new(n, t) }
     }
 
+    pub fn new_sizes(components: &VertexVec<Component>) -> ComponentVec<usize> {
+        let n = components.len();
+        let mut out = ComponentVec::new(n, &0_usize);
+        for c in components.iter() {
+            out[*c] += 1;
+        }
+        out
+    }
+
     pub fn len(&self) -> Order {
         self.vec.len()
     }

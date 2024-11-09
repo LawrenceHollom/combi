@@ -213,6 +213,9 @@ impl Graph {
         Graph::of_adj_list(adj_list, Raw(Empty(n)))
     }
 
+    /**
+     * Returns a new graph containing only those vertices for which the filter is true.
+     */
     pub fn of_filtered(&self, filter: &VertexVec<bool>) -> Graph {
         let n = Order::of_usize(filter.iter().filter(|x| **x).count());
         let mut adj_list: VertexVec<Vec<Vertex>> = VertexVec::new(n, &vec![]);
@@ -283,6 +286,9 @@ impl Graph {
         self.filtered_components(None)
     }
     
+    /**
+     * Returns the size of the largest component
+     */
     pub fn largest_component(&self) -> u32 {
         let comps = self.components();
     

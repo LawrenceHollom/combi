@@ -252,8 +252,8 @@ impl Constructor {
                 let off_vert_degree = args.get(2).map_or(Degree::of_usize(3), |x| Degree::of_string(x));
                 Random(Spinal(Order::of_string(args[0]), spine_proportion, off_vert_degree))
             }
-            "giant" => Structural(GiantComponent, Box::new(Self::of_string(args[1]))),
-            "2core" | "core" | "two_core" => Structural(TwoCore, Box::new(Self::of_string(args[1]))),
+            "giant" => Structural(GiantComponent, Box::new(Self::of_string(args[0]))),
+            "2core" | "core" | "two_core" => Structural(TwoCore, Box::new(Self::of_string(args[0]))),
             "grid" => {
                 Raw(Grid(Order::of_string(args[0]), Order::of_string(args[1])))
             },
