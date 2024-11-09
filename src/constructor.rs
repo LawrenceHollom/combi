@@ -20,6 +20,7 @@ mod regular;
 mod semiregular;
 mod corona;
 mod random_bfs;
+mod strucutral;
 
 #[derive(Clone)]
 pub enum ProductConstructor {
@@ -77,7 +78,13 @@ pub enum RawConstructor {
 
 #[derive(Clone)]
 pub enum RecursiveConstructor {
-    CoronaProduct(Box<Constructor>, Box<Constructor>)
+    CoronaProduct(Box<Constructor>, Box<Constructor>),
+}
+
+#[derive(Clone)]
+pub enum StructuralConstructor {
+    GiantComponent,
+    TwoCore,
 }
 
 #[derive(Clone)]
@@ -98,6 +105,7 @@ pub enum Constructor {
     Random(RandomConstructor),
     Raw(RawConstructor),
     Recursive(RecursiveConstructor),
+    Structural(StructuralConstructor, Box<Constructor>),
     RootedTree(Vec<usize>),
     PosetConstr(PosetConstructor),
     DigraphConstr(DigraphConstructor),
@@ -115,6 +123,7 @@ impl Constructor {
         use RawConstructor::*;
         use RandomConstructor::*;
         use RecursiveConstructor::*;
+        use StructuralConstructor::*;
         use PosetConstructor::*;
         use DigraphConstructor::*;
         
@@ -239,6 +248,8 @@ impl Constructor {
                 let off_vert_degree = args.get(2).map_or(Degree::of_usize(3), |x| Degree::of_string(x));
                 Random(Spinal(Order::of_string(args[0]), spine_proportion, off_vert_degree))
             }
+            "giant" => Structural(GiantComponent, Box::new(Self::of_string(args[1]))),
+            "2core" | "core" | "two_core" => Structural(TwoCore, Box::new(Self::of_string(args[1]))),
             "grid" => {
                 Raw(Grid(Order::of_string(args[0]), Order::of_string(args[1])))
             },
@@ -293,6 +304,7 @@ impl Constructor {
         use RandomConstructor::*;
         use RawConstructor::*;
         use RecursiveConstructor::*;
+        use StructuralConstructor::*;
         use PosetConstructor::*;
         use DigraphConstructor::*;
 
@@ -358,6 +370,14 @@ impl Constructor {
                 let g2 = c2.new_entity().as_owned_graph();
                 g(corona::new_corona_product(self, &g1, &g2))
             }
+            Structural(GiantComponent, c) => {
+                let g1 = c.new_entity().as_owned_graph();
+                g(strucutral::giant_component(g1))
+            }
+            Structural(TwoCore, c) => {
+                let g1 = c.new_entity().as_owned_graph();
+                g(strucutral::two_core(g1))
+            }
             PosetConstr(Chain(order)) => p(Poset::new_chain(*order)),
             PosetConstr(Antichain(order)) => p(Poset::new_antichain(*order)),
             PosetConstr(ChainIntersection(order, k)) => p(Poset::new_random_intersection(*order, *k)),
@@ -380,6 +400,7 @@ impl Constructor {
             Recursive(RecursiveConstructor::CoronaProduct(c1, c2)) => {
                 c1.is_random() || c2.is_random()
             }
+            Structural(_, c) => c.is_random(),
             PosetConstr(poset_constr) => poset_constr.is_random(),
             DigraphConstr(digraph_constr) => digraph_constr.is_random(),
             RootedTree(_) | Raw(_) | File(_) | Serialised(_) | Special => false,
@@ -424,6 +445,7 @@ impl fmt::Display for Constructor {
             Random(constr) => write!(f, "Random({})", constr),
             Raw(constr) => write!(f, "{}", constr),
             Recursive(constr) => write!(f, "{}", constr),
+            Structural(constr, c1) => write!(f, "Structural({}, {})", constr, c1),
             RootedTree(parents) => {
                 write!(f, "Rooted tree with parent pattern {:?}", parents)
             },
@@ -571,6 +593,16 @@ impl fmt::Display for RecursiveConstructor {
             CoronaProduct(c1, c2) => {
                 write!(f, "Corona product of ({}) and ({})", c1, c2)
             }
+        }
+    }
+}
+
+impl fmt::Display for StructuralConstructor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use StructuralConstructor::*;
+        match self {
+            GiantComponent => write!(f, "Giant component"),
+            TwoCore => write!(f, "2-core"),
         }
     }
 }
