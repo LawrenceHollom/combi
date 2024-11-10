@@ -178,7 +178,7 @@ impl Printer {
         }
     }
 
-    fn draw_img_at_point(&self, imgbuf: &mut ImageBuffer<Rgba<u8>, Vec<u8>>, img: &ImageBuffer<Rgba<u8>, Vec<u8>>, x: u32, y: u32, atlas_x: u32, atlas_size: u32) {
+    fn draw_img_at_point(&self, imgbuf: &mut ImageBuffer<Rgba<u8>, Vec<u8>>, img: &ImageBuffer<Rgba<u8>, Vec<u8>>, x: u32, y: u32, atlas_x: u32, atlas_size: u32, colour: Option<&[u8; 4]>) {
         let sx = x - img.width() / (2 * atlas_size);
         let sy = y - img.height() / 2;
         let width = img.width();
@@ -186,23 +186,27 @@ impl Printer {
         let max_x = min_x + (width / atlas_size);
         for (x, y, px) in img.enumerate_pixels() {
             if x >= min_x && x < max_x && px.0[3] >= 1 {
-                imgbuf.put_pixel(sx + x - min_x, sy + y, *px);
+                if let Some(colour) = colour {
+                    imgbuf.put_pixel(sx + x - min_x, sy + y, Rgba(*colour));
+                } else {
+                    imgbuf.put_pixel(sx + x - min_x, sy + y, *px);
+                }
             }
         }
     }
 
-    fn draw_node(&self, imgbuf: &mut ImageBuffer<Rgba<u8>, Vec<u8>>, name: String, point: Point) {
+    fn draw_node(&self, imgbuf: &mut ImageBuffer<Rgba<u8>, Vec<u8>>, name: String, point: Point, colour: &[u8; 4]) {
         let (x, y) = point.to_int_coords(self.width, self.height);
-        self.draw_img_at_point(imgbuf, &self.node_bg, x, y, 0, 1);
+        self.draw_img_at_point(imgbuf, &self.node_bg, x, y, 0, 1, Some(colour));
         let name_len = name.len() as u32;
         for (i, c) in name.chars().enumerate() {
             let digit_x = x + (10 * i as u32) - ((name_len - 1) * 5);
             let digit = (c as u8 - '0' as u8) as u32;
-            self.draw_img_at_point(imgbuf, &self.numbers, digit_x, y, digit, 10);
+            self.draw_img_at_point(imgbuf, &self.numbers, digit_x, y, digit, 10, None);
         }
     }
 
-    pub fn print_graph(&self, g: &Graph, embedding: &Embedding, filename: &str) {
+    pub fn print_graph(&self, g: &Graph, embedding: &Embedding, colours: &VertexVec<[u8; 4]>, filename: &str) {
         let mut imgbuf: ImageBuffer<Rgba<u8>, Vec<u8>> = image::ImageBuffer::new(self.width, self.height);
 
         for px in imgbuf.pixels_mut() {
@@ -215,24 +219,21 @@ impl Printer {
         }
 
         // Draw all the node blobs and numbers
-        for v in g.iter_verts() {
-            self.draw_node(&mut imgbuf, v.to_string(), embedding.get(v))
+        for (v, colour) in colours.iter_enum() {
+            self.draw_node(&mut imgbuf, v.to_string(), embedding.get(v), colour)
         }
 
         save_buffer(&imgbuf, filename);
     }
 }
 
-pub fn print_graph(g: &Graph) {
-    let printer = Printer::new();
-    let mut rng = thread_rng();
-
-    let mut optimal_embedding = Embedding::new(g, &mut rng);
+fn get_optimal_embedding(g: &Graph, rng: &mut ThreadRng) -> Embedding {
+    let mut optimal_embedding = Embedding::new(g, rng);
     let mut min_energy = f64::MAX;
 
     // Attempt 100 embeddings, and pick the one with the lowest energy
     for _i in 0..100 {
-        let mut embedding = Embedding::new(g, &mut rng);
+        let mut embedding = Embedding::new(g, rng);
         embedding.optimise(g);
         let energy = embedding.get_energy(g);
         if energy < min_energy {
@@ -240,7 +241,56 @@ pub fn print_graph(g: &Graph) {
             optimal_embedding = embedding.to_owned();
         }
     }
-    printer.print_graph(g, &optimal_embedding, "output");
+    optimal_embedding
+}
+
+pub fn print_graph(g: &Graph) {
+    let printer = Printer::new();
+    let mut rng = thread_rng();
+    let embedding = get_optimal_embedding(g, &mut rng);
+    let colours = VertexVec::new(g.n, &[0, 0, 0, 255]);
+
+    printer.print_graph(g, &embedding, &colours, "output");
+}
+
+/**
+ * Produces an image of a graph with each vertex given a colour of the given hue, with
+ * modulus giving the modulus.
+ *     0.0            1.0              2.0            3.0             4.0              5.0
+ * (255, 0, 0) -> (255, 255, 0) -> (0, 255, 0) -> (0, 255, 255) -> (0, 0, 255) -> (255, 0, 255) -> ...
+ */
+pub fn print_graph_hued(g: &Graph, hues: &VertexVec<f64>, modulus: f64) { 
+    let printer = Printer::new();
+    let mut rng = thread_rng();
+    let embedding = get_optimal_embedding(g, &mut rng);
+
+    let mut colours = VertexVec::new(g.n, &[0, 0, 0, 255]);
+    for (v, hue) in hues.iter_enum() {
+        // Rescale hue to be between 0.0 and 6.0.
+        let hue = 6.0 * (((*hue % modulus) + *hue) % modulus) / modulus;
+        let x = (255.9 * (hue % 1.0)).floor() as u8;
+        if hue < 1.0 {
+            colours[v][0] = 255;
+            colours[v][1] = x;
+        } else if hue < 2.0 {
+            colours[v][0] = 255 - x;
+            colours[v][1] = 255;
+        } else if hue < 3.0 {
+            colours[v][1] = 255;
+            colours[v][2] = x;
+        } else if hue < 4.0 {
+            colours[v][1] = 255 - x;
+            colours[v][2] = 255;
+        } else if hue < 5.0 {
+            colours[v][2] = 255;
+            colours[v][0] = x;
+        } else {
+            colours[v][2] = 255 - x;
+            colours[v][0] = 255;
+        }
+    }
+
+    printer.print_graph(g, &embedding, &colours, "output");
 }
 
 pub fn read_image(filename: &str) -> ImageBuffer<Rgba<u8>, Vec<u8>> {

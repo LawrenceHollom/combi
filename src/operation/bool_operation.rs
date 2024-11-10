@@ -79,6 +79,7 @@ pub enum BoolOperation {
     HasSource,
     HasSink,
     HasKernelOfSizeAtMost(usize),
+    KuramotoStabilises(usize),
     Debug,
 }
 
@@ -215,6 +216,7 @@ impl BoolOperation {
                     "has_source" => Some(HasSource),
                     "has_sink" => Some(HasSink),
                     "has_kernel_at_most" => Some(HasKernelOfSizeAtMost(args[0].parse().unwrap())),
+                    "kuramoto_stabs" => Some(KuramotoStabilises(args[0].parse().unwrap())),
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -362,6 +364,7 @@ impl fmt::Display for BoolOperation {
             HasSource => "Has a source vertex".to_owned(),
             HasSink => "Has a sink vertex".to_owned(),
             HasKernelOfSizeAtMost(size) => format!("Has a 2-kernel of size at most {}", size),
+            KuramotoStabilises(k) => format!("Does Kuramoto stabilise under a random start ({} attempts)?", k),
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };
         write!(f, "{}", name)
