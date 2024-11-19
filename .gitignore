@@ -1,3 +1,4 @@
 /target
 utilities/target
 utilities/Cargo.lock
+images/output.png
