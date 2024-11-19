@@ -281,6 +281,13 @@ impl Graph {
     pub fn filtered_components(&self, filter: Option<&VertexVec<bool>>) -> VertexVec<Component> {
         flood_fill::filtered_components(self, filter)
     }
+
+    /**
+     * Only consider edges in the given edge set.
+     */
+    pub fn subset_components(&self, edges: EdgeSet, indexer: &EdgeIndexer) -> VertexVec<Component> {
+        flood_fill::subset_components(self, edges, indexer)
+    }
     
     pub fn components(&self) -> VertexVec<Component> {
         self.filtered_components(None)

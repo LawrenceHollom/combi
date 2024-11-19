@@ -1,4 +1,5 @@
 use crate::entity::graph::*;
+use edge_tools::EdgeIndexer;
 use rand::{Rng, thread_rng};
 
 use std::io::*;
@@ -135,4 +136,39 @@ pub fn print_polynomials(g: &Graph) {
             }
         }
     }
+}
+
+/**
+ * Counts how many configurations there are in which v connects to u.
+ */
+pub fn get_connection_counts(g: &Graph, v: Vertex) -> VertexVec<u64> {
+    let indexer = EdgeIndexer::new(&g.adj_list);
+    let mut out = VertexVec::new(g.n, &0);
+    for edges in g.iter_edge_sets() {
+        let components = g.subset_components(edges, &indexer);
+        for u in g.iter_verts() {
+            if components[u] == components[v] {
+                out[u] += 1;
+            }
+        }
+    }
+    out
+}
+
+/**
+ * Returns a vec x where x[k] is in how many ways v can connect to any
+ * of the first k things in the list of ordered vertices.
+ */
+pub fn get_initial_segment_connection_counts(g: &Graph, v: Vertex, sorted_vertices: &Vec<Vertex>) -> Vec<u64> {
+    let indexer = EdgeIndexer::new(&g.adj_list);
+    let mut out = vec![0; g.n.to_usize()];
+    for edges in g.iter_edge_sets() {
+        let components = g.subset_components(edges, &indexer);
+        for u in g.iter_verts() {
+            if components[u] == components[v] {
+                out[u] += 1;
+            }
+        }
+    }
+    out
 }

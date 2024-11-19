@@ -31,6 +31,35 @@ pub fn filtered_components(g: &Graph, filter: Option<&VertexVec<bool>>) -> Verte
     comp.iter().map(|x| Component::of_vertex(x.unwrap())).collect::<VertexVec<Component>>()
 }
 
+// Test components, but only considering edges in the EdgeSet.
+pub fn subset_components(g: &Graph, edges: EdgeSet, indexer: &EdgeIndexer) -> VertexVec<Component> {
+    let mut comp: VertexVec<Option<Vertex>> = VertexVec::new(g.n, &None);
+    let mut q: Queue<Vertex> = queue![];
+
+    for i in g.n.iter_verts() {
+        if comp[i].is_none() {
+            comp[i] = Some(i);
+            let _ = q.add(i);
+            'flood_fill: loop {
+                match q.remove() {
+                    Ok(node) => {
+                        for j in g.adj_list[node].iter() {
+                            let e = Edge::of_pair(i, *j);
+                            if comp[*j].is_none() && edges.has_edge(e, indexer) {
+                                comp[*j] = Some(i);
+                                let _ = q.add(*j);
+                            }
+                        }
+                    },
+                    Err(_err) => break 'flood_fill,
+                }
+            }
+        }
+    }
+
+    comp.iter().map(|x| Component::of_vertex(x.unwrap())).collect::<VertexVec<Component>>()
+}
+
 pub fn flood_fill(g: &Graph, start: Vertex, end: Option<Vertex>, filter: Option<&VertexVec<bool>>) -> VertexVec<Option<Vertex>> {
     let mut prev = VertexVec::new(g.n, &None);
     let mut q: Queue<Vertex> = queue![];
