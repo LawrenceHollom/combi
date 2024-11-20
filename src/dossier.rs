@@ -259,6 +259,7 @@ impl Dossier {
                     HasKernelOfSizeAtMost(size) => kernels::has_kernel_of_size_at_most(self.e.as_digraph(), *size),
                     KuramotoStabilises(k) => kuramoto::does_random_config_stabilise(self.e.as_graph(), *k),
                     IsKozmaNitzanFalse => kozma_nitzan::does_contradict_kozma_nitzan(self.e.as_graph()),
+                    IsSiteKozmaNitzanFalse => kozma_nitzan::does_contradict_site_kozma_nitzan(self.e.as_graph()),
                     Debug => debug::debug(self.e.as_graph()),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);
@@ -364,6 +365,7 @@ impl Dossier {
             SimulateKuramoto => kuramoto::simulate(self.e.as_graph()),
             PrettyPrint => pretty::print_graph(self.e.as_graph()),
             PrintKozmaNitzan => kozma_nitzan::print(self.e.as_graph()),
+            PrintSiteKozmaNitzan => kozma_nitzan::print_site(self.e.as_graph()),
             Unit => (),
         }
     }

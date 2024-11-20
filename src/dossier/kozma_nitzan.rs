@@ -14,18 +14,35 @@ struct PercolatedData {
     sorted_vertices: Vec<Vertex>,
     set_counts: Vec<u64>,
     denom: u64,
+    b: Vertex,
 }
 
 impl PercolatedData {
+    fn get_sorted_vertices(counts: &VertexVec<u64>) -> Vec<Vertex> {
+        let mut for_ordering = counts.iter_enum().collect::<Vec<(Vertex, &u64)>>();
+        for_ordering.sort_by(|(_, c1), (_, c2)| c1.cmp(c2).reverse() );
+        for_ordering.iter().map(|(v, _)| *v).collect::<Vec<Vertex>>()
+    }
+
+    fn get_b(g: &Graph) -> Vertex {
+        let mut out = None;
+        let mut min_dist = 3;
+        while out.is_none() {
+            out = g.get_vertex_far_from(Vertex::ZERO, min_dist);
+            min_dist -= 1;
+        }
+        out.unwrap()
+    }
+
+
     pub fn new(g: &Graph) -> PercolatedData {
-        let b = Vertex::of_usize(1);
+        let b = Self::get_b(g);
         let counts = percolate::get_connection_counts(g, b);
         let denom = counts[b];
 
         // Order the vertices by how easily they connect to b.
-        let mut for_ordering = counts.iter_enum().collect::<Vec<(Vertex, &u64)>>();
-        for_ordering.sort_by(|(_, c1), (_, c2)| c1.cmp(c2).reverse() );
-        let sorted_vertices = for_ordering.iter().map(|(v, _)| *v).collect::<Vec<Vertex>>();
+        let sorted_vertices = Self::get_sorted_vertices(&counts);
+
         let set_counts = percolate::get_initial_segment_connection_counts(g, Vertex::ZERO, &sorted_vertices);
 
         PercolatedData {
@@ -33,17 +50,18 @@ impl PercolatedData {
             sorted_vertices,
             set_counts,
             denom,
+            b,
         }
     }
+
     pub fn new_site(g: &Graph) -> PercolatedData {
-        let b = Vertex::of_usize(1);
+        let b = Self::get_b(g);
         let counts = percolate::get_site_connection_counts(g, b);
         let denom = counts[b];
 
         // Order the vertices by how easily they connect to b.
-        let mut for_ordering = counts.iter_enum().collect::<Vec<(Vertex, &u64)>>();
-        for_ordering.sort_by(|(_, c1), (_, c2)| c1.cmp(c2).reverse() );
-        let sorted_vertices = for_ordering.iter().map(|(v, _)| *v).collect::<Vec<Vertex>>();
+        let sorted_vertices = Self::get_sorted_vertices(&counts);
+
         let set_counts = percolate::get_initial_segment_site_connection_counts(g, Vertex::ZERO, &sorted_vertices);
 
         PercolatedData {
@@ -51,11 +69,13 @@ impl PercolatedData {
             sorted_vertices,
             set_counts,
             denom,
+            b,
         }
     }
 
     pub fn print(&self) {
         println!("Sorted vertices: {:?}", self.sorted_vertices);
+        println!("b = {}", self.b);
         let fdenom = self.denom as f64;
 
         let zero_to_b_count = self.counts[Vertex::ZERO];
@@ -103,7 +123,17 @@ pub fn print(g: &Graph) {
     percolated_data.print();
 }
 
+pub fn print_site(g: &Graph) {
+    let percolated_data = PercolatedData::new_site(g);
+    percolated_data.print();
+}
+
 pub fn does_contradict_kozma_nitzan(g: &Graph) -> bool {
     let percolated_data = PercolatedData::new(g);
+    percolated_data.has_contradictory_count()
+}
+
+pub fn does_contradict_site_kozma_nitzan(g: &Graph) -> bool {
+    let percolated_data = PercolatedData::new_site(g);
     percolated_data.has_contradictory_count()
 }

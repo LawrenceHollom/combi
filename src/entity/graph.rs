@@ -375,6 +375,20 @@ impl Graph {
         sizes
     }
 
+    /**
+     * Returns an arbitrary vertex at least min_dist away from start, or None if no such
+     * vertex exists.
+     */
+    pub fn get_vertex_far_from(&self, start: Vertex, min_dist: u32) -> Option<Vertex> {
+        let dists = self.flood_fill_dist(start);
+        for (v, dist) in dists.iter_enum() {
+            if dist.map_or(false, |x| x >= min_dist) {
+                return Some(v)
+            }
+        }
+        None
+    }
+
     fn permute_vertices(&self, ordering: &VertexVec<Vertex>) -> (Graph, VertexVec<Vertex>) {
         let mut ordering_inv: VertexVec<Vertex> = VertexVec::new(self.n, &Vertex::ZERO);
 

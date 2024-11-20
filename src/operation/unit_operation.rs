@@ -39,6 +39,7 @@ pub enum UnitOperation {
     PrintMinKernel,
     SimulateKuramoto,
     PrintKozmaNitzan,
+    PrintSiteKozmaNitzan,
     PrettyPrint,
     Signature,
     Unit,
@@ -98,6 +99,7 @@ impl UnitOperation {
             "print_min_kernel" => Some(PrintMinKernel),
             "kuramoto" => Some(SimulateKuramoto),
             "print_kozma_nitzan" | "pkn" => Some(PrintKozmaNitzan),
+            "pskn" => Some(PrintSiteKozmaNitzan),
             "pretty" => Some(PrettyPrint),
             "()" | "(" => Some(Unit),
             &_ => None,
@@ -164,6 +166,7 @@ impl fmt::Display for UnitOperation {
             SimulateKuramoto => "Simulate Kuramoto model with random seeds",
             PrettyPrint => "Produce image of the graph",
             PrintKozmaNitzan => "Print the Kozma-Nitzan probabilities",
+            PrintSiteKozmaNitzan => "Print the site Kozma-Nitzan probabilities",
             Unit => "Do nothing",
         };
         write!(f, "{}", name)
