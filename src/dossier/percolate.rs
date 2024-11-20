@@ -164,11 +164,20 @@ pub fn get_initial_segment_connection_counts(g: &Graph, v: Vertex, sorted_vertic
     let mut out = vec![0; g.n.to_usize()];
     for edges in g.iter_edge_sets() {
         let components = g.subset_components(edges, &indexer);
-        for u in g.iter_verts() {
-            if components[u] == components[v] {
-                out[u] += 1;
+        'find_first_connected: for (i, u) in sorted_vertices.iter().enumerate() {
+            if components[*u] == components[v] {
+                out[i] += 1;
+                break 'find_first_connected;
             }
         }
     }
+
+    // Now take a rolling sum of out to get the actual counts.
+    let mut rolling_sum = 0;
+    for val in out.iter_mut() {
+        rolling_sum += *val;
+        *val = rolling_sum;
+    }
+    
     out
 }

@@ -44,7 +44,7 @@ pub fn subset_components(g: &Graph, edges: EdgeSet, indexer: &EdgeIndexer) -> Ve
                 match q.remove() {
                     Ok(node) => {
                         for j in g.adj_list[node].iter() {
-                            let e = Edge::of_pair(i, *j);
+                            let e = Edge::of_pair(node, *j);
                             if comp[*j].is_none() && edges.has_edge(e, indexer) {
                                 comp[*j] = Some(i);
                                 let _ = q.add(*j);
