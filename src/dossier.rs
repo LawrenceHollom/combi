@@ -32,6 +32,7 @@ mod norine;
 mod kernels;
 mod kuramoto;
 mod pretty;
+mod kozma_nitzan;
 
 use std::collections::HashMap;
 
@@ -361,6 +362,7 @@ impl Dossier {
             }
             SimulateKuramoto => kuramoto::simulate(self.e.as_graph()),
             PrettyPrint => pretty::print_graph(self.e.as_graph()),
+            PrintKozmaNitzan => kozma_nitzan::print(self.e.as_graph()),
             Unit => (),
         }
     }
