@@ -1,3 +1,4 @@
+use core::fmt;
 use std::ops::{Add, AddAssign, Div, Mul, Sub, SubAssign};
 
 use image::{ImageBuffer, ImageReader, Rgba};
@@ -5,8 +6,9 @@ use rand::{rngs::ThreadRng, thread_rng, Rng};
 
 use crate::entity::graph::*;
 use utilities::vertex_tools::*;
+use utilities::edge_tools::*;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 struct Point {
     x: f64,
     y: f64,
@@ -17,6 +19,7 @@ struct Embedding {
     positions: VertexVec<Point>,
     delta: f64,
     repulsion_scale: f64,
+    edge_repulsion: f64,
 }
 
 struct Printer {
@@ -63,6 +66,8 @@ impl Point {
 }
 
 impl Embedding {
+    const EDGE_N_CUTOFF: usize = 40;
+
     pub fn new(g: &Graph, rng: &mut ThreadRng) -> Embedding {
         let mut positions = VertexVec::new(g.n, &Point::ZERO);
         for pos in positions.iter_mut() {
@@ -72,6 +77,7 @@ impl Embedding {
             positions,
             delta: 0.05,
             repulsion_scale: 0.5 / (g.n.to_usize() as f64),
+            edge_repulsion: 0.002 / (g.size() as f64),
         }
     }
 
@@ -82,11 +88,91 @@ impl Embedding {
         attraction - repulsion
     }
 
+    /**
+     * Returns the projection of v onto the line defined by e.
+     */
+    fn project_onto_edge(&self, v: Vertex, e: Edge) -> Point {
+        let p0 = self.get(v);
+        let p1 = self.get(e.fst());
+        let p2 = self.get(e.snd());
+        let dx = p1.x - p2.x;
+        let dy = p1.y - p2.y;
+        let t = (p0.x * dx + p0.y * dy - (p2.x * dx + p2.y * dy)) / (dx * dx + dy * dy);
+        (p1 * t) + (p2 * (1.0 - t))
+    }
+
     fn get_energy_of_pair(&self, u: Vertex, v: Vertex, is_edge: bool) -> f64 {
         let dist = (self.get(u) - self.get(v)).length();
         let repulsion_e = self.repulsion_scale / dist;
         let attraction_e = if is_edge { dist * dist } else { 0.0 };
         attraction_e + repulsion_e
+    }
+
+    fn get_energy_of_edge_and_vertex(&self, v: Vertex, e: Edge) -> f64 {
+        let projection = self.project_onto_edge(v, e);
+        let dist = (self.get(v) - projection).length();
+        self.edge_repulsion / (dist * dist)
+    }
+
+    fn edge_repulsion(&self, dist: f64) -> f64 {
+        self.edge_repulsion / (dist * dist * dist)
+    }
+
+    fn optimise_step(&mut self, g: &Graph, repel_edges: bool) {
+        // Edges attract, nodes repel.
+        let mut new_positions = VertexVec::new(g.n, &Point::ZERO);
+        for (v, pos) in self.positions.iter_enum() {
+            new_positions[v] = *pos;
+        }
+
+        for (u, v) in g.iter_pairs() {
+            // positive force => move points together.
+            let force = self.get_attraction(u, v, g.adj[u][v]);
+            let offset = self.get(u) - self.get(v);
+            new_positions[u] -= offset * (force * self.delta);
+            new_positions[v] += offset * (force * self.delta);
+
+            if repel_edges && g.n.at_most(Self::EDGE_N_CUTOFF) && g.adj[u][v] {
+                // Also move points away from lines.
+                let e = Edge::of_pair(u, v);
+                for w in g.iter_verts() {
+                    if w != u && w != v {
+                        let projection = self.project_onto_edge(w, e);
+                        let offset = self.get(w) - projection;
+                        let dist = offset.length();
+                        if dist <= 0.05 {
+                            let force = self.edge_repulsion(dist) - self.edge_repulsion(0.05);
+                            new_positions[w] += offset * (force * self.delta)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Scale to the full size.
+        let mut min_x = 1.0;
+        let mut max_x = 0.0;
+        let mut min_y = 1.0;
+        let mut max_y = 0.0;
+
+        for pos in new_positions.iter() {
+            if pos.x < min_x {
+                min_x = pos.x;
+            }
+            if pos.x > max_x {
+                max_x = pos.x;
+            }
+            if pos.y < min_y {
+                min_y = pos.y;
+            }
+            if pos.y > max_y {
+                max_y = pos.y;
+            }
+        }
+
+        for (v, pos) in new_positions.iter_enum() {
+            self.positions[v] = pos.scale_to(min_x, max_x, min_y, max_y);
+        }
     }
 
     /** 
@@ -96,51 +182,26 @@ impl Embedding {
      **/
     pub fn optimise(&mut self, g: &Graph) {
         for _rep in 0..200 {
-            // Edges attract, nodes repel.
-            let mut new_positions = VertexVec::new(g.n, &Point::ZERO);
-            for (v, pos) in self.positions.iter_enum() {
-                new_positions[v] = *pos;
-            }
-
-            for (u, v) in g.iter_pairs() {
-                // positive force => move points together.
-                let force = self.get_attraction(u, v, g.adj[u][v]);
-                let offset = self.get(u) - self.get(v);
-                new_positions[u] -= offset * (force * self.delta);
-                new_positions[v] += offset * (force * self.delta);
-            }
-
-            // Scale to the full size.
-            let mut min_x = 1.0;
-            let mut max_x = 0.0;
-            let mut min_y = 1.0;
-            let mut max_y = 0.0;
-
-            for pos in new_positions.iter() {
-                if pos.x < min_x {
-                    min_x = pos.x;
-                }
-                if pos.x > max_x {
-                    max_x = pos.x;
-                }
-                if pos.y < min_y {
-                    min_y = pos.y;
-                }
-                if pos.y > max_y {
-                    max_y = pos.y;
-                }
-            }
-
-            for (v, pos) in new_positions.iter_enum() {
-                self.positions[v] = pos.scale_to(min_x, max_x, min_y, max_y);
-            }
+            self.optimise_step(g, false);
+        }
+        for _rep in 0..50 {
+            self.optimise_step(g, true);
         }
     }
 
     pub fn get_energy(&self, g: &Graph) -> f64 {
         let mut energy = 0.0;
         for (u, v) in g.iter_pairs() {
-            energy += self.get_energy_of_pair(u, v, g.adj[u][v])
+            energy += self.get_energy_of_pair(u, v, g.adj[u][v]);
+
+            if g.n.at_most(Self::EDGE_N_CUTOFF) && g.adj[u][v] {
+                let e = Edge::of_pair(u, v);
+                for w in g.iter_verts() {
+                    if w != u && w != v {
+                        energy += self.get_energy_of_edge_and_vertex(w, e);        
+                    }
+                }
+            }
         }
         energy
     }
@@ -359,5 +420,11 @@ impl Mul<f64> for Point {
             x: self.x * rhs,
             y: self.y * rhs,
         }
+    }
+}
+
+impl fmt::Debug for Point {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({:.5}, {:.5})", self.x, self.y)
     }
 }
