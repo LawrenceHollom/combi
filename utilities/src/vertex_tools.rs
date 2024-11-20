@@ -669,6 +669,23 @@ impl BigVertexSet {
         set
     }
 
+    pub fn of_filter(filter: &VertexVec<bool>) -> BigVertexSet { 
+        let mut set = BigVertexSet::new(filter.len());
+        for (v, is_in_set) in filter.iter_enum() {
+            if *is_in_set {
+                set.add_vert(v);
+            }
+        }
+        set
+    }
+
+    pub fn of_vertex_set(vs: VertexSet) -> BigVertexSet {
+        BigVertexSet { 
+            verts: vec![vs.verts], 
+            n: vs.n 
+        }
+    }
+
     pub fn to_vec(&self) -> VertexVec<bool> {
         let mut out = VertexVec::new(self.n, &false);
         for v in self.n.iter_verts() {

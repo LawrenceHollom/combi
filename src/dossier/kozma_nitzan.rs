@@ -35,6 +35,24 @@ impl PercolatedData {
             denom,
         }
     }
+    pub fn new_site(g: &Graph) -> PercolatedData {
+        let b = Vertex::of_usize(1);
+        let counts = percolate::get_site_connection_counts(g, b);
+        let denom = counts[b];
+
+        // Order the vertices by how easily they connect to b.
+        let mut for_ordering = counts.iter_enum().collect::<Vec<(Vertex, &u64)>>();
+        for_ordering.sort_by(|(_, c1), (_, c2)| c1.cmp(c2).reverse() );
+        let sorted_vertices = for_ordering.iter().map(|(v, _)| *v).collect::<Vec<Vertex>>();
+        let set_counts = percolate::get_initial_segment_site_connection_counts(g, Vertex::ZERO, &sorted_vertices);
+
+        PercolatedData {
+            counts,
+            sorted_vertices,
+            set_counts,
+            denom,
+        }
+    }
 
     pub fn print(&self) {
         println!("Sorted vertices: {:?}", self.sorted_vertices);

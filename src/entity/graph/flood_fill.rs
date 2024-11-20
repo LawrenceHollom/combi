@@ -2,20 +2,20 @@ use utilities::vertex_tools::*;
 use crate::entity::graph::*;
 
 // Test components, but only considering vertices in the filter.
-pub fn filtered_components(g: &Graph, filter: Option<&VertexVec<bool>>) -> VertexVec<Component> {
+pub fn filtered_components(g: &Graph, filter: Option<BigVertexSet>) -> VertexVec<Component> {
     let mut comp: VertexVec<Option<Vertex>> = VertexVec::new(g.n, &None);
     let mut q: Queue<Vertex> = queue![];
 
     for i in g.n.iter_verts() {
         if comp[i].is_none() {
             comp[i] = Some(i);
-            if filter.map_or(true, |f| f[i]) {
+            if filter.as_ref().map_or(true, |f| f.has_vert(i)) {
                 let _ = q.add(i);
                 'flood_fill: loop {
                     match q.remove() {
                         Ok(node) => {
                             for j in g.adj_list[node].iter() {
-                                if comp[*j].is_none() && filter.map_or(true, |f| f[*j]) {
+                                if comp[*j].is_none() && filter.as_ref().map_or(true, |f| f.has_vert(*j)) {
                                     comp[*j] = Some(i);
                                     let _ = q.add(*j);
                                 }
@@ -32,7 +32,7 @@ pub fn filtered_components(g: &Graph, filter: Option<&VertexVec<bool>>) -> Verte
 }
 
 // Test components, but only considering edges in the EdgeSet.
-pub fn subset_components(g: &Graph, edges: EdgeSet, indexer: &EdgeIndexer) -> VertexVec<Component> {
+pub fn edge_subset_components(g: &Graph, edges: EdgeSet, indexer: &EdgeIndexer) -> VertexVec<Component> {
     let mut comp: VertexVec<Option<Vertex>> = VertexVec::new(g.n, &None);
     let mut q: Queue<Vertex> = queue![];
 

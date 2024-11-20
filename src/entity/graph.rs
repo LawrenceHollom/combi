@@ -279,14 +279,22 @@ impl Graph {
      * Only consider vertices for which filter[v] == true
      */
     pub fn filtered_components(&self, filter: Option<&VertexVec<bool>>) -> VertexVec<Component> {
+        let filter = filter.map(BigVertexSet::of_filter);
         flood_fill::filtered_components(self, filter)
     }
 
     /**
      * Only consider edges in the given edge set.
      */
-    pub fn subset_components(&self, edges: EdgeSet, indexer: &EdgeIndexer) -> VertexVec<Component> {
-        flood_fill::subset_components(self, edges, indexer)
+    pub fn edge_subset_components(&self, edges: EdgeSet, indexer: &EdgeIndexer) -> VertexVec<Component> {
+        flood_fill::edge_subset_components(self, edges, indexer)
+    }
+
+    /**
+     * Only consider vertices in the given vertex set.
+     */
+    pub fn vertex_subset_components(&self, vs: BigVertexSet) -> VertexVec<Component> {
+        flood_fill::filtered_components(self, Some(vs))
     }
     
     pub fn components(&self) -> VertexVec<Component> {

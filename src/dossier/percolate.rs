@@ -145,7 +145,24 @@ pub fn get_connection_counts(g: &Graph, v: Vertex) -> VertexVec<u64> {
     let indexer = EdgeIndexer::new(&g.adj_list);
     let mut out = VertexVec::new(g.n, &0);
     for edges in g.iter_edge_sets() {
-        let components = g.subset_components(edges, &indexer);
+        let components = g.edge_subset_components(edges, &indexer);
+        for u in g.iter_verts() {
+            if components[u] == components[v] {
+                out[u] += 1;
+            }
+        }
+    }
+    out
+}
+
+/**
+ * Counts how many configurations there are in which v connects to u under site percolation.
+ */
+pub fn get_site_connection_counts(g: &Graph, v: Vertex) -> VertexVec<u64> {
+    let mut out = VertexVec::new(g.n, &0);
+    for vs in g.iter_vertex_subsets() {
+        let big_vs = BigVertexSet::of_vertex_set(vs);
+        let components = g.vertex_subset_components(big_vs);
         for u in g.iter_verts() {
             if components[u] == components[v] {
                 out[u] += 1;
@@ -163,7 +180,7 @@ pub fn get_initial_segment_connection_counts(g: &Graph, v: Vertex, sorted_vertic
     let indexer = EdgeIndexer::new(&g.adj_list);
     let mut out = vec![0; g.n.to_usize()];
     for edges in g.iter_edge_sets() {
-        let components = g.subset_components(edges, &indexer);
+        let components = g.edge_subset_components(edges, &indexer);
         'find_first_connected: for (i, u) in sorted_vertices.iter().enumerate() {
             if components[*u] == components[v] {
                 out[i] += 1;
@@ -178,6 +195,32 @@ pub fn get_initial_segment_connection_counts(g: &Graph, v: Vertex, sorted_vertic
         rolling_sum += *val;
         *val = rolling_sum;
     }
-    
+
+    out
+}
+
+/**
+ * Returns a vec x where x[k] is in how many ways v can connect to any
+ * of the first k things in the list of ordered vertices under site percolation.
+ */
+pub fn get_initial_segment_site_connection_counts(g: &Graph, v: Vertex, sorted_vertices: &Vec<Vertex>) -> Vec<u64> {
+    let mut out = vec![0; g.n.to_usize()];
+    for vs in g.iter_vertex_subsets() {
+        let components = g.vertex_subset_components(BigVertexSet::of_vertex_set(vs));
+        'find_first_connected: for (i, u) in sorted_vertices.iter().enumerate() {
+            if components[*u] == components[v] {
+                out[i] += 1;
+                break 'find_first_connected;
+            }
+        }
+    }
+
+    // Now take a rolling sum of out to get the actual counts.
+    let mut rolling_sum = 0;
+    for val in out.iter_mut() {
+        rolling_sum += *val;
+        *val = rolling_sum;
+    }
+
     out
 }
