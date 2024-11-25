@@ -1,5 +1,5 @@
 use crate::entity::graph::*;
-use utilities::vertex_tools::*;
+use utilities::{component_tools::Component, vertex_tools::*};
 
 use super::percolate;
 
@@ -24,9 +24,9 @@ impl PercolatedData {
         for_ordering.iter().map(|(v, _)| *v).collect::<Vec<Vertex>>()
     }
 
-    fn get_b(g: &Graph) -> Vertex {
+    fn get_far(g: &Graph, start_dist: u32) -> Vertex {
         let mut out = None;
-        let mut min_dist = 3;
+        let mut min_dist = start_dist;
         while out.is_none() {
             out = g.get_vertex_far_from(Vertex::ZERO, min_dist);
             min_dist -= 1;
@@ -36,14 +36,23 @@ impl PercolatedData {
 
 
     pub fn new(g: &Graph) -> PercolatedData {
-        let b = Self::get_b(g);
-        let counts = percolate::get_connection_counts(g, b);
+        let b = Self::get_far(g, 3);
+
+        let unreachable = Self::get_far(g, 2);
+        // True = should count, so we test if 0 and unreachable are in different components.
+        fn generic_filter(components: &VertexVec<Component>, unreachable: Vertex) -> bool {
+            components[Vertex::ZERO] != components[unreachable]
+        }
+
+        let counts = percolate::get_connection_counts(g, b, 
+            Some(&|components| generic_filter(components, unreachable)));
         let denom = counts[b];
 
         // Order the vertices by how easily they connect to b.
         let sorted_vertices = Self::get_sorted_vertices(&counts);
 
-        let set_counts = percolate::get_initial_segment_connection_counts(g, Vertex::ZERO, &sorted_vertices);
+        let set_counts = percolate::get_initial_segment_connection_counts(g, Vertex::ZERO, &sorted_vertices, 
+            Some(&|components| generic_filter(components, unreachable)));
 
         PercolatedData {
             counts,
@@ -55,7 +64,7 @@ impl PercolatedData {
     }
 
     pub fn new_site(g: &Graph) -> PercolatedData {
-        let b = Self::get_b(g);
+        let b = Self::get_far(g, 3);
         let counts = percolate::get_site_connection_counts(g, b);
         let denom = counts[b];
 

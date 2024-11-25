@@ -1,5 +1,4 @@
 use crate::entity::graph::*;
-use edge_tools::EdgeIndexer;
 use rand::{Rng, thread_rng};
 
 use std::io::*;
@@ -7,6 +6,8 @@ use std::io::*;
 use utilities::*;
 use utilities::polynomial::*;
 use utilities::vertex_tools::*;
+use utilities::edge_tools::*;
+use utilities::component_tools::*;
 
 pub struct Percolator {
     probs: Vec<Polynomial>,
@@ -140,12 +141,16 @@ pub fn print_polynomials(g: &Graph) {
 
 /**
  * Counts how many configurations there are in which v connects to u.
+ * The filter is a test for whether an EdgeSet should count or not (true = counted)
  */
-pub fn get_connection_counts(g: &Graph, v: Vertex) -> VertexVec<u64> {
+pub fn get_connection_counts(g: &Graph, v: Vertex, filter: Option<&dyn Fn(&VertexVec<Component>) -> bool>) -> VertexVec<u64> {
     let indexer = EdgeIndexer::new(&g.adj_list);
     let mut out = VertexVec::new(g.n, &0);
-    for edges in g.iter_edge_sets() {
+    'iter_edge_sets: for edges in g.iter_edge_sets() {
         let components = g.edge_subset_components(edges, &indexer);
+        if filter.map_or(false, |f| f(&components)) {
+            continue 'iter_edge_sets
+        }
         for u in g.iter_verts() {
             if components[u] == components[v] {
                 out[u] += 1;
@@ -175,12 +180,16 @@ pub fn get_site_connection_counts(g: &Graph, v: Vertex) -> VertexVec<u64> {
 /**
  * Returns a vec x where x[k] is in how many ways v can connect to any
  * of the first k things in the list of ordered vertices.
+ * The filter is a test for whether an EdgeSet should count or not (true = counted)
  */
-pub fn get_initial_segment_connection_counts(g: &Graph, v: Vertex, sorted_vertices: &Vec<Vertex>) -> Vec<u64> {
+pub fn get_initial_segment_connection_counts(g: &Graph, v: Vertex, sorted_vertices: &Vec<Vertex>, filter: Option<&dyn Fn(&VertexVec<Component>) -> bool>) -> Vec<u64> {
     let indexer = EdgeIndexer::new(&g.adj_list);
     let mut out = vec![0; g.n.to_usize()];
-    for edges in g.iter_edge_sets() {
+    'iter_edge_sets: for edges in g.iter_edge_sets() {
         let components = g.edge_subset_components(edges, &indexer);
+        if filter.map_or(false, |f| f(&components)) {
+            continue 'iter_edge_sets
+        }
         'find_first_connected: for (i, u) in sorted_vertices.iter().enumerate() {
             if components[*u] == components[v] {
                 out[i] += 1;

@@ -293,7 +293,7 @@ impl fmt::Display for BoolOperation {
             HasRegularLosslessEdgeDominator => {
                 "Has regular lossless edge-dominating set".to_owned()
             }
-            IsKConnected(k) => format!("Is {}-connectd", *k),
+            IsKConnected(k) => format!("Is {}-connected", *k),
             IsTriangleFree => "Is triangle free".to_owned(),
             CanBeEdgePartitionedIntoLinearForestAndMatching => {
                 "Can G be edge-partitioned into a linear forest and a matching".to_owned()
