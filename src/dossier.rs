@@ -33,6 +33,7 @@ mod kernels;
 mod kuramoto;
 mod pretty;
 mod kozma_nitzan;
+mod flow;
 
 use std::collections::HashMap;
 
@@ -256,6 +257,7 @@ impl Dossier {
                     IsForest => self.e.as_graph().is_forest(),
                     HasSource => self.e.as_digraph().has_source(),
                     HasSink => self.e.as_digraph().has_sink(),
+                    HasBasin => flow::has_global_basin(self.e.as_digraph()),
                     HasKernelOfSizeAtMost(size) => kernels::has_kernel_of_size_at_most(self.e.as_digraph(), *size),
                     KuramotoStabilises(k) => kuramoto::does_random_config_stabilise(self.e.as_graph(), *k),
                     IsKozmaNitzanFalse => kozma_nitzan::does_contradict_kozma_nitzan(self.e.as_graph()),
