@@ -366,7 +366,7 @@ impl Dossier {
                 let _ = kernels::min_kernel_size(self.e.as_digraph(), true);
             }
             SimulateKuramoto => kuramoto::simulate(self.e.as_graph()),
-            PrettyPrint => pretty::print_graph(self.e.as_graph()),
+            PrettyPrint => pretty::print_entity(&self.e),
             PrintKozmaNitzan => kozma_nitzan::print(self.e.as_graph()),
             PrintSiteKozmaNitzan => kozma_nitzan::print_site(self.e.as_graph()),
             Unit => (),

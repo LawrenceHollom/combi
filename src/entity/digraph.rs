@@ -63,6 +63,10 @@ impl Digraph {
         Digraph { n, adj, out_adj_list, in_adj_list, out_deg, in_deg, parameters }
     }
 
+    pub fn undirect(&self) -> Graph {
+        Graph::of_matrix_to_be_symmetrised(&self.adj, crate::constructor::Constructor::Special)
+    }
+
     pub fn reverse_edge(&mut self, e: Edge) {
         let (x, y) = if self.adj[e.fst()][e.snd()] {
                 (e.fst(), e.snd())

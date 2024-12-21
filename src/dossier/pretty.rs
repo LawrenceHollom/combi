@@ -4,7 +4,9 @@ use std::ops::{Add, AddAssign, Div, Mul, Sub, SubAssign};
 use image::{ImageBuffer, ImageReader, Rgba};
 use rand::{rngs::ThreadRng, thread_rng, Rng};
 
+use crate::entity::*;
 use crate::entity::graph::*;
+use crate::entity::digraph::*;
 use utilities::vertex_tools::*;
 use utilities::edge_tools::*;
 
@@ -61,6 +63,13 @@ impl Point {
         Point {
             x: (self.x - min_x) / (max_x - min_x),
             y: (self.y - min_y) / (max_y - min_y),
+        }
+    }
+
+    pub fn rotate90(&self) -> Point {
+        Point {
+            x: -self.y,
+            y: self.x,
         }
     }
 }
@@ -224,6 +233,12 @@ impl Printer {
         }
     }
 
+    fn set_point_black(&self, pos: Point, imgbuf: &mut ImageBuffer<image::Rgba<u8>, Vec<u8>>) {
+        let x = pos.x.round() as u32;
+        let y = pos.y.round() as u32;
+        *imgbuf.get_pixel_mut(x, y) = Self::BLACK;
+    }
+
     fn draw_line(&self, imgbuf: &mut ImageBuffer<Rgba<u8>, Vec<u8>>, start_point: Point, end_point: Point) {
         let start = start_point.to_pixel_coords(self.width, self.height);
         let end = end_point.to_pixel_coords(self.width, self.height);
@@ -233,9 +248,34 @@ impl Printer {
         let mut pos = start;
         for _i in 0..num_steps {
             pos = pos + step;
-            let x = pos.x.round() as u32;
-            let y = pos.y.round() as u32;
-            *imgbuf.get_pixel_mut(x, y) = Self::BLACK;
+            self.set_point_black(pos, imgbuf);
+        }
+    }
+
+    fn draw_arrow(&self, imgbuf: &mut ImageBuffer<Rgba<u8>, Vec<u8>>, start_point: Point, end_point: Point) {
+        let start = start_point.to_pixel_coords(self.width, self.height);
+        let end = end_point.to_pixel_coords(self.width, self.height);
+        let length = (end - start).length();
+        let step = (end - start) / (length * 5.0);
+        let sidestep = step.rotate90();
+        let num_steps = (length * 5.0) as usize;
+        let head_pos = (num_steps * 4) / 5;
+        let head_length = 100;
+        let head_ratio = 2;
+        let mut pos = start;
+        for i in 0..num_steps {
+            pos = pos + step;
+            self.set_point_black(pos, imgbuf);
+            if i >= head_pos && i <= head_pos + head_length {
+                // Draw the arrowhead
+                let this_width = (head_length + head_pos - i) / head_ratio;
+                for j in 1..this_width {
+                    let pos1 = pos + (sidestep * (j as f64));
+                    let pos2 = pos + (sidestep * (-(j as f64)));
+                    self.set_point_black(pos1, imgbuf);
+                    self.set_point_black(pos2, imgbuf);
+                } 
+            }
         }
     }
 
@@ -286,6 +326,26 @@ impl Printer {
 
         save_buffer(&imgbuf, filename);
     }
+
+    pub fn print_digraph(&self, d: &Digraph, embedding: &Embedding, colours: &VertexVec<[u8; 4]>, filename: &str) {
+        let mut imgbuf: ImageBuffer<Rgba<u8>, Vec<u8>> = image::ImageBuffer::new(self.width, self.height);
+    
+        for px in imgbuf.pixels_mut() {
+            *px = Self::WHITE;
+        }
+    
+        // Draw all the edges.
+        for e in d.iter_edges() {
+            self.draw_arrow(&mut imgbuf, embedding.get(e.fst()), embedding.get(e.snd()))
+        }
+    
+        // Draw all the node blobs and numbers
+        for (v, colour) in colours.iter_enum() {
+            self.draw_node(&mut imgbuf, v.to_string(), embedding.get(v), colour)
+        }
+    
+        save_buffer(&imgbuf, filename);
+    }
 }
 
 fn get_optimal_embedding(g: &Graph, rng: &mut ThreadRng) -> Embedding {
@@ -305,13 +365,31 @@ fn get_optimal_embedding(g: &Graph, rng: &mut ThreadRng) -> Embedding {
     optimal_embedding
 }
 
-pub fn print_graph(g: &Graph) {
+fn print_graph(g: &Graph) {
     let printer = Printer::new();
     let mut rng = thread_rng();
     let embedding = get_optimal_embedding(g, &mut rng);
     let colours = VertexVec::new(g.n, &[0, 0, 0, 255]);
 
     printer.print_graph(g, &embedding, &colours, "output");
+}
+
+fn print_digraph(d: &Digraph) {
+    let printer = Printer::new();
+    let mut rng = thread_rng();
+    let g = &d.undirect();
+    let embedding = get_optimal_embedding(g, &mut rng);
+    let colours = VertexVec::new(d.n, &[0, 0, 0, 255]);
+
+    printer.print_digraph(d, &embedding, &colours, "output");
+}
+
+pub fn print_entity(e: &Entity) {
+    match e {
+        Entity::Graph(g) => print_graph(g),
+        Entity::Digraph(d) => print_digraph(d),
+        Entity::Poset(_) => panic!("Cannot pretty-print posets!")
+    }
 }
 
 /**

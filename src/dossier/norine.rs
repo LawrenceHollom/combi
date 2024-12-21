@@ -723,7 +723,7 @@ fn get_colouring_component_graph(g: &Graph, reds: &BigEdgeSet) -> (Graph, Vertex
     }
 
     let adj = VertexVec::of_vec(comp_adj);
-    let h = Graph::of_matrix_to_be_symmetrised(adj, crate::constructor::Constructor::Special);
+    let h = Graph::of_matrix_to_be_symmetrised(&adj, crate::constructor::Constructor::Special);
     let sizes = VertexVec::of_vec(component_sizes);
     (h, sizes)
 }

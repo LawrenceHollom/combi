@@ -73,8 +73,9 @@ impl Graph {
     /**
      * For when we have a partial adjacency matrix, but it is not yet symmetric.
      * This constructs a symmetric version (adj | adj^T), and builds the graph from that.
+     * e.g. used when undirecting a directed graph.
      */
-    pub fn of_matrix_to_be_symmetrised(assym: VertexVec<VertexVec<bool>>, constructor: Constructor) -> Graph {
+    pub fn of_matrix_to_be_symmetrised(assym: &VertexVec<VertexVec<bool>>, constructor: Constructor) -> Graph {
         let n = assym.len();
         let mut adj = VertexVec::new(n, &VertexVec::new(n, &false));
         let mut adj_list = VertexVec::new(n, &vec![]);
