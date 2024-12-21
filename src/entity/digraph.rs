@@ -17,6 +17,11 @@ pub struct Digraph {
     pub parameters: Vec<f64>,
 }
 
+pub struct EdgeIterator<'a> {
+    d: &'a Digraph,
+    sub_iter: VertexDirectedPairIterator,
+}
+
 impl Digraph {
     pub fn of_matrix(adj: VertexVec<VertexVec<bool>>, parameters: Vec<f64>) -> Digraph {
         let n = adj.len();
@@ -153,8 +158,16 @@ impl Digraph {
         self.n.iter_pairs()
     }
 
+    pub fn iter_directed_pairs(&self) -> impl Iterator<Item = (Vertex, Vertex)> {
+        self.n.iter_directed_pairs()
+    }
+
     pub fn iter_vertex_subsets(&self) -> VertexSubsetIterator {
         VertexSubsetIterator::new(self.n)
+    }
+
+    pub fn iter_edges(&self) -> EdgeIterator {
+        EdgeIterator::new(self)
     }
 
     pub fn print(&self) {
@@ -175,5 +188,35 @@ impl Digraph {
                 println!();
             }
         }
+    }
+}
+
+impl EdgeIterator<'_> {
+    fn new(d: &Digraph) -> EdgeIterator<'_> {
+        EdgeIterator {
+            d,
+            sub_iter: VertexDirectedPairIterator::new(d.n),
+        }
+    }
+}
+
+impl Iterator for EdgeIterator<'_> {
+    type Item = Edge;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut pair = self.sub_iter.next();
+        let mut e = None;
+        loop {
+            if let Some((x, y)) = pair {
+                if self.d.adj[x][y] {
+                    e = Some(Edge::of_pair(x, y));
+                    break;
+                }
+            } else {
+                break;
+            }
+            pair = self.sub_iter.next();
+        }
+        e
     }
 }

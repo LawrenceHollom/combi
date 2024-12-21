@@ -59,6 +59,12 @@ pub struct VertexPairIterator {
     n: Order,
 }
 
+pub struct VertexDirectedPairIterator {
+    curr: (Vertex, Vertex),
+    flipped: bool,
+    n: Order,
+}
+
 pub struct VertexSubsetIterator {
     curr: u128,
     max: u128,
@@ -199,6 +205,44 @@ impl Iterator for VertexPairIterator {
         } else {
             self.curr = (i, j.incr());
             Some((i, j))
+        }
+    }
+}
+
+impl VertexDirectedPairIterator {
+    pub fn new(n: Order) -> VertexDirectedPairIterator {
+        VertexDirectedPairIterator { 
+            curr: (Vertex(0), Vertex(1)), 
+            flipped: false, 
+            n,
+        }
+    }
+}
+
+impl Iterator for VertexDirectedPairIterator {
+    type Item = (Vertex, Vertex);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.n.at_most(1) {
+            return None
+        }
+        let i = self.curr.0;
+        let j = self.curr.1;
+
+        if !self.flipped {
+            // Give the edge the standard way around first, and then worry
+            // about iterating later.
+            self.flipped = true;
+            Some((i, j))
+        } else if j > self.n.to_max_vertex() {
+            None
+        } else if j == self.n.to_max_vertex() {
+            let k = i.incr();
+            self.curr = (k, k.incr());
+            Some((j, i))
+        } else {
+            self.curr = (i, j.incr());
+            Some((j, i))
         }
     }
 }
