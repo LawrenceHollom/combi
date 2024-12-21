@@ -333,7 +333,7 @@ impl Printer {
         for px in imgbuf.pixels_mut() {
             *px = Self::WHITE;
         }
-    
+
         // Draw all the edges.
         for e in d.iter_edges() {
             self.draw_arrow(&mut imgbuf, embedding.get(e.fst()), embedding.get(e.snd()))

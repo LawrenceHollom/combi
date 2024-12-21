@@ -63,6 +63,10 @@ impl Order {
         self.0 as usize
     }
 
+    pub fn to_max_deg(&self) -> Degree {
+        Degree(self.0 - 1)
+    }
+
     pub fn incr(&self) -> Order {
         Order(self.0 + 1)
     }
@@ -165,6 +169,14 @@ impl ops::Add<Degree> for Degree {
 
     fn add(self, rhs: Degree) -> Degree {
         Degree(self.0 + rhs.0)
+    }
+}
+
+impl ops::Sub<Degree> for Degree {
+    type Output = Degree;
+
+    fn sub(self, rhs: Degree) -> Degree {
+        Degree(self.0 - rhs.0)
     }
 }
 

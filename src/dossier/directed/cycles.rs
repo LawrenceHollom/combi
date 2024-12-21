@@ -20,3 +20,16 @@ pub fn is_every_edge_witnessed(d: &Digraph) -> bool {
     }
     true
 }
+
+/**
+ * Tests whether the digraph has an edge which can be traversed in both
+ * directions, i.e. a two-edge cycle
+ */
+pub fn has_bidirectional_edge(d: &Digraph) -> bool {
+    for (x, y) in d.iter_pairs() {
+        if d.adj[x][y] && d.adj[y][x] {
+            return true
+        }
+    }
+    false
+}

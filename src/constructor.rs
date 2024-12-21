@@ -102,6 +102,7 @@ pub enum DigraphConstructor {
     OfGraph(Box<Constructor>),
     Oriented(Order, f64, f64),
     OutRegular(Order, Degree),
+    OutRegularOriented(Order, Degree),
 }
 
 #[derive(Clone)]
@@ -312,6 +313,7 @@ impl Constructor {
                 DigraphConstr(Oriented(Order::of_string(args[0]), min_p, max_p))
             }
             "random_out_regular" | "out" => DigraphConstr(OutRegular(Order::of_string(args[0]), Degree::of_string(args[1]))),
+            "out_oriented" => DigraphConstr(OutRegularOriented(Order::of_string(args[0]), Degree::of_string(args[1]))),
             str => File(str.to_owned()),
         }
     }
@@ -405,6 +407,7 @@ impl Constructor {
             }
             DigraphConstr(Oriented(order, min_p, max_p)) => d(random_digraphs::new_oriented(*order, *min_p, *max_p)),
             DigraphConstr(OutRegular(order, deg)) => d(random_digraphs::new_out(*order, *deg)),
+            DigraphConstr(OutRegularOriented(order, deg)) => d(random_digraphs::new_oriented_out(*order, *deg)),
             File(filename) => from_file::new_entity(filename),
             Serialised(code) => g(Graph::deserialise(code)),
             Special => panic!("Cannot directly construct Special graph!"),
@@ -453,6 +456,7 @@ impl DigraphConstructor {
             OfGraph(constr) => constr.is_random(),
             Oriented(_, _, _) => true,
             OutRegular(_, _) => true,
+            OutRegularOriented(_, _) => true,
         }
     }
 }
@@ -652,6 +656,7 @@ impl fmt::Display for DigraphConstructor {
             OfGraph(digraph) => write!(f, "Digraph of ({})", *digraph),
             Oriented(n, min_p, max_p) => write!(f, "Random orientation of G({}, [{}, {}])", n, min_p, max_p),
             OutRegular(n, deg) => write!(f, "Random order-{} digraph out out-deg {}", n, deg),
+            OutRegularOriented(n, deg) => write!(f, "Random order-{} oriented graph of out-deg {}", n, deg),
         }
     }
 }

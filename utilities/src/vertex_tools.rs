@@ -229,19 +229,21 @@ impl Iterator for VertexDirectedPairIterator {
         let i = self.curr.0;
         let j = self.curr.1;
 
-        if !self.flipped {
+        if j > self.n.to_max_vertex() {
+            None
+        } else if !self.flipped {
             // Give the edge the standard way around first, and then worry
             // about iterating later.
             self.flipped = true;
             Some((i, j))
-        } else if j > self.n.to_max_vertex() {
-            None
         } else if j == self.n.to_max_vertex() {
             let k = i.incr();
             self.curr = (k, k.incr());
+            self.flipped = false;
             Some((j, i))
         } else {
             self.curr = (i, j.incr());
+            self.flipped = false;
             Some((j, i))
         }
     }
