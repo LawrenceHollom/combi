@@ -259,7 +259,7 @@ impl Printer {
         let step = (end - start) / (length * 5.0);
         let sidestep = step.rotate90();
         let num_steps = (length * 5.0) as usize;
-        let head_pos = (num_steps * 4) / 5;
+        let head_pos = ((num_steps - 100) * 4) / 5;
         let head_length = 100;
         let head_ratio = 2;
         let mut pos = start;
