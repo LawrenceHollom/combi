@@ -62,7 +62,7 @@ pub fn new_oriented_out(n: Order, d: Degree) -> Digraph {
     }
 
     let mut rng = thread_rng();
-    let mut adj = VertexVec::new(n, &VertexVec::new(n, &false));
+    let mut adj;
     let max_in_deg = n.to_max_deg() - d;
     
     'find_adj_list: loop {

@@ -6,7 +6,6 @@ use std::slice::*;
 use rand::rngs::ThreadRng;
 
 use crate::*;
-use crate::vertex_tools::*;
 use crate::edge_tools::*;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]

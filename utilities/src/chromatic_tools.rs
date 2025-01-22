@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use crate::vertex_tools::*;
 use crate::*;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
