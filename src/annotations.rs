@@ -263,6 +263,11 @@ impl Annotations {
         self.weak_auto_comps.get_representatives()
     }
 
+    /**
+     * Returns a best-guess of a set of representatives of the automorphism classes of the vertices.
+     * This is still somewhat ad-hoc, and may miss some equivalences (thus returning multiple vertices
+     * from the same equivalence class.)
+     */
     pub fn get_representatives(&mut self, g: &Graph, fixed: VertexSet) -> VertexSet {
         match self.history.get(&fixed) {
             Some(representatives) => *representatives,
@@ -273,15 +278,18 @@ impl Annotations {
                 let mut comps = UnionFind::new(self.n);
                 let partial = fixed.iter().map(|x| (x, x)).collect::<Vec<(Vertex, Vertex)>>();
                 
-                let the_code_below_is_dumb_and_you_should_fix_it = 42;
                 // Maybe use strong equivalence and feed in the comps we know about so
                 // it can aim for getting something new. Then stop when it can't find
                 // any more information.
-                for _ in 0..10 {
+                let mut allowed_fails_remaining = 20;
+                while allowed_fails_remaining > 0 {
                     if let Some(aut) = Automorphism::randomly_extend_map(g, &self.vertex_hashes, &partial, &mut rng) {
                         for (from, to) in aut.iter() {
                             if from != *to {
+                                // Some new information has been discovered
                                 comps.merge(from, *to);
+                            } else {
+                                allowed_fails_remaining -= 1;
                             }
                         }
                     }
