@@ -112,9 +112,9 @@ pub fn simulate(g: &Graph) {
     }
 }
 /**
- * Tests whether any of [attempts] random starting configurations fails to stabilise.
+ * Tests whether any of [attempts] random starting configurations fails to synchronise.
  */
-pub fn does_random_config_stabilise(g: &Graph, attempts: usize) -> bool {
+pub fn does_random_config_synchronise(g: &Graph, attempts: usize) -> bool {
     let mut rng = thread_rng();
     let edges = g.iter_edges().collect::<Vec<Edge>>();
     let mut theta = Theta::new_random(g.n, &mut rng);

@@ -259,7 +259,7 @@ impl Dossier {
                     HasSink => self.e.as_digraph().has_sink(),
                     HasBasin => directed::flow::has_global_basin(self.e.as_digraph()),
                     HasKernelOfSizeAtMost(size) => kernels::has_kernel_of_size_at_most(self.e.as_digraph(), *size),
-                    KuramotoStabilises(k) => kuramoto::does_random_config_stabilise(self.e.as_graph(), *k),
+                    KuramotoSynchronises(k) => kuramoto::does_random_config_synchronise(self.e.as_graph(), *k),
                     IsKozmaNitzanFalse => kozma_nitzan::does_contradict_kozma_nitzan(self.e.as_graph()),
                     IsSiteKozmaNitzanFalse => kozma_nitzan::does_contradict_site_kozma_nitzan(self.e.as_graph()),
                     IsEveryEdgeWitnessed => directed::cycles::is_every_edge_witnessed(self.e.as_digraph()),
