@@ -4,7 +4,10 @@ use utilities::*;
 use super::*;
 use utilities::vertex_tools::*;
 
-pub fn new(order: Order, p: f64) -> Graph {    
+pub fn new(order: Order, p: f64) -> Graph {
+    if p > 1.0 || p < 0.0 {
+        panic!("The probability p must satisfy 0 <= p <= 1 (which {} does not!)", p)
+    }
     let mut adj_list = VertexVec::new(order, &vec![]);
     let mut rng = thread_rng();
 

@@ -85,6 +85,7 @@ pub enum BoolOperation {
     IsSiteKozmaNitzanFalse,
     IsEveryEdgeWitnessed,
     HasBidirectionalEdge,
+    HasFourCycle,
     Debug,
 }
 
@@ -227,6 +228,7 @@ impl BoolOperation {
                     "site_kozma_nitzan" => Some(IsSiteKozmaNitzanFalse),
                     "is_witnessed" => Some(IsEveryEdgeWitnessed),
                     "has_bidirectional" => Some(HasBidirectionalEdge),
+                    "has_k4" => Some(HasFourCycle),
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -380,6 +382,7 @@ impl fmt::Display for BoolOperation {
             IsSiteKozmaNitzanFalse => "Is the site-percolation Kozma--Nitzan conjecture false".to_owned(),
             IsEveryEdgeWitnessed => "Is every edge witnessed (common parent)".to_owned(),
             HasBidirectionalEdge => "Has a bidirectional edge".to_owned(),
+            HasFourCycle => "Contains a K4".to_owned(),
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };
         write!(f, "{}", name)

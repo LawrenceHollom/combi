@@ -264,6 +264,7 @@ impl Dossier {
                     IsSiteKozmaNitzanFalse => kozma_nitzan::does_contradict_site_kozma_nitzan(self.e.as_graph()),
                     IsEveryEdgeWitnessed => directed::cycles::is_every_edge_witnessed(self.e.as_digraph()),
                     HasBidirectionalEdge => directed::cycles::has_bidirectional_edge(self.e.as_digraph()),
+                    HasFourCycle => self.e.as_graph().contains_four_cycle(),
                     Debug => debug::debug(self.e.as_graph()),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);

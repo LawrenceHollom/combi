@@ -105,4 +105,14 @@ impl Graph{
             }
         }
     }
+
+    pub fn contains_four_cycle(&self) -> bool {
+        let nbhds = self.get_open_nbhds();
+        for (u, v) in self.iter_pairs() {
+            if nbhds[u].inter(&nbhds[v]).size() >= 2 {
+                return true
+            }
+        }
+        false
+    }
 }
