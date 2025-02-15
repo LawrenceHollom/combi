@@ -377,7 +377,7 @@ impl fmt::Display for BoolOperation {
             HasSink => "Has a sink vertex".to_owned(),
             HasBasin => "Has a vertex to which everything can flow".to_owned(),
             HasKernelOfSizeAtMost(size) => format!("Has a 2-kernel of size at most {}", size),
-            KuramotoSynchronises(k) => format!("Does Kuramoto syncilise under a random start ({} attempts)?", k),
+            KuramotoSynchronises(k) => format!("Does Kuramoto synchronise under a random start ({} attempts)?", k),
             IsKozmaNitzanFalse => "Is the Kozma--Nitzan conjecture false".to_owned(),
             IsSiteKozmaNitzanFalse => "Is the site-percolation Kozma--Nitzan conjecture false".to_owned(),
             IsEveryEdgeWitnessed => "Is every edge witnessed (common parent)".to_owned(),
