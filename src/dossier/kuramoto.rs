@@ -21,7 +21,7 @@ struct Theta {
 }
 
 impl Theta {
-    const DELTA: f64 = 0.025;
+    pub const DELTA: f64 = 0.025;
 
     pub fn new_random(n: Order, rng: &mut ThreadRng) -> Theta {
         let mut theta = VertexVec::new(n, &0.0);
@@ -124,7 +124,7 @@ pub fn does_random_config_synchronise(g: &Graph, attempts: usize) -> bool {
         theta = Theta::new_random(g.n, &mut rng);
         let mut motion = 1.0;
         let mut num_steps = 0;
-        while motion > 0.0001 {
+        while motion > 0.01 * Theta::DELTA / (g.n.to_usize() as f64) {
             motion = theta.run_simulation_step(&edges);
             num_steps += 1;
         }

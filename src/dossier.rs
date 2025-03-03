@@ -34,6 +34,7 @@ mod kuramoto;
 mod pretty;
 mod kozma_nitzan;
 mod directed;
+mod hyperbolic;
 
 use std::collections::HashMap;
 
@@ -265,6 +266,8 @@ impl Dossier {
                     IsEveryEdgeWitnessed => directed::cycles::is_every_edge_witnessed(self.e.as_digraph()),
                     HasBidirectionalEdge => directed::cycles::has_bidirectional_edge(self.e.as_digraph()),
                     HasFourCycle => self.e.as_graph().contains_four_cycle(),
+                    IsGenericallyHyperbolicEmbeddable => hyperbolic::does_embed_generically(self.e.as_graph()),
+                    HasFewEdgesHyperbolic => hyperbolic::has_hereditarily_few_edges(self.e.as_graph()),
                     Debug => debug::debug(self.e.as_graph()),
                 };
                 self.previous_bool_values.insert(operation.to_owned(), value);
