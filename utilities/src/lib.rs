@@ -281,8 +281,10 @@ pub fn pretty_format_int(x: usize) -> String {
         format!("{}k", x / 1_000)
     } else if x < 100_000_000 {
         format!("{}m{}", x / 1_000_000, (x % 1_000_000) / 100_000)
-    } else {
+    } else if x < 1_000_000_000 {
         format!("{}m", x / 1_000_000)
+    } else {
+        format!("{}b{}", x / 1_000_000_000, (x % 1_000_000_000) / 10_000_000)
     }
 }
 

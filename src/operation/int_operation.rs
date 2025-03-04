@@ -47,6 +47,7 @@ pub enum IntOperation {
     MaxMatching,
     MinNorineDistance(usize),
     MinKernelSize,
+    MaxCodegree,
     Number(u32),
 }
 
@@ -104,6 +105,7 @@ impl IntOperation {
             "max_matching" => Some(MaxMatching),
             "min_kernel" => Some(MinKernelSize),
             "norine" => Some(MinNorineDistance(args[0].parse().unwrap_or(0))),
+            "max_codeg" => Some(MaxCodegree),
             str => str.parse().ok().map(Number),
         }
     }
@@ -157,6 +159,7 @@ impl fmt::Display for IntOperation {
             MaxMatching => "Max matching size in a bipartite graph",
             MinNorineDistance(_) => "Min Norine distance between antipodes in random colouring of Q_n",
             MinKernelSize => "Min size of a 2-kernel in digraph",
+            MaxCodegree => "Max codegree",
             Number(n) => {
                 sta = n.to_string();
                 sta.as_str()

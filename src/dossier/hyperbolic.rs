@@ -163,7 +163,7 @@ pub fn has_hereditarily_few_edges(g: &Graph) -> bool {
                 }
             }
         }
-        if vs.size() >= 2 && count >= 4 * (vs.size() - 1) {
+        if vs.size() >= 2 && vs.size() < g.n.to_usize() && count >= 4 * (vs.size() - 1) {
             // There are too many edges.
             return false
         }

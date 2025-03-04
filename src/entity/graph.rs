@@ -546,6 +546,18 @@ impl Graph {
         *self.deg.iter().max().unwrap()
     }
 
+    pub fn max_codegree(&self) -> usize {
+        let mut out = 0;
+        let nbhds = self.get_open_nbhds();
+        for (u, v) in self.iter_pairs() {
+            let codeg = nbhds[u].inter(&nbhds[v]).size();
+            if codeg > out {
+                out = codeg
+            }
+        }
+        out
+    }
+
     pub fn degree_sequence(&self) -> &Vec<Degree> {
         self.deg.drop_vertices()
     }
@@ -664,6 +676,10 @@ impl Graph {
             self.delete_edge(max_edge);
         }
     }
+
+    /**
+     * Returns the open nbhd of v (does not include v)
+     */
     pub fn open_nbhd(&self, v: Vertex) -> VertexSet {
         let mut nbhd = VertexSet::new(self.n);
         for u in self.adj_list[v].iter() {
@@ -672,12 +688,16 @@ impl Graph {
         nbhd
     }
 
+    /**
+     * Returns the closed nbhd of v (does include v)
+     */
     pub fn closed_nbhd(&self, v: Vertex) -> VertexSet {
         self.open_nbhd(v).add_vert_immutable(v)
     }
 
     /**
-     * Returns a VertexVec of the nbhds of each point
+     * Returns a VertexVec of the open nbhds of each point
+     * open nbhds do not include the point itself
      */
     pub fn get_open_nbhds(&self) -> VertexVec<VertexSet> {
         let mut nbhds = VertexVec::new(self.n, &VertexSet::new(self.n));
@@ -688,7 +708,8 @@ impl Graph {
     }
 
     /**
-     * Returns a VertexVec of the nbhds of each point
+     * Returns a VertexVec of the closed nbhds of each point
+     * open nbhds do include the point itself
      */
     pub fn get_closed_nbhds(&self) -> VertexVec<VertexSet> {
         let mut nbhds = VertexVec::new(self.n, &VertexSet::new(self.n));

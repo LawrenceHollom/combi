@@ -135,6 +135,7 @@ impl Dossier {
                     MaxMatching => matching::max_matching_size(self.e.as_graph()),
                     MinNorineDistance(colouring_type) => norine::min_antipode_distance(self.e.as_graph(), *colouring_type),
                     MinKernelSize => kernels::min_kernel_size(self.e.as_digraph(), false),
+                    MaxCodegree => self.e.as_graph().max_codegree() as u32,
                     Number(k) => *k,
                 };
                 self.previous_int_values.insert(*operation, value);
