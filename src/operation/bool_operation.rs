@@ -230,7 +230,7 @@ impl BoolOperation {
                     "site_kozma_nitzan" => Some(IsSiteKozmaNitzanFalse),
                     "is_witnessed" => Some(IsEveryEdgeWitnessed),
                     "has_bidirectional" => Some(HasBidirectionalEdge),
-                    "has_k4" => Some(HasFourCycle),
+                    "has_c4" => Some(HasFourCycle),
                     "embeds_h" => Some(IsGenericallyHyperbolicEmbeddable),
                     "few_edges_h" => Some(HasFewEdgesHyperbolic),
                     "debug" => Some(Debug),
