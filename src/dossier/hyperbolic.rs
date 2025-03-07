@@ -96,16 +96,22 @@ fn wiggle_points(g: &Graph, d: f64, points: &mut VertexVec<Point>) -> f64 {
     max_force
 }
 
-fn is_d_distance_embedding(g: &Graph, d: f64, points: &VertexVec<Point>) -> bool {
+const DEBUG_LEVEL: usize = 1;
+
+fn is_d_distance_embedding(g: &Graph, d: f64, points: &VertexVec<Point>, debug: bool) -> bool {
     for (u, v) in g.iter_pairs() {
         if g.adj[u][v] && (points[u].hyp_dist_to(points[v]) - d).abs() > 0.001 {
             // This is an edge but the points are not d apart
-            // println!("Edge fail");
+            if debug && DEBUG_LEVEL >= 2 {
+                println!("Edge fail");
+            }
             return false
         }
         if !g.adj[u][v] && points[u].hyp_dist_to(points[v]) < 0.005 {
             // This is a non-edge but the points are very close
-            // println!("Close fail");
+            if debug && DEBUG_LEVEL >= 2 {
+                println!("Close fail");
+            }
             return false
         }
     }
@@ -116,7 +122,7 @@ fn is_d_distance_embedding(g: &Graph, d: f64, points: &VertexVec<Point>) -> bool
  * Attempt to embed g as a d-distance graph in the hyperbolic plane from a random start.
  * Uses the upper-half plane model.
  */
-fn attempt_embed_d_distance(g: &Graph, rng: &mut ThreadRng, d: f64) -> bool {
+fn attempt_embed_d_distance(g: &Graph, rng: &mut ThreadRng, d: f64, debug: bool) -> bool {
     let mut points = VertexVec::new(g.n, &Point::ZERO);
     for p in points.iter_mut() {
         *p = Point::new_random(rng);
@@ -124,26 +130,34 @@ fn attempt_embed_d_distance(g: &Graph, rng: &mut ThreadRng, d: f64) -> bool {
 
     while wiggle_points(g, d, &mut points) > 0.0005 { };
 
-    is_d_distance_embedding(g, d, &points)
+    if debug && DEBUG_LEVEL >= 2 {
+        println!("Points: {:?}", points)
+    }
+
+    is_d_distance_embedding(g, d, &points, debug)
 }
 
 /**
  * Tests whether g embeds as a d-distance graph in the hyperbolic plane.
  */
-fn does_embed_d_distance(g: &Graph, rng: &mut ThreadRng, d: f64) -> bool {
-    for i in 0..100 {
-        if attempt_embed_d_distance(g, rng, d) {
-            println!("Found hyperbolic embedding on attempt {}", i);
+fn does_embed_d_distance(g: &Graph, rng: &mut ThreadRng, d: f64, reps: usize, debug: bool) -> bool {
+    for i in 0..reps {
+        if attempt_embed_d_distance(g, rng, d, debug) {
+            if debug {
+                println!("Found hyperbolic embedding on attempt {}", i);
+            }
             return true
         }
     }
     false
 }
 
-pub fn does_embed_generically(g: &Graph) -> bool {
+const D_AND_REPS: [(f64, usize); 3] = [(4.0, 50), (3.0, 100), (2.0, 400)];//, (1.5, 400), (1.0, 1000)];
+
+pub fn does_embed_generically(g: &Graph, debug: bool) -> bool {
     let mut rng = thread_rng();
-    for d in [1.0, 1.5, 2.0, 2.5] {
-        if !does_embed_d_distance(g, &mut rng, d) {
+    for (d, reps) in D_AND_REPS {
+        if !does_embed_d_distance(g, &mut rng, d, reps, debug) {
             return false;
         }
     }

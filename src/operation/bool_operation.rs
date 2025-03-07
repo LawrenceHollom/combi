@@ -86,7 +86,7 @@ pub enum BoolOperation {
     IsEveryEdgeWitnessed,
     HasBidirectionalEdge,
     HasFourCycle,
-    IsGenericallyHyperbolicEmbeddable,
+    IsGenericallyHyperbolicEmbeddable(bool),
     HasFewEdgesHyperbolic,
     Debug,
 }
@@ -231,7 +231,7 @@ impl BoolOperation {
                     "is_witnessed" => Some(IsEveryEdgeWitnessed),
                     "has_bidirectional" => Some(HasBidirectionalEdge),
                     "has_c4" => Some(HasFourCycle),
-                    "embeds_h" => Some(IsGenericallyHyperbolicEmbeddable),
+                    "embeds_h" => Some(IsGenericallyHyperbolicEmbeddable(args.get(0)?.parse().unwrap_or(false))),
                     "few_edges_h" => Some(HasFewEdgesHyperbolic),
                     "debug" => Some(Debug),
                     &_ => None,
@@ -387,7 +387,7 @@ impl fmt::Display for BoolOperation {
             IsEveryEdgeWitnessed => "Is every edge witnessed (common parent)".to_owned(),
             HasBidirectionalEdge => "Has a bidirectional edge".to_owned(),
             HasFourCycle => "Contains a K4".to_owned(),
-            IsGenericallyHyperbolicEmbeddable => "Can be embedded as d-distance in hyperbolic plane".to_owned(),
+            IsGenericallyHyperbolicEmbeddable(_) => "Can be embedded as d-distance in hyperbolic plane".to_owned(),
             HasFewEdgesHyperbolic => "Has at most 2n-3 edges hereditarily".to_owned(),
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };
