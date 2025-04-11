@@ -215,9 +215,10 @@ impl Graph {
     }
 
     /**
-     * Returns a new graph containing only those vertices for which the filter is true.
+     * Returns a new graph containing only those vertices for which filter is true
+     * Also returns the map from new vertex index to old vertex index.
      */
-    pub fn of_filtered(&self, filter: &VertexVec<bool>) -> Graph {
+    pub fn of_filtered_with_map(&self, filter: &VertexVec<bool>) -> (Graph, VertexVec<Vertex>) {
         let n = Order::of_usize(filter.iter().filter(|x| **x).count());
         let mut adj_list: VertexVec<Vec<Vertex>> = VertexVec::new(n, &vec![]);
 
@@ -238,7 +239,15 @@ impl Graph {
             }
         }
 
-        Graph::of_adj_list(adj_list, Special)
+        (Graph::of_adj_list(adj_list, Special), map)
+    }
+
+    /**
+     * Returns a new graph containing only those vertices for which the filter is true.
+     */
+    pub fn of_filtered(&self, filter: &VertexVec<bool>) -> Graph {
+        let (g, _) = self.of_filtered_with_map(filter);
+        g
     }
 
     pub fn bunkbed(&self) -> Graph {

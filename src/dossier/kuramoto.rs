@@ -15,6 +15,7 @@ const EPS: f64 = 0.00000001;
 /**
  * Stores the angles used in the Kuramoto model.
  */
+#[derive(Clone)]
 struct Theta {
     n: Order,
     theta: VertexVec<f64>,
@@ -29,6 +30,34 @@ impl Theta {
             *x = rng.gen_range(0.0..(2.0 * PI));
         }
         Theta { n, theta }
+    }
+
+    pub fn new_mapped(&self, n: Order, map: VertexVec<Vertex>) -> Theta {
+        let mut theta = VertexVec::new(n, &0.0);
+        for i in n.iter_verts() {
+            theta[i] = self.theta[map[i]];
+        }
+        Theta { n, theta }
+    }
+
+    /**
+     * Returns the potential energy in the given edge
+     */
+    pub fn edge_energy(&self, e: Edge) -> f64 {
+        let x1 = self.theta[e.fst()];
+        let x2 = self.theta[e.snd()];
+        1.0 - (x1 - x2).cos()
+    }
+
+    /**
+     * Returns the total potential energy in the whole graph.
+     */
+    pub fn total_energy(&self, edges: &Vec<Edge>) -> f64 {
+        let mut total_energy = 0.0;
+        for e in edges.iter() {
+            total_energy += self.edge_energy(*e)
+        }
+        total_energy
     }
 
     pub fn run_simulation_step(&mut self, edges: &Vec<Edge>) -> f64 {
@@ -136,5 +165,59 @@ pub fn does_random_config_synchronise(g: &Graph, attempts: usize) -> bool {
     }
     pretty::print_graph_hued(g, &theta.theta, 2.0 * PI);
     out
+
+}
+
+fn pretty_print_important_bit(g: &Graph, theta: &Theta) {
+    let mut is_important = VertexVec::new(g.n, &false);
+
+    // First compute which vertices are involved in high-energy edges.
+    let energy_cutoff = 0.1;
+    for e in g.iter_edges() {
+        if theta.edge_energy(e) > energy_cutoff {
+            is_important[e.fst()] = true;
+            is_important[e.snd()] = true;
+        }
+    }
+
+    // Now build the restricted graph.
+    let (new_g, map) = g.of_filtered_with_map(&is_important);
+    let new_theta = theta.new_mapped(new_g.n, map);
+
+    pretty::print_graph_hued(&new_g, &new_theta.theta, 2.0 * PI);
+}
+
+/**
+ * Returns true if all tests synchronise
+ */
+pub fn find_simplest_unsynchronised(g: &Graph, attempts: usize) -> bool {
+    let mut rng = thread_rng();
+    let edges = g.iter_edges().collect::<Vec<Edge>>();
+    let mut theta;
+    let mut simplest_theta = None;
+    let mut minimal_energy = f64::MAX;
+    
+    for j in 0..attempts {
+        theta = Theta::new_random(g.n, &mut rng);
+        let mut motion = 1.0;
+        while motion > 0.005 * Theta::DELTA / (g.n.to_usize() as f64) {
+            motion = theta.run_simulation_step(&edges);
+        }
+        // Things have now settled down
+        if !theta.is_synchronised() {
+            // This is a stable, non-synchronised state.
+            let energy = theta.total_energy(&edges);
+            println!("Found unsync'd, \t attempt {} / {}, \t energy = {:.2}", j, attempts, energy);
+            if energy < minimal_energy {
+                minimal_energy = energy;
+                simplest_theta = Some(theta.to_owned());
+            }
+        }
+    }
+    if let Some(theta) = &simplest_theta {
+        println!("Minimal energy = {:.2}", minimal_energy);
+        pretty_print_important_bit(g, theta);
+    }
+    simplest_theta.is_none()
 
 }

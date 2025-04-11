@@ -406,7 +406,7 @@ pub fn print_graph_hued(g: &Graph, hues: &VertexVec<f64>, modulus: f64) {
     let mut colours = VertexVec::new(g.n, &[0, 0, 0, 255]);
     for (v, hue) in hues.iter_enum() {
         // Rescale hue to be between 0.0 and 6.0.
-        let hue = 6.0 * (((*hue % modulus) + *hue) % modulus) / modulus;
+        let hue = 6.0 * (((*hue % modulus) + modulus) % modulus) / modulus;
         let x = (255.9 * (hue % 1.0)).floor() as u8;
         if hue < 1.0 {
             colours[v][0] = 255;
