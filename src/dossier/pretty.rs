@@ -22,6 +22,7 @@ struct Embedding {
     delta: f64,
     repulsion_scale: f64,
     edge_repulsion: f64,
+    edge_repulsion_threshold: f64,
 }
 
 struct Printer {
@@ -77,7 +78,7 @@ impl Point {
 impl Embedding {
     const EDGE_N_CUTOFF: usize = 40;
 
-    pub fn new(g: &Graph, rng: &mut ThreadRng) -> Embedding {
+    pub fn new(g: &Graph, repulsion_scale_scale: f64, edge_repulsion_threshold: f64, rng: &mut ThreadRng) -> Embedding {
         let mut positions = VertexVec::new(g.n, &Point::ZERO);
         for pos in positions.iter_mut() {
             *pos = Point::new_random(rng);
@@ -85,8 +86,9 @@ impl Embedding {
         Embedding {
             positions,
             delta: 0.05,
-            repulsion_scale: 0.5 / (g.n.to_usize() as f64),
+            repulsion_scale: repulsion_scale_scale / (g.n.to_usize() as f64),
             edge_repulsion: 0.002 / (g.size() as f64),
+            edge_repulsion_threshold,
         }
     }
 
@@ -112,7 +114,7 @@ impl Embedding {
 
     fn get_energy_of_pair(&self, u: Vertex, v: Vertex, is_edge: bool) -> f64 {
         let dist = (self.get(u) - self.get(v)).length();
-        let repulsion_e = self.repulsion_scale / dist;
+        let repulsion_e = 0.0;//self.repulsion_scale / dist;
         let attraction_e = if is_edge { dist * dist } else { 0.0 };
         attraction_e + repulsion_e
     }
@@ -149,8 +151,8 @@ impl Embedding {
                         let projection = self.project_onto_edge(w, e);
                         let offset = self.get(w) - projection;
                         let dist = offset.length();
-                        if dist <= 0.05 {
-                            let force = self.edge_repulsion(dist) - self.edge_repulsion(0.05);
+                        if dist <= self.edge_repulsion_threshold {
+                            let force = self.edge_repulsion(dist) - self.edge_repulsion(self.edge_repulsion_threshold);
                             new_positions[w] += offset * (force * self.delta)
                         }
                     }
@@ -349,12 +351,14 @@ impl Printer {
 }
 
 fn get_optimal_embedding(g: &Graph, rng: &mut ThreadRng) -> Embedding {
-    let mut optimal_embedding = Embedding::new(g, rng);
+    let mut optimal_embedding = Embedding::new(g, 0.5, 0.05, rng);
     let mut min_energy = f64::MAX;
 
     // Attempt 100 embeddings, and pick the one with the lowest energy
     for _i in 0..100 {
-        let mut embedding = Embedding::new(g, rng);
+        let repulsion_scale_scale = rng.gen_range(0.1..1.0);
+        let edge_repulsion_threshold = if rng.gen_bool(0.5) { 0.0 } else { rng.gen_range(0.0..0.05) };
+        let mut embedding = Embedding::new(g, repulsion_scale_scale, edge_repulsion_threshold, rng);
         embedding.optimise(g);
         let energy = embedding.get_energy(g);
         if energy < min_energy {

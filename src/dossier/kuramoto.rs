@@ -152,12 +152,9 @@ pub fn does_random_config_synchronise(g: &Graph, attempts: usize) -> bool {
     'attempt: for _j in 0..attempts {
         theta = Theta::new_random(g.n, &mut rng);
         let mut motion = 1.0;
-        let mut num_steps = 0;
         while motion > 0.01 * Theta::DELTA / (g.n.to_usize() as f64) {
             motion = theta.run_simulation_step(&edges);
-            num_steps += 1;
         }
-        println!("Settled after {} steps!", num_steps);
         if !theta.is_synchronised() {
             out = false;
             break 'attempt;
@@ -172,7 +169,7 @@ fn pretty_print_important_bit(g: &Graph, theta: &Theta) {
     let mut is_important = VertexVec::new(g.n, &false);
 
     // First compute which vertices are involved in high-energy edges.
-    let energy_cutoff = 0.1;
+    let energy_cutoff = 0.12;
     for e in g.iter_edges() {
         if theta.edge_energy(e) > energy_cutoff {
             is_important[e.fst()] = true;
