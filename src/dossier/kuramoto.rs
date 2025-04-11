@@ -22,7 +22,7 @@ struct Theta {
 }
 
 impl Theta {
-    pub const DELTA: f64 = 0.025;
+    pub const DELTA: f64 = 0.25;
 
     pub fn new_random(n: Order, rng: &mut ThreadRng) -> Theta {
         let mut theta = VertexVec::new(n, &0.0);
