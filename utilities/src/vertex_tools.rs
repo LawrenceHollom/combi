@@ -90,6 +90,9 @@ impl Vertex {
         self.0 += 1;
     }
 
+    /**
+     * Increase the degree by 1, modulo the given Order
+     */
     pub fn incr_wrap(&self, n: Order) -> Vertex {
         Vertex((self.0 + 1) % n.to_usize())
     }
@@ -149,6 +152,10 @@ impl Vertex {
 
     pub fn less_than(&self, n: Order) -> bool {
         self.0 < n.to_usize()
+    }
+
+    pub fn as_fraction_of(&self, n: Order) -> f64 {
+        (self.0 as f64) / (n.to_usize() as f64)
     }
 
     pub fn is_zero(&self) -> bool {

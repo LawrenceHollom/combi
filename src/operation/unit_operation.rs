@@ -41,6 +41,7 @@ pub enum UnitOperation {
     PrintKozmaNitzan,
     PrintSiteKozmaNitzan,
     PrettyPrint,
+    PrettyPrintCyclic,
     Signature,
     Unit,
 }
@@ -101,6 +102,7 @@ impl UnitOperation {
             "print_kozma_nitzan" | "pkn" => Some(PrintKozmaNitzan),
             "pskn" => Some(PrintSiteKozmaNitzan),
             "pretty" => Some(PrettyPrint),
+            "pretty_cyclic" => Some(PrettyPrintCyclic),
             "()" | "(" => Some(Unit),
             &_ => None,
         }
@@ -165,6 +167,7 @@ impl fmt::Display for UnitOperation {
             PrintMinKernel => "Print a minimal 2-kernel in digraph",
             SimulateKuramoto => "Simulate Kuramoto model with random seeds",
             PrettyPrint => "Produce image of the graph",
+            PrettyPrintCyclic => "Produce cyclic image of the graph",
             PrintKozmaNitzan => "Print the Kozma-Nitzan probabilities",
             PrintSiteKozmaNitzan => "Print the site Kozma-Nitzan probabilities",
             Unit => "Do nothing",

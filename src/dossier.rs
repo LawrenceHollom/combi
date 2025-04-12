@@ -374,6 +374,7 @@ impl Dossier {
             }
             SimulateKuramoto => kuramoto::simulate(self.e.as_graph()),
             PrettyPrint => pretty::print_entity(&self.e),
+            PrettyPrintCyclic => pretty::print_entity_cyclic(&self.e),
             PrintKozmaNitzan => kozma_nitzan::print(self.e.as_graph()),
             PrintSiteKozmaNitzan => kozma_nitzan::print_site(self.e.as_graph()),
             Unit => (),

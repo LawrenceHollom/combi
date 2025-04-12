@@ -59,6 +59,7 @@ pub fn new_regular(order: &Order, degree: &Degree) -> Graph {
     let deg_seq = vec![*degree; n];
     self::new_from_degree_sequence(&deg_seq, true)
 }
+
 pub fn new_approximately_regular(n: &Order, degree: &Degree) -> Graph {
     let mut rng = thread_rng();
     let mut adj = VertexVec::new(*n, &VertexVec::new(*n, &false));
@@ -93,4 +94,39 @@ pub fn new_approximately_regular(n: &Order, degree: &Degree) -> Graph {
     }
 
     Graph::of_matrix(adj, Random(RandomConstructor::RegularIsh(*n, *degree)))
+}
+
+pub fn new_hamilton_plus_matchings(n: Order, degree: Degree) -> Graph {
+    let mut rng = thread_rng();
+    let mut adj = VertexVec::new(n, &VertexVec::new(n, &false));
+    let num_matchings = degree.to_usize() - 2;
+    for v in n.iter_verts() {
+        let u = v.incr_wrap(n);
+        adj[u][v] = true;
+        adj[v][u] = true;
+    }
+
+    let mut num_matchings_added = 0;
+    let half_n = n.to_usize() / 2;
+    'find_matchings: while num_matchings_added < num_matchings {
+        let mut ordering = n.iter_verts().collect::<Vec<Vertex>>();
+        ordering.shuffle(&mut rng);
+        for i in 0..half_n {
+            if adj[ordering[2 * i]][ordering[2 * i + 1]] {
+                // Some edge has already been added.
+                continue 'find_matchings
+            }
+        }
+
+        // If we reach this point, then the matching is good.
+        num_matchings_added += 1;
+        for i in 0..half_n {
+            let x = ordering[2 * i];
+            let y = ordering[2 * i + 1];
+            adj[x][y] = true;
+            adj[y][x] = true;
+        }
+    }
+
+    Graph::of_matrix(adj, Random(RandomConstructor::HamiltonPlusMatchings(n, degree)))
 }

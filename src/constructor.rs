@@ -57,6 +57,7 @@ pub enum RandomConstructor {
     ConnectedSemiregular(Order, f64, f64),
     BFSOptimal(Order, usize, f64),
     Spinal(Order, f64, Degree),
+    HamiltonPlusMatchings(Order, Degree),
 }
 
 #[derive(Clone)]
@@ -254,6 +255,7 @@ impl Constructor {
                 let off_vert_degree = args.get(2).map_or(Degree::of_usize(3), |x| Degree::of_string(x));
                 Random(Spinal(Order::of_string(args[0]), spine_proportion, off_vert_degree))
             }
+            "hamilton_plus_matchings" | "hpm" => Random(HamiltonPlusMatchings(Order::of_string(args[0]), Degree::of_string(args[1]))),
             "giant" => Structural(GiantComponent, Box::new(Self::of_string(args[0]))),
             "2core" | "core" | "two_core" => Structural(TwoCore, Box::new(Self::of_string(args[0]))),
             "grid" => {
@@ -369,6 +371,7 @@ impl Constructor {
             Random(ConnectedSemiregular(order, p, exp)) => g(semiregular::new_semiregular(*order, *p, *exp)),
             Random(BFSOptimal(order, width, density)) => g(random_bfs::new_bfs(*order, *width, *density)),
             Random(Spinal(order, spine_propn, off_deg)) => g(random_bfs::new_spinal(*order, *spine_propn, off_deg)),
+            Random(HamiltonPlusMatchings(order, degree)) => g(regular::new_hamilton_plus_matchings(*order, *degree)),
             Raw(Grid(height, width)) => g(grid::new(height, width)),
             Raw(Complete(order)) => g(Graph::new_complete(*order)),
             Raw(CompleteBipartite(left, right)) => g(Graph::new_complete_bipartite(*left, *right)),
@@ -564,6 +567,9 @@ impl fmt::Display for RandomConstructor {
             }
             Spinal(order, spine_propn, off_deg) => {
                 write!(f, "Spinal graph of order {}, with {:.3}-propn of edges in the spine. Off-spine degree = {}", order, spine_propn, off_deg)
+            }
+            HamiltonPlusMatchings(order, degree) => {
+                write!(f, "Hamilton cycle of order {} plus {} random matchings", order, degree.to_usize() - 2)
             }
         }
     }

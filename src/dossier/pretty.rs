@@ -9,6 +9,7 @@ use crate::entity::graph::*;
 use crate::entity::digraph::*;
 use utilities::vertex_tools::*;
 use utilities::edge_tools::*;
+use utilities::*;
 
 #[derive(Clone, Copy)]
 struct Point {
@@ -40,6 +41,11 @@ impl Point {
             x: rng.gen_range(0.0..1.0),
             y: rng.gen_range(0.0..1.0),
         }
+    }
+
+    pub fn new_cyclic(n: Order, v: Vertex) -> Point {
+        let theta = 2.0 * core::f64::consts::PI * v.as_fraction_of(n);
+        Point { x: (theta.cos() + 1.0) / 2.0, y: (theta.sin() + 1.0) / 2.0 }
     }
 
     pub fn to_pixel_coords(&self, width: u32, height: u32) -> Point {
@@ -89,6 +95,17 @@ impl Embedding {
             repulsion_scale: repulsion_scale_scale / (g.n.to_usize() as f64),
             edge_repulsion: 0.002 / (g.size() as f64),
             edge_repulsion_threshold,
+        }
+    }
+
+    pub fn new_cyclic(g: &Graph) -> Embedding {
+        let positions = VertexVec::new_fn(g.n, |v| Point::new_cyclic(g.n, v));
+        Embedding { 
+            positions, 
+            delta: 0.0, 
+            repulsion_scale: 0.0, 
+            edge_repulsion: 0.0, 
+            edge_repulsion_threshold: 0.0 
         }
     }
 
@@ -369,20 +386,28 @@ fn get_optimal_embedding(g: &Graph, rng: &mut ThreadRng) -> Embedding {
     optimal_embedding
 }
 
-fn print_graph(g: &Graph) {
+fn print_graph(g: &Graph, cyclic: bool) {
     let printer = Printer::new();
     let mut rng = thread_rng();
-    let embedding = get_optimal_embedding(g, &mut rng);
+    let embedding = if cyclic {
+        Embedding::new_cyclic(g)
+    } else {
+        get_optimal_embedding(g, &mut rng)
+    };
     let colours = VertexVec::new(g.n, &[0, 0, 0, 255]);
 
     printer.print_graph(g, &embedding, &colours, "output");
 }
 
-fn print_digraph(d: &Digraph) {
+fn print_digraph(d: &Digraph, cyclic: bool) {
     let printer = Printer::new();
     let mut rng = thread_rng();
     let g = &d.undirect();
-    let embedding = get_optimal_embedding(g, &mut rng);
+    let embedding = if cyclic {
+        Embedding::new_cyclic(g)
+    } else {
+        get_optimal_embedding(g, &mut rng)
+    };
     let colours = VertexVec::new(d.n, &[0, 0, 0, 255]);
 
     printer.print_digraph(d, &embedding, &colours, "output");
@@ -390,9 +415,17 @@ fn print_digraph(d: &Digraph) {
 
 pub fn print_entity(e: &Entity) {
     match e {
-        Entity::Graph(g) => print_graph(g),
-        Entity::Digraph(d) => print_digraph(d),
+        Entity::Graph(g) => print_graph(g, false),
+        Entity::Digraph(d) => print_digraph(d, false),
         Entity::Poset(_) => panic!("Cannot pretty-print posets!")
+    }
+}
+
+pub fn print_entity_cyclic(e: &Entity) {
+    match e {
+        Entity::Graph(g) => print_graph(g, true),
+        Entity::Digraph(d) => print_digraph(d, true),
+        Entity::Poset(_) => panic!("Cannot cyclically pretty-print posets!")
     }
 }
 
