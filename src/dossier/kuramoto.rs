@@ -18,18 +18,18 @@ const EPS: f64 = 0.00000001;
 #[derive(Clone)]
 struct Theta {
     n: Order,
+    delta: f64,
     theta: VertexVec<f64>,
 }
 
 impl Theta {
-    pub const DELTA: f64 = 0.25;
-
-    pub fn new_random(n: Order, rng: &mut ThreadRng) -> Theta {
-        let mut theta = VertexVec::new(n, &0.0);
+    pub fn new_random(g: &Graph, rng: &mut ThreadRng) -> Theta {
+        let mut theta = VertexVec::new(g.n, &0.0);
         for x in theta.iter_mut() {
             *x = rng.gen_range(0.0..(2.0 * PI));
         }
-        Theta { n, theta }
+        let delta = 1.0 / (1.0 + g.max_degree().to_usize() as f64);
+        Theta { n: g.n, delta, theta }
     }
 
     pub fn new_mapped(&self, n: Order, map: VertexVec<Vertex>) -> Theta {
@@ -37,7 +37,7 @@ impl Theta {
         for i in n.iter_verts() {
             theta[i] = self.theta[map[i]];
         }
-        Theta { n, theta }
+        Theta { n, delta: self.delta, theta }
     }
 
     /**
@@ -67,8 +67,8 @@ impl Theta {
         }
 
         for e in edges.iter() {
-            new_theta[e.fst()] -= Self::DELTA * (self.theta[e.fst()] - self.theta[e.snd()]).sin();
-            new_theta[e.snd()] -= Self::DELTA * (self.theta[e.snd()] - self.theta[e.fst()]).sin();
+            new_theta[e.fst()] -= self.delta * (self.theta[e.fst()] - self.theta[e.snd()]).sin();
+            new_theta[e.snd()] -= self.delta * (self.theta[e.snd()] - self.theta[e.fst()]).sin();
         }
 
         let mut max_abs_diff = 0.0;
@@ -122,7 +122,7 @@ impl Theta {
  */
 pub fn simulate(g: &Graph) {
     let mut rng = thread_rng();
-    let mut theta = Theta::new_random(g.n, &mut rng);
+    let mut theta = Theta::new_random(g, &mut rng);
 
     let mut i = 0;
     let edges = g.iter_edges().collect::<Vec<Edge>>();
@@ -146,13 +146,13 @@ pub fn simulate(g: &Graph) {
 pub fn does_random_config_synchronise(g: &Graph, attempts: usize) -> bool {
     let mut rng = thread_rng();
     let edges = g.iter_edges().collect::<Vec<Edge>>();
-    let mut theta = Theta::new_random(g.n, &mut rng);
+    let mut theta = Theta::new_random(g, &mut rng);
     let mut out = true;
     
     'attempt: for _j in 0..attempts {
-        theta = Theta::new_random(g.n, &mut rng);
+        theta = Theta::new_random(g, &mut rng);
         let mut motion = 1.0;
-        while motion > 0.01 * Theta::DELTA / (g.n.to_usize() as f64) {
+        while motion > 0.01 * theta.delta / (g.n.to_usize() as f64) {
             motion = theta.run_simulation_step(&edges);
         }
         if !theta.is_synchronised() {
@@ -195,9 +195,9 @@ pub fn find_simplest_unsynchronised(g: &Graph, attempts: usize) -> bool {
     let mut minimal_energy = f64::MAX;
     
     for j in 0..attempts {
-        theta = Theta::new_random(g.n, &mut rng);
+        theta = Theta::new_random(g, &mut rng);
         let mut motion = 1.0;
-        while motion > 0.005 * Theta::DELTA / (g.n.to_usize() as f64) {
+        while motion > 0.005 * theta.delta / (g.n.to_usize() as f64) {
             motion = theta.run_simulation_step(&edges);
         }
         // Things have now settled down
