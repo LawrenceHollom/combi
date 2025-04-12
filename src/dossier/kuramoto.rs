@@ -40,6 +40,12 @@ impl Theta {
         Theta { n, delta: self.delta, theta }
     }
 
+    pub fn new_cyclic(g: &Graph) -> Theta {
+        let theta = VertexVec::new_fn(g.n, |v| v.as_fraction_of(g.n) * 2.0 * PI);
+        let delta = 1.0 / (1.0 + g.max_degree().to_usize() as f64);
+        Theta { n: g.n, delta, theta }
+    }
+
     /**
      * Returns the potential energy in the given edge
      */
@@ -88,6 +94,13 @@ impl Theta {
         }
 
         max_abs_diff
+    }
+
+    fn simulate_until_stable(&mut self, edges: &Vec<Edge>) {
+        let mut motion = 1.0;
+        while motion > 0.002 * self.delta {
+            motion = self.run_simulation_step(&edges);
+        }
     }
 
     /**
@@ -151,16 +164,13 @@ pub fn does_random_config_synchronise(g: &Graph, attempts: usize) -> bool {
     
     'attempt: for _j in 0..attempts {
         theta = Theta::new_random(g, &mut rng);
-        let mut motion = 1.0;
-        while motion > 0.01 * theta.delta / (g.n.to_usize() as f64) {
-            motion = theta.run_simulation_step(&edges);
-        }
+        theta.simulate_until_stable(&edges);
         if !theta.is_synchronised() {
             out = false;
             break 'attempt;
         }
     }
-    pretty::print_graph_hued(g, &theta.theta, 2.0 * PI);
+    pretty::print_graph_hued(g, &theta.theta, 2.0 * PI, false);
     out
 
 }
@@ -181,7 +191,7 @@ fn pretty_print_important_bit(g: &Graph, theta: &Theta) {
     let (new_g, map) = g.of_filtered_with_map(&is_important);
     let new_theta = theta.new_mapped(new_g.n, map);
 
-    pretty::print_graph_hued(&new_g, &new_theta.theta, 2.0 * PI);
+    pretty::print_graph_hued(&new_g, &new_theta.theta, 2.0 * PI, false);
 }
 
 /**
@@ -196,10 +206,7 @@ pub fn find_simplest_unsynchronised(g: &Graph, attempts: usize) -> bool {
     
     for j in 0..attempts {
         theta = Theta::new_random(g, &mut rng);
-        let mut motion = 1.0;
-        while motion > 0.005 * theta.delta / (g.n.to_usize() as f64) {
-            motion = theta.run_simulation_step(&edges);
-        }
+        theta.simulate_until_stable(&edges);
         // Things have now settled down
         if !theta.is_synchronised() {
             // This is a stable, non-synchronised state.
@@ -217,4 +224,16 @@ pub fn find_simplest_unsynchronised(g: &Graph, attempts: usize) -> bool {
     }
     simplest_theta.is_none()
 
+}
+
+pub fn does_cyclic_config_synchronise(g: &Graph) -> bool {
+    let edges = g.iter_edges().collect::<Vec<Edge>>();
+    let mut theta = Theta::new_cyclic(g);
+    theta.simulate_until_stable(&edges);
+    if !theta.is_synchronised() {
+        pretty::print_graph_hued(g, &theta.theta, 2.0 * PI, true);
+        false
+    } else {
+        true
+    }
 }

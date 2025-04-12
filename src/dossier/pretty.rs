@@ -435,10 +435,14 @@ pub fn print_entity_cyclic(e: &Entity) {
  *     0.0            1.0              2.0            3.0             4.0              5.0
  * (255, 0, 0) -> (255, 255, 0) -> (0, 255, 0) -> (0, 255, 255) -> (0, 0, 255) -> (255, 0, 255) -> ...
  */
-pub fn print_graph_hued(g: &Graph, hues: &VertexVec<f64>, modulus: f64) { 
+pub fn print_graph_hued(g: &Graph, hues: &VertexVec<f64>, modulus: f64, is_cyclic: bool) { 
     let printer = Printer::new();
     let mut rng = thread_rng();
-    let embedding = get_optimal_embedding(g, &mut rng);
+    let embedding = if is_cyclic {
+        Embedding::new_cyclic(g)  
+    } else {
+        get_optimal_embedding(g, &mut rng)
+    };
 
     let mut colours = VertexVec::new(g.n, &[0, 0, 0, 255]);
     for (v, hue) in hues.iter_enum() {

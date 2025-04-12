@@ -263,6 +263,7 @@ impl Dossier {
                     HasKernelOfSizeAtMost(size) => kernels::has_kernel_of_size_at_most(self.e.as_digraph(), *size),
                     KuramotoSynchronises(k) => kuramoto::does_random_config_synchronise(self.e.as_graph(), *k),
                     KuramotoSimplest(k) => kuramoto::find_simplest_unsynchronised(self.e.as_graph(), *k),
+                    KuramotoCyclic => kuramoto::does_cyclic_config_synchronise(self.e.as_graph()),
                     IsKozmaNitzanFalse => kozma_nitzan::does_contradict_kozma_nitzan(self.e.as_graph()),
                     IsSiteKozmaNitzanFalse => kozma_nitzan::does_contradict_site_kozma_nitzan(self.e.as_graph()),
                     IsEveryEdgeWitnessed => directed::cycles::is_every_edge_witnessed(self.e.as_digraph()),
