@@ -14,7 +14,7 @@ enum Colour {
 }
 
 impl Colour {
-    fn of_bool(x: bool) -> Colour {
+    fn of_bool(x: bool) -> Self {
         use Colour::*;
         if x {
             Red
@@ -23,7 +23,7 @@ impl Colour {
         }
     }
 
-    fn other(c: Colour) -> Colour {
+    fn other(c: Self) -> Self {
         use Colour::*;
         match c {
             Red => Blue,
@@ -39,8 +39,8 @@ struct ColourPair {
 }
 
 impl ColourPair {
-    fn new() -> ColourPair {
-        ColourPair {
+    fn new() -> Self {
+        Self {
             r: 1000,
             b: 1000,
         }
@@ -84,8 +84,8 @@ struct Distances {
 }
 
 impl Distances {
-    fn of_pairs(blue_dists: ColourPair, red_dists: ColourPair) -> Distances {
-        Distances {
+    fn of_pairs(blue_dists: ColourPair, red_dists: ColourPair) -> Self {
+        Self {
             from_red: red_dists,
             from_blue: blue_dists,
         }
@@ -545,9 +545,9 @@ fn get_unfriendly_random_colouring(g: &Graph) -> BigEdgeSet {
             // This does it really quickly:
             if r > b {
                 // r is bigger, so don't make the edge red.
-                return 0.0
+                0.0
             } else {
-                return 1.0
+                1.0
             }
         }
         fn magic_cutoff(n: Order) -> usize {
@@ -620,7 +620,7 @@ fn get_unfriendly_random_colouring(g: &Graph) -> BigEdgeSet {
      * then we return true; we only return false if both components exist and are different.
      */
     fn are_components_joined(c1: Option<EdgeComponent>, c2: Option<EdgeComponent>) -> bool {
-        c1.map_or(true, |c1| c2.map_or(true, |c2| c1 == c2))
+        c1.is_none_or(|c1| c2.is_none_or(|c2| c1 == c2))
     }
 
     /**

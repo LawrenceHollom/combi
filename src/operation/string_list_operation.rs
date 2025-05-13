@@ -9,7 +9,7 @@ pub enum StringListOperation {
 }
 
 impl StringListOperation {
-    pub fn of_string_result(text: &str) -> Option<StringListOperation> {
+    pub fn of_string_result(text: &str) -> Option<Self> {
         use StringListOperation::*;
         let (func, _args) = parse_function_like(text);
         match func.trim().to_lowercase().as_str() {

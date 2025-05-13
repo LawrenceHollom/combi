@@ -47,7 +47,7 @@ pub enum UnitOperation {
 }
 
 impl UnitOperation {
-    pub fn of_string_result(text: &str) -> Option<UnitOperation> {
+    pub fn of_string_result(text: &str) -> Option<Self> {
         use UnitOperation::*;
         let (func, args) = parse_function_like(text);
         match func.trim().to_lowercase().as_str() {
@@ -86,14 +86,14 @@ impl UnitOperation {
                 let edges = args.get(2).map_or(0, |x| x.parse().unwrap());
                 Some(BunkbedReducedConnectionDP(args[0].parse().unwrap(), k, edges))
             },
-            "bb_counterexample" => Some(BunkbedCounterexampleSearch(args.get(0).map_or(1, |x| x.parse().unwrap()))),
+            "bb_counterexample" => Some(BunkbedCounterexampleSearch(args.first().map_or(1, |x| x.parse().unwrap()))),
             "print_balance" => Some(PosetRelationProbabilities),
             "hasse" => Some(PosetHasseDiagram),
             "balance_heuristics" => Some(BalancedHeuristics),
             "print_cap_balance" => Some(PosetPrintBalanceAsCap),
             "print_norine" => Some(PrintNorineHypercubeColourings),
             "print_symm_norine" => {
-                let slice = args.get(0).map_or(0, |str| str.parse().unwrap());
+                let slice = args.first().map_or(0, |str| str.parse().unwrap());
                 let out_of = args.get(1).map_or(0, |str| str.parse().unwrap());
                 Some(PrintSymmetricNorineHypercubeColourings(slice, out_of))
             }

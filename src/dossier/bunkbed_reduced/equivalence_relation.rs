@@ -42,7 +42,7 @@ pub fn get_connections(g_etc: &GraphAndMetadata, u: Vertex, config: &EdgeSet, in
 
 
 impl EquivalenceRelation {
-	pub fn new(g_etc: &GraphAndMetadata, config: &EdgeSet, indexer: &EdgeIndexer) -> EquivalenceRelation {
+	pub fn new(g_etc: &GraphAndMetadata, config: &EdgeSet, indexer: &EdgeIndexer) -> Self {
 		fn pack_vertex(n: Order, x: Vertex, level: bool) -> Vertex {
 			if level {
 				x.incr_by_order(n)
@@ -53,8 +53,8 @@ impl EquivalenceRelation {
 		let n = g_etc.get_n();
 		let mut union = UnionFind::new(n.times(2));
 		for v in g_etc.iter_targets() {
-			let down_conns = get_connections(&g_etc, v, config, indexer);
-			let up_conns = get_connections(&g_etc, v, &config.inverse(indexer), indexer);
+			let down_conns = get_connections(g_etc, v, config, indexer);
+			let up_conns = get_connections(g_etc, v, &config.inverse(indexer), indexer);
 			for u in g_etc.iter_targets() {
 				if down_conns[u][0] {
 					union.merge(pack_vertex(n, u, false), pack_vertex(n, v, false))
@@ -70,7 +70,7 @@ impl EquivalenceRelation {
 				}
 			}
 		}
-		EquivalenceRelation { 
+		Self { 
 			n,
 			components : union.to_canonical_component_vec(),
 			vertices: g_etc.get_targets()
@@ -78,7 +78,7 @@ impl EquivalenceRelation {
 	}
 
     pub fn get_k(&self) -> usize {
-        return self.vertices.size()
+        self.vertices.size()
     }
 
     pub fn iter_vertices(&self) -> impl Iterator<Item = Vertex> {
@@ -90,11 +90,11 @@ impl Debug for EquivalenceRelation {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
 		let _ = write!(f, "[ ");
 		for v in self.vertices.iter() {
-			let _ = write!(f, "{} ", self.components[v].to_vertex().to_string());
+			let _ = write!(f, "{} ", self.components[v].to_vertex());
 		}
 		let _ = write!(f, "/ ");
 		for v in self.vertices.iter() {
-			let _ = write!(f, "{} ", self.components[v.incr_by_order(self.n)].to_vertex().to_string());
+			let _ = write!(f, "{} ", self.components[v.incr_by_order(self.n)].to_vertex());
 		}
         write!(f, "]")
     }

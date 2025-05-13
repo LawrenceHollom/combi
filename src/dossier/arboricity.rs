@@ -113,7 +113,7 @@ mod tests {
 
     #[test]
     fn test_arb_game_k33() {
-        test_arb_game(&&Graph::new_complete_bipartite(ous(3), ous(3)), 2);
+        test_arb_game(&Graph::new_complete_bipartite(ous(3), ous(3)), 2);
     }
 
     #[test]

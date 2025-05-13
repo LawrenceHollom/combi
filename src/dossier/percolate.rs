@@ -16,7 +16,7 @@ pub struct Percolator {
 }
 
 impl Percolator {
-    pub fn new(order: Order, size: usize) -> Percolator {
+    pub fn new(order: Order, size: usize) -> Self {
         let mut probs: Vec<Polynomial> = vec![];
 
         let p = Polynomial::of_vec(&vec![0, 1]);
@@ -31,7 +31,7 @@ impl Percolator {
             *poly = Polynomial::of_vec(&vec![1]);
         }
 
-        Percolator {
+        Self {
             probs,
             polys,
             dist_polys,
@@ -71,8 +71,8 @@ impl Percolator {
             .collect()
     }
 
-    pub fn percolate(g: &Graph, compute_dists: bool, should_print: bool) -> Percolator {
-        let mut percolator = Percolator::new(g.n, g.size());
+    pub fn percolate(g: &Graph, compute_dists: bool, should_print: bool) -> Self {
+        let mut percolator = Self::new(g.n, g.size());
 
         let loop_max = utilities::pow(2, g.size() as u64);
         println!("Starting the big loop! size: {}", loop_max);
@@ -148,7 +148,7 @@ pub fn get_connection_counts(g: &Graph, v: Vertex, filter: Option<&dyn Fn(&Verte
     let mut out = VertexVec::new(g.n, &0);
     'iter_edge_sets: for edges in g.iter_edge_sets() {
         let components = g.edge_subset_components(edges, &indexer);
-        if filter.map_or(false, |f| f(&components)) {
+        if filter.is_some_and(|f| f(&components)) {
             continue 'iter_edge_sets
         }
         for u in g.iter_verts() {
@@ -187,7 +187,7 @@ pub fn get_initial_segment_connection_counts(g: &Graph, v: Vertex, sorted_vertic
     let mut out = vec![0; g.n.to_usize()];
     'iter_edge_sets: for edges in g.iter_edge_sets() {
         let components = g.edge_subset_components(edges, &indexer);
-        if filter.map_or(false, |f| f(&components)) {
+        if filter.is_some_and(|f| f(&components)) {
             continue 'iter_edge_sets
         }
         'find_first_connected: for (i, u) in sorted_vertices.iter().enumerate() {

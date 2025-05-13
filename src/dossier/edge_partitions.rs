@@ -46,14 +46,14 @@ fn minimax_forest_analyse_rec(g: &Graph, colours: &mut EdgeVec<u8>, next_vert: V
     let mut value = best_len;
 
     if i != j && local_cols[i] == local_cols[j] {
-        if other_end.get(edges[i]).map_or(false, |x| x == edges[j]) {
+        if other_end.get(edges[i]).is_some_and(|x| x == edges[j]) {
             // if two have same colour but already in same component, then fail.
             return best_len;
         }
         // if two have same colour but not in same component, then merge components.
         let i_len = path_len.get(edges[i]);
         let j_len = path_len.get(edges[j]);
-        if part_two_max_len.map_or(false, |x| i_len + j_len > x) && local_cols[i] == 2 {
+        if part_two_max_len.is_some_and(|x| i_len + j_len > x) && local_cols[i] == 2 {
             // The colouring is bad as we have a part-two comp that is too long.
             return best_len;
         }
@@ -93,14 +93,14 @@ fn minimax_forest_analyse_rec(g: &Graph, colours: &mut EdgeVec<u8>, next_vert: V
 fn minimax_forest_set_colours_rec(g: &Graph, colours: &mut EdgeVec<u8>, next_vert: Vertex, other_end: &mut EdgeVec<Option<Edge>>,
         path_len: &mut EdgeVec<usize>, max_len_here: usize, best_len: Option<usize>,
         part_two_max_len: Option<usize>, long_path_count: usize, long_path_cap: Option<usize>) -> Option<usize> {
-    if long_path_cap.map_or(false, |cap| long_path_count > cap) {
+    if long_path_cap.is_some_and(|cap| long_path_count > cap) {
         // There are too many long paths. Fail.
         return best_len;
     }
     if next_vert.is_n(g.n) {
         return Some(best_len.map_or(max_len_here, |x| x.min(max_len_here)));
     }
-    if best_len.map_or(false, |x| max_len_here >= x) {
+    if best_len.is_some_and(|x| max_len_here >= x) {
         // We've already failed, so give up.
         return best_len;
     }

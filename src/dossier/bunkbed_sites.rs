@@ -17,7 +17,7 @@ enum VertexState {
 }
 
 impl VertexState {
-    fn flip(&self) -> VertexState {
+    fn flip(&self) -> Self {
         use VertexState::*;
         match self {
             DOWN => UP,
@@ -26,7 +26,7 @@ impl VertexState {
         }
     }
 
-    fn connects_to(&self, other: VertexState) -> bool {
+    fn connects_to(&self, other: Self) -> bool {
         use VertexState::*;
         match self {
             DOWN => other != UP,
@@ -43,7 +43,7 @@ struct Counts {
 }
 
 impl Counts {
-    const ZERO: Counts = Counts { down: 0, up: 0 };
+    const ZERO: Self = Self { down: 0, up: 0 };
 
     fn add_inplace(&mut self, state: VertexState) {
         use VertexState::*;
@@ -94,7 +94,7 @@ fn process_config(g: &Graph, states: &VertexVec<VertexState>, counts: &mut Verte
 fn get_counts_conditional(g: &Graph, unreachable: VertexSet) -> VertexVec<Counts> {
     use VertexState::*;
     // could read posts from user input?
-    let posts = vec![Vertex::of_usize(1), Vertex::of_usize(4), Vertex::of_usize(7)];
+    let posts = [Vertex::of_usize(1), Vertex::of_usize(4), Vertex::of_usize(7)];
     let mut states = VertexVec::new(g.n, &DOWN);
     for post in posts.iter() {
         if post.less_than(g.n) {
@@ -169,7 +169,7 @@ pub fn signatures(g: &Graph) -> Vec<String> {
     let mut reachable = VertexVec::new(g.n, &vec![false; pow]);
     let mut is_post = VertexVec::new(g.n, &false);
     let mut rng = thread_rng();
-    let b = Digraph::random_semiorientation(&g, 0.3333);
+    let b = Digraph::random_semiorientation(g, 0.3333);
     for v in g.iter_verts() {
         if rng.gen_bool(0.3) {
             is_post[v] = true;
@@ -237,7 +237,7 @@ pub fn signatures(g: &Graph) -> Vec<String> {
             let mut new_code: u128 = 0;
             for (s_code, b) in reachable[v].iter().enumerate() {
                 if *b {
-                    let s = VertexSet::of_int(s_code as u128, g.n).permute(&sigma);
+                    let s = VertexSet::of_int(s_code as u128, g.n).permute(sigma);
                     new_code += 1 << s.to_usize();
                 }
             }

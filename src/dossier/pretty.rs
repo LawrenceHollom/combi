@@ -34,24 +34,24 @@ struct Printer {
 }
 
 impl Point {
-    pub const ZERO: Point = Point { x: 0.0, y: 0.0 };
+    pub const ZERO: Self = Self { x: 0.0, y: 0.0 };
 
-    pub fn new_random(rng: &mut ThreadRng) -> Point {
-        Point {
+    pub fn new_random(rng: &mut ThreadRng) -> Self {
+        Self {
             x: rng.gen_range(0.0..1.0),
             y: rng.gen_range(0.0..1.0),
         }
     }
 
-    pub fn new_cyclic(n: Order, v: Vertex) -> Point {
+    pub fn new_cyclic(n: Order, v: Vertex) -> Self {
         let theta = 2.0 * core::f64::consts::PI * v.as_fraction_of(n);
-        Point { x: (theta.cos() + 1.0) / 2.0, y: (theta.sin() + 1.0) / 2.0 }
+        Self { x: (theta.cos() + 1.0) / 2.0, y: (theta.sin() + 1.0) / 2.0 }
     }
 
-    pub fn to_pixel_coords(&self, width: u32, height: u32) -> Point {
+    pub fn to_pixel_coords(&self, width: u32, height: u32) -> Self {
         let x = (width as f64) * (self.x + 0.15) / 1.3;
         let y = (height as f64) * (self.y + 0.15) / 1.3;
-        Point { x, y }
+        Self { x, y }
     }
 
     pub fn to_int_coords(&self, width: u32, height: u32) -> (u32, u32) {
@@ -66,15 +66,15 @@ impl Point {
     /**
      * Scales the point so that the given rectangle is mapped onto [0, 1]^2
      */
-    pub fn scale_to(&self, min_x: f64, max_x: f64, min_y: f64, max_y: f64) -> Point {
-        Point {
+    pub fn scale_to(&self, min_x: f64, max_x: f64, min_y: f64, max_y: f64) -> Self {
+        Self {
             x: (self.x - min_x) / (max_x - min_x),
             y: (self.y - min_y) / (max_y - min_y),
         }
     }
 
-    pub fn rotate90(&self) -> Point {
-        Point {
+    pub fn rotate90(&self) -> Self {
+        Self {
             x: -self.y,
             y: self.x,
         }
@@ -84,12 +84,12 @@ impl Point {
 impl Embedding {
     const EDGE_N_CUTOFF: usize = 40;
 
-    pub fn new(g: &Graph, repulsion_scale_scale: f64, edge_repulsion_threshold: f64, rng: &mut ThreadRng) -> Embedding {
+    pub fn new(g: &Graph, repulsion_scale_scale: f64, edge_repulsion_threshold: f64, rng: &mut ThreadRng) -> Self {
         let mut positions = VertexVec::new(g.n, &Point::ZERO);
         for pos in positions.iter_mut() {
             *pos = Point::new_random(rng);
         }
-        Embedding {
+        Self {
             positions,
             delta: 0.05,
             repulsion_scale: repulsion_scale_scale / (g.n.to_usize() as f64),
@@ -98,9 +98,9 @@ impl Embedding {
         }
     }
 
-    pub fn new_cyclic(g: &Graph) -> Embedding {
+    pub fn new_cyclic(g: &Graph) -> Self {
         let positions = VertexVec::new_fn(g.n, |v| Point::new_cyclic(g.n, v));
-        Embedding { 
+        Self { 
             positions, 
             delta: 0.0, 
             repulsion_scale: 0.0, 
@@ -243,8 +243,8 @@ impl Printer {
     const WHITE: Rgba<u8> = Rgba([255, 255, 255, 255]);
     const BLACK: Rgba<u8> = Rgba([0, 0, 0, 255]);
 
-    pub fn new() -> Printer {
-        Printer {
+    pub fn new() -> Self {
+        Self {
             node_bg: read_image( "base"),
             numbers: read_image("numbers"),
             width: 1000,
@@ -266,7 +266,7 @@ impl Printer {
         let num_steps = (length * 5.0) as usize;
         let mut pos = start;
         for _i in 0..num_steps {
-            pos = pos + step;
+            pos += step;
             self.set_point_black(pos, imgbuf);
         }
     }
@@ -283,7 +283,7 @@ impl Printer {
         let head_ratio = 2;
         let mut pos = start;
         for i in 0..num_steps {
-            pos = pos + step;
+            pos += step;
             self.set_point_black(pos, imgbuf);
             if i >= head_pos && i <= head_pos + head_length {
                 // Draw the arrowhead
@@ -321,7 +321,7 @@ impl Printer {
         let name_len = name.len() as u32;
         for (i, c) in name.chars().enumerate() {
             let digit_x = x + (10 * i as u32) - ((name_len - 1) * 5);
-            let digit = (c as u8 - '0' as u8) as u32;
+            let digit = (c as u8 - b'0') as u32;
             self.draw_img_at_point(imgbuf, &self.numbers, digit_x, y, digit, 10, None);
         }
     }
@@ -484,36 +484,36 @@ pub fn save_buffer(imgbuf: &ImageBuffer<image::Rgba<u8>, Vec<u8>>, filename: &st
     imgbuf.save(filename).unwrap()
 }
 
-impl Sub<Point> for Point {
-    type Output = Point;
+impl Sub<Self> for Point {
+    type Output = Self;
 
-    fn sub(self, rhs: Point) -> Self::Output {
-        Point {
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self {
             x: self.x - rhs.x,
             y: self.y - rhs.y,
         }
     }
 }
 
-impl AddAssign<Point> for Point {
-    fn add_assign(&mut self, rhs: Point) {
+impl AddAssign<Self> for Point {
+    fn add_assign(&mut self, rhs: Self) {
         self.x += rhs.x;
         self.y += rhs.y;
     }
 }
 
-impl SubAssign<Point> for Point {
-    fn sub_assign(&mut self, rhs: Point) {
+impl SubAssign<Self> for Point {
+    fn sub_assign(&mut self, rhs: Self) {
         self.x -= rhs.x;
         self.y -= rhs.y;
     }
 }
 
-impl Add<Point> for Point {
-    type Output = Point;
+impl Add<Self> for Point {
+    type Output = Self;
 
-    fn add(self, rhs: Point) -> Self::Output {
-        Point {
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
             x: self.x + rhs.x,
             y: self.y + rhs.y,
         }
@@ -521,10 +521,10 @@ impl Add<Point> for Point {
 }
 
 impl Div<f64> for Point {
-    type Output = Point;
+    type Output = Self;
 
     fn div(self, rhs: f64) -> Self::Output {
-        Point {
+        Self {
             x: self.x / rhs,
             y: self.y / rhs,
         }
@@ -532,10 +532,10 @@ impl Div<f64> for Point {
 }
 
 impl Mul<f64> for Point {
-    type Output = Point;
+    type Output = Self;
 
     fn mul(self, rhs: f64) -> Self::Output {
-        Point {
+        Self {
             x: self.x * rhs,
             y: self.y * rhs,
         }

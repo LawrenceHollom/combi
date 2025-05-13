@@ -18,10 +18,10 @@ struct Grabbed {
 }
 
 impl Add for Weight {
-    type Output = Weight;
+    type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        Weight(self.0 + rhs.0)
+        Self(self.0 + rhs.0)
     }
 }
 
@@ -32,24 +32,24 @@ impl AddAssign for Weight {
 }
 
 impl Grabbed {
-    const ZERO: Grabbed = Grabbed { alice: Weight(0), bob: Weight(0) };
+    const ZERO: Self = Self { alice: Weight(0), bob: Weight(0) };
 
     #[allow(dead_code)]
-    fn new(alice: Weight, bob: Weight) -> Grabbed {
-        Grabbed { alice, bob }
+    fn new(alice: Weight, bob: Weight) -> Self {
+        Self { alice, bob }
     }
 
-    fn add_immutable(&self, w: Weight, is_alice_turn: bool) -> Grabbed {
+    fn add_immutable(&self, w: Weight, is_alice_turn: bool) -> Self {
         if is_alice_turn {
-            Grabbed { alice: self.alice + w, bob: self.bob }
+            Self { alice: self.alice + w, bob: self.bob }
         } else {
-            Grabbed { alice: self.alice, bob: self.bob + w }
+            Self { alice: self.alice, bob: self.bob + w }
         }
     }
 
     fn has_won(&self, total: Weight, is_alice_turn: bool) -> bool {
         if is_alice_turn {
-            self.alice.0 >= (total.0 + 1) / 2
+            self.alice.0 >= total.0.div_ceil(2)
         } else {
             self.bob.0 >= (total.0 + 2) / 2
         }
@@ -79,7 +79,7 @@ fn print_weighting(w: &VertexVec<Weight>) {
 fn get_random_weighting(g: &Graph, rng: &mut ThreadRng, max_weight: u32, zeroes: Option<&VertexVec<bool>>) -> VertexVec<Weight> {
     let mut w = VertexVec::new(g.n, &Weight(0));
     for v in g.iter_verts() {
-        if zeroes.map_or(true, |zs| !zs[v]) {
+        if zeroes.is_none_or(|zs| !zs[v]) {
             w[v] = Weight(rng.gen_range(0..=max_weight));
         }
     }
@@ -342,7 +342,7 @@ fn grabbing_game_scores(g: &Graph, w: &VertexVec<Weight>, root: Option<Vertex>, 
 fn get_coleaf_weighting(g: &Graph, filter: Option<&VertexVec<bool>>, max_weight: Weight, rng: &mut ThreadRng) -> VertexVec<Weight> {
     let mut w = VertexVec::new(g.n, &Weight(0));
     for (v, d) in g.deg.iter_enum() {
-        if filter.map_or(false, |f| *f.get(v).unwrap_or(&false)) {
+        if filter.is_some_and(|f| *f.get(v).unwrap_or(&false)) {
             w[v] = Weight(rng.gen_range(0..=max_weight.0));
         } else if d.more_than(1) {
             w[v] = Weight(rng.gen_range(1..=max_weight.0));
@@ -703,7 +703,7 @@ fn has_partially_filled_semicorona_like_structure(g: &Graph, set: VertexSet) -> 
                 break 'test_nbrs;
             }
         }
-        if let Some(_) = leaf {
+        if leaf.is_some() {
             if prongs.len() == 2 {
                 // Prongs are adjacent to precisely one leaf and the centre.
                 let mut cycle_len = 2;
@@ -806,11 +806,9 @@ pub fn has_induced_odd_cycle_corona(g: &Graph) -> bool {
     let mut found_corona = false;
     'search_sets: for set in g.iter_vertex_subsets() {
         let size = set.size();
-        if size >= 6 && size % 4 == 2 {
-            if has_corona_like_structure(g, set) {
-                found_corona = true;
-                break 'search_sets;
-            }
+        if size >= 6 && size % 4 == 2 && has_corona_like_structure(g, set) {
+            found_corona = true;
+            break 'search_sets;
         }
     }
     found_corona
@@ -820,11 +818,9 @@ pub fn has_induced_odd_cycle_semicorona(g: &Graph) -> bool {
     let mut found_corona = false;
     'search_sets: for set in g.iter_vertex_subsets() {
         let size = set.size();
-        if size >= 6 && size % 2 == 0 {
-            if has_semicorona_like_structure(g, set) || has_filled_semicorona_like_structure(g, set) || has_partially_filled_semicorona_like_structure(g, set) {
-                found_corona = true;
-                break 'search_sets;
-            }
+        if size >= 6 && size % 2 == 0 && (has_semicorona_like_structure(g, set) || has_filled_semicorona_like_structure(g, set) || has_partially_filled_semicorona_like_structure(g, set)) {
+            found_corona = true;
+            break 'search_sets;
         }
     }
     found_corona
@@ -834,11 +830,9 @@ pub fn has_induced_fork(g: &Graph) -> bool {
     let mut found_fork = false;
     'search_sets: for set in g.iter_vertex_subsets() {
         let size = set.size();
-        if size == 6 {
-            if is_induced_fork(g, set) {
-                found_fork = true;
-                break 'search_sets;
-            }
+        if size == 6 && is_induced_fork(g, set) {
+            found_fork = true;
+            break 'search_sets;
         }
     }
     found_fork

@@ -44,7 +44,7 @@ impl VertexPattern {
         }
     }
 
-    pub fn of_string(text: &str) -> Option<VertexPattern> {
+    pub fn of_string(text: &str) -> Option<Self> {
         let (pattern, args) = parse_function_like(text);
         use VertexPattern::*;
 
@@ -120,7 +120,7 @@ impl VertexPattern {
 }
 
 impl GraphWithVertices {
-    pub fn new(pattern: &VertexPattern) -> GraphWithVertices {
+    pub fn new(pattern: &VertexPattern) -> Self {
         use VertexPattern::*;
         match pattern {
             Bowties(d) => bowties::new(d),
@@ -136,7 +136,7 @@ impl EdgePattern {
         }
     }
 
-    pub fn of_string(text: &str) -> Option<EdgePattern> {
+    pub fn of_string(text: &str) -> Option<Self> {
         let (pattern, _args) = parse_function_like(text);
         use EdgePattern::*;
 
@@ -228,7 +228,7 @@ impl EdgePattern {
 }
 
 impl GraphWithEdges {
-    pub fn new(pattern: &EdgePattern) -> GraphWithEdges {
+    pub fn new(pattern: &EdgePattern) -> Self {
         use EdgePattern::*;
         match pattern {
             TriplePentagons => triple_pentagons::new()

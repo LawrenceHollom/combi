@@ -64,8 +64,8 @@ pub struct Controller {
 }
 
 impl Tabulation {
-    pub fn new(order: Order, start: f64, end: f64, step: f64) -> Tabulation {
-        Tabulation { order, start, end, step }
+    pub fn new(order: Order, start: f64, end: f64, step: f64) -> Self {
+        Self { order, start, end, step }
     }
 }
 
@@ -84,7 +84,7 @@ impl fmt::Display for LineGraphMetadata {
 }
 
 impl Instruction {
-    pub fn of_string(text: &str) -> Instruction {
+    pub fn of_string(text: &str) -> Self {
         use Instruction::*;
         let (func, args) = parse_function_like(text);
 
@@ -113,11 +113,11 @@ impl Instruction {
             }
             "kitchen" | "kitchen_sink" | "sink" => {
                 KitchenSink(args.iter().map(|arg| 
-                    BoolOperation::of_string_result(*arg).unwrap()).collect())
+                    BoolOperation::of_string_result(arg).unwrap()).collect())
             }
             "sink_all" => {
                 KitchenSinkAll(args.iter().map(|arg| 
-                    BoolOperation::of_string_result(*arg).unwrap()).collect())
+                    BoolOperation::of_string_result(arg).unwrap()).collect())
             }
             "process" | "proc" => {
                 Process(Order::of_string(args[0]))
@@ -127,15 +127,15 @@ impl Instruction {
             }
             "process_until" | "proc_until" => {
                 ProcessUntil(Order::of_string(args[0]),
-                    args.iter().skip(1).map(|arg| BoolOperation::of_string_result(*arg).unwrap()).collect())
+                    args.iter().skip(1).map(|arg| BoolOperation::of_string_result(arg).unwrap()).collect())
             }
             "process_until_decreasing" | "proc_until_dec" => {
                 ProcessUntilDecreasing(Order::of_string(args[0]), IntOperation::of_string_result(args[1]).unwrap(),
-                    args.iter().skip(2).map(|arg| BoolOperation::of_string_result(*arg).unwrap()).collect())
+                    args.iter().skip(2).map(|arg| BoolOperation::of_string_result(arg).unwrap()).collect())
             }
             "search_all" | "all" => {
                 SearchAll(Order::of_string(args[0]),
-                    args.iter().skip(1).map(|arg| BoolOperation::of_string_result(*arg).unwrap()).collect())
+                    args.iter().skip(1).map(|arg| BoolOperation::of_string_result(arg).unwrap()).collect())
             }
             "collate" => {
                 Collate(Constructor::of_string(args[0]), args[1].parse().unwrap(),
@@ -221,7 +221,7 @@ impl fmt::Display for Instruction {
 }
 
 impl Controller {
-    pub fn of_string(text: &str) -> Controller {
+    pub fn of_string(text: &str) -> Self {
         /*let re = regex::Regex::new(r"->|=>").unwrap();
         let pars: Vec<&str> = re.split(text).map(|par| par.trim()).collect();*/
         let pars = match parse_infix_like_restricted(text, vec!['-', '=', '>']) {
@@ -237,7 +237,7 @@ impl Controller {
                 vec![]
             };
 
-        Controller {
+        Self {
             instruction: controller,
             operations,
         }
@@ -640,7 +640,7 @@ impl Controller {
                     println!("Entity: ");
                     dossier.print_entity();
                 }
-                if self.operations.len() > 0 {
+                if !self.operations.is_empty() {
                     self.compute_and_print(&mut dossier, &mut ann);
                 }
                 satisfied = true;

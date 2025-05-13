@@ -27,7 +27,7 @@ pub struct EdgeIterator<'a> {
 }
 
 impl Graph {
-    pub fn of_adj_list(adj_list: VertexVec<Vec<Vertex>>, constructor: Constructor) -> Graph {
+    pub fn of_adj_list(adj_list: VertexVec<Vec<Vertex>>, constructor: Constructor) -> Self {
         let n = adj_list.len();
         let mut adj = VertexVec::new(n, &VertexVec::new(n, &false));
         let deg = adj_list.iter().map(|adjs| Degree::of_usize(adjs.len())).collect();
@@ -38,7 +38,7 @@ impl Graph {
             }
         }
         
-        Graph {
+        Self {
             n,
             adj,
             adj_list,
@@ -47,7 +47,7 @@ impl Graph {
         }
     }
 
-    pub fn of_matrix(adj: VertexVec<VertexVec<bool>>, constructor: Constructor) -> Graph {
+    pub fn of_matrix(adj: VertexVec<VertexVec<bool>>, constructor: Constructor) -> Self {
         let n = adj.len();
         let mut adj_list = VertexVec::new(n, &vec![]);
         let mut deg = VertexVec::new(n, &Degree::ZERO);
@@ -61,7 +61,7 @@ impl Graph {
             }
         }
 
-        Graph { 
+        Self { 
             n,
             adj,
             adj_list,
@@ -75,7 +75,7 @@ impl Graph {
      * This constructs a symmetric version (adj | adj^T), and builds the graph from that.
      * e.g. used when undirecting a directed graph.
      */
-    pub fn of_matrix_to_be_symmetrised(assym: &VertexVec<VertexVec<bool>>, constructor: Constructor) -> Graph {
+    pub fn of_matrix_to_be_symmetrised(assym: &VertexVec<VertexVec<bool>>, constructor: Constructor) -> Self {
         let n = assym.len();
         let mut adj = VertexVec::new(n, &VertexVec::new(n, &false));
         let mut adj_list = VertexVec::new(n, &vec![]);
@@ -92,7 +92,7 @@ impl Graph {
             }
         }
 
-        Graph { 
+        Self { 
             n,
             adj,
             adj_list,
@@ -101,7 +101,7 @@ impl Graph {
         }
     }
 
-    pub fn new_complete(n: Order) -> Graph {
+    pub fn new_complete(n: Order) -> Self {
         let mut adj_list = VertexVec::new(n, &vec![]);
 
         for (i, j) in n.iter_pairs() {
@@ -109,10 +109,10 @@ impl Graph {
             adj_list[j].push(i);
         }
 
-        Graph::of_adj_list(adj_list, Raw(Complete(n)))
+        Self::of_adj_list(adj_list, Raw(Complete(n)))
     }
 
-    pub fn new_complete_bipartite(left: Order, right: Order) -> Graph {
+    pub fn new_complete_bipartite(left: Order, right: Order) -> Self {
         let mut adj_list = VertexVec::new(left + right, &vec![]);
 
         for j in right.iter_verts() {
@@ -123,10 +123,10 @@ impl Graph {
             }
         }
 
-        Graph::of_adj_list(adj_list, Raw(CompleteBipartite(left, right)))
+        Self::of_adj_list(adj_list, Raw(CompleteBipartite(left, right)))
     }
 
-    pub fn new_complete_multipartite(orders: &Vec<Order>) -> Graph {
+    pub fn new_complete_multipartite(orders: &Vec<Order>) -> Self {
         let mut n_u = 0;
         for order in orders.iter() {
             n_u += order.to_usize();
@@ -147,10 +147,10 @@ impl Graph {
             num_vertices_placed += part.to_usize()
         }
 
-        Graph::of_adj_list(adj_list, Raw(CompleteMultipartite(orders.to_owned())))
+        Self::of_adj_list(adj_list, Raw(CompleteMultipartite(orders.to_owned())))
     }
 
-    pub fn new_turan(n: Order, chi: usize) -> Graph {
+    pub fn new_turan(n: Order, chi: usize) -> Self {
         let mut adj_list = VertexVec::new(n, &vec![]);
         let mut num_vertices_placed = 0;
         let n_u = n.to_usize();
@@ -169,10 +169,10 @@ impl Graph {
             num_vertices_placed += class_size;
         }
 
-        Graph::of_adj_list(adj_list, Raw(Turan(n, chi)))
+        Self::of_adj_list(adj_list, Raw(Turan(n, chi)))
     }
 
-    pub fn new_cyclic(n: Order) -> Graph {
+    pub fn new_cyclic(n: Order) -> Self {
         let mut adj_list = VertexVec::new_fn(n, |_| vec![]);
 
         for i in n.iter_verts() {
@@ -180,10 +180,10 @@ impl Graph {
             adj_list[i].push(i.decr_wrap(n));
         }
 
-        Graph::of_adj_list(adj_list, Raw(Cyclic(n)))
+        Self::of_adj_list(adj_list, Raw(Cyclic(n)))
     }
 
-    pub fn new_path(n: Order) -> Graph {
+    pub fn new_path(n: Order) -> Self {
         let mut adj_list = VertexVec::new_fn(n, |_| vec![]);
 
         for i in n.iter_verts().take(n.to_usize() - 1) {
@@ -193,10 +193,10 @@ impl Graph {
             adj_list[i].push(i.decr());
         }
 
-        Graph::of_adj_list(adj_list, Raw(Path(n)))
+        Self::of_adj_list(adj_list, Raw(Path(n)))
     }
 
-    pub fn new_star(n: Order) -> Graph {
+    pub fn new_star(n: Order) -> Self {
         let mut adj_list = VertexVec::new_fn(n, |_| vec![]);
         let zero = Vertex::of_usize(0);
 
@@ -205,20 +205,20 @@ impl Graph {
             adj_list[i].push(zero);
         }
 
-        Graph::of_adj_list(adj_list, Raw(Star(n)))
+        Self::of_adj_list(adj_list, Raw(Star(n)))
     }
 
-    pub fn new_empty(n: Order) -> Graph {
+    pub fn new_empty(n: Order) -> Self {
         let adj_list = VertexVec::new_fn(n, |_| vec![]);
         
-        Graph::of_adj_list(adj_list, Raw(Empty(n)))
+        Self::of_adj_list(adj_list, Raw(Empty(n)))
     }
 
     /**
      * Returns a new graph containing only those vertices for which filter is true
      * Also returns the map from new vertex index to old vertex index.
      */
-    pub fn of_filtered_with_map(&self, filter: &VertexVec<bool>) -> (Graph, VertexVec<Vertex>) {
+    pub fn of_filtered_with_map(&self, filter: &VertexVec<bool>) -> (Self, VertexVec<Vertex>) {
         let n = Order::of_usize(filter.iter().filter(|x| **x).count());
         let mut adj_list: VertexVec<Vec<Vertex>> = VertexVec::new(n, &vec![]);
 
@@ -239,18 +239,18 @@ impl Graph {
             }
         }
 
-        (Graph::of_adj_list(adj_list, Special), map)
+        (Self::of_adj_list(adj_list, Special), map)
     }
 
     /**
      * Returns a new graph containing only those vertices for which the filter is true.
      */
-    pub fn of_filtered(&self, filter: &VertexVec<bool>) -> Graph {
+    pub fn of_filtered(&self, filter: &VertexVec<bool>) -> Self {
         let (g, _) = self.of_filtered_with_map(filter);
         g
     }
 
-    pub fn bunkbed(&self) -> Graph {
+    pub fn bunkbed(&self) -> Self {
         let new_n = self.n + self.n;
         let mut adj_list = VertexVec::new_fn(new_n, |_| vec![]);
         let nu = self.n.to_usize();
@@ -266,7 +266,7 @@ impl Graph {
             }
         }
 
-        Graph::of_adj_list(adj_list, Special)
+        Self::of_adj_list(adj_list, Special)
     }
 
     pub fn iter_verts(&self) -> impl Iterator<Item = Vertex> {
@@ -281,7 +281,7 @@ impl Graph {
         EdgeIterator::new(self)
     }
 
-    pub fn is_isomorphic_to(&self, g: &Graph) -> bool {
+    pub fn is_isomorphic_to(&self, g: &Self) -> bool {
         isomorphisms::is_isomorphic_to(self, g)
     }
 
@@ -352,7 +352,7 @@ impl Graph {
         let mut num_comps: u32 = 0;
     
         for (i, comp) in comps.iter_enum() {
-            if filter.map_or(true, |f| f[i]) && !is_comp[comp.to_vertex()] {
+            if filter.is_none_or(|f| f[i]) && !is_comp[comp.to_vertex()] {
                 num_comps += 1;
                 is_comp[comp.to_vertex()] = true;
             }
@@ -392,14 +392,14 @@ impl Graph {
     pub fn get_vertex_far_from(&self, start: Vertex, min_dist: u32) -> Option<Vertex> {
         let dists = self.flood_fill_dist(start);
         for (v, dist) in dists.iter_enum() {
-            if dist.map_or(false, |x| x >= min_dist) {
+            if dist.is_some_and(|x| x >= min_dist) {
                 return Some(v)
             }
         }
         None
     }
 
-    fn permute_vertices(&self, ordering: &VertexVec<Vertex>) -> (Graph, VertexVec<Vertex>) {
+    fn permute_vertices(&self, ordering: &VertexVec<Vertex>) -> (Self, VertexVec<Vertex>) {
         let mut ordering_inv: VertexVec<Vertex> = VertexVec::new(self.n, &Vertex::ZERO);
 
         for i in self.iter_verts() {
@@ -412,7 +412,7 @@ impl Graph {
                 adj_list[u].push(ordering_inv[*v]);
             }
         }
-        let g = Graph::of_adj_list(adj_list, self.constructor.to_owned());
+        let g = Self::of_adj_list(adj_list, self.constructor.to_owned());
         (g, ordering_inv)
     }
 
@@ -422,7 +422,7 @@ impl Graph {
     // - Repeat until all vertices pushed.
     //
     // This will be used to try and speed up some NP-hard search algos.
-    pub fn order_by_nbhd(&self) -> (Graph, VertexVec<Vertex>) {
+    pub fn order_by_nbhd(&self) -> (Self, VertexVec<Vertex>) {
         let mut placed = VertexVec::new(self.n, &false);
         let mut ordering: VertexVec<Vertex> = VertexVec::new(self.n, &Vertex::ZERO);
         let mut num_placed = 0;
@@ -457,7 +457,7 @@ impl Graph {
         self.permute_vertices(&ordering)
     }
 
-    pub fn randomly_permute_vertices(&self) -> (Graph, VertexVec<Vertex>) {
+    pub fn randomly_permute_vertices(&self) -> (Self, VertexVec<Vertex>) {
         let mut rng = thread_rng();
         let mut ordering: VertexVec<Vertex> = self.n.iter_verts().collect();
         ordering.shuffle(&mut rng);
@@ -480,7 +480,7 @@ impl Graph {
         flood_fill::flood_fill_edge_components(self, edge_filter, indexer)
     }
 
-    pub fn complement(&self) -> Graph {
+    pub fn complement(&self) -> Self {
         let mut new_adj_list = VertexVec::new(self.n, &vec![]);
 
         for (i, j) in self.n.iter_pairs() {
@@ -490,7 +490,7 @@ impl Graph {
             }
         }
 
-        Graph::of_adj_list(new_adj_list, Special)
+        Self::of_adj_list(new_adj_list, Special)
     }
 
     pub fn print(&self) {
@@ -734,7 +734,7 @@ impl Graph {
      */
     pub fn get_bfs_width(&self) -> usize {
         let mut bfs_iterator = self.iter_verts_bfs();
-        while let Some(_) = bfs_iterator.next() { }
+        for _ in bfs_iterator.by_ref() { }
         bfs_iterator.max_width
     }
 
@@ -751,7 +751,7 @@ impl Graph {
     }
 
     #[allow(dead_code)]
-    pub fn test_graph(index: usize) -> Graph {
+    pub fn test_graph(index: usize) -> Self {
         crate::constructor::from_file::new_entity(&format!("test/test_{}", index)).as_owned_graph()
     }
 
@@ -763,12 +763,12 @@ impl Graph {
                     out.push_str(&format!("*{}", u))
                 }
             }
-            out.push_str("|")
+            out.push('|')
         }
         out
     }
 
-    pub fn deserialise(code: &str) -> Graph {
+    pub fn deserialise(code: &str) -> Self {
         let pars = code.split("|").collect::<Vec<&str>>();
         let n = Order::of_usize(pars.len());
         let mut adj_list = VertexVec::new(n, &vec![]);
@@ -780,7 +780,7 @@ impl Graph {
                 adj_list[v].push(u);
             }
         }
-        Graph::of_adj_list(adj_list, Serialised(code.to_owned()))
+        Self::of_adj_list(adj_list, Serialised(code.to_owned()))
     }
 }
 

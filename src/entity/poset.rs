@@ -33,7 +33,7 @@ pub struct Poset {
  */
 
 impl Poset {
-    pub fn new_chain(order: Order) -> Poset {
+    pub fn new_chain(order: Order) -> Self {
         let gt = VertexVec::new_fn(order, 
             |u| VertexVec::new_fn(order, |v| u > v));
         let mut upper_covers = VertexVec::new(order, &VertexSet::new(order));
@@ -56,7 +56,7 @@ impl Poset {
                 }
             }
         }
-        Poset {
+        Self {
             order,
             gt,
             upper_covers,
@@ -69,8 +69,8 @@ impl Poset {
         }
     }
 
-    pub fn new_antichain(order: Order) -> Poset {
-        Poset {
+    pub fn new_antichain(order: Order) -> Self {
+        Self {
             order,
             gt: VertexVec::new(order, &VertexVec::new(order, &false)),
             upper_covers: VertexVec::new(order, &VertexSet::new(order)),
@@ -90,7 +90,7 @@ impl Poset {
         VertexVec::new_fn(self.order, |u| VertexVec::new_fn(self.order, |v| self.gt[u][v] && q[u][v]))
     }
 
-    pub fn of_ordering(gt: VertexVec<VertexVec<bool>>, constructor: Constructor) -> Poset {
+    pub fn of_ordering(gt: VertexVec<VertexVec<bool>>, constructor: Constructor) -> Self {
         let order = gt.len();
         let mut upper_covers = VertexVec::new(order, &VertexSet::new(order));
         let mut lower_covers = VertexVec::new(order, &VertexSet::new(order));
@@ -140,7 +140,7 @@ impl Poset {
             max_height = max_height.max(heights[v]);
         }
         
-        Poset {
+        Self {
             order,
             gt,
             upper_covers,
@@ -157,7 +157,7 @@ impl Poset {
      * First take the transitive closure of the ordering and then make the poset from it.
      * Runs Floyd-Warshall.
      */
-    pub fn of_transitive_closure(mut gt: VertexVec<VertexVec<bool>>, constructor: Constructor) -> Poset {
+    pub fn of_transitive_closure(mut gt: VertexVec<VertexVec<bool>>, constructor: Constructor) -> Self {
         let order = gt.len();
         for k in order.iter_verts() {
             for i in order.iter_verts() {
@@ -166,7 +166,7 @@ impl Poset {
                 }
             }
         }
-        Poset::of_ordering(gt, constructor)
+        Self::of_ordering(gt, constructor)
     }
 
     /**

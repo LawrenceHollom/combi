@@ -6,7 +6,7 @@ use queues::*;
 
 fn is_k_connected_rec(g: &Graph, picked: &mut VertexVec<bool>, next_vert: Vertex, picks_left: usize, filter: Option<&VertexVec<bool>>) -> bool {
     fn passes_filter(filter: Option<&VertexVec<bool>>, v: Vertex) -> bool {
-        filter.map_or(true, |filter| filter[v])
+        filter.is_none_or(|filter| filter[v])
     }
     if picks_left == 0 {
         // test if g is connected without picked vertices.

@@ -123,7 +123,7 @@ struct ConfSignature {
 }
 
 impl ConfSignature {
-    pub fn new(g: &Graph, config: &EdgeSet, indexer: &EdgeIndexer) -> ConfSignature {
+    pub fn new(g: &Graph, config: &EdgeSet, indexer: &EdgeIndexer) -> Self {
         let mut posts_index = VertexSet::new(g.n);
         let mut blanks_index = EdgeSet::new(indexer);
         let mut doubles_index = EdgeSet::new(indexer);
@@ -144,7 +144,7 @@ impl ConfSignature {
                 }
             }
         }
-        ConfSignature { posts_index, blanks_index, doubles_index }
+        Self { posts_index, blanks_index, doubles_index }
     }
 }
 
@@ -466,7 +466,7 @@ pub fn interesting_configurations(g: &Graph, u: Vertex, print_size: Option<usize
                 } else {
                     negative_unflippable_count[num_open_edges] += 1;
                 }
-                if print_size.map_or(true, |x| x == num_open_edges) {
+                if print_size.is_none_or(|x| x == num_open_edges) {
                     if sign == 1 {
                         positive_unflippable_configs.push(config.to_owned());
                     } else {

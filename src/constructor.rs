@@ -122,7 +122,7 @@ pub enum Constructor {
 }
 
 impl Constructor {
-    pub fn of_string(text: &str) -> Constructor {
+    pub fn of_string(text: &str) -> Self {
         // must be otf func_tion(a, b, c, ...)
         let (func, args) = parse_function_like(text);
         use Constructor::*;
@@ -173,20 +173,20 @@ impl Constructor {
                 let n = Order::of_string(args[0]);
                 let p: f64 = args[1].parse().unwrap();
                 if args.len() == 3 {
-                    Random(BasedErdosRenyi(n, p, Box::new(Constructor::of_string(args[2]))))
+                    Random(BasedErdosRenyi(n, p, Box::new(Self::of_string(args[2]))))
                 } else {
                     Random(ErdosRenyi(n, p))
                 }
             },
             "g_ind" => {
                 Random(InducedErdosRenyi(Order::of_string(args[0]), args[1].parse().unwrap(), 
-                    Box::new(Constructor::of_string(args[2]))))
+                    Box::new(Self::of_string(args[2]))))
             }
             "random_bipartite" | "b" => {
                 Random(RandomBipartite(Order::of_string(args[0]), args[1].parse().unwrap()))
             }
             "subgraph" | "sub" => {
-                Random(RandomSubgraph(Box::new(Constructor::of_string(args[0])), 
+                Random(RandomSubgraph(Box::new(Self::of_string(args[0])), 
                     args[1].parse().unwrap()))
             }
             "triangulation" | "tri" => {
@@ -436,7 +436,7 @@ impl Constructor {
 }
 
 impl ProductConstructor {
-    pub fn all() -> Vec<ProductConstructor> {
+    pub fn all() -> Vec<Self> {
         use ProductConstructor::*;
         vec![Cartesian, Tensor, Lex, RevLex, Strong, Conormal, Rooted, RevRooted]
     }

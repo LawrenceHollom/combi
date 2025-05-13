@@ -18,25 +18,25 @@ struct RERPair {
 }
 
 impl RERPair {
-    fn new(numerator: &ReducedEquivalenceRelation, denominator: &ReducedEquivalenceRelation, permutations: &HashMap<ReducedEquivalenceRelation, Vec<ReducedEquivalenceRelation>>) -> RERPair {
+    fn new(numerator: &ReducedEquivalenceRelation, denominator: &ReducedEquivalenceRelation, permutations: &HashMap<ReducedEquivalenceRelation, Vec<ReducedEquivalenceRelation>>) -> Self {
         let mut first_numer = numerator;
 		let mut first_denom = denominator;
 		for (i, permed_rel1) in permutations.get(numerator).unwrap().iter().enumerate() {
-			let permed_rel2 = &permutations.get(&denominator).unwrap()[i];
+			let permed_rel2 = &permutations.get(denominator).unwrap()[i];
 			if permed_rel1 < first_numer || (permed_rel1 == first_numer && permed_rel2 < first_denom) {
 				first_numer = permed_rel1;
 				first_denom = permed_rel2;
 			}
 		}
-        RERPair {
+        Self {
             numerator: first_numer.to_owned(),
             denominator: first_denom.to_owned(),
         }
     }
 
-    fn of_string(text: &str) -> RERPair {
+    fn of_string(text: &str) -> Self {
         let (numer, denom) = text.split_once("/").unwrap();
-        RERPair {
+        Self {
             numerator: ReducedEquivalenceRelation::of_short_string(numer),
             denominator: ReducedEquivalenceRelation::of_short_string(denom),
         }
@@ -58,8 +58,8 @@ struct BigRational {
 }
 
 impl BigRational {
-    fn new(numer: u128, denom: u128) -> BigRational {
-        BigRational { numer, denom }
+    fn new(numer: u128, denom: u128) -> Self {
+        Self { numer, denom }
     }
 
     fn is_big(&self) -> bool {
@@ -88,7 +88,7 @@ impl BigRational {
 }
 
 impl PartialEq for BigRational {
-    fn eq(&self, other: &BigRational) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         self.numer * other.denom == other.numer * self.denom
     }
 }
@@ -121,8 +121,8 @@ pub struct Data {
 }
 
 impl Data {
-	pub fn new() -> Data {
-		Data {
+	pub fn new() -> Self {
+		Self {
 			permutations: HashMap::new(),
 			rel_counts: HashMap::new(),
 			max_ratios: HashMap::new(),
@@ -321,11 +321,11 @@ impl Data {
         let lock = File::open(lock_file).unwrap();
         lock.lock_exclusive().unwrap();
 
-        let ignore_ratios = match fs::read_to_string(ignore_file.to_owned()) {
+        let ignore_ratios = match fs::read_to_string(&ignore_file) {
             Ok(contents) => Self::get_ignore_ratios(contents),
             Err(_e) => HashSet::new(),
         };
-        let previous_records = match fs::read_to_string(live_file.to_owned()) {
+        let previous_records = match fs::read_to_string(&live_file) {
             Ok(contents) => Self::get_records(contents),
             Err(_e) => panic!("Cannot find live file!")
         };

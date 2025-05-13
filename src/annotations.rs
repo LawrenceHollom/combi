@@ -57,7 +57,7 @@ struct VertexSignature {
 }
 
 impl Automorphism {
-    pub fn randomly_extend_map(g: &Graph, hashes: &VertexVec<u64>, partial: &Vec<(Vertex, Vertex)>, rng: &mut ThreadRng) -> Option<Automorphism> {
+    pub fn randomly_extend_map(g: &Graph, hashes: &VertexVec<u64>, partial: &Vec<(Vertex, Vertex)>, rng: &mut ThreadRng) -> Option<Self> {
         let mut map = VertexVec::new(g.n, &None);
         let mut map_inv = VertexVec::new(g.n, &None);
         let mut q = queue![];
@@ -148,7 +148,7 @@ impl Automorphism {
                 }
             }
             if is_autoj_good {
-                Some(Automorphism{ map })
+                Some(Self{ map })
             } else {
                 None
             }
@@ -170,7 +170,7 @@ impl Annotations {
                 Some(partn) => partn.push(v),
                 None => {
                     partns.insert(*hash, vec![v]); 
-                    ()
+                    
                 }
             }
         }
@@ -189,13 +189,13 @@ impl Annotations {
      */
     fn approximate_weak_auto_comps(g: &Graph, hashes: &VertexVec<u64>) -> UnionFind {
         let mut comps = UnionFind::new(g.n);
-        let hash_comps = Self::get_hash_paritions(&hashes);
+        let hash_comps = Self::get_hash_paritions(hashes);
         let mut rng = thread_rng();
 
         for (_hash, hash_comp) in hash_comps.iter() {
             for (i, v) in hash_comp.iter().enumerate() {
                 for w in hash_comp.iter().skip(i + 1) {
-                    if let Some(aut) = Automorphism::randomly_extend_map(&g, &hashes, &vec![(*v, *w)], &mut rng) {
+                    if let Some(aut) = Automorphism::randomly_extend_map(g, hashes, &vec![(*v, *w)], &mut rng) {
                         // We have an autoj. Hoorah! Now add the information it provides.
                         for (from, to) in aut.iter() {
                             if from != *to {
@@ -241,12 +241,12 @@ impl Annotations {
         comps
     }
 
-    pub fn new(g: &Graph) -> Annotations {
+    pub fn new(g: &Graph) -> Self {
         let dists = g.floyd_warshall();
-        let vertex_hashes = VertexSignature::compute_vertex_hashes(&g, &dists);
-        let weak_auto_comps = Self::approximate_weak_auto_comps(&g, &vertex_hashes);
-        let strong_auto_comps = Self::strong_auto_comps(&g);
-        Annotations {
+        let vertex_hashes = VertexSignature::compute_vertex_hashes(g, &dists);
+        let weak_auto_comps = Self::approximate_weak_auto_comps(g, &vertex_hashes);
+        let strong_auto_comps = Self::strong_auto_comps(g);
+        Self {
             n: g.n, 
             dists, 
             vertex_hashes, 
@@ -304,20 +304,20 @@ impl Annotations {
 }
 
 impl VertexSignature {
-    fn new(g: &Graph, v: Vertex, dists: &VertexVec<VertexVec<usize>>) -> VertexSignature {
+    fn new(g: &Graph, v: Vertex, dists: &VertexVec<VertexVec<usize>>) -> Self {
         let mut dist_counts = vec![0; g.n.to_usize()];
         for u in g.iter_verts() {
             if dists[u][v] < usize::MAX {
                 dist_counts[dists[u][v]] += 1;
             }
         }
-        VertexSignature { dist_counts }
+        Self { dist_counts }
     }
 
     pub fn compute_vertex_hashes(g: &Graph, dists: &VertexVec<VertexVec<usize>>) -> VertexVec<u64> {
         let mut hashes = VertexVec::new(g.n, &0);
         for (v, hash) in hashes.iter_mut_enum() {
-            let sig = VertexSignature::new(g, v, dists);
+            let sig = Self::new(g, v, dists);
             let mut hasher = DefaultHasher::new();
             sig.hash(&mut hasher);
             *hash = hasher.finish();

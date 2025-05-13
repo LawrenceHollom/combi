@@ -9,13 +9,13 @@ pub fn filtered_components(g: &Graph, filter: Option<BigVertexSet>) -> VertexVec
     for i in g.n.iter_verts() {
         if comp[i].is_none() {
             comp[i] = Some(i);
-            if filter.as_ref().map_or(true, |f| f.has_vert(i)) {
+            if filter.as_ref().is_none_or(|f| f.has_vert(i)) {
                 let _ = q.add(i);
                 'flood_fill: loop {
                     match q.remove() {
                         Ok(node) => {
                             for j in g.adj_list[node].iter() {
-                                if comp[*j].is_none() && filter.as_ref().map_or(true, |f| f.has_vert(*j)) {
+                                if comp[*j].is_none() && filter.as_ref().is_none_or(|f| f.has_vert(*j)) {
                                     comp[*j] = Some(i);
                                     let _ = q.add(*j);
                                 }
@@ -69,10 +69,10 @@ pub fn flood_fill(g: &Graph, start: Vertex, end: Option<Vertex>, filter: Option<
         match q.remove() {
             Ok(node) => {
                 for next in g.adj_list[node].iter() {
-                    if node != start && end.map_or(false, |x| *next == x) {
+                    if node != start && (end == Some(*next)) {
                         prev[end.unwrap()] = Some(node);
                         break 'flood_fill;
-                    } else if prev[*next].is_none() && filter.map_or(true, |f| f[*next]) {
+                    } else if prev[*next].is_none() && filter.is_none_or(|f| f[*next]) {
                         prev[*next] = Some(node);
                         let _ = q.add(*next);
                     }

@@ -52,7 +52,7 @@ pub enum IntOperation {
 }
 
 impl IntOperation {
-    pub fn of_string_result(text: &str) -> Option<IntOperation> {
+    pub fn of_string_result(text: &str) -> Option<Self> {
         use IntOperation::*;
         let (func, args) = parse_function_like(text);
         match func.trim().trim_end_matches(')').to_lowercase().as_str() {

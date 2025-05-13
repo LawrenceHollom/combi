@@ -5,7 +5,7 @@ use super::*;
 use utilities::vertex_tools::*;
 
 pub fn new(order: Order, p: f64) -> Graph {
-    if p > 1.0 || p < 0.0 {
+    if !(0.0..=1.0).contains(&p) {
         panic!("The probability p must satisfy 0 <= p <= 1 (which {} does not!)", p)
     }
     let mut adj_list = VertexVec::new(order, &vec![]);
@@ -50,11 +50,9 @@ pub fn new_induced(n: Order, p: f64, base: &Constructor) -> Graph {
                 adj[u][v] = true;
                 adj[v][u] = true;
             }
-        } else {
-            if rng.gen_bool(p) {
-                adj[u][v] = true;
-                adj[v][u] = true;
-            }
+        } else if rng.gen_bool(p) {
+            adj[u][v] = true;
+            adj[v][u] = true;
         }
     }
 

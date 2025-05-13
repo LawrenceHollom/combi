@@ -8,7 +8,7 @@ fn graph_girth(g: &Graph) -> u32 {
     for (u, d) in dist.iter_enum() {
         for v in u.incr().iter_from(g.n) {
             // If they're far away there's no point trying
-            if d[v] < (girth + 1) / 2 {
+            if d[v] < girth.div_ceil(2) {
                 let mut num_less = 0;
                 let mut num_equal = 0;
                 for w in g.adj_list[v].iter() {

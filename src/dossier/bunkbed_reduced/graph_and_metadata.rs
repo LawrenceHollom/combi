@@ -80,7 +80,7 @@ fn get_target_vertices(g: &Graph, posts: VertexSet, k: usize) -> VertexSet {
 	let mut v = g.n.to_max_vertex();
     while targets.size() < k {
         if !posts.has_vert(v) 
-                && dists[v].map_or(false, |d| d >= max_dist - 1) 
+                && dists[v].is_some_and(|d| d >= max_dist - 1) 
                 && postless_components[v] == base_component {
             targets.add_vert(v);
         }
@@ -135,13 +135,13 @@ pub struct GraphAndMetadata {
 }
 
 impl GraphAndMetadata {
-    pub fn new_deterministic(g: &Graph, k: usize) -> GraphAndMetadata {
+    pub fn new_deterministic(g: &Graph, k: usize) -> Self {
         let posts = get_posts(g, None);
 	    let targets = get_target_vertices(g, posts, k);
-        GraphAndMetadata { g: g.to_owned(), posts, targets }
+        Self { g: g.to_owned(), posts, targets }
     }
 
-	pub fn new(h: &Graph, rng: &mut ThreadRng, k: usize) -> GraphAndMetadata {
+	pub fn new(h: &Graph, rng: &mut ThreadRng, k: usize) -> Self {
 		let mut g: Graph;
 		if h.constructor.is_random() {
 			let should_be_connected = rng.gen_bool(0.8);
@@ -175,10 +175,10 @@ impl GraphAndMetadata {
 				get_posts(&g, Some(get_max_num_posts(rng)))
 			};
 		
-		GraphAndMetadata{g, posts, targets}
+		Self{g, posts, targets}
 	}
 
-	pub fn new_forced(h: &Graph, targets: VertexSet, forced_posts: VertexSet, forced_non_posts: VertexSet) -> GraphAndMetadata {
+	pub fn new_forced(h: &Graph, targets: VertexSet, forced_posts: VertexSet, forced_non_posts: VertexSet) -> Self {
 		let mut posts = forced_posts;
 		let mut non_posts = forced_non_posts;
 		non_posts.add_all(targets);
@@ -209,7 +209,7 @@ impl GraphAndMetadata {
 			}
 		}
 
-		GraphAndMetadata{g, posts, targets}
+		Self{g, posts, targets}
 	}
 
     pub fn min_distance_sum(&self) -> usize {
@@ -265,20 +265,20 @@ impl GraphAndMetadata {
 
 	pub fn get_graph_string(&self) -> String {
 		let mut s = self.g.serialise();
-		s.push_str("-");
+		s.push('-');
 		for v in self.iter_verts() {
 			if self.has_post(v) {
-				s.push_str("P")
+				s.push('P')
 			} else {
-				s.push_str("0")
+				s.push('0')
 			}
 		}
-		s.push_str("-");
+		s.push('-');
 		for v in self.iter_verts() {
 			if self.has_target(v) {
-				s.push_str("T")
+				s.push('T')
 			} else {
-				s.push_str("0")
+				s.push('0')
 			}
 		}
 		s
@@ -297,7 +297,7 @@ impl GraphAndMetadata {
     }
 
     pub fn get_n(&self) -> Order {
-        return self.g.n
+        self.g.n
     }
 
     pub fn get_targets(&self) -> VertexSet {

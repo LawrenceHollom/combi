@@ -26,7 +26,7 @@ fn fix_vertex(d: &mut Digraph, rng: &mut ThreadRng, v: Vertex, avoid: Option<Ver
         panic!("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
     }
     'find_good_flipper: for u in d.in_adj_list[v].iter() {
-        if d.in_deg[*u].at_most(max_in_deg - 1) && avoid.map_or(true, |x| x != *u) {
+        if d.in_deg[*u].at_most(max_in_deg - 1) && (avoid != Some(*u)) {
             // We can use u
             flip_to = Some(*u);
             break 'find_good_flipper;
@@ -40,7 +40,7 @@ fn fix_vertex(d: &mut Digraph, rng: &mut ThreadRng, v: Vertex, avoid: Option<Ver
             let mut u;
             'find_random_flipper: loop {
                 u = d.in_adj_list[v][rng.gen_range(0..d.in_deg[v].to_usize())];
-                if avoid.map_or(true, |x| x != u) {
+                if avoid != Some(u) {
                     break 'find_random_flipper;
                 }
             }
@@ -110,7 +110,7 @@ fn does_digraph_have_seymour_vertex(d: &Digraph) -> bool {
 pub fn has_seymour_vertex(g: &Graph) -> bool {
     if !must_trivially_have_seymour_vertex(g) {
         let delta = g.deg.max(&Degree::ZERO, Degree::cmp).unwrap();
-        let max_in_deg = (1 + delta.to_usize()) / 2;
+        let max_in_deg = delta.to_usize().div_ceil(2);
         for _i in 0..NUM_TESTS {
             if let Some(d) = construct_candidate_orientation(g, max_in_deg) {
                 if !does_digraph_have_seymour_vertex(&d) {

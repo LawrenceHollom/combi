@@ -28,14 +28,14 @@ pub enum RationalOperation {
 }
 
 impl RationalOperation {
-    fn wrap_arithmetic(op: ArithmeticOperation, par1: &str, par2: &str) -> Option<RationalOperation> {
+    fn wrap_arithmetic(op: ArithmeticOperation, par1: &str, par2: &str) -> Option<Self> {
         Self::of_string_result(par1).and_then(|par1| 
             Self::of_string_result(par2).map(|par2|
-                RationalOperation::Arithmetic(op, Box::new(par1), Box::new(par2))
+                Self::Arithmetic(op, Box::new(par1), Box::new(par2))
         ))
     }
 
-    pub fn of_string_result(text: &str) -> Option<RationalOperation> {
+    pub fn of_string_result(text: &str) -> Option<Self> {
         match parse_infix_like(text) {
             Some((par1, op, par2)) => {
                 println!("DEBUG: INFIX LIKE: [{}] [{}] [{}]", par1, op, par2);

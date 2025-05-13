@@ -23,7 +23,7 @@ pub struct EdgeIterator<'a> {
 }
 
 impl Digraph {
-    pub fn of_matrix(adj: VertexVec<VertexVec<bool>>, parameters: Vec<f64>) -> Digraph {
+    pub fn of_matrix(adj: VertexVec<VertexVec<bool>>, parameters: Vec<f64>) -> Self {
         let n = adj.len();
         let mut out_adj_list = VertexVec::new(n, &vec![]);
         let mut in_adj_list = VertexVec::new(n, &vec![]);
@@ -41,10 +41,10 @@ impl Digraph {
             }
         }
 
-        Digraph { n, adj, out_adj_list, in_adj_list, out_deg, in_deg, parameters }
+        Self { n, adj, out_adj_list, in_adj_list, out_deg, in_deg, parameters }
     }
 
-    pub fn of_out_adj_list(out_adj_list: VertexVec<Vec<Vertex>>, parameters: Vec<f64>) -> Digraph {
+    pub fn of_out_adj_list(out_adj_list: VertexVec<Vec<Vertex>>, parameters: Vec<f64>) -> Self {
         let n = out_adj_list.len();
         let mut in_adj_list = VertexVec::new(n, &vec![]);
         let mut out_deg = VertexVec::new(n, &Degree::ZERO);
@@ -60,7 +60,7 @@ impl Digraph {
             }
         }
 
-        Digraph { n, adj, out_adj_list, in_adj_list, out_deg, in_deg, parameters }
+        Self { n, adj, out_adj_list, in_adj_list, out_deg, in_deg, parameters }
     }
 
     pub fn undirect(&self) -> Graph {
@@ -95,7 +95,7 @@ impl Digraph {
      * Randomly orient edges, with a set probability that an edge is in
      * fact bidirectional
      */
-    pub fn random_semiorientation(g: &Graph, bidirectional_prob: f64) -> Digraph {
+    pub fn random_semiorientation(g: &Graph, bidirectional_prob: f64) -> Self {
         let mut rng = thread_rng();   
         let mut adj = VertexVec::new(g.n, &VertexVec::new(g.n, &false));
         for (i, j) in g.iter_pairs() {
@@ -110,10 +110,10 @@ impl Digraph {
                 }
             }
         }
-        Digraph::of_matrix(adj, vec![bidirectional_prob])
+        Self::of_matrix(adj, vec![bidirectional_prob])
     }
 
-    pub fn random_orientation(g: &Graph) -> Digraph {
+    pub fn random_orientation(g: &Graph) -> Self {
         let mut rng = thread_rng();   
         let mut adj = VertexVec::new(g.n, &VertexVec::new(g.n, &false));
         for (i, j) in g.iter_pairs() {
@@ -125,7 +125,7 @@ impl Digraph {
                 }
             }
         }
-        Digraph::of_matrix(adj, vec![])
+        Self::of_matrix(adj, vec![])
     }
 
     /**

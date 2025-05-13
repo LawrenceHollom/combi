@@ -20,7 +20,7 @@ fn min_dominator_bfs(g: &Graph, dominator: &mut VertexVec<bool>, best_dominator:
     if num_picked >= best_set {
         return best_set;
     }
-    if lower_bound.map_or(false, |x| best_set < x) {
+    if lower_bound.is_some_and(|x| best_set < x) {
         // We've found a dominating set below the lower bound, so give up.
         return best_set;
     }

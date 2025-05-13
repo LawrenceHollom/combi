@@ -15,14 +15,14 @@ pub struct EquivalenceCounts {
 }
 
 impl EquivalenceCounts {
-	pub fn new() -> EquivalenceCounts {
-		EquivalenceCounts { counts : HashMap::new(), operation_count: 0, k: 0 }
+	pub fn new() -> Self {
+		Self { counts : HashMap::new(), operation_count: 0, k: 0 }
 	}
 
-	pub fn new_singleton() -> EquivalenceCounts {
+	pub fn new_singleton() -> Self {
 		let mut counts = HashMap::new();
 		counts.insert(ReducedEquivalenceRelation::empty(1), 1);
-		EquivalenceCounts { counts, operation_count: 1, k: 1 }
+		Self { counts, operation_count: 1, k: 1 }
 	}
 
 	/*pub fn manual_hypergraph_counts() -> EquivalenceCounts {
@@ -64,7 +64,7 @@ impl EquivalenceCounts {
 		self.counts = new_counts
 	}
 
-	pub fn amalgamate_3_edge(&mut self, edge: &EquivalenceCounts, x: usize, y: usize, z: usize) {
+	pub fn amalgamate_3_edge(&mut self, edge: &Self, x: usize, y: usize, z: usize) {
 		let mut new_counts = HashMap::new();
 		self.operation_count += (self.counts.len() as u128) * (edge.counts.len() as u128);
 		for (rel, count1) in self.counts.iter() {

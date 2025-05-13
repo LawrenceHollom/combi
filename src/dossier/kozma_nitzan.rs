@@ -35,7 +35,7 @@ impl PercolatedData {
     }
 
 
-    pub fn new(g: &Graph) -> PercolatedData {
+    pub fn new(g: &Graph) -> Self {
         let b = Self::get_far(g, 3);
 
         let unreachable = Self::get_far(g, 2);
@@ -54,7 +54,7 @@ impl PercolatedData {
         let set_counts = percolate::get_initial_segment_connection_counts(g, Vertex::ZERO, &sorted_vertices, 
             Some(&|components| generic_filter(components, unreachable)));
 
-        PercolatedData {
+        Self {
             counts,
             sorted_vertices,
             set_counts,
@@ -63,7 +63,7 @@ impl PercolatedData {
         }
     }
 
-    pub fn new_site(g: &Graph) -> PercolatedData {
+    pub fn new_site(g: &Graph) -> Self {
         let b = Self::get_far(g, 3);
         let counts = percolate::get_site_connection_counts(g, b);
         let denom = counts[b];
@@ -73,7 +73,7 @@ impl PercolatedData {
 
         let set_counts = percolate::get_initial_segment_site_connection_counts(g, Vertex::ZERO, &sorted_vertices);
 
-        PercolatedData {
+        Self {
             counts,
             sorted_vertices,
             set_counts,

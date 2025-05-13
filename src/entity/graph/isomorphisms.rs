@@ -50,7 +50,7 @@ fn is_isomorphic_to_rec(h: &Graph, g: &Graph, ordering: &VertexVec<Vertex>, map:
             if h.deg[v] == g.deg[i] && !covered[i] {
                 let mut adj_check = true;
                 'adj_test: for u in h.adj_list[v].iter() {
-                    if map[*u].map_or(false, |x| !g.adj[x][i]
+                    if map[*u].is_some_and(|x| !g.adj[x][i]
                             || self_codegs[codeg_code(*u, v)] != g_codegs[codeg_code(x, i)]) {
                         adj_check = false;
                         break 'adj_test;

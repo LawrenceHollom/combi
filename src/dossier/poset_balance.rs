@@ -202,7 +202,7 @@ pub fn balance_as_cap(p: &Poset) -> Rational {
  */
 pub fn balance_with_min(p: &Poset) -> Rational {
     let mut gt_count = VertexVec::new(p.order, &VertexVec::new(p.order, &0));
-    let count = iterate_extensions_rec(&p, VertexSet::new(p.order), 0, &mut gt_count);
+    let count = iterate_extensions_rec(p, VertexSet::new(p.order), 0, &mut gt_count);
     let mut balance = 0;
     for (u, v) in p.iter_pairs() {
         // We only care if one of u and v is minimal.

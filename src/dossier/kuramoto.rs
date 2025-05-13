@@ -23,27 +23,27 @@ struct Theta {
 }
 
 impl Theta {
-    pub fn new_random(g: &Graph, rng: &mut ThreadRng) -> Theta {
+    pub fn new_random(g: &Graph, rng: &mut ThreadRng) -> Self {
         let mut theta = VertexVec::new(g.n, &0.0);
         for x in theta.iter_mut() {
             *x = rng.gen_range(0.0..(2.0 * PI));
         }
         let delta = 1.0 / (1.0 + g.max_degree().to_usize() as f64);
-        Theta { n: g.n, delta, theta }
+        Self { n: g.n, delta, theta }
     }
 
-    pub fn new_mapped(&self, n: Order, map: VertexVec<Vertex>) -> Theta {
+    pub fn new_mapped(&self, n: Order, map: VertexVec<Vertex>) -> Self {
         let mut theta = VertexVec::new(n, &0.0);
         for i in n.iter_verts() {
             theta[i] = self.theta[map[i]];
         }
-        Theta { n, delta: self.delta, theta }
+        Self { n, delta: self.delta, theta }
     }
 
-    pub fn new_cyclic(g: &Graph) -> Theta {
+    pub fn new_cyclic(g: &Graph) -> Self {
         let theta = VertexVec::new_fn(g.n, |v| v.as_fraction_of(g.n) * 2.0 * PI);
         let delta = 1.0 / (1.0 + g.max_degree().to_usize() as f64);
-        Theta { n: g.n, delta, theta }
+        Self { n: g.n, delta, theta }
     }
 
     /**
@@ -99,7 +99,7 @@ impl Theta {
     fn simulate_until_stable(&mut self, edges: &Vec<Edge>) {
         let mut motion = 1.0;
         while motion > 0.002 * self.delta {
-            motion = self.run_simulation_step(&edges);
+            motion = self.run_simulation_step(edges);
         }
     }
 

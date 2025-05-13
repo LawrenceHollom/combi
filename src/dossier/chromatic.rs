@@ -76,7 +76,7 @@ pub fn bipartite_side_difference(g: &Graph) -> u32 {
                 Some(_) | None => panic!("It's all gone wrong!")
             }
         }
-        (num_red - num_blue).abs() as u32
+        (num_red - num_blue).unsigned_abs()
     }
 }
 
@@ -125,7 +125,7 @@ fn alice_greedy_algo_chromatic_game_step(g: &Graph, ann: &mut Annotations, param
                 // This vertex cannot be coloured.
                 return false;
             }
-            if max_num_colours_adj.map_or(true, |max| num_colours_adj > max) {
+            if max_num_colours_adj.is_none_or(|max| num_colours_adj > max) {
                 let mut min_non_adj_colour = 0;
                 while colour_found[min_non_adj_colour] {
                     min_non_adj_colour += 1;
@@ -237,7 +237,7 @@ fn alice_wins_chromatic_game_rec(g: &Graph, ann: &mut Annotations, params: &Chro
                         if params.must_be_connected {
                             is_adj_condition_good = false;
                             'test_adj: for w in g.adj_list[v].iter() {
-                                if coder.get_colour(config, &w).is_some() {
+                                if coder.get_colour(config, w).is_some() {
                                     is_adj_condition_good = true;
                                     break 'test_adj;
                                 }
@@ -301,7 +301,7 @@ fn get_chromatic_game_history(g: &Graph, ann: &mut Annotations, params: &Chromat
     let mut alice_wins = false;
     'test_verts: for v in ann.weak_representatives().iter() {
         let config = coder.play_move(coder.get_start_config(), v, 0);
-        if alice_wins_chromatic_game_rec(g, ann, params, 0, &coder, config, history, 
+        if alice_wins_chromatic_game_rec(g, ann, params, 0, coder, config, history, 
                 VertexSet::of_vert(g.n, v), true, 1) {
             alice_wins = true;
             history.insert(config, true);
@@ -421,21 +421,18 @@ pub fn can_chormatic_game_dud_unique_win(g: &Graph, ann: &mut Annotations) -> bo
                         let mut is_v_dud_win_only = false;
                         let mut is_some_other_move_playable = false;
                         let dud_config = coder.get_wlog_index(coder.play_move(*config, v, k - 1), true);
-                        match history.get(&dud_config) {
-                            Some(false) => {
-                                is_v_dud_win_only = true;
-                                'test_all_other_cols: for col in 0..(k-1) {
-                                    let new_config = coder.get_wlog_index(coder.play_move(*config, v, col), true);
-                                    if let Some(a_win) = history.get(&new_config) {
-                                        is_some_other_move_playable = true;
-                                        if !*a_win {
-                                            is_v_dud_win_only = false;
-                                            break 'test_all_other_cols;
-                                        }
+                        if let Some(false) = history.get(&dud_config) {
+                            is_v_dud_win_only = true;
+                            'test_all_other_cols: for col in 0..(k-1) {
+                                let new_config = coder.get_wlog_index(coder.play_move(*config, v, col), true);
+                                if let Some(a_win) = history.get(&new_config) {
+                                    is_some_other_move_playable = true;
+                                    if !*a_win {
+                                        is_v_dud_win_only = false;
+                                        break 'test_all_other_cols;
                                     }
                                 }
                             }
-                            Some(true) | None => (),
                         }
                         if is_v_dud_win_only && is_some_other_move_playable {
                             coder.print_history(&history);
@@ -474,7 +471,7 @@ struct Subwins {
 }
 
 impl Subwins {
-    const FALSE: Subwins = Subwins { a_lo: false, b_lo: false, a_hi: false, b_hi: false };
+    const FALSE: Self = Self { a_lo: false, b_lo: false, a_hi: false, b_hi: false };
 }
 
 impl fmt::Debug for Subwins {
@@ -599,7 +596,7 @@ pub fn print_game_chromatic_table(g: &Graph, ann: &mut Annotations) {
     println!("Greedy: {}", alice_greedy_lower_bound(g));
     for k in 1..=(delta + 1) {
         checkpoint_time = SystemTime::now();
-        if maker_wins_chromatic_game(g, ann, k as usize, false, false) {
+        if maker_wins_chromatic_game(g, ann, k, false, false) {
             print!("{}: Alice", k);
         } else {
             print!("{}: Bob", k);

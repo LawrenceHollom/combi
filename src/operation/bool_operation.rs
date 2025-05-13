@@ -94,7 +94,7 @@ pub enum BoolOperation {
 }
 
 impl NumToBoolInfix {
-    pub fn of_string_result(text: &str) -> Option<NumToBoolInfix> {
+    pub fn of_string_result(text: &str) -> Option<Self> {
         use NumToBoolInfix::*;
         match text {
             ">=" => Some(NotLess),
@@ -109,7 +109,7 @@ impl NumToBoolInfix {
 }
 
 impl BoolToBoolInfix {
-    pub fn of_string_result(text: &str) -> Option<BoolToBoolInfix> {
+    pub fn of_string_result(text: &str) -> Option<Self> {
         use BoolToBoolInfix::*;
         match text {
             "&" | "&&" => Some(And),
@@ -122,7 +122,7 @@ impl BoolToBoolInfix {
 }
 
 impl BoolOperation {
-    pub fn of_string_result(text: &str) -> Option<BoolOperation> {
+    pub fn of_string_result(text: &str) -> Option<Self> {
         use BoolOperation::*;
         match parse_infix_like(text) {
             Some((par1, op, par2)) => {
@@ -142,8 +142,8 @@ impl BoolOperation {
                     }
                     
                 } else if let Some(infix) = bool_infix {
-                    BoolOperation::of_string_result(par1).and_then(|op1| 
-                        BoolOperation::of_string_result(par2).map(|op2|
+                    Self::of_string_result(par1).and_then(|op1| 
+                        Self::of_string_result(par2).map(|op2|
                             BoolInfix(infix, Box::new(op1), Box::new(op2))))
                 } else {
                     None
@@ -154,7 +154,7 @@ impl BoolOperation {
                 println!("PARSING: func: {}, args: {:?}", func, args);
                 match func.trim().to_lowercase().as_str() {
                     "not" | "!" | "¬" => {
-                        BoolOperation::of_string_result(args[0]).map(|op|
+                        Self::of_string_result(args[0]).map(|op|
                             Not(Box::new(op)))
                     }
                     "domination_number_at_least" | "gamma_at_least" => {
@@ -235,7 +235,7 @@ impl BoolOperation {
                     "is_witnessed" => Some(IsEveryEdgeWitnessed),
                     "has_bidirectional" => Some(HasBidirectionalEdge),
                     "has_c4" => Some(HasFourCycle),
-                    "embeds_h" => Some(IsGenericallyHyperbolicEmbeddable(args.get(0)?.parse().unwrap_or(false))),
+                    "embeds_h" => Some(IsGenericallyHyperbolicEmbeddable(args.first()?.parse().unwrap_or(false))),
                     "few_edges_h" => Some(HasFewEdgesHyperbolic),
                     "debug" => Some(Debug),
                     &_ => None,
@@ -333,10 +333,10 @@ impl fmt::Display for BoolOperation {
                 format!("Whether the graph is {}-degenerate", d)
             }
             IsBunkbedPostRemovalInductionGood => {
-                format!("Is bunkbed post removal induction good?")
+                "Is bunkbed post removal induction good?".to_string()
             }
             CanChromaticGameHaveDudUniqueWin => {
-                format!("Whether chromatic game have dud as unique winning move")
+                "Whether chromatic game have dud as unique winning move".to_string()
             }
             GameChromaticWinnerWithDuds(k) => {
                 format!("Whether Maker wins the chromatic game on {} colours (one of which is a dud)", k)

@@ -54,15 +54,13 @@ fn are_connected(g: &Graph, u: Vertex, u_l: bool, v: Vertex, v_l: bool,
 					}
 					let _ = q.add((*y, x_l));
 				}
-			} else {
-				if !x_l && !visited[*y].0 {
-					visited[*y].0 = true;
-					if *y == v && x_l == v_l {
-						found_target = true;
-					}
-					let _ = q.add((*y, x_l));
-				}
-			}
+			} else if !x_l && !visited[*y].0 {
+   					visited[*y].0 = true;
+   					if *y == v && x_l == v_l {
+   						found_target = true;
+   					}
+   					let _ = q.add((*y, x_l));
+   				}
 		}
 		if posts.has_vert(x) && (if x_l { !visited[x].0 } else { !visited[x].1 }) {
 			if x_l {
@@ -70,7 +68,7 @@ fn are_connected(g: &Graph, u: Vertex, u_l: bool, v: Vertex, v_l: bool,
 			} else {
 				visited[x].1 = true;
 			}
-			if x == v && x_l == !v_l {
+			if x == v && x_l != v_l {
 				found_target = true;
 			}
 			let _ = q.add((x, !x_l));
@@ -463,7 +461,7 @@ fn get_ratios_dp(g_etc: &GraphAndMetadata, edge_type: EdgeType, data: &mut Data,
 	}
 
 	if PRINT_DEBUG_LEVEL >= 1 || print_counts {
-		counts.print_summary(&g_etc);
+		counts.print_summary(g_etc);
 		g_etc.print_table();
 		counts.print_fancy();
 	}

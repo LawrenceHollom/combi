@@ -87,14 +87,14 @@ impl Debug for ReducedEquivalenceRelation {
 }
 
 impl ReducedEquivalenceRelation {
-	pub fn of_raw_vecs(raw: &[[usize; 2]; 2]) -> ReducedEquivalenceRelation {
+	pub fn of_raw_vecs(raw: &[[usize; 2]; 2]) -> Self {
 		let down = FastVec::of_array(&raw[0]);
 		let up = FastVec::of_array(&raw[1]);
 		let next_label = EquivalenceClass::new(raw[0][0].max(raw[0][1]).max(raw[1][0]).max(raw[1][1]) + 1);
-		ReducedEquivalenceRelation { k: 2, down, up, next_label }
+		Self { k: 2, down, up, next_label }
 	}
 
-	pub fn of_equiv_rel(rel: EquivalenceRelation) -> ReducedEquivalenceRelation {
+	pub fn of_equiv_rel(rel: EquivalenceRelation) -> Self {
 		let mut down = FastVec::new();
 		let mut up = FastVec::new();
 		let mut new_labels = ComponentVec::new(rel.n.times(2), &None);
@@ -113,10 +113,10 @@ impl ReducedEquivalenceRelation {
 			}
 			up.set(index, new_labels[c].unwrap())
 		}
-		ReducedEquivalenceRelation { k: rel.get_k(), down, up, next_label }.reduce_and_symmetrise()
+		Self { k: rel.get_k(), down, up, next_label }.reduce_and_symmetrise()
 	}
 
-    pub fn of_short_string(text: &str) -> ReducedEquivalenceRelation {
+    pub fn of_short_string(text: &str) -> Self {
         let k = text.len() / 2;
         let bytes = text.as_bytes();
 		if bytes.len() != k * 2 {
@@ -140,7 +140,7 @@ impl ReducedEquivalenceRelation {
                 next_label = v;
             }
         }
-        ReducedEquivalenceRelation { k, down, up, next_label }
+        Self { k, down, up, next_label }
     }
 
     pub fn to_short_string(&self) -> String {
@@ -154,14 +154,14 @@ impl ReducedEquivalenceRelation {
         String::from_utf8_lossy(&bytes).to_string()
     }
 
-	pub fn empty(k: usize) -> ReducedEquivalenceRelation {
+	pub fn empty(k: usize) -> Self {
 		let down = FastVec::of_range(0, 2, k);
 		let up = FastVec::of_range(1, 2, k);
-		ReducedEquivalenceRelation { k, down, up, next_label: EquivalenceClass::new(2 * k) }
+		Self { k, down, up, next_label: EquivalenceClass::new(2 * k) }
 	}
 
 	// We need to think through what's going on here and if there's a better way to do it.
-	pub fn reduce_no_symmetrise_slow(&self, is_flat: bool) -> ReducedEquivalenceRelation {
+	pub fn reduce_no_symmetrise_slow(&self, is_flat: bool) -> Self {
 		let mut new_labels = vec![None; (self.k + 1) * 2];
 		let mut next_label = EquivalenceClass::ZERO;
 		fn check_label(labels: &mut Vec<Option<EquivalenceClass>>, next_label: &mut EquivalenceClass, comp: EquivalenceClass) {
@@ -190,11 +190,11 @@ impl ReducedEquivalenceRelation {
 				new_up.set(v, new_labels[self.down.get(v)._to_usize()].unwrap());
 			}
 		}
-		ReducedEquivalenceRelation { k: self.k, down: new_down, up: new_up, next_label }
+		Self { k: self.k, down: new_down, up: new_up, next_label }
 	}
 
 	// This is under the assumptiong that self is already reduced (and not necc symmetrised)
-	pub fn reduce_and_symmetrise(&self) -> ReducedEquivalenceRelation {
+	pub fn reduce_and_symmetrise(&self) -> Self {
 		let mut flipped = self.to_owned();
 		let mut going_up = EquivalenceClassSet::new();
 		let mut going_down = EquivalenceClassSet::new();
@@ -247,7 +247,7 @@ impl ReducedEquivalenceRelation {
 		flipped.min(self.to_owned())
 	}
 
-	pub fn get_all_permutations(&self) -> Vec<ReducedEquivalenceRelation> {
+	pub fn get_all_permutations(&self) -> Vec<Self> {
 		let mut permutations = vec![];
 		// iterate through all the k! permutations, produce, reduce, and add.
 		let sigmas = if self.k == 2 {
@@ -264,7 +264,7 @@ impl ReducedEquivalenceRelation {
 				new_down.set(i, self.down.get(*j));
 				new_up.set(i, self.up.get(*j));
 			}
-			let rer = ReducedEquivalenceRelation { k: self.k, down: new_down, up: new_up, next_label: self.next_label };
+			let rer = Self { k: self.k, down: new_down, up: new_up, next_label: self.next_label };
 			//permutations.push(rer.reduce_no_symmetrise_slow(true).reduce_and_symmetrise())
 			permutations.push(rer.reduce_no_symmetrise_slow(true).min(rer.reduce_no_symmetrise_slow(false)))
 		}
@@ -303,7 +303,7 @@ impl ReducedEquivalenceRelation {
 		}
 	}
 
-	pub fn amalgamate_edge(&mut self, new_edge: &ReducedEquivalenceRelation, x: usize, y: usize) {
+	pub fn amalgamate_edge(&mut self, new_edge: &Self, x: usize, y: usize) {
 		// We currently do the silly, easy version, and move to the harder one later.
 		// Let's just case-bash it for now.
 		// - this isn't actually very slow on fifty-fifty or classic edges.
@@ -323,7 +323,7 @@ impl ReducedEquivalenceRelation {
 		}
 	}
 
-	pub fn amalgamate_3_edge(&mut self, new_edge: &ReducedEquivalenceRelation, x: usize, y: usize, z: usize) {
+	pub fn amalgamate_3_edge(&mut self, new_edge: &Self, x: usize, y: usize, z: usize) {
 		let vert = [x, y, z];
 		// within down
 		for i in 0..2 {
@@ -403,11 +403,11 @@ impl ReducedEquivalenceRelation {
 					v.decr_inplace(index);
 				}
 			} else {
-				if old_val > a && dp.new_a.map_or(true, |new_a| old_val <= new_a) {
+				if old_val > a && dp.new_a.is_none_or(|new_a| old_val <= new_a) {
 					dp.decr_from_a.add(old_val);
 					v.decr_inplace(index);
 				}
-				if a != b && old_val > b && dp.new_b.map_or(true, |new_b| old_val <= new_b) {
+				if a != b && old_val > b && dp.new_b.is_none_or(|new_b| old_val <= new_b) {
 					dp.decr_from_b.add(old_val);
 					v.decr_inplace(index);
 				}
@@ -457,7 +457,7 @@ impl ReducedEquivalenceRelation {
 		println!(" ) : [{}]", count);
 	}
 
-	pub fn print_fancy_pair(&self, denom: &ReducedEquivalenceRelation, ratio: f64, count: usize) {
+	pub fn print_fancy_pair(&self, denom: &Self, ratio: f64, count: usize) {
 		print!("(");
 		Self::print_row(&self.up, self.k);
 		print!("  /");
@@ -480,7 +480,7 @@ pub enum EdgeType {
 }
 
 impl EdgeType {
-	pub fn of_usize(edge_type: usize) -> EdgeType {
+	pub fn of_usize(edge_type: usize) -> Self {
 		use EdgeType::*;
 		match edge_type {
 			0 => Classic,
@@ -502,7 +502,7 @@ impl EdgeType {
 			Posted => vec![[[0, 0], [1, 2]], [[0, 2], [1, 1]], [[0, 2], [1, 0]], [[0, 1], [1, 2]]],
 		};
 		raw_edges.iter()
-			.map(|raw| ReducedEquivalenceRelation::of_raw_vecs(raw))
+			.map(ReducedEquivalenceRelation::of_raw_vecs)
 			.collect::<Vec<ReducedEquivalenceRelation>>()
 	}
 }

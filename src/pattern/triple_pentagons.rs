@@ -6,7 +6,7 @@ pub fn new() -> GraphWithEdges {
     GraphWithEdges { 
         h: Graph::of_adj_list(crate::entity::graph::adj_list_of_manual(adj_list), 
             crate::constructor::Constructor::Special),
-        edges: vec![(4,5),(6,7),(8,9)].iter().map(|(x, y)| 
+        edges: [(4,5),(6,7),(8,9)].iter().map(|(x, y)| 
             Edge::of_pair(Vertex::of_usize(*x), Vertex::of_usize(*y))).collect(), 
         verts_not_in_edge: VertexVec::new_fn(Order::of_usize(4), |v| v),
         num_edges: 3 

@@ -21,7 +21,7 @@ pub enum Operation {
 }
 
 impl Operation {
-    pub fn of_string(text: &str) -> Operation {
+    pub fn of_string(text: &str) -> Self {
         IntOperation::of_string_result(text).map(Operation::Int)
             .or_else(|| BoolOperation::of_string_result(text).map(Operation::Bool))
             .or_else(|| RationalOperation::of_string_result(text).map(Operation::Rational))

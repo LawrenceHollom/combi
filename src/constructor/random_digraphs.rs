@@ -57,7 +57,7 @@ pub fn new_out(n: Order, d: Degree) -> Digraph {
  * no bidirectional edges.
  */
 pub fn new_oriented_out(n: Order, d: Degree) -> Digraph {
-    if d.at_least((n.to_usize() + 1) / 2) {
+    if d.at_least(n.to_usize().div_ceil(2)) {
         panic!("Degree must be less than half the order")
     }
 

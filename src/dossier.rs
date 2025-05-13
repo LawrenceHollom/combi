@@ -68,8 +68,8 @@ pub struct AnnotationsBox(Option<Annotations>);
  * right graph.
  */
 impl AnnotationsBox {
-    pub fn new() -> AnnotationsBox {
-        AnnotationsBox(None)
+    pub fn new() -> Self {
+        Self(None)
     }
 
     pub fn get_annotations(&mut self, g: &Graph) -> &mut Annotations {
@@ -83,7 +83,7 @@ impl AnnotationsBox {
 
 impl Dossier {
     fn unbox<'a>(&self, ann_box: &'a mut AnnotationsBox) -> &'a mut Annotations {
-        ann_box.get_annotations(&self.e.as_graph())
+        ann_box.get_annotations(self.e.as_graph())
     }
 
     pub fn operate_int(&mut self, ann_box: &mut AnnotationsBox, operation: &IntOperation) -> u32 {
@@ -120,14 +120,14 @@ impl Dossier {
                     Radius => self.e.as_graph().radius(),
                     Thomassen(long_path_cap) => edge_partitions::thomassen_check(self.e.as_graph(), *long_path_cap),
                     NumBipartiteEdgeBisections => edge_partitions::count_bipartite_edge_bisections(self.e.as_graph()),
-                    GameChromaticNumber => chromatic::game_chromatic_number(self.e.as_graph(), &mut self.unbox(ann_box)),
+                    GameChromaticNumber => chromatic::game_chromatic_number(self.e.as_graph(), self.unbox(ann_box)),
                     GameChromaticNumberGreedy => chromatic::alice_greedy_lower_bound(self.e.as_graph()) as u32,
                     GameArboricityNumber => arboricity::game_arboricity_number(self.e.as_graph()),
                     Degeneracy => degeneracy::degeneracy(self.e.as_graph()),
                     LinearGameChromaticNumber => chromatic_linear::linear_game_chromatic_number(self.e.as_graph()),
-                    GameGrundyNumber => grundy::game_grundy_number(self.e.as_graph(), &mut self.unbox(ann_box)),
+                    GameGrundyNumber => grundy::game_grundy_number(self.e.as_graph(), self.unbox(ann_box)),
                     MarkingGameNumber => marking_game::marking_game_number(self.e.as_graph(), false),
-                    ConnectedGameChromaticNumber => chromatic::connected_game_chromatic_number(self.e.as_graph(), &mut self.unbox(ann_box)),
+                    ConnectedGameChromaticNumber => chromatic::connected_game_chromatic_number(self.e.as_graph(), self.unbox(ann_box)),
                     ConnectedMarkingGameNumber => marking_game::marking_game_number(self.e.as_graph(), true),
                     BipartiteSideDifference => chromatic::bipartite_side_difference(self.e.as_graph()),
                     NumCutvertices => connectedness::num_cutvertices(self.e.as_graph()),
@@ -216,25 +216,25 @@ impl Dossier {
                     CanBeEdgePartitionedIntoLinearForestAndMatching => edge_partitions::edge_partition_forest_and_matching(self.e.as_graph()),
                     GoodCubicDominationBase => cubic_domination::is_good(self.e.as_graph()),
                     GameChromaticWinner(k) => {
-                        chromatic::maker_wins_chromatic_game(self.e.as_graph(), &mut self.unbox(ann_box), *k, false, false)
+                        chromatic::maker_wins_chromatic_game(self.e.as_graph(), self.unbox(ann_box), *k, false, false)
                     }
-                    IsChromaticGameMonotone => chromatic::game_chromatic_colour_monotone(self.e.as_graph(), &mut self.unbox(ann_box)),
+                    IsChromaticGameMonotone => chromatic::game_chromatic_colour_monotone(self.e.as_graph(), self.unbox(ann_box)),
                     IsChromaticGameStronglyMonotone => {
-                        chromatic::chromatic_game_strong_monotonicity(self.e.as_graph(), &mut self.unbox(ann_box))
+                        chromatic::chromatic_game_strong_monotonicity(self.e.as_graph(), self.unbox(ann_box))
                     }
                     ArboricityGameWinner(k) => arboricity::maker_wins_arboricity_game(self.e.as_graph(), *k),
                     IsDDegenerate(d) => degeneracy::is_d_degenerate(self.e.as_graph(), *d),
                     IsBunkbedPostRemovalInductionGood => bunkbed_reduced::is_post_removal_induction_always_good(self.e.as_graph()),
-                    CanChromaticGameHaveDudUniqueWin => chromatic::can_chormatic_game_dud_unique_win(self.e.as_graph(), &mut self.unbox(ann_box)),
-                    GameChromaticWinnerWithDuds(k) => chromatic::alice_wins_chromatic_game_with_duds(self.e.as_graph(), &mut self.unbox(ann_box), *k),
-                    ChromaticGameSubsetMonotonicity(k) => chromatic::is_some_subset_non_monotone(self.e.as_graph(), &mut self.unbox(ann_box), *k),
+                    CanChromaticGameHaveDudUniqueWin => chromatic::can_chormatic_game_dud_unique_win(self.e.as_graph(), self.unbox(ann_box)),
+                    GameChromaticWinnerWithDuds(k) => chromatic::alice_wins_chromatic_game_with_duds(self.e.as_graph(), self.unbox(ann_box), *k),
+                    ChromaticGameSubsetMonotonicity(k) => chromatic::is_some_subset_non_monotone(self.e.as_graph(), self.unbox(ann_box), *k),
                     LinearGameChromaticWinner(k) => chromatic_linear::does_maker_win_linear_chromatic_game(self.e.as_graph(), *k),
-                    GameGrundyWinner(k) => grundy::does_maker_win_grundy_game(self.e.as_graph(), &mut self.unbox(ann_box), *k),
+                    GameGrundyWinner(k) => grundy::does_maker_win_grundy_game(self.e.as_graph(), self.unbox(ann_box), *k),
                     MakerWinsConnectedChromaticGame(k) => {
-                        chromatic::maker_wins_chromatic_game(self.e.as_graph(), &mut self.unbox(ann_box), *k, true, false)
+                        chromatic::maker_wins_chromatic_game(self.e.as_graph(), self.unbox(ann_box), *k, true, false)
                     }
                     IsBipartite => chromatic::is_bipartite(self.e.as_graph()),
-                    MakerWinsChromaticGameGreedily(k) => chromatic::alice_greedy_wins_chromatic_game(self.e.as_graph(), &mut self.unbox(ann_box), *k),
+                    MakerWinsChromaticGameGreedily(k) => chromatic::alice_greedy_wins_chromatic_game(self.e.as_graph(), self.unbox(ann_box), *k),
                     HasSeymourVertex => seymour::has_seymour_vertex(self.e.as_graph()),
                     CanBobWinGraphGrabbing(max_weight) => grabbing::can_bob_win_graph_grabbing(self.e.as_graph(), *max_weight),
                     IsOddCoronaFree => !grabbing::has_induced_odd_cycle_corona(self.e.as_graph()),
@@ -437,8 +437,8 @@ impl Dossier {
         &self.e.as_graph().constructor
     }
 
-    pub fn new(e: Entity) -> Dossier {
-        Dossier { 
+    pub fn new(e: Entity) -> Self {
+        Self { 
             e,
             previous_int_values: HashMap::new(),
             previous_bool_values: HashMap::new(),
