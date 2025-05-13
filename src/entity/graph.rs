@@ -1,16 +1,16 @@
 #![allow(dead_code)]
 
-use utilities::{*, edge_tools::*, vertex_tools::*, component_tools::*};
 use crate::constructor::*;
+use utilities::{component_tools::*, edge_tools::*, vertex_tools::*, *};
 use Constructor::*;
 use RawConstructor::*;
 
-use rand::thread_rng;
 use queues::*;
+use rand::thread_rng;
 
+mod cycles;
 mod flood_fill;
 mod isomorphisms;
-mod cycles;
 
 #[derive(Clone)]
 pub struct Graph {
@@ -30,20 +30,23 @@ impl Graph {
     pub fn of_adj_list(adj_list: VertexVec<Vec<Vertex>>, constructor: Constructor) -> Self {
         let n = adj_list.len();
         let mut adj = VertexVec::new(n, &VertexVec::new(n, &false));
-        let deg = adj_list.iter().map(|adjs| Degree::of_usize(adjs.len())).collect();
-    
+        let deg = adj_list
+            .iter()
+            .map(|adjs| Degree::of_usize(adjs.len()))
+            .collect();
+
         for i in n.iter_verts() {
             for j in adj_list[i].iter() {
                 adj[i][*j] = true;
             }
         }
-        
+
         Self {
             n,
             adj,
             adj_list,
             deg,
-            constructor
+            constructor,
         }
     }
 
@@ -61,12 +64,12 @@ impl Graph {
             }
         }
 
-        Self { 
+        Self {
             n,
             adj,
             adj_list,
             deg,
-            constructor
+            constructor,
         }
     }
 
@@ -75,7 +78,10 @@ impl Graph {
      * This constructs a symmetric version (adj | adj^T), and builds the graph from that.
      * e.g. used when undirecting a directed graph.
      */
-    pub fn of_matrix_to_be_symmetrised(assym: &VertexVec<VertexVec<bool>>, constructor: Constructor) -> Self {
+    pub fn of_matrix_to_be_symmetrised(
+        assym: &VertexVec<VertexVec<bool>>,
+        constructor: Constructor,
+    ) -> Self {
         let n = assym.len();
         let mut adj = VertexVec::new(n, &VertexVec::new(n, &false));
         let mut adj_list = VertexVec::new(n, &vec![]);
@@ -92,12 +98,12 @@ impl Graph {
             }
         }
 
-        Self { 
+        Self {
             n,
             adj,
             adj_list,
             deg,
-            constructor
+            constructor,
         }
     }
 
@@ -210,7 +216,7 @@ impl Graph {
 
     pub fn new_empty(n: Order) -> Self {
         let adj_list = VertexVec::new_fn(n, |_| vec![]);
-        
+
         Self::of_adj_list(adj_list, Raw(Empty(n)))
     }
 
@@ -296,7 +302,11 @@ impl Graph {
     /**
      * Only consider edges in the given edge set.
      */
-    pub fn edge_subset_components(&self, edges: EdgeSet, indexer: &EdgeIndexer) -> VertexVec<Component> {
+    pub fn edge_subset_components(
+        &self,
+        edges: EdgeSet,
+        indexer: &EdgeIndexer,
+    ) -> VertexVec<Component> {
         flood_fill::edge_subset_components(self, edges, indexer)
     }
 
@@ -306,23 +316,23 @@ impl Graph {
     pub fn vertex_subset_components(&self, vs: BigVertexSet) -> VertexVec<Component> {
         flood_fill::filtered_components(self, Some(vs))
     }
-    
+
     pub fn components(&self) -> VertexVec<Component> {
         self.filtered_components(None)
     }
-    
+
     /**
      * Returns the size of the largest component
      */
     pub fn largest_component(&self) -> u32 {
         let comps = self.components();
-    
+
         let mut sizes: VertexVec<u32> = VertexVec::new(self.n, &0);
-    
+
         for comp in comps.iter() {
             sizes[comp.to_vertex()] += 1;
         }
-    
+
         *sizes.max(&0, u32::cmp).unwrap()
     }
 
@@ -336,7 +346,7 @@ impl Graph {
         }
         is_comm
     }
-    
+
     pub fn is_connected(&self) -> bool {
         self.largest_component() == self.n.to_usize() as u32
     }
@@ -344,20 +354,20 @@ impl Graph {
     pub fn is_regular(&self) -> bool {
         self.max_degree() == self.min_degree()
     }
-    
+
     pub fn num_filtered_components(&self, filter: Option<&VertexVec<bool>>) -> u32 {
         let comps = self.filtered_components(filter);
-    
+
         let mut is_comp: VertexVec<bool> = VertexVec::new(self.n, &false);
         let mut num_comps: u32 = 0;
-    
+
         for (i, comp) in comps.iter_enum() {
             if filter.is_none_or(|f| f[i]) && !is_comp[comp.to_vertex()] {
                 num_comps += 1;
                 is_comp[comp.to_vertex()] = true;
             }
         }
-    
+
         num_comps
     }
 
@@ -393,7 +403,7 @@ impl Graph {
         let dists = self.flood_fill_dist(start);
         for (v, dist) in dists.iter_enum() {
             if dist.is_some_and(|x| x >= min_dist) {
-                return Some(v)
+                return Some(v);
             }
         }
         None
@@ -429,7 +439,7 @@ impl Graph {
         while num_placed < self.n.to_usize() {
             let mut min_unpushed_deg = Degree::INF;
             let mut best_vert = Vertex::ZERO;
-            for u in self.n.iter_verts() { 
+            for u in self.n.iter_verts() {
                 if !placed[u] {
                     let mut deg = Degree::ZERO;
                     for v in self.adj_list[u].iter() {
@@ -464,19 +474,28 @@ impl Graph {
         self.permute_vertices(&ordering)
     }
 
-    pub fn flood_fill(&self, start: Vertex, end: Option<Vertex>, filter: Option<&VertexVec<bool>>) -> VertexVec<Option<Vertex>> {
+    pub fn flood_fill(
+        &self,
+        start: Vertex,
+        end: Option<Vertex>,
+        filter: Option<&VertexVec<bool>>,
+    ) -> VertexVec<Option<Vertex>> {
         flood_fill::flood_fill(self, start, end, filter)
     }
-    
+
     pub fn flood_fill_dist(&self, start: Vertex) -> VertexVec<Option<u32>> {
         flood_fill::flood_fill_dist(self, start)
     }
-    
+
     pub fn flood_fill_two_colourable(&self, edge_filter: &EdgeSet, indexer: &EdgeIndexer) -> bool {
         flood_fill::flood_fill_two_colourable(self, edge_filter, indexer)
     }
-    
-    pub fn flood_fill_edge_components(&self, edge_filter: &EdgeSet, indexer: &EdgeIndexer) -> EdgeVec<Option<Component>> {
+
+    pub fn flood_fill_edge_components(
+        &self,
+        edge_filter: &EdgeSet,
+        indexer: &EdgeIndexer,
+    ) -> EdgeVec<Option<Component>> {
         flood_fill::flood_fill_edge_components(self, edge_filter, indexer)
     }
 
@@ -494,7 +513,13 @@ impl Graph {
     }
 
     pub fn print(&self) {
-        println!("degs: {:?}", self.deg.iter().map(|x| x.to_usize()).collect::<Vec<usize>>());
+        println!(
+            "degs: {:?}",
+            self.deg
+                .iter()
+                .map(|x| x.to_usize())
+                .collect::<Vec<usize>>()
+        );
         println!("{}", self.n);
         for i in self.n.iter_verts() {
             if self.deg[i].at_least(1) {
@@ -532,15 +557,13 @@ impl Graph {
     }
 
     pub fn filtered_size(&self, filter: &VertexVec<bool>) -> usize {
-        self.adj_list
-            .iter_enum()
-            .fold(0, |accum, (i, adjs)|
-                if filter[i] {
-                    accum + adjs.iter().filter(|x| filter[**x]).count()
-                } else {
-                    accum
-                }
-            ) / 2
+        self.adj_list.iter_enum().fold(0, |accum, (i, adjs)| {
+            if filter[i] {
+                accum + adjs.iter().filter(|x| filter[**x]).count()
+            } else {
+                accum
+            }
+        }) / 2
     }
 
     pub fn filtered_degree(&self, v: Vertex, filter: &VertexVec<bool>) -> usize {
@@ -584,7 +607,10 @@ impl Graph {
         for k in self.n.iter_verts() {
             for i in self.n.iter_verts() {
                 for j in self.n.iter_verts() {
-                    if dist[i][k] < usize::MAX && dist[k][j] < usize::MAX && dist[i][j] > dist[i][k] + dist[k][j] {
+                    if dist[i][k] < usize::MAX
+                        && dist[k][j] < usize::MAX
+                        && dist[i][j] > dist[i][k] + dist[k][j]
+                    {
                         dist[i][j] = dist[i][k] + dist[k][j];
                     }
                 }
@@ -728,13 +754,13 @@ impl Graph {
         nbhds
     }
 
-    /** 
+    /**
      * Returns the bfs width of the graph; that is, the maximum queue size
      * during a BFS
      */
     pub fn get_bfs_width(&self) -> usize {
         let mut bfs_iterator = self.iter_verts_bfs();
-        for _ in bfs_iterator.by_ref() { }
+        for _ in bfs_iterator.by_ref() {}
         bfs_iterator.max_width
     }
 
@@ -785,10 +811,9 @@ impl Graph {
 }
 
 pub fn adj_list_of_manual(adj_list: Vec<Vec<usize>>) -> VertexVec<Vec<Vertex>> {
-    adj_list.iter()
-        .map(|l| l.iter()
-            .map(|x| Vertex::of_usize(*x))
-            .collect())
+    adj_list
+        .iter()
+        .map(|l| l.iter().map(|x| Vertex::of_usize(*x)).collect())
         .collect()
 }
 
@@ -807,7 +832,7 @@ impl BFSIterator<'_> {
             visited: VertexVec::new(g.n, &false),
             next_vert: Vertex::ZERO,
             g,
-            max_width: 0
+            max_width: 0,
         }
     }
 }

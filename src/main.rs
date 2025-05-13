@@ -1,24 +1,31 @@
+use std::env;
 use std::io;
 use std::time::*;
-use std::env;
 
+mod annotations;
+mod constructor;
 mod controller;
 mod dossier;
-mod operation;
-mod constructor;
-mod pattern;
-mod annotations;
 mod entity;
+mod operation;
+mod pattern;
 
 use controller::*;
 
 fn execute_instruction(text: &String) {
     let start_time = SystemTime::now();
     let controller = Controller::of_string(text);
-    println!("Instruction constructed!\n{},\nTime: {}", controller, start_time.elapsed().unwrap().as_millis());
+    println!(
+        "Instruction constructed!\n{},\nTime: {}",
+        controller,
+        start_time.elapsed().unwrap().as_millis()
+    );
 
     controller.execute();
-    println!("Finished! Time (s): {}", start_time.elapsed().unwrap().as_secs())
+    println!(
+        "Finished! Time (s): {}",
+        start_time.elapsed().unwrap().as_secs()
+    )
 }
 
 fn main() {
@@ -31,7 +38,9 @@ fn main() {
         loop {
             println!("Enter instruction:");
             let mut text = String::new();
-            io::stdin().read_line(&mut text).expect("Failed to read line");
+            io::stdin()
+                .read_line(&mut text)
+                .expect("Failed to read line");
             execute_instruction(&text)
         }
     }

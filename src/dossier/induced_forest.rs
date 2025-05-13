@@ -4,9 +4,16 @@ use utilities::vertex_tools::*;
 
 // n.b. Same as max_acyclic
 
-fn max_induced_forest_rec(g: &Graph, forest: &mut VertexVec<bool>, comp: &mut VertexVec<Vertex>, 
-        prev_vert: Vertex, size: u32, max_size: u32) -> u32 {
-    let max_vert = Vertex::of_usize((size + (g.n.to_usize() as u32) - max_size - 1) as usize).min(g.n.to_max_vertex());
+fn max_induced_forest_rec(
+    g: &Graph,
+    forest: &mut VertexVec<bool>,
+    comp: &mut VertexVec<Vertex>,
+    prev_vert: Vertex,
+    size: u32,
+    max_size: u32,
+) -> u32 {
+    let max_vert = Vertex::of_usize((size + (g.n.to_usize() as u32) - max_size - 1) as usize)
+        .min(g.n.to_max_vertex());
     if max_vert < prev_vert {
         return 0;
     }
@@ -94,7 +101,10 @@ mod tests {
 
     #[test]
     fn test_max_induced_forest_k10() {
-        assert_eq!(max_induced_forest(&Graph::new_complete(Order::of_usize(10))), 2);
+        assert_eq!(
+            max_induced_forest(&Graph::new_complete(Order::of_usize(10))),
+            2
+        );
     }
 
     #[test]

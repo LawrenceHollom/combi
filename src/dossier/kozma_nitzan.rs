@@ -20,8 +20,11 @@ struct PercolatedData {
 impl PercolatedData {
     fn get_sorted_vertices(counts: &VertexVec<u64>) -> Vec<Vertex> {
         let mut for_ordering = counts.iter_enum().collect::<Vec<(Vertex, &u64)>>();
-        for_ordering.sort_by(|(_, c1), (_, c2)| c1.cmp(c2).reverse() );
-        for_ordering.iter().map(|(v, _)| *v).collect::<Vec<Vertex>>()
+        for_ordering.sort_by(|(_, c1), (_, c2)| c1.cmp(c2).reverse());
+        for_ordering
+            .iter()
+            .map(|(v, _)| *v)
+            .collect::<Vec<Vertex>>()
     }
 
     fn get_far(g: &Graph, start_dist: u32) -> Vertex {
@@ -34,7 +37,6 @@ impl PercolatedData {
         out.unwrap()
     }
 
-
     pub fn new(g: &Graph) -> Self {
         let b = Self::get_far(g, 3);
 
@@ -44,15 +46,22 @@ impl PercolatedData {
             components[Vertex::ZERO] != components[unreachable]
         }
 
-        let counts = percolate::get_connection_counts(g, b, 
-            Some(&|components| generic_filter(components, unreachable)));
+        let counts = percolate::get_connection_counts(
+            g,
+            b,
+            Some(&|components| generic_filter(components, unreachable)),
+        );
         let denom = counts[b];
 
         // Order the vertices by how easily they connect to b.
         let sorted_vertices = Self::get_sorted_vertices(&counts);
 
-        let set_counts = percolate::get_initial_segment_connection_counts(g, Vertex::ZERO, &sorted_vertices, 
-            Some(&|components| generic_filter(components, unreachable)));
+        let set_counts = percolate::get_initial_segment_connection_counts(
+            g,
+            Vertex::ZERO,
+            &sorted_vertices,
+            Some(&|components| generic_filter(components, unreachable)),
+        );
 
         Self {
             counts,
@@ -71,7 +80,11 @@ impl PercolatedData {
         // Order the vertices by how easily they connect to b.
         let sorted_vertices = Self::get_sorted_vertices(&counts);
 
-        let set_counts = percolate::get_initial_segment_site_connection_counts(g, Vertex::ZERO, &sorted_vertices);
+        let set_counts = percolate::get_initial_segment_site_connection_counts(
+            g,
+            Vertex::ZERO,
+            &sorted_vertices,
+        );
 
         Self {
             counts,
@@ -96,7 +109,10 @@ impl PercolatedData {
         println!("Possible right-hand sides:");
         for (i, a) in self.sorted_vertices.iter().enumerate() {
             let rhs = ((self.set_counts[i] as f64) / fdenom) * ((self.counts[*a] as f64) / fdenom);
-            println!("a = {}, Pr(0 <-> A) = {}, Pr(a <-> b) = {}, rhs = {:.5}", a, self.set_counts[i], self.counts[*a], rhs);
+            println!(
+                "a = {}, Pr(0 <-> A) = {}, Pr(a <-> b) = {}, rhs = {:.5}",
+                a, self.set_counts[i], self.counts[*a], rhs
+            );
         }
     }
 
@@ -123,7 +139,7 @@ impl PercolatedData {
  * P(0 <-> b) and P(0 <-> A) min {P(a <-> b) : a in A}
  * Might as well add any and all points to A that don't decrease the min
  * and so there are only n different choices of A that we need to test.
- * 
+ *
  * We assume that p = 1/2 because sometimes life needs to be easy.
  * The start vertex is 0 and the end vertex is 1
  */

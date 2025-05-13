@@ -141,7 +141,9 @@ impl fmt::Display for IntOperation {
             Diameter => "Diameter",
             Radius => "Radius",
             Thomassen(_) => "Minimax path length in linear forest bisection of cubic graph",
-            NumBipartiteEdgeBisections => "Number of 2-edge-colourings of cubic graph with both parts bipartite",
+            NumBipartiteEdgeBisections => {
+                "Number of 2-edge-colourings of cubic graph with both parts bipartite"
+            }
             GameChromaticNumber => "Game chromatic number",
             GameChromaticNumberGreedy => "Threshold for Alice to win greedily in chi_g",
             GameArboricityNumber => "Game arboricity number",
@@ -157,7 +159,9 @@ impl fmt::Display for IntOperation {
             Width => "Poset width",
             NumLinearExtensions => "Number of linear extensions",
             MaxMatching => "Max matching size in a bipartite graph",
-            MinNorineDistance(_) => "Min Norine distance between antipodes in random colouring of Q_n",
+            MinNorineDistance(_) => {
+                "Min Norine distance between antipodes in random colouring of Q_n"
+            }
             MinKernelSize => "Min size of a 2-kernel in digraph",
             MaxCodegree => "Max codegree",
             Number(n) => {

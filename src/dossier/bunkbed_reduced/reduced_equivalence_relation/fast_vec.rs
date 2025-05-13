@@ -10,25 +10,25 @@ impl EquivalenceClass {
         Self(c)
     }
 
-	pub fn incr_inplace(&mut self) {
-		self.0 += 1
-	}
+    pub fn incr_inplace(&mut self) {
+        self.0 += 1
+    }
 
     pub fn incr(&self) -> Self {
         Self(self.0 + 1)
     }
 
-	pub fn decr_inplace(&mut self) {
-		self.0 -= 1
-	}
+    pub fn decr_inplace(&mut self) {
+        self.0 -= 1
+    }
 
     pub fn decr(&self) -> Self {
         Self(self.0 - 1)
     }
 
-	pub fn to_string(&self) -> String {
-		self.0.to_string()
-	}
+    pub fn to_string(&self) -> String {
+        self.0.to_string()
+    }
 
     pub fn to_char(&self) -> u8 {
         self.0 as u8 + b'0'

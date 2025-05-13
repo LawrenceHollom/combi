@@ -1,9 +1,8 @@
 use rand::{thread_rng, Rng};
-use utilities::*;
 use utilities::vertex_tools::*;
+use utilities::*;
 
 use super::*;
-
 
 pub fn new_oriented(n: Order, min_p: f64, max_p: f64) -> Digraph {
     let mut rng = thread_rng();
@@ -20,7 +19,7 @@ pub fn new_oriented(n: Order, min_p: f64, max_p: f64) -> Digraph {
         }
     }
 
-    Digraph::of_out_adj_list(adj_list, vec![p])//, Constructor::DigraphConstr(DigraphConstructor::Oriented(n, p)))
+    Digraph::of_out_adj_list(adj_list, vec![p]) //, Constructor::DigraphConstr(DigraphConstructor::Oriented(n, p)))
 }
 
 /**
@@ -33,7 +32,7 @@ pub fn new_out(n: Order, d: Degree) -> Digraph {
 
     let mut rng = thread_rng();
     let mut out_adj_list = VertexVec::new(n, &vec![]);
-    
+
     for v in n.iter_verts() {
         let mut connected = VertexVec::new(n, &false);
         for _i in 0..d.to_usize() {
@@ -43,7 +42,7 @@ pub fn new_out(n: Order, d: Degree) -> Digraph {
                     // Can connect to u.
                     out_adj_list[v].push(u);
                     connected[u] = true;
-                    break 'find_vertex
+                    break 'find_vertex;
                 }
             }
         }
@@ -53,7 +52,7 @@ pub fn new_out(n: Order, d: Degree) -> Digraph {
 }
 
 /**
- * Returns a digraph where every vertex has the given out degree and there are 
+ * Returns a digraph where every vertex has the given out degree and there are
  * no bidirectional edges.
  */
 pub fn new_oriented_out(n: Order, d: Degree) -> Digraph {
@@ -64,7 +63,7 @@ pub fn new_oriented_out(n: Order, d: Degree) -> Digraph {
     let mut rng = thread_rng();
     let mut adj;
     let max_in_deg = n.to_max_deg() - d;
-    
+
     'find_adj_list: loop {
         adj = VertexVec::new(n, &VertexVec::new(n, &false));
         let mut in_deg = VertexVec::new(n, &Degree::ZERO);

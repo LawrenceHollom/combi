@@ -28,7 +28,7 @@ pub fn is_d_degenerate(g: &Graph, d: Degree) -> bool {
 }
 
 pub fn degeneracy(g: &Graph) -> u32 {
-    // Remove the vertex of lowest degree iteratively, 
+    // Remove the vertex of lowest degree iteratively,
     // and return highest deg we had to remove.
     let mut degs = g.deg.clone();
     let mut removed = VertexSet::new(g.n);

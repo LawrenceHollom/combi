@@ -6,7 +6,13 @@ use crate::entity::graph::*;
  * This is for finding maximum matchings in bipartite graphs.
  */
 
-fn visit_vertex_rec(g: &Graph, v: Vertex, visited: &mut VertexSet, a: &mut VertexSet, a_side: bool) {
+fn visit_vertex_rec(
+    g: &Graph,
+    v: Vertex,
+    visited: &mut VertexSet,
+    a: &mut VertexSet,
+    a_side: bool,
+) {
     if a_side {
         a.add_vert(v);
     }
@@ -25,7 +31,12 @@ fn visit_vertex_rec(g: &Graph, v: Vertex, visited: &mut VertexSet, a: &mut Verte
  * Otherwise, None is returned.
  * v is necessarily in the same part of the graph as the starting vertex.
  */
-fn find_augmenting_path_rec(g: &Graph, v: Vertex, matching: &VertexVec<Option<Vertex>>, aug_predecessor: &mut VertexVec<Option<Vertex>>) -> Option<Vertex> {
+fn find_augmenting_path_rec(
+    g: &Graph,
+    v: Vertex,
+    matching: &VertexVec<Option<Vertex>>,
+    aug_predecessor: &mut VertexVec<Option<Vertex>>,
+) -> Option<Vertex> {
     for u in g.adj_list[v].iter() {
         if aug_predecessor[*u].is_none() {
             // u has not been visited, so we can visit it now.
@@ -38,7 +49,7 @@ fn find_augmenting_path_rec(g: &Graph, v: Vertex, matching: &VertexVec<Option<Ve
                 }
             } else {
                 // This is not in the matching, so is the end of an augmenting path!
-                return Some(*u)
+                return Some(*u);
             }
         }
     }
@@ -77,12 +88,11 @@ pub fn max_matching_size(g: &Graph) -> u32 {
                         matching[x] = Some(y);
                         matching[y] = Some(x);
                         if y == v {
-                            break 'flip_path
+                            break 'flip_path;
                         } else {
                             x = aug_predecessor[y].unwrap();
                             y = aug_predecessor[x].unwrap();
                         }
-
                     }
                 }
             }

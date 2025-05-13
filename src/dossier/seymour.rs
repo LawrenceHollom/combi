@@ -1,11 +1,11 @@
-use rand::Rng;
 use rand::rngs::ThreadRng;
 use rand::thread_rng;
+use rand::Rng;
 
-use utilities::{*, vertex_tools::*, edge_tools::*};
+use utilities::{edge_tools::*, vertex_tools::*, *};
 
-use crate::entity::graph::*;
 use crate::entity::digraph::*;
+use crate::entity::graph::*;
 
 const MAX_ATTEMPTS_MULT: usize = 1;
 const NUM_TESTS: usize = 100;
@@ -13,13 +13,20 @@ const NUM_TESTS: usize = 100;
 fn must_trivially_have_seymour_vertex(g: &Graph) -> bool {
     for v in g.iter_verts() {
         if g.deg[v].at_most(5) {
-            return true
+            return true;
         }
     }
     false
 }
 
-fn fix_vertex(d: &mut Digraph, rng: &mut ThreadRng, v: Vertex, avoid: Option<Vertex>, max_in_deg: usize, depth: usize) {
+fn fix_vertex(
+    d: &mut Digraph,
+    rng: &mut ThreadRng,
+    v: Vertex,
+    avoid: Option<Vertex>,
+    max_in_deg: usize,
+    depth: usize,
+) {
     let mut flip_to = None;
     let mut recurse = false;
     if depth > 100 {
@@ -51,7 +58,7 @@ fn fix_vertex(d: &mut Digraph, rng: &mut ThreadRng, v: Vertex, avoid: Option<Ver
     let u = flip_to.unwrap();
     d.reverse_edge(Edge::of_pair(u, v));
     if recurse {
-        fix_vertex(d, rng, u, Some(v), max_in_deg, depth+1)
+        fix_vertex(d, rng, u, Some(v), max_in_deg, depth + 1)
     }
 }
 
@@ -101,7 +108,7 @@ fn does_digraph_have_seymour_vertex(d: &Digraph) -> bool {
             }
         }
         if d.out_deg[u].at_most(second_nbhd_size) {
-            return true
+            return true;
         }
     }
     false
@@ -116,7 +123,7 @@ pub fn has_seymour_vertex(g: &Graph) -> bool {
                 if !does_digraph_have_seymour_vertex(&d) {
                     println!("FOUND COUNTEREXAMPLE!");
                     d.print();
-                    return false
+                    return false;
                 }
             }
         }

@@ -18,7 +18,11 @@ pub enum ArithmeticOperation {
 pub enum RationalOperation {
     OfInt(IntOperation),
     OfBool(Box<BoolOperation>),
-    Arithmetic(ArithmeticOperation, Box<RationalOperation>, Box<RationalOperation>),
+    Arithmetic(
+        ArithmeticOperation,
+        Box<RationalOperation>,
+        Box<RationalOperation>,
+    ),
     DominationRedundancy,
     GrabbingColeafWeightedDifference,
     PosetBalance,
@@ -29,10 +33,10 @@ pub enum RationalOperation {
 
 impl RationalOperation {
     fn wrap_arithmetic(op: ArithmeticOperation, par1: &str, par2: &str) -> Option<Self> {
-        Self::of_string_result(par1).and_then(|par1| 
-            Self::of_string_result(par2).map(|par2|
-                Self::Arithmetic(op, Box::new(par1), Box::new(par2))
-        ))
+        Self::of_string_result(par1).and_then(|par1| {
+            Self::of_string_result(par2)
+                .map(|par2| Self::Arithmetic(op, Box::new(par1), Box::new(par2)))
+        })
     }
 
     pub fn of_string_result(text: &str) -> Option<Self> {
@@ -95,7 +99,9 @@ impl fmt::Display for RationalOperation {
             OfInt(op) => format!("{}", op),
             Arithmetic(arith, op1, op2) => format!("({}) {} ({})", *op1, arith, *op2),
             DominationRedundancy => "Domination redundancy ratio".to_owned(),
-            GrabbingColeafWeightedDifference => "Grabbing game score diff with coleaf weights".to_owned(),
+            GrabbingColeafWeightedDifference => {
+                "Grabbing game score diff with coleaf weights".to_owned()
+            }
             PosetBalance => "Balance constant of the poset".to_owned(),
             PosetCapBalance => "Balance constant as the cap of a ladder".to_owned(),
             PosetBalanceWithMinimal => "Balance among pairs including a min".to_owned(),

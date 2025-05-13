@@ -18,7 +18,10 @@ pub fn giant_component(g: Graph) -> Graph {
     let components = g.components();
     let sizes = ComponentVec::<usize>::new_sizes(&components);
     let biggest = sizes.arg_max(&0, usize::cmp).unwrap();
-    let filter = components.iter().map(|c| *c == biggest).collect::<VertexVec<bool>>();
+    let filter = components
+        .iter()
+        .map(|c| *c == biggest)
+        .collect::<VertexVec<bool>>();
     g.of_filtered(&filter)
 }
 
@@ -31,7 +34,7 @@ pub fn two_core(g: Graph) -> Graph {
     let mut filter = VertexVec::new(g.n, &true);
     let mut untrimmed_degree = g.deg.to_owned();
     let mut q = queue![];
-    
+
     for v in g.iter_verts() {
         if g.deg[v].at_most(1) {
             let _ = q.add(v);

@@ -1,9 +1,14 @@
 use crate::entity::poset::*;
 
-use utilities::vertex_tools::*;
 use utilities::rational::*;
+use utilities::vertex_tools::*;
 
-fn iterate_extensions_rec(p: &Poset, placed: VertexSet, num_placed: usize, gt_count: &mut VertexVec<VertexVec<u64>>) -> u64 {
+fn iterate_extensions_rec(
+    p: &Poset,
+    placed: VertexSet,
+    num_placed: usize,
+    gt_count: &mut VertexVec<VertexVec<u64>>,
+) -> u64 {
     if num_placed == p.order.to_usize() {
         return 1;
     }
@@ -41,9 +46,11 @@ pub fn print_relation_probabilities(p: &Poset) {
     println!("There are {} linear extensions of the poset.", count);
     println!("Counts of how many times we have u > v (u = y_axis, v = x_axis):");
     let names: Vec<String> = p.order.iter_verts().map(|v| v.to_string()).collect();
-    let rows = gt_count.iter().enumerate().map(
-        |(i, row)| (names[i].as_str(), row.to_vec_of_strings())
-    ).collect::<Vec<(&str, VertexVec<String>)>>();
+    let rows = gt_count
+        .iter()
+        .enumerate()
+        .map(|(i, row)| (names[i].as_str(), row.to_vec_of_strings()))
+        .collect::<Vec<(&str, VertexVec<String>)>>();
     print_vertex_table(rows);
     let mut max_balance = 0;
     let mut best_pair = (Vertex::ZERO, Vertex::ZERO);
@@ -55,7 +62,10 @@ pub fn print_relation_probabilities(p: &Poset) {
         }
     }
     let balance = (max_balance as f64) / (count as f64);
-    println!("A maximally balanced pair ({} / {} ~ {:.4}): {:?}", max_balance, count, balance, best_pair);
+    println!(
+        "A maximally balanced pair ({} / {} ~ {:.4}): {:?}",
+        max_balance, count, balance, best_pair
+    );
 }
 
 pub fn balance_constant(p: &Poset) -> Rational {
@@ -75,7 +85,12 @@ pub fn num_linear_extensions(p: &Poset) -> u32 {
     count as u32
 }
 
-fn count_extensions_up_to_cap_rec(p: &Poset, placed: VertexSet, num_placed: usize, cap: u64) -> u64 {
+fn count_extensions_up_to_cap_rec(
+    p: &Poset,
+    placed: VertexSet,
+    num_placed: usize,
+    cap: u64,
+) -> u64 {
     if num_placed == p.order.to_usize() {
         return 1;
     }
@@ -94,11 +109,12 @@ fn count_extensions_up_to_cap_rec(p: &Poset, placed: VertexSet, num_placed: usiz
                 // We can finish if we find at least new_cap extensions.
                 let new_cap = cap - count;
                 let new_placed = placed.add_vert_immutable(v);
-                let sub_count = count_extensions_up_to_cap_rec(p, new_placed, num_placed + 1, new_cap);
+                let sub_count =
+                    count_extensions_up_to_cap_rec(p, new_placed, num_placed + 1, new_cap);
                 count += sub_count;
                 if count >= cap {
                     // If we've exceeded the cap, then no need to go further.
-                    return cap
+                    return cap;
                 }
             }
         }
@@ -127,13 +143,16 @@ pub fn print_heuristics(p: &Poset) {
 }
 
 /**
- * A pair of vertices are equitable if they have the same difference in sizes between 
+ * A pair of vertices are equitable if they have the same difference in sizes between
  * their upsets and downsets
  */
 pub fn is_heuristically_balanced(p: &Poset) -> bool {
     for (u, v) in p.iter_pairs() {
-        if p.incomparable(u, v) && p.downsets[u].size() + p.upsets[v].size() == p.upsets[u].size() + p.downsets[v].size() {
-            return true
+        if p.incomparable(u, v)
+            && p.downsets[u].size() + p.upsets[v].size()
+                == p.upsets[u].size() + p.downsets[v].size()
+        {
+            return true;
         }
     }
     false
@@ -148,7 +167,8 @@ struct NStructure {
 }
 
 fn attach_cap(p: &Poset) -> Poset {
-    let n_struct = self::find_maximal_n(p).expect("Can only call balance_as_cap on posets with maximal N!");
+    let n_struct =
+        self::find_maximal_n(p).expect("Can only call balance_as_cap on posets with maximal N!");
     let order = p.order.incr_by(4);
     let mut gt = VertexVec::new(order, &VertexVec::new(order, &false));
     for (x, y) in p.order.iter_pairs() {
@@ -216,12 +236,12 @@ pub fn balance_with_min(p: &Poset) -> Rational {
 
 pub fn print_cap_balance(p: &Poset) {
     let q = attach_cap(p);
-    
+
     println!("\n ~~~~~~~~ ORIGINAL POSET ~~~~~~~~ \n");
     p.print_hasse();
     println!("\n ~~~~~~~~ CAPPED POSET ~~~~~~~~ \n");
     q.print_hasse();
-    
+
     print_relation_probabilities(&q);
 }
 
@@ -236,14 +256,14 @@ fn find_maximal_n(p: &Poset) -> Option<NStructure> {
         }
     }
     if maximal_elements.len() != 2 {
-        return None
+        return None;
     }
     let x = maximal_elements[0];
     let y = maximal_elements[1];
     let inter = p.lower_covers[x].inter(&p.lower_covers[y]);
     let sides = p.lower_covers[x].xor(&p.lower_covers[y]);
     if inter.is_empty() {
-        return None
+        return None;
     }
     for v in inter.iter() {
         for u in sides.iter() {
@@ -254,14 +274,14 @@ fn find_maximal_n(p: &Poset) -> Option<NStructure> {
                         top_right: y,
                         bottom_left: u,
                         // bottom_right: v,
-                    })
+                    });
                 } else {
                     return Some(NStructure {
                         top_left: y,
                         top_right: x,
                         bottom_left: u,
                         // bottom_right: v,
-                    })
+                    });
                 }
             }
         }

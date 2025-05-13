@@ -1,8 +1,8 @@
 use queues::*;
 use std::usize;
 
-use utilities::*;
 use utilities::vertex_tools::*;
+use utilities::*;
 
 use crate::constructor::*;
 
@@ -34,8 +34,7 @@ pub struct Poset {
 
 impl Poset {
     pub fn new_chain(order: Order) -> Self {
-        let gt = VertexVec::new_fn(order, 
-            |u| VertexVec::new_fn(order, |v| u > v));
+        let gt = VertexVec::new_fn(order, |u| VertexVec::new_fn(order, |v| u > v));
         let mut upper_covers = VertexVec::new(order, &VertexSet::new(order));
         let mut lower_covers = VertexVec::new(order, &VertexSet::new(order));
         let mut downsets = VertexVec::new(order, &VertexSet::new(order));
@@ -65,7 +64,7 @@ impl Poset {
             upsets,
             heights,
             height: order.to_usize(),
-            constructor: Constructor::PosetConstr(PosetConstructor::Chain(order))
+            constructor: Constructor::PosetConstr(PosetConstructor::Chain(order)),
         }
     }
 
@@ -79,15 +78,20 @@ impl Poset {
             upsets: VertexVec::new(order, &VertexSet::new(order)),
             heights: VertexVec::new(order, &0),
             height: 1,
-            constructor: Constructor::PosetConstr(PosetConstructor::Antichain(order))
+            constructor: Constructor::PosetConstr(PosetConstructor::Antichain(order)),
         }
     }
 
-    pub fn get_intersection_with(&self, q: &VertexVec<VertexVec<bool>>) -> VertexVec<VertexVec<bool>> {
+    pub fn get_intersection_with(
+        &self,
+        q: &VertexVec<VertexVec<bool>>,
+    ) -> VertexVec<VertexVec<bool>> {
         if q.len() != self.order {
             panic!("Cannot intersect posets of different orders!")
         }
-        VertexVec::new_fn(self.order, |u| VertexVec::new_fn(self.order, |v| self.gt[u][v] && q[u][v]))
+        VertexVec::new_fn(self.order, |u| {
+            VertexVec::new_fn(self.order, |v| self.gt[u][v] && q[u][v])
+        })
     }
 
     pub fn of_ordering(gt: VertexVec<VertexVec<bool>>, constructor: Constructor) -> Self {
@@ -118,8 +122,13 @@ impl Poset {
                 lower_covers[v].add_vert(u);
             }
         }
-        
-        fn compute_height_rec(order: Order, lower_covers: &VertexVec<VertexSet>, height: &mut VertexVec<usize>, v: Vertex) {
+
+        fn compute_height_rec(
+            order: Order,
+            lower_covers: &VertexVec<VertexSet>,
+            height: &mut VertexVec<usize>,
+            v: Vertex,
+        ) {
             let mut h = 0;
             for u in lower_covers[v].iter() {
                 if height[u] == usize::MAX {
@@ -139,7 +148,7 @@ impl Poset {
             }
             max_height = max_height.max(heights[v]);
         }
-        
+
         Self {
             order,
             gt,
@@ -157,7 +166,10 @@ impl Poset {
      * First take the transitive closure of the ordering and then make the poset from it.
      * Runs Floyd-Warshall.
      */
-    pub fn of_transitive_closure(mut gt: VertexVec<VertexVec<bool>>, constructor: Constructor) -> Self {
+    pub fn of_transitive_closure(
+        mut gt: VertexVec<VertexVec<bool>>,
+        constructor: Constructor,
+    ) -> Self {
         let order = gt.len();
         for k in order.iter_verts() {
             for i in order.iter_verts() {
@@ -228,7 +240,7 @@ impl Poset {
         for x in vs.iter() {
             for y in vs.iter() {
                 if x != y && self.incomparable(x, y) {
-                    return false
+                    return false;
                 }
             }
         }
@@ -295,9 +307,11 @@ impl Poset {
             }
         }
         println!("Order: {}", self.order);
-        let rows = self.gt.iter().map(
-            |row| ("row!", row.to_vec_of_strings())
-        ).collect::<Vec<(&str, VertexVec<String>)>>();
+        let rows = self
+            .gt
+            .iter()
+            .map(|row| ("row!", row.to_vec_of_strings()))
+            .collect::<Vec<(&str, VertexVec<String>)>>();
         print_vertex_table(rows);
         self.print_hasse()
     }

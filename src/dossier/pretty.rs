@@ -4,11 +4,11 @@ use std::ops::{Add, AddAssign, Div, Mul, Sub, SubAssign};
 use image::{ImageBuffer, ImageReader, Rgba};
 use rand::{rngs::ThreadRng, thread_rng, Rng};
 
-use crate::entity::*;
-use crate::entity::graph::*;
 use crate::entity::digraph::*;
-use utilities::vertex_tools::*;
+use crate::entity::graph::*;
+use crate::entity::*;
 use utilities::edge_tools::*;
+use utilities::vertex_tools::*;
 use utilities::*;
 
 #[derive(Clone, Copy)]
@@ -45,7 +45,10 @@ impl Point {
 
     pub fn new_cyclic(n: Order, v: Vertex) -> Self {
         let theta = 2.0 * core::f64::consts::PI * v.as_fraction_of(n);
-        Self { x: (theta.cos() + 1.0) / 2.0, y: (theta.sin() + 1.0) / 2.0 }
+        Self {
+            x: (theta.cos() + 1.0) / 2.0,
+            y: (theta.sin() + 1.0) / 2.0,
+        }
     }
 
     pub fn to_pixel_coords(&self, width: u32, height: u32) -> Self {
@@ -84,7 +87,12 @@ impl Point {
 impl Embedding {
     const EDGE_N_CUTOFF: usize = 40;
 
-    pub fn new(g: &Graph, repulsion_scale_scale: f64, edge_repulsion_threshold: f64, rng: &mut ThreadRng) -> Self {
+    pub fn new(
+        g: &Graph,
+        repulsion_scale_scale: f64,
+        edge_repulsion_threshold: f64,
+        rng: &mut ThreadRng,
+    ) -> Self {
         let mut positions = VertexVec::new(g.n, &Point::ZERO);
         for pos in positions.iter_mut() {
             *pos = Point::new_random(rng);
@@ -100,12 +108,12 @@ impl Embedding {
 
     pub fn new_cyclic(g: &Graph) -> Self {
         let positions = VertexVec::new_fn(g.n, |v| Point::new_cyclic(g.n, v));
-        Self { 
-            positions, 
-            delta: 0.0, 
-            repulsion_scale: 0.0, 
-            edge_repulsion: 0.0, 
-            edge_repulsion_threshold: 0.0 
+        Self {
+            positions,
+            delta: 0.0,
+            repulsion_scale: 0.0,
+            edge_repulsion: 0.0,
+            edge_repulsion_threshold: 0.0,
         }
     }
 
@@ -131,7 +139,7 @@ impl Embedding {
 
     fn get_energy_of_pair(&self, u: Vertex, v: Vertex, is_edge: bool) -> f64 {
         let dist = (self.get(u) - self.get(v)).length();
-        let repulsion_e = 0.0;//self.repulsion_scale / dist;
+        let repulsion_e = 0.0; //self.repulsion_scale / dist;
         let attraction_e = if is_edge { dist * dist } else { 0.0 };
         attraction_e + repulsion_e
     }
@@ -169,7 +177,8 @@ impl Embedding {
                         let offset = self.get(w) - projection;
                         let dist = offset.length();
                         if dist <= self.edge_repulsion_threshold {
-                            let force = self.edge_repulsion(dist) - self.edge_repulsion(self.edge_repulsion_threshold);
+                            let force = self.edge_repulsion(dist)
+                                - self.edge_repulsion(self.edge_repulsion_threshold);
                             new_positions[w] += offset * (force * self.delta)
                         }
                     }
@@ -203,8 +212,8 @@ impl Embedding {
         }
     }
 
-    /** 
-     * Shuffle stuff around to try and find the perfect embedding. 
+    /**
+     * Shuffle stuff around to try and find the perfect embedding.
      * The key idea is that edges should attract, and non-edges repel, and there should
      * always be stuff on each boundary.
      **/
@@ -226,7 +235,7 @@ impl Embedding {
                 let e = Edge::of_pair(u, v);
                 for w in g.iter_verts() {
                     if w != u && w != v {
-                        energy += self.get_energy_of_edge_and_vertex(w, e);        
+                        energy += self.get_energy_of_edge_and_vertex(w, e);
                     }
                 }
             }
@@ -245,7 +254,7 @@ impl Printer {
 
     pub fn new() -> Self {
         Self {
-            node_bg: read_image( "base"),
+            node_bg: read_image("base"),
             numbers: read_image("numbers"),
             width: 1000,
             height: 1000,
@@ -258,7 +267,12 @@ impl Printer {
         *imgbuf.get_pixel_mut(x, y) = Self::BLACK;
     }
 
-    fn draw_line(&self, imgbuf: &mut ImageBuffer<Rgba<u8>, Vec<u8>>, start_point: Point, end_point: Point) {
+    fn draw_line(
+        &self,
+        imgbuf: &mut ImageBuffer<Rgba<u8>, Vec<u8>>,
+        start_point: Point,
+        end_point: Point,
+    ) {
         let start = start_point.to_pixel_coords(self.width, self.height);
         let end = end_point.to_pixel_coords(self.width, self.height);
         let length = (end - start).length();
@@ -271,7 +285,12 @@ impl Printer {
         }
     }
 
-    fn draw_arrow(&self, imgbuf: &mut ImageBuffer<Rgba<u8>, Vec<u8>>, start_point: Point, end_point: Point) {
+    fn draw_arrow(
+        &self,
+        imgbuf: &mut ImageBuffer<Rgba<u8>, Vec<u8>>,
+        start_point: Point,
+        end_point: Point,
+    ) {
         let start = start_point.to_pixel_coords(self.width, self.height);
         let end = end_point.to_pixel_coords(self.width, self.height);
         let length = (end - start).length();
@@ -293,12 +312,21 @@ impl Printer {
                     let pos2 = pos + (sidestep * (-(j as f64)));
                     self.set_point_black(pos1, imgbuf);
                     self.set_point_black(pos2, imgbuf);
-                } 
+                }
             }
         }
     }
 
-    fn draw_img_at_point(&self, imgbuf: &mut ImageBuffer<Rgba<u8>, Vec<u8>>, img: &ImageBuffer<Rgba<u8>, Vec<u8>>, x: u32, y: u32, atlas_x: u32, atlas_size: u32, colour: Option<&[u8; 4]>) {
+    fn draw_img_at_point(
+        &self,
+        imgbuf: &mut ImageBuffer<Rgba<u8>, Vec<u8>>,
+        img: &ImageBuffer<Rgba<u8>, Vec<u8>>,
+        x: u32,
+        y: u32,
+        atlas_x: u32,
+        atlas_size: u32,
+        colour: Option<&[u8; 4]>,
+    ) {
         let sx = x - img.width() / (2 * atlas_size);
         let sy = y - img.height() / 2;
         let width = img.width();
@@ -315,7 +343,13 @@ impl Printer {
         }
     }
 
-    fn draw_node(&self, imgbuf: &mut ImageBuffer<Rgba<u8>, Vec<u8>>, name: String, point: Point, colour: &[u8; 4]) {
+    fn draw_node(
+        &self,
+        imgbuf: &mut ImageBuffer<Rgba<u8>, Vec<u8>>,
+        name: String,
+        point: Point,
+        colour: &[u8; 4],
+    ) {
         let (x, y) = point.to_int_coords(self.width, self.height);
         self.draw_img_at_point(imgbuf, &self.node_bg, x, y, 0, 1, Some(colour));
         let name_len = name.len() as u32;
@@ -326,8 +360,15 @@ impl Printer {
         }
     }
 
-    pub fn print_graph(&self, g: &Graph, embedding: &Embedding, colours: &VertexVec<[u8; 4]>, filename: &str) {
-        let mut imgbuf: ImageBuffer<Rgba<u8>, Vec<u8>> = image::ImageBuffer::new(self.width, self.height);
+    pub fn print_graph(
+        &self,
+        g: &Graph,
+        embedding: &Embedding,
+        colours: &VertexVec<[u8; 4]>,
+        filename: &str,
+    ) {
+        let mut imgbuf: ImageBuffer<Rgba<u8>, Vec<u8>> =
+            image::ImageBuffer::new(self.width, self.height);
 
         for px in imgbuf.pixels_mut() {
             *px = Self::WHITE;
@@ -346,9 +387,16 @@ impl Printer {
         save_buffer(&imgbuf, filename);
     }
 
-    pub fn print_digraph(&self, d: &Digraph, embedding: &Embedding, colours: &VertexVec<[u8; 4]>, filename: &str) {
-        let mut imgbuf: ImageBuffer<Rgba<u8>, Vec<u8>> = image::ImageBuffer::new(self.width, self.height);
-    
+    pub fn print_digraph(
+        &self,
+        d: &Digraph,
+        embedding: &Embedding,
+        colours: &VertexVec<[u8; 4]>,
+        filename: &str,
+    ) {
+        let mut imgbuf: ImageBuffer<Rgba<u8>, Vec<u8>> =
+            image::ImageBuffer::new(self.width, self.height);
+
         for px in imgbuf.pixels_mut() {
             *px = Self::WHITE;
         }
@@ -357,12 +405,12 @@ impl Printer {
         for e in d.iter_edges() {
             self.draw_arrow(&mut imgbuf, embedding.get(e.fst()), embedding.get(e.snd()))
         }
-    
+
         // Draw all the node blobs and numbers
         for (v, colour) in colours.iter_enum() {
             self.draw_node(&mut imgbuf, v.to_string(), embedding.get(v), colour)
         }
-    
+
         save_buffer(&imgbuf, filename);
     }
 }
@@ -374,7 +422,11 @@ fn get_optimal_embedding(g: &Graph, rng: &mut ThreadRng) -> Embedding {
     // Attempt 100 embeddings, and pick the one with the lowest energy
     for _i in 0..100 {
         let repulsion_scale_scale = rng.gen_range(0.1..1.0);
-        let edge_repulsion_threshold = if rng.gen_bool(0.5) { 0.0 } else { rng.gen_range(0.0..0.05) };
+        let edge_repulsion_threshold = if rng.gen_bool(0.5) {
+            0.0
+        } else {
+            rng.gen_range(0.0..0.05)
+        };
         let mut embedding = Embedding::new(g, repulsion_scale_scale, edge_repulsion_threshold, rng);
         embedding.optimise(g);
         let energy = embedding.get_energy(g);
@@ -417,7 +469,7 @@ pub fn print_entity(e: &Entity) {
     match e {
         Entity::Graph(g) => print_graph(g, false),
         Entity::Digraph(d) => print_digraph(d, false),
-        Entity::Poset(_) => panic!("Cannot pretty-print posets!")
+        Entity::Poset(_) => panic!("Cannot pretty-print posets!"),
     }
 }
 
@@ -425,7 +477,7 @@ pub fn print_entity_cyclic(e: &Entity) {
     match e {
         Entity::Graph(g) => print_graph(g, true),
         Entity::Digraph(d) => print_digraph(d, true),
-        Entity::Poset(_) => panic!("Cannot cyclically pretty-print posets!")
+        Entity::Poset(_) => panic!("Cannot cyclically pretty-print posets!"),
     }
 }
 
@@ -435,11 +487,11 @@ pub fn print_entity_cyclic(e: &Entity) {
  *     0.0            1.0              2.0            3.0             4.0              5.0
  * (255, 0, 0) -> (255, 255, 0) -> (0, 255, 0) -> (0, 255, 255) -> (0, 0, 255) -> (255, 0, 255) -> ...
  */
-pub fn print_graph_hued(g: &Graph, hues: &VertexVec<f64>, modulus: f64, is_cyclic: bool) { 
+pub fn print_graph_hued(g: &Graph, hues: &VertexVec<f64>, modulus: f64, is_cyclic: bool) {
     let printer = Printer::new();
     let mut rng = thread_rng();
     let embedding = if is_cyclic {
-        Embedding::new_cyclic(g)  
+        Embedding::new_cyclic(g)
     } else {
         get_optimal_embedding(g, &mut rng)
     };

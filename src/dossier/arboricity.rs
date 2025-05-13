@@ -2,8 +2,15 @@ use utilities::edge_tools::*;
 
 use crate::entity::graph::*;
 
-fn maker_wins_arboricity_game_rec(g: &Graph, indexer: &EdgeIndexer, k: usize, max_colour_used: usize, 
-        colours: &mut EdgeVec<Option<usize>>, num_edges: usize, num_cold: usize) -> bool {
+fn maker_wins_arboricity_game_rec(
+    g: &Graph,
+    indexer: &EdgeIndexer,
+    k: usize,
+    max_colour_used: usize,
+    colours: &mut EdgeVec<Option<usize>>,
+    num_edges: usize,
+    num_cold: usize,
+) -> bool {
     // Recursively try to colour an edge.
     if num_cold >= num_edges {
         // maker wins as all edges are coloured.
@@ -31,8 +38,15 @@ fn maker_wins_arboricity_game_rec(g: &Graph, indexer: &EdgeIndexer, k: usize, ma
                         let max_col = max_colour_used.max(c);
                         can_be_cold = true;
                         is_something_playable = true;
-                        let sub_maker_win = maker_wins_arboricity_game_rec(g, indexer, k, 
-                            max_col, colours, num_edges, num_cold + 1);
+                        let sub_maker_win = maker_wins_arboricity_game_rec(
+                            g,
+                            indexer,
+                            k,
+                            max_col,
+                            colours,
+                            num_edges,
+                            num_cold + 1,
+                        );
                         if sub_maker_win == maker_turn {
                             // This is a winning strategy for the current player.
                             maker_win = sub_maker_win;
@@ -63,8 +77,7 @@ pub fn maker_wins_arboricity_game(g: &Graph, k: usize) -> bool {
     let mut colours = EdgeVec::new(&g.adj_list, None);
     'test_edges: for e in indexer.iter_edges() {
         colours[*e] = Some(0);
-        if maker_wins_arboricity_game_rec(g, &indexer, k, 0, &mut colours,
-                g.size(), 1) {
+        if maker_wins_arboricity_game_rec(g, &indexer, k, 0, &mut colours, g.size(), 1) {
             maker_wins = true;
             break 'test_edges;
         }
@@ -91,8 +104,8 @@ mod tests {
     use crate::constructor::RawConstructor;
 
     use super::*;
-    use utilities::*;
     use crate::constructor::*;
+    use utilities::*;
 
     fn test_arb_game(g: &Graph, a_g: u32) {
         assert_eq!(game_arboricity_number(g), a_g)
@@ -105,9 +118,11 @@ mod tests {
     #[test]
     fn test_arb_game_prism() {
         use Constructor::*;
-        let constr = Product(ProductConstructor::Cartesian, 
-            Box::new(Raw(RawConstructor::Complete(ous(2)))), 
-            Box::new(Raw(RawConstructor::Complete(ous(3)))));
+        let constr = Product(
+            ProductConstructor::Cartesian,
+            Box::new(Raw(RawConstructor::Complete(ous(2)))),
+            Box::new(Raw(RawConstructor::Complete(ous(3)))),
+        );
         test_arb_game(&constr.new_entity().as_owned_graph(), 2)
     }
 

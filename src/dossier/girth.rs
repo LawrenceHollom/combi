@@ -1,4 +1,4 @@
-use crate::entity::{*, graph::*, poset::*};
+use crate::entity::{graph::*, poset::*, *};
 use utilities::vertex_tools::*;
 
 fn graph_girth(g: &Graph) -> u32 {
@@ -16,7 +16,7 @@ fn graph_girth(g: &Graph) -> u32 {
                     match d[*w].cmp(&d[v]) {
                         Less => num_less += 1,
                         Equal => num_equal += 1,
-                        Greater => ()
+                        Greater => (),
                     }
                 }
                 if num_less >= 2 {

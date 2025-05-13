@@ -6,7 +6,10 @@ use utilities::vertex_tools::*;
 
 pub fn new(order: Order, p: f64) -> Graph {
     if !(0.0..=1.0).contains(&p) {
-        panic!("The probability p must satisfy 0 <= p <= 1 (which {} does not!)", p)
+        panic!(
+            "The probability p must satisfy 0 <= p <= 1 (which {} does not!)",
+            p
+        )
     }
     let mut adj_list = VertexVec::new(order, &vec![]);
     let mut rng = thread_rng();
@@ -18,8 +21,10 @@ pub fn new(order: Order, p: f64) -> Graph {
         }
     }
 
-    Graph::of_adj_list(adj_list, Constructor::Random(
-        RandomConstructor::ErdosRenyi(order, p)))
+    Graph::of_adj_list(
+        adj_list,
+        Constructor::Random(RandomConstructor::ErdosRenyi(order, p)),
+    )
 }
 
 pub fn new_based(n: Order, p: f64, base: &Constructor) -> Graph {
@@ -35,7 +40,14 @@ pub fn new_based(n: Order, p: f64, base: &Constructor) -> Graph {
         }
     }
 
-    Graph::of_matrix(adj, Constructor::Random(RandomConstructor::BasedErdosRenyi(n, p, Box::new(base.to_owned()))))
+    Graph::of_matrix(
+        adj,
+        Constructor::Random(RandomConstructor::BasedErdosRenyi(
+            n,
+            p,
+            Box::new(base.to_owned()),
+        )),
+    )
 }
 
 pub fn new_induced(n: Order, p: f64, base: &Constructor) -> Graph {
@@ -56,7 +68,14 @@ pub fn new_induced(n: Order, p: f64, base: &Constructor) -> Graph {
         }
     }
 
-    Graph::of_matrix(adj, Constructor::Random(RandomConstructor::InducedErdosRenyi(n, p, Box::new(base.to_owned()))))
+    Graph::of_matrix(
+        adj,
+        Constructor::Random(RandomConstructor::InducedErdosRenyi(
+            n,
+            p,
+            Box::new(base.to_owned()),
+        )),
+    )
 }
 
 pub fn new_bipartite(order: Order, p: f64) -> Graph {
@@ -71,8 +90,10 @@ pub fn new_bipartite(order: Order, p: f64) -> Graph {
         }
     }
 
-    Graph::of_adj_list(adj_list, Constructor::Random(
-        RandomConstructor::RandomBipartite(order, p)))
+    Graph::of_adj_list(
+        adj_list,
+        Constructor::Random(RandomConstructor::RandomBipartite(order, p)),
+    )
 }
 
 pub fn new_random_subgraph(constructor: &Box<Constructor>, p: f64) -> Graph {
@@ -87,6 +108,8 @@ pub fn new_random_subgraph(constructor: &Box<Constructor>, p: f64) -> Graph {
         }
     }
 
-    Graph::of_adj_list(adj_list, Constructor::Random(
-        RandomConstructor::RandomSubgraph(constructor.to_owned(), p)))
+    Graph::of_adj_list(
+        adj_list,
+        Constructor::Random(RandomConstructor::RandomSubgraph(constructor.to_owned(), p)),
+    )
 }

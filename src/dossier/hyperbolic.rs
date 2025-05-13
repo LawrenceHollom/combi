@@ -1,7 +1,7 @@
-use rand::{rngs::ThreadRng, thread_rng, Rng};
-use utilities::vertex_tools::VertexVec;
 use core::fmt;
+use rand::{rngs::ThreadRng, thread_rng, Rng};
 use std::ops::{Add, AddAssign, Div, Mul, Sub, SubAssign};
+use utilities::vertex_tools::VertexVec;
 
 use crate::entity::graph::*;
 
@@ -47,9 +47,11 @@ impl Point {
     fn get_centre_with(&self, other: Self) -> Self {
         let mid = (*self + other) / 2.0;
         let dir = (other - *self).rotate90();
-        let t = - mid.y / dir.y;
-        Self{ x: mid.x + t * dir.x, y: 0.0 }
-
+        let t = -mid.y / dir.y;
+        Self {
+            x: mid.x + t * dir.x,
+            y: 0.0,
+        }
     }
 
     /**
@@ -105,14 +107,14 @@ fn is_d_distance_embedding(g: &Graph, d: f64, points: &VertexVec<Point>, debug: 
             if debug && DEBUG_LEVEL >= 2 {
                 println!("Edge fail");
             }
-            return false
+            return false;
         }
         if !g.adj[u][v] && points[u].hyp_dist_to(points[v]) < 0.005 {
             // This is a non-edge but the points are very close
             if debug && DEBUG_LEVEL >= 2 {
                 println!("Close fail");
             }
-            return false
+            return false;
         }
     }
     true
@@ -128,7 +130,7 @@ fn attempt_embed_d_distance(g: &Graph, rng: &mut ThreadRng, d: f64, debug: bool)
         *p = Point::new_random(rng);
     }
 
-    while wiggle_points(g, d, &mut points) > 0.0005 { };
+    while wiggle_points(g, d, &mut points) > 0.0005 {}
 
     if debug && DEBUG_LEVEL >= 2 {
         println!("Points: {:?}", points)
@@ -146,13 +148,13 @@ fn does_embed_d_distance(g: &Graph, rng: &mut ThreadRng, d: f64, reps: usize, de
             if debug {
                 println!("Found hyperbolic embedding on attempt {}", i);
             }
-            return true
+            return true;
         }
     }
     false
 }
 
-const D_AND_REPS: [(f64, usize); 3] = [(4.0, 50), (3.0, 100), (2.0, 400)];//, (1.5, 400), (1.0, 1000)];
+const D_AND_REPS: [(f64, usize); 3] = [(4.0, 50), (3.0, 100), (2.0, 400)]; //, (1.5, 400), (1.0, 1000)];
 
 pub fn does_embed_generically(g: &Graph, debug: bool) -> bool {
     let mut rng = thread_rng();
@@ -179,7 +181,7 @@ pub fn has_hereditarily_few_edges(g: &Graph) -> bool {
         }
         if vs.size() >= 2 && vs.size() < g.n.to_usize() && count >= 4 * (vs.size() - 1) {
             // There are too many edges.
-            return false
+            return false;
         }
     }
     true

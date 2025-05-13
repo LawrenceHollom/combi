@@ -1,4 +1,4 @@
-use rand::{thread_rng, Rng, rngs::ThreadRng};
+use rand::{rngs::ThreadRng, thread_rng, Rng};
 use utilities::*;
 
 use super::*;
@@ -35,7 +35,12 @@ pub fn new_semiregular(n: Order, avg_deg: f64, exponent: f64) -> Graph {
         total_weight += weight(degs[v], exponent);
     }
 
-    fn sample(rng: &mut ThreadRng, total_weight: f64, degs: &VertexVec<Degree>, exponent: f64) -> Vertex {
+    fn sample(
+        rng: &mut ThreadRng,
+        total_weight: f64,
+        degs: &VertexVec<Degree>,
+        exponent: f64,
+    ) -> Vertex {
         let sample = rng.gen_range(0.0..total_weight);
         let mut cum = 0.0;
         let mut v = Vertex::ZERO;
@@ -64,5 +69,8 @@ pub fn new_semiregular(n: Order, avg_deg: f64, exponent: f64) -> Graph {
         }
     }
 
-    Graph::of_matrix(adj, Constructor::Random(RandomConstructor::ConnectedSemiregular(n, p, exponent)))
+    Graph::of_matrix(
+        adj,
+        Constructor::Random(RandomConstructor::ConnectedSemiregular(n, p, exponent)),
+    )
 }

@@ -1,27 +1,26 @@
-use std::collections::HashMap;
 use std::collections::hash_map::DefaultHasher;
+use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 
 use crate::entity::graph::*;
 
 use queues::*;
-use rand::{Rng, thread_rng};
 use rand::rngs::ThreadRng;
-use utilities::*;
-use utilities::vertex_tools::*;
+use rand::{thread_rng, Rng};
 use utilities::component_tools::*;
+use utilities::vertex_tools::*;
+use utilities::*;
 
 /**
  * This stores a graph along with a collection of information which
  * aims to make it easier to compute various (otherwise expensive)
  * computations on g.
- * In particular, this aims to capture a bunch of information about 
- * Aut(G) which can be used to skip a bunch of steps in iterating 
+ * In particular, this aims to capture a bunch of information about
+ * Aut(G) which can be used to skip a bunch of steps in iterating
  * over G.
  * We use random algorithms and good heuristics to do all these
  * computations imperfectly but quickly.
  */
-
 
 /**
  * This stores an automorphism of the graph.
@@ -57,7 +56,12 @@ struct VertexSignature {
 }
 
 impl Automorphism {
-    pub fn randomly_extend_map(g: &Graph, hashes: &VertexVec<u64>, partial: &Vec<(Vertex, Vertex)>, rng: &mut ThreadRng) -> Option<Self> {
+    pub fn randomly_extend_map(
+        g: &Graph,
+        hashes: &VertexVec<u64>,
+        partial: &Vec<(Vertex, Vertex)>,
+        rng: &mut ThreadRng,
+    ) -> Option<Self> {
         let mut map = VertexVec::new(g.n, &None);
         let mut map_inv = VertexVec::new(g.n, &None);
         let mut q = queue![];
@@ -110,7 +114,7 @@ impl Automorphism {
                         is_autoj_good = false;
                         break 'place_vertices;
                     }
-                    
+
                     num_placed += 1;
                     let destination = valid_locations[rng.gen_range(0..valid_locations.len())];
                     map[*to_place] = Some(destination);
@@ -136,7 +140,7 @@ impl Automorphism {
                 break 'test_map;
             }
         }
-        
+
         if is_autoj_good {
             let map: VertexVec<Vertex> = map.iter().map(|x| x.unwrap()).collect();
             // Now need to test if this map is actually an autoj
@@ -148,7 +152,7 @@ impl Automorphism {
                 }
             }
             if is_autoj_good {
-                Some(Self{ map })
+                Some(Self { map })
             } else {
                 None
             }
@@ -165,12 +169,11 @@ impl Automorphism {
 impl Annotations {
     fn get_hash_paritions(hashes: &VertexVec<u64>) -> HashMap<u64, Vec<Vertex>> {
         let mut partns: HashMap<u64, Vec<Vertex>> = HashMap::new();
-        for (v, hash) in hashes.iter_enum(){
+        for (v, hash) in hashes.iter_enum() {
             match partns.get_mut(hash) {
                 Some(partn) => partn.push(v),
                 None => {
-                    partns.insert(*hash, vec![v]); 
-                    
+                    partns.insert(*hash, vec![v]);
                 }
             }
         }
@@ -182,7 +185,7 @@ impl Annotations {
      * We seek to `orbits' of vertices under Aut(G), by finding how things move under
      * arbitrary automorphisms. They are weakly isomorphic, and this property is
      * transitive.
-     * 
+     *
      * This is the more difficult part.
      * Have lots of attempts of: map a to b, and then build the autoj around this.
      * Use random techniques to keep things interesting.
@@ -195,7 +198,9 @@ impl Annotations {
         for (_hash, hash_comp) in hash_comps.iter() {
             for (i, v) in hash_comp.iter().enumerate() {
                 for w in hash_comp.iter().skip(i + 1) {
-                    if let Some(aut) = Automorphism::randomly_extend_map(g, hashes, &vec![(*v, *w)], &mut rng) {
+                    if let Some(aut) =
+                        Automorphism::randomly_extend_map(g, hashes, &vec![(*v, *w)], &mut rng)
+                    {
                         // We have an autoj. Hoorah! Now add the information it provides.
                         for (from, to) in aut.iter() {
                             if from != *to {
@@ -216,7 +221,7 @@ impl Annotations {
      */
     fn strong_auto_comps(g: &Graph) -> UnionFind {
         let mut comps = UnionFind::new(g.n);
-        
+
         fn just_hash(adjs: &Vec<Vertex>) -> u64 {
             let mut hasher = DefaultHasher::new();
             adjs.hash(&mut hasher);
@@ -247,10 +252,10 @@ impl Annotations {
         let weak_auto_comps = Self::approximate_weak_auto_comps(g, &vertex_hashes);
         let strong_auto_comps = Self::strong_auto_comps(g);
         Self {
-            n: g.n, 
-            dists, 
-            vertex_hashes, 
-            weak_auto_comps, 
+            n: g.n,
+            dists,
+            vertex_hashes,
+            weak_auto_comps,
             strong_auto_comps,
             history: HashMap::new(),
         }
@@ -276,14 +281,22 @@ impl Annotations {
                 // Just do something a bit silly for now.
                 let mut rng = thread_rng();
                 let mut comps = UnionFind::new(self.n);
-                let partial = fixed.iter().map(|x| (x, x)).collect::<Vec<(Vertex, Vertex)>>();
-                
+                let partial = fixed
+                    .iter()
+                    .map(|x| (x, x))
+                    .collect::<Vec<(Vertex, Vertex)>>();
+
                 // Maybe use strong equivalence and feed in the comps we know about so
                 // it can aim for getting something new. Then stop when it can't find
                 // any more information.
                 let mut allowed_fails_remaining = 20;
                 while allowed_fails_remaining > 0 {
-                    if let Some(aut) = Automorphism::randomly_extend_map(g, &self.vertex_hashes, &partial, &mut rng) {
+                    if let Some(aut) = Automorphism::randomly_extend_map(
+                        g,
+                        &self.vertex_hashes,
+                        &partial,
+                        &mut rng,
+                    ) {
                         for (from, to) in aut.iter() {
                             if from != *to {
                                 // Some new information has been discovered
@@ -332,5 +345,8 @@ pub fn print_automorphism_info(g: &Graph) {
     println!("Hashes: {:?}", annotated.vertex_hashes);
     println!("Strong: {:?}", annotated.strong_auto_comps);
     println!("Weak: {:?}", annotated.weak_auto_comps);
-    println!("Weak representatives: {:?}", annotated.weak_representatives());
+    println!(
+        "Weak representatives: {:?}",
+        annotated.weak_representatives()
+    );
 }

@@ -1,7 +1,7 @@
 use std::fmt;
 
-use utilities::*;
 use utilities::vertex_tools::*;
+use utilities::*;
 
 #[derive(Copy, Clone)]
 pub enum UnitOperation {
@@ -59,34 +59,47 @@ impl UnitOperation {
             "percolate" => Some(PercolationPolys),
             "bunkbed_cut" | "bunkbed_cuts" => Some(BunkbedCuts(Vertex::of_string(args[0]))),
             "bunkbed_dists" => Some(BunkbedDists),
-            "bunkbed_diffs" | "bb_diffs" => {
-                Some(BunkbedDiffs(Vertex::of_string(args[0]),
-                    args.get(1).map(|x| x.parse().unwrap())))
-            }
+            "bunkbed_diffs" | "bb_diffs" => Some(BunkbedDiffs(
+                Vertex::of_string(args[0]),
+                args.get(1).map(|x| x.parse().unwrap()),
+            )),
             "print_interval" | "interval" => Some(PrintIntervalColoring),
             "print_dominator" | "print_gamma" => Some(PrintDominatingSet),
             "game_chromatic_table" | "chi_g_table" | "chi_g_t" => Some(GameChromaticTable),
-            "game_chromatic_strategy" | "chi_g_strat" => Some(GameChromaticStrategy(args[0].parse().unwrap())),
+            "game_chromatic_strategy" | "chi_g_strat" => {
+                Some(GameChromaticStrategy(args[0].parse().unwrap()))
+            }
             "chi_cg_strat" => Some(ConnectedGameChromaticStrategy(args[0].parse().unwrap())),
             "print_automorphisms" | "print_autos" => Some(PrintAutomorphisms),
-	        "bunkbed_post_removal" | "bb_p_r" => Some(BunkbedPostRemoval),
+            "bunkbed_post_removal" | "bb_p_r" => Some(BunkbedPostRemoval),
             "signature" | "sig" => Some(Signature),
             "mark_strat" => Some(PrintMarkingGameStrat),
             "mark_c_strat" => Some(PrintConnectedMarkingGameStrat),
             "print_bgw" => Some(PrintBobWinGrabbingWeighting),
             "grabby" => Some(GrabbingHypothesisTest),
             "bunkbed_sites" | "bb_sites" => Some(BunkbedSiteCOunts),
-            "bunkbed_connections" | "bbrcc" => Some(BunkbedReducedConnectionCounts(args[0].parse().unwrap())),
+            "bunkbed_connections" | "bbrcc" => {
+                Some(BunkbedReducedConnectionCounts(args[0].parse().unwrap()))
+            }
             "bunkbed_connection_sims" | "bbcs" => {
                 let k = args.get(1).map_or(2, |k| k.parse().unwrap());
-                Some(BunkbedReducedConnectionSimulation(args[0].parse().unwrap(), k))
-            },
+                Some(BunkbedReducedConnectionSimulation(
+                    args[0].parse().unwrap(),
+                    k,
+                ))
+            }
             "bunkbed_connection_dp" | "bbcdp" => {
                 let k = args.get(1).map_or(2, |k| k.parse().unwrap());
                 let edges = args.get(2).map_or(0, |x| x.parse().unwrap());
-                Some(BunkbedReducedConnectionDP(args[0].parse().unwrap(), k, edges))
-            },
-            "bb_counterexample" => Some(BunkbedCounterexampleSearch(args.first().map_or(1, |x| x.parse().unwrap()))),
+                Some(BunkbedReducedConnectionDP(
+                    args[0].parse().unwrap(),
+                    k,
+                    edges,
+                ))
+            }
+            "bb_counterexample" => Some(BunkbedCounterexampleSearch(
+                args.first().map_or(1, |x| x.parse().unwrap()),
+            )),
             "print_balance" => Some(PosetRelationProbabilities),
             "hasse" => Some(PosetHasseDiagram),
             "balance_heuristics" => Some(BalancedHeuristics),
@@ -120,29 +133,34 @@ impl fmt::Display for UnitOperation {
             BunkbedPosts => "Bunkbed posts",
             BunkbedSimulation => "Bunkbed simulation",
             PercolationPolys => "Percolate",
-            BunkbedCuts(u) => { 
-                str = format!("Bunkbed cuts to {}", *u); 
-                &str 
+            BunkbedCuts(u) => {
+                str = format!("Bunkbed cuts to {}", *u);
+                &str
             }
             BunkbedDists => "Bunkbed distance-bounded polynomials",
             BunkbedDiffs(_u, _size) => "Print info about interesting bunkbed configs",
             PrintIntervalColoring => "Print an interval coloring (if exists)",
             PrintDominatingSet => "Print a random-ish minimal dominating set",
             GameChromaticTable => "Print winners of chromatic game for various k",
-            GameChromaticStrategy(k) => { 
-                str = format!("Strategy for vertex colouring game for {} colours", k); 
-                &str 
+            GameChromaticStrategy(k) => {
+                str = format!("Strategy for vertex colouring game for {} colours", k);
+                &str
             }
             ConnectedGameChromaticStrategy(k) => {
-                str = format!("Strategy for connected vertex colouring game for {} colours", k);
+                str = format!(
+                    "Strategy for connected vertex colouring game for {} colours",
+                    k
+                );
                 &str
             }
             PrintAutomorphisms => "Print automorphisms of g, and other autoj metadata",
-	        BunkbedPostRemoval => "Tests bunkbed induction via removing posts",
+            BunkbedPostRemoval => "Tests bunkbed induction via removing posts",
             Signature => "Print a bunch of invariants",
             PrintMarkingGameStrat => "Print marking game strategy",
             PrintConnectedMarkingGameStrat => "Print connected marking game strategy",
-            PrintBobWinGrabbingWeighting => "Print a weighting with which Bob wins the graph grabbing game",
+            PrintBobWinGrabbingWeighting => {
+                "Print a weighting with which Bob wins the graph grabbing game"
+            }
             GrabbingHypothesisTest => "Test whatever the current hypothesis is for graph grabbing",
             BunkbedSiteCOunts => "Print percolation counts for bunkbed sites",
             BunkbedReducedConnectionCounts(k) => {
@@ -150,20 +168,27 @@ impl fmt::Display for UnitOperation {
                 &str
             }
             BunkbedReducedConnectionSimulation(reps, k) => {
-                str = format!("Simulate bunkbed {}-connection counts {} times and print max ratios", k, reps);
+                str = format!(
+                    "Simulate bunkbed {}-connection counts {} times and print max ratios",
+                    k, reps
+                );
                 &str
             }
             BunkbedReducedConnectionDP(reps, k, edges) => {
                 str = format!("Simulate bunkbed {}-connection counts with type-{} edges {} times and print max ratios using DP", k, edges, reps);
                 &str
             }
-            BunkbedCounterexampleSearch(_) => "Search for a counterexample to the bunkbed conjecture",
+            BunkbedCounterexampleSearch(_) => {
+                "Search for a counterexample to the bunkbed conjecture"
+            }
             PosetRelationProbabilities => "Print table of balance probabilities for a poset",
             PosetHasseDiagram => "Print Hasse diagram of poset",
             BalancedHeuristics => "Heuristics about whether the poset has balanced vertices",
             PosetPrintBalanceAsCap => "Print table of balance probabilities as a cap",
             PrintNorineHypercubeColourings => "Print info about good and bad Norine colourings",
-            PrintSymmetricNorineHypercubeColourings(_, _) => "Print info about good and bad Norine symmetric colourings",
+            PrintSymmetricNorineHypercubeColourings(_, _) => {
+                "Print info about good and bad Norine symmetric colourings"
+            }
             PrintMinKernel => "Print a minimal 2-kernel in digraph",
             SimulateKuramoto => "Simulate Kuramoto model with random seeds",
             PrettyPrint => "Produce image of the graph",

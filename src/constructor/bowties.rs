@@ -12,7 +12,7 @@ pub fn new_bowties(scale: usize, degree: Degree) -> Graph {
     let mut rng = thread_rng();
 
     let mut adj_list: VertexVec<Vec<Vertex>> = VertexVec::new(order, &vec![]);
-    
+
     for i in 0..num_bowties {
         adj_list[Vertex::of_usize(2 * i)].push(Vertex::of_usize(2 * i + 1));
         adj_list[Vertex::of_usize(2 * i + 1)].push(Vertex::of_usize(2 * i));
@@ -45,5 +45,8 @@ pub fn new_bowties(scale: usize, degree: Degree) -> Graph {
         adj_list[vert].push(u);
     }
 
-    Graph::of_adj_list(adj_list, Constructor::Random(RandomConstructor::Bowties(scale, degree)))
+    Graph::of_adj_list(
+        adj_list,
+        Constructor::Random(RandomConstructor::Bowties(scale, degree)),
+    )
 }

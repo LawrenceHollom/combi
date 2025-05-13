@@ -45,7 +45,12 @@ pub fn new_bfs(n: Order, width: usize, density: f64) -> Graph {
         }
     }
 
-    Graph::of_adj_list(adj_list, Constructor::Random(crate::constructor::RandomConstructor::BFSOptimal(n, width, density)))
+    Graph::of_adj_list(
+        adj_list,
+        Constructor::Random(crate::constructor::RandomConstructor::BFSOptimal(
+            n, width, density,
+        )),
+    )
 }
 
 pub fn new_spinal(n: Order, spine_propn: f64, off_deg: &Degree) -> Graph {
@@ -59,8 +64,8 @@ pub fn new_spinal(n: Order, spine_propn: f64, off_deg: &Degree) -> Graph {
     }
 
     for i in 1..spine_len {
-        adj[i-1][i] = true;
-        adj[i][i-1] = true;
+        adj[i - 1][i] = true;
+        adj[i][i - 1] = true;
     }
 
     for v in spine_len..order {
@@ -90,5 +95,12 @@ pub fn new_spinal(n: Order, spine_propn: f64, off_deg: &Degree) -> Graph {
         }
     }
 
-    Graph::of_adj_list(adj_list, Constructor::Random(crate::constructor::RandomConstructor::Spinal(n, spine_propn, *off_deg)))
+    Graph::of_adj_list(
+        adj_list,
+        Constructor::Random(crate::constructor::RandomConstructor::Spinal(
+            n,
+            spine_propn,
+            *off_deg,
+        )),
+    )
 }

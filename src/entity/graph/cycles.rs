@@ -1,9 +1,18 @@
-use utilities::vertex_tools::*;
 use crate::entity::graph::*;
+use utilities::vertex_tools::*;
 
-impl Graph{
-    fn list_cycles_rec(&self, dist: &VertexVec<VertexVec<usize>>, visited: &mut VertexVec<bool>, cycle: &mut Vec<Edge>, 
-            current_len: usize, target_len: usize, this_vert: Vertex, start_vert: Vertex, list: &mut Vec<Vec<Edge>>) {
+impl Graph {
+    fn list_cycles_rec(
+        &self,
+        dist: &VertexVec<VertexVec<usize>>,
+        visited: &mut VertexVec<bool>,
+        cycle: &mut Vec<Edge>,
+        current_len: usize,
+        target_len: usize,
+        this_vert: Vertex,
+        start_vert: Vertex,
+        list: &mut Vec<Vec<Edge>>,
+    ) {
         if current_len == target_len - 1 {
             if self.adj[this_vert][start_vert] {
                 cycle.push(Edge::of_pair(this_vert, start_vert));
@@ -16,7 +25,16 @@ impl Graph{
                 if !visited[*v] && dist[start_vert][*v] < target_len - current_len {
                     visited[*v] = true;
                     cycle.push(Edge::of_pair(this_vert, *v));
-                    self.list_cycles_rec(dist, visited, cycle, current_len + 1, target_len, *v, start_vert, list);
+                    self.list_cycles_rec(
+                        dist,
+                        visited,
+                        cycle,
+                        current_len + 1,
+                        target_len,
+                        *v,
+                        start_vert,
+                        list,
+                    );
                     let _ = cycle.pop();
                     visited[*v] = false;
                 }
@@ -67,7 +85,7 @@ impl Graph{
         self.is_filtered_acyclic(filter, &indexer)
     }
 
-    pub fn remove_all_k_cycles(&mut self, k: usize) {    
+    pub fn remove_all_k_cycles(&mut self, k: usize) {
         let dist = self.floyd_warshall();
 
         // DFS to find all cycles.
@@ -101,7 +119,6 @@ impl Graph{
                 // Remove max_edge
                 removed.set(max_edge, true);
                 self.delete_edge(max_edge);
-
             }
         }
     }
@@ -110,7 +127,7 @@ impl Graph{
         let nbhds = self.get_open_nbhds();
         for (u, v) in self.iter_pairs() {
             if nbhds[u].inter(&nbhds[v]).size() >= 2 {
-                return true
+                return true;
             }
         }
         false

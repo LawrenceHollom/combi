@@ -1,13 +1,13 @@
 use crate::entity::graph::*;
-use rand::{Rng, thread_rng};
+use rand::{thread_rng, Rng};
 
 use std::io::*;
 
-use utilities::*;
+use utilities::component_tools::*;
+use utilities::edge_tools::*;
 use utilities::polynomial::*;
 use utilities::vertex_tools::*;
-use utilities::edge_tools::*;
-use utilities::component_tools::*;
+use utilities::*;
 
 pub struct Percolator {
     probs: Vec<Polynomial>,
@@ -21,11 +21,12 @@ impl Percolator {
 
         let p = Polynomial::of_vec(&vec![0, 1]);
         let one_minus_p = Polynomial::of_vec(&vec![1, -1]);
-        for i in 0..(size+1) {
+        for i in 0..(size + 1) {
             probs.push(p.pow(i).mul(&one_minus_p.pow(size - i)));
         }
         let mut polys: VertexVec<Polynomial> = VertexVec::new(order, &Polynomial::new());
-        let mut dist_polys: VertexVec<Vec<Polynomial>> = VertexVec::new(order, &vec![Polynomial::new(); 2 * order.to_usize()]);
+        let mut dist_polys: VertexVec<Vec<Polynomial>> =
+            VertexVec::new(order, &vec![Polynomial::new(); 2 * order.to_usize()]);
         polys[Vertex::ZERO] = Polynomial::of_vec(&vec![1]);
         for poly in dist_polys[Vertex::ZERO].iter_mut() {
             *poly = Polynomial::of_vec(&vec![1]);
@@ -57,7 +58,7 @@ impl Percolator {
         let mut rng = thread_rng();
 
         let mut true_adj_list: VertexVec<Vec<Vertex>> = VertexVec::new(g.n, &vec![]);
-        
+
         for (i, j) in g.iter_pairs() {
             if g.adj[i][j] && rng.gen_bool(p) {
                 true_adj_list[i].push(j);
@@ -105,7 +106,8 @@ impl Percolator {
                     edge_index += 1;
                 }
             }
-            let restricted_g = Graph::of_adj_list(true_adj_list, crate::constructor::Constructor::Special);
+            let restricted_g =
+                Graph::of_adj_list(true_adj_list, crate::constructor::Constructor::Special);
             percolator.add_percolation(num_edges, &restricted_g, compute_dists);
         }
         println!();
@@ -119,7 +121,7 @@ impl Percolator {
 
 pub fn print_polynomials(g: &Graph) {
     let percolator = Percolator::percolate(g, false, true);
-    
+
     for v in g.n.iter_verts() {
         println!("P_{}: {}", v, percolator.polys[v]);
     }
@@ -143,13 +145,17 @@ pub fn print_polynomials(g: &Graph) {
  * Counts how many configurations there are in which v connects to u.
  * The filter is a test for whether an EdgeSet should count or not (true = counted)
  */
-pub fn get_connection_counts(g: &Graph, v: Vertex, filter: Option<&dyn Fn(&VertexVec<Component>) -> bool>) -> VertexVec<u64> {
+pub fn get_connection_counts(
+    g: &Graph,
+    v: Vertex,
+    filter: Option<&dyn Fn(&VertexVec<Component>) -> bool>,
+) -> VertexVec<u64> {
     let indexer = EdgeIndexer::new(&g.adj_list);
     let mut out = VertexVec::new(g.n, &0);
     'iter_edge_sets: for edges in g.iter_edge_sets() {
         let components = g.edge_subset_components(edges, &indexer);
         if filter.is_some_and(|f| f(&components)) {
-            continue 'iter_edge_sets
+            continue 'iter_edge_sets;
         }
         for u in g.iter_verts() {
             if components[u] == components[v] {
@@ -182,13 +188,18 @@ pub fn get_site_connection_counts(g: &Graph, v: Vertex) -> VertexVec<u64> {
  * of the first k things in the list of ordered vertices.
  * The filter is a test for whether an EdgeSet should count or not (true = counted)
  */
-pub fn get_initial_segment_connection_counts(g: &Graph, v: Vertex, sorted_vertices: &Vec<Vertex>, filter: Option<&dyn Fn(&VertexVec<Component>) -> bool>) -> Vec<u64> {
+pub fn get_initial_segment_connection_counts(
+    g: &Graph,
+    v: Vertex,
+    sorted_vertices: &Vec<Vertex>,
+    filter: Option<&dyn Fn(&VertexVec<Component>) -> bool>,
+) -> Vec<u64> {
     let indexer = EdgeIndexer::new(&g.adj_list);
     let mut out = vec![0; g.n.to_usize()];
     'iter_edge_sets: for edges in g.iter_edge_sets() {
         let components = g.edge_subset_components(edges, &indexer);
         if filter.is_some_and(|f| f(&components)) {
-            continue 'iter_edge_sets
+            continue 'iter_edge_sets;
         }
         'find_first_connected: for (i, u) in sorted_vertices.iter().enumerate() {
             if components[*u] == components[v] {
@@ -212,7 +223,11 @@ pub fn get_initial_segment_connection_counts(g: &Graph, v: Vertex, sorted_vertic
  * Returns a vec x where x[k] is in how many ways v can connect to any
  * of the first k things in the list of ordered vertices under site percolation.
  */
-pub fn get_initial_segment_site_connection_counts(g: &Graph, v: Vertex, sorted_vertices: &Vec<Vertex>) -> Vec<u64> {
+pub fn get_initial_segment_site_connection_counts(
+    g: &Graph,
+    v: Vertex,
+    sorted_vertices: &Vec<Vertex>,
+) -> Vec<u64> {
     let mut out = vec![0; g.n.to_usize()];
     for vs in g.iter_vertex_subsets() {
         let components = g.vertex_subset_components(BigVertexSet::of_vertex_set(vs));

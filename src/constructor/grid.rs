@@ -8,7 +8,7 @@ pub fn new(height: &Order, width: &Order) -> Graph {
     let order = Order::of_usize(n);
 
     let mut adj_list = VertexVec::new(order, &vec![]);
-    
+
     fn code(i: usize, j: usize, width: &Order) -> Vertex {
         Vertex::of_usize(i * width.to_usize() + j)
     }
@@ -29,5 +29,8 @@ pub fn new(height: &Order, width: &Order) -> Graph {
         }
     }
 
-    Graph::of_adj_list(adj_list, Constructor::Raw(crate::constructor::RawConstructor::Grid(*height, *width)))
+    Graph::of_adj_list(
+        adj_list,
+        Constructor::Raw(crate::constructor::RawConstructor::Grid(*height, *width)),
+    )
 }

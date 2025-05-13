@@ -1,11 +1,17 @@
-
 use crate::entity::graph::*;
 
-use utilities::vertex_tools::*;
 use utilities::chromatic_tools::*;
+use utilities::vertex_tools::*;
 
-fn maker_wins_linear_chromatic_game_rec(g: &Graph, k: usize, max_colour_used: usize, config: Config, 
-        coder: &Coder, next_vert: Vertex, is_maker_turn: bool) -> bool {
+fn maker_wins_linear_chromatic_game_rec(
+    g: &Graph,
+    k: usize,
+    max_colour_used: usize,
+    config: Config,
+    coder: &Coder,
+    next_vert: Vertex,
+    is_maker_turn: bool,
+) -> bool {
     if next_vert.is_n(g.n) {
         // everything is coloured.
         true
@@ -25,8 +31,15 @@ fn maker_wins_linear_chromatic_game_rec(g: &Graph, k: usize, max_colour_used: us
                 can_be_coloured = true;
                 let new_config = coder.play_move(config, next_vert, c);
                 let new_max_colour = max_colour_used.max(c);
-                let sub_maker_win = maker_wins_linear_chromatic_game_rec(g, k, new_max_colour, 
-                    new_config, coder, next_vert.incr(), !is_maker_turn);
+                let sub_maker_win = maker_wins_linear_chromatic_game_rec(
+                    g,
+                    k,
+                    new_max_colour,
+                    new_config,
+                    coder,
+                    next_vert.incr(),
+                    !is_maker_turn,
+                );
                 if sub_maker_win == is_maker_turn {
                     maker_win = sub_maker_win;
                     break 'test_cols;
