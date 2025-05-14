@@ -1,7 +1,7 @@
-use rand::{rngs::ThreadRng, thread_rng, Rng};
-use utilities::vertex_tools::VertexVec;
 use core::fmt;
+use rand::{rngs::ThreadRng, thread_rng, Rng};
 use std::ops::{Add, AddAssign, Div, Mul, Sub, SubAssign};
+use utilities::vertex_tools::VertexVec;
 
 use crate::entity::graph::*;
 
@@ -12,10 +12,10 @@ struct Point {
 }
 
 impl Point {
-    pub const ZERO: Point = Point { x: 0.0, y: 0.0 };
+    pub const ZERO: Self = Self { x: 0.0, y: 0.0 };
 
-    pub fn new_random(rng: &mut ThreadRng) -> Point {
-        Point {
+    pub fn new_random(rng: &mut ThreadRng) -> Self {
+        Self {
             x: rng.gen_range(-3.0..3.0),
             y: rng.gen_range(0.01..2.0),
         }
@@ -25,16 +25,16 @@ impl Point {
         (self.x * self.x + self.y * self.y).sqrt()
     }
 
-    pub fn euc_dist_to(&self, other: Point) -> f64 {
+    pub fn euc_dist_to(&self, other: Self) -> f64 {
         ((self.x - other.x) * (self.x - other.x) + (self.y - other.y) * (self.y - other.y)).sqrt()
     }
 
-    pub fn hyp_dist_to(&self, other: Point) -> f64 {
+    pub fn hyp_dist_to(&self, other: Self) -> f64 {
         2.0 * (self.euc_dist_to(other) / (2.0 * (self.y * other.y).sqrt())).asinh()
     }
 
-    pub fn rotate90(&self) -> Point {
-        Point {
+    pub fn rotate90(&self) -> Self {
+        Self {
             x: -self.y,
             y: self.x,
         }
@@ -44,18 +44,20 @@ impl Point {
      * Returns the centre of the Euclidean circle which represents the
      * hyperbolic line between self and other.
      */
-    fn get_centre_with(&self, other: Point) -> Point {
+    fn get_centre_with(&self, other: Self) -> Self {
         let mid = (*self + other) / 2.0;
         let dir = (other - *self).rotate90();
-        let t = - mid.y / dir.y;
-        Point{ x: mid.x + t * dir.x, y: 0.0 }
-
+        let t = -mid.y / dir.y;
+        Self {
+            x: mid.x + t * dir.x,
+            y: 0.0,
+        }
     }
 
     /**
      * Returns the "normalised" vector in the direction of other
      */
-    pub fn hyp_direction_to(&self, other: Point) -> Point {
+    pub fn hyp_direction_to(&self, other: Self) -> Self {
         let centre = self.get_centre_with(other);
         let mut dir = (*self - centre).rotate90();
         if dir.x * (other.x - self.x) < 0.0 {
@@ -105,14 +107,14 @@ fn is_d_distance_embedding(g: &Graph, d: f64, points: &VertexVec<Point>, debug: 
             if debug && DEBUG_LEVEL >= 2 {
                 println!("Edge fail");
             }
-            return false
+            return false;
         }
         if !g.adj[u][v] && points[u].hyp_dist_to(points[v]) < 0.005 {
             // This is a non-edge but the points are very close
             if debug && DEBUG_LEVEL >= 2 {
                 println!("Close fail");
             }
-            return false
+            return false;
         }
     }
     true
@@ -128,7 +130,7 @@ fn attempt_embed_d_distance(g: &Graph, rng: &mut ThreadRng, d: f64, debug: bool)
         *p = Point::new_random(rng);
     }
 
-    while wiggle_points(g, d, &mut points) > 0.0005 { };
+    while wiggle_points(g, d, &mut points) > 0.0005 {}
 
     if debug && DEBUG_LEVEL >= 2 {
         println!("Points: {:?}", points)
@@ -146,13 +148,13 @@ fn does_embed_d_distance(g: &Graph, rng: &mut ThreadRng, d: f64, reps: usize, de
             if debug {
                 println!("Found hyperbolic embedding on attempt {}", i);
             }
-            return true
+            return true;
         }
     }
     false
 }
 
-const D_AND_REPS: [(f64, usize); 3] = [(4.0, 50), (3.0, 100), (2.0, 400)];//, (1.5, 400), (1.0, 1000)];
+const D_AND_REPS: [(f64, usize); 3] = [(4.0, 50), (3.0, 100), (2.0, 400)]; //, (1.5, 400), (1.0, 1000)];
 
 pub fn does_embed_generically(g: &Graph, debug: bool) -> bool {
     let mut rng = thread_rng();
@@ -179,42 +181,42 @@ pub fn has_hereditarily_few_edges(g: &Graph) -> bool {
         }
         if vs.size() >= 2 && vs.size() < g.n.to_usize() && count >= 4 * (vs.size() - 1) {
             // There are too many edges.
-            return false
+            return false;
         }
     }
     true
 }
 
-impl Sub<Point> for Point {
-    type Output = Point;
+impl Sub<Self> for Point {
+    type Output = Self;
 
-    fn sub(self, rhs: Point) -> Self::Output {
-        Point {
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self {
             x: self.x - rhs.x,
             y: self.y - rhs.y,
         }
     }
 }
 
-impl AddAssign<Point> for Point {
-    fn add_assign(&mut self, rhs: Point) {
+impl AddAssign<Self> for Point {
+    fn add_assign(&mut self, rhs: Self) {
         self.x += rhs.x;
         self.y += rhs.y;
     }
 }
 
-impl SubAssign<Point> for Point {
-    fn sub_assign(&mut self, rhs: Point) {
+impl SubAssign<Self> for Point {
+    fn sub_assign(&mut self, rhs: Self) {
         self.x -= rhs.x;
         self.y -= rhs.y;
     }
 }
 
-impl Add<Point> for Point {
-    type Output = Point;
+impl Add<Self> for Point {
+    type Output = Self;
 
-    fn add(self, rhs: Point) -> Self::Output {
-        Point {
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
             x: self.x + rhs.x,
             y: self.y + rhs.y,
         }
@@ -222,10 +224,10 @@ impl Add<Point> for Point {
 }
 
 impl Div<f64> for Point {
-    type Output = Point;
+    type Output = Self;
 
     fn div(self, rhs: f64) -> Self::Output {
-        Point {
+        Self {
             x: self.x / rhs,
             y: self.y / rhs,
         }
@@ -233,10 +235,10 @@ impl Div<f64> for Point {
 }
 
 impl Mul<f64> for Point {
-    type Output = Point;
+    type Output = Self;
 
     fn mul(self, rhs: f64) -> Self::Output {
-        Point {
+        Self {
             x: self.x * rhs,
             y: self.y * rhs,
         }

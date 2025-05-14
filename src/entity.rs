@@ -47,7 +47,9 @@ impl Entity {
     pub fn as_digraph(&self) -> &Digraph {
         use Entity::*;
         match self {
-            Graph(_) => panic!("This is the one thing we didn't want to happen (Graph -> Digraph as reference)"),
+            Graph(_) => panic!(
+                "This is the one thing we didn't want to happen (Graph -> Digraph as reference)"
+            ),
             Digraph(d) => d,
             Poset(_) => panic!("Cannot convert poset to digraph!"),
         }

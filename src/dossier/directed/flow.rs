@@ -21,7 +21,7 @@ pub fn has_global_basin(d: &Digraph) -> bool {
             }
         }
         if is_v_basin {
-            return true
+            return true;
         }
     }
     false

@@ -1,28 +1,28 @@
-use utilities::*;
 use std::fmt;
+use utilities::*;
 
-use crate::pattern::*;
-use crate::entity::*;
+use crate::entity::digraph::*;
 use crate::entity::graph::*;
 use crate::entity::poset::*;
-use crate::entity::digraph::*;
+use crate::entity::*;
+use crate::pattern::*;
 
-mod products;
+mod bowties;
+mod corona;
 mod erdos_renyi;
 pub mod from_file;
 mod grid;
+mod products;
+mod random_bfs;
+mod random_digraphs;
 mod random_planar;
+mod random_posets;
 mod random_regular_bipartite;
-mod tree;
 mod raw;
-mod bowties;
 mod regular;
 mod semiregular;
-mod corona;
-mod random_bfs;
 mod strucutral;
-mod random_posets;
-mod random_digraphs;
+mod tree;
 
 #[derive(Clone)]
 pub enum ProductConstructor {
@@ -122,94 +122,105 @@ pub enum Constructor {
 }
 
 impl Constructor {
-    pub fn of_string(text: &str) -> Constructor {
+    pub fn of_string(text: &str) -> Self {
         // must be otf func_tion(a, b, c, ...)
         let (func, args) = parse_function_like(text);
         use Constructor::*;
+        use DigraphConstructor::*;
+        use PosetConstructor::*;
         use ProductConstructor::*;
-        use RawConstructor::*;
         use RandomConstructor::*;
+        use RawConstructor::*;
         use RecursiveConstructor::*;
         use StructuralConstructor::*;
-        use PosetConstructor::*;
-        use DigraphConstructor::*;
-        
+
         match func.to_lowercase().as_str() {
-            "cartesian" | "box" => {
-                Product(Cartesian, Box::new(Self::of_string(args[0])), 
-                    Box::new(Self::of_string(args[1])))
-            },
-            "tensor" | "x" => {
-                Product(Tensor, Box::new(Self::of_string(args[0])), 
-                    Box::new(Self::of_string(args[1])))
-            },
-            "lex" | "." => {
-                Product(Lex, Box::new(Self::of_string(args[0])), 
-                    Box::new(Self::of_string(args[1])))
-            },
-            "strong" | "and" => {
-                Product(Strong, Box::new(Self::of_string(args[0])), 
-                    Box::new(Self::of_string(args[1])))
-            },
-            "conormal" | "or" | "*" => {
-                Product(Conormal, Box::new(Self::of_string(args[0])), 
-                    Box::new(Self::of_string(args[1])))
-            },
-            "rooted" => {
-                Product(Rooted, Box::new(Self::of_string(args[0])), 
-                    Box::new(Self::of_string(args[1])))
-            },
+            "cartesian" | "box" => Product(
+                Cartesian,
+                Box::new(Self::of_string(args[0])),
+                Box::new(Self::of_string(args[1])),
+            ),
+            "tensor" | "x" => Product(
+                Tensor,
+                Box::new(Self::of_string(args[0])),
+                Box::new(Self::of_string(args[1])),
+            ),
+            "lex" | "." => Product(
+                Lex,
+                Box::new(Self::of_string(args[0])),
+                Box::new(Self::of_string(args[1])),
+            ),
+            "strong" | "and" => Product(
+                Strong,
+                Box::new(Self::of_string(args[0])),
+                Box::new(Self::of_string(args[1])),
+            ),
+            "conormal" | "or" | "*" => Product(
+                Conormal,
+                Box::new(Self::of_string(args[0])),
+                Box::new(Self::of_string(args[1])),
+            ),
+            "rooted" => Product(
+                Rooted,
+                Box::new(Self::of_string(args[0])),
+                Box::new(Self::of_string(args[1])),
+            ),
             "rrb" | "random_regular_bipartite" => {
                 let deg = Degree::of_string(args[1]);
                 Random(Biregular(Order::of_string(args[0]), deg, deg))
-            },
+            }
             "biregular" | "bireg" => {
                 let right_deg = if args.len() == 2 { args[1] } else { args[2] };
-                Random(Biregular(Order::of_string(args[0]),
+                Random(Biregular(
+                    Order::of_string(args[0]),
                     Degree::of_string(args[1]),
-                    Degree::of_string(right_deg)))
+                    Degree::of_string(right_deg),
+                ))
             }
             "erdos_renyi" | "er" | "g" => {
                 let n = Order::of_string(args[0]);
                 let p: f64 = args[1].parse().unwrap();
                 if args.len() == 3 {
-                    Random(BasedErdosRenyi(n, p, Box::new(Constructor::of_string(args[2]))))
+                    Random(BasedErdosRenyi(n, p, Box::new(Self::of_string(args[2]))))
                 } else {
                     Random(ErdosRenyi(n, p))
                 }
-            },
-            "g_ind" => {
-                Random(InducedErdosRenyi(Order::of_string(args[0]), args[1].parse().unwrap(), 
-                    Box::new(Constructor::of_string(args[2]))))
             }
-            "random_bipartite" | "b" => {
-                Random(RandomBipartite(Order::of_string(args[0]), args[1].parse().unwrap()))
-            }
-            "subgraph" | "sub" => {
-                Random(RandomSubgraph(Box::new(Constructor::of_string(args[0])), 
-                    args[1].parse().unwrap()))
-            }
-            "triangulation" | "tri" => {
-                Random(Triangulation(Order::of_string(args[0])))
-            },
-            "maximal_planar" | "planar" => {
-                Random(MaximalPlanar(Order::of_string(args[0])))
-            },
-            "planar_conditioned" | "planar_con" => {
-                Random(PlanarConditioned(Order::of_string(args[0]), 
-                    Some(Degree::of_string(args[1])), 
-                    args.get(2).map(|x| x.parse().unwrap())))
-            }
-            "planar_girth" => {
-                Random(PlanarConditioned(Order::of_string(args[0]), 
-                    None, 
-                    args.get(1).map(|x| x.parse().unwrap())))
-            }
-            "planar_gons" | "k_gons" => {
-                Random(PlanarGons(Order::of_string(args[0]), args[1].parse().unwrap()))
-            }
+            "g_ind" => Random(InducedErdosRenyi(
+                Order::of_string(args[0]),
+                args[1].parse().unwrap(),
+                Box::new(Self::of_string(args[2])),
+            )),
+            "random_bipartite" | "b" => Random(RandomBipartite(
+                Order::of_string(args[0]),
+                args[1].parse().unwrap(),
+            )),
+            "subgraph" | "sub" => Random(RandomSubgraph(
+                Box::new(Self::of_string(args[0])),
+                args[1].parse().unwrap(),
+            )),
+            "triangulation" | "tri" => Random(Triangulation(Order::of_string(args[0]))),
+            "maximal_planar" | "planar" => Random(MaximalPlanar(Order::of_string(args[0]))),
+            "planar_conditioned" | "planar_con" => Random(PlanarConditioned(
+                Order::of_string(args[0]),
+                Some(Degree::of_string(args[1])),
+                args.get(2).map(|x| x.parse().unwrap()),
+            )),
+            "planar_girth" => Random(PlanarConditioned(
+                Order::of_string(args[0]),
+                None,
+                args.get(1).map(|x| x.parse().unwrap()),
+            )),
+            "planar_gons" | "k_gons" => Random(PlanarGons(
+                Order::of_string(args[0]),
+                args[1].parse().unwrap(),
+            )),
             "bowties" => {
-                let degree = if args.len() > 1 { args[1].parse().unwrap() } else { 3 };
+                let degree = if args.len() > 1 {
+                    args[1].parse().unwrap()
+                } else {
+                    3
+                };
                 Random(Bowties(args[0].parse().unwrap(), Degree::of_usize(degree)))
             }
             "regular" => {
@@ -233,34 +244,49 @@ impl Constructor {
                 let num = args[1].parse().unwrap();
                 match VertexPattern::of_string(args[0]) {
                     Some(pattern) => Random(VertexStructured(pattern, num)),
-                    None => {
-                        match EdgePattern::of_string(args[0]) {
-                            Some(pattern) => Random(EdgeStructured(pattern, num)),
-                            None => panic!("Cannot find struct!"),
-                        }
-                    }
+                    None => match EdgePattern::of_string(args[0]) {
+                        Some(pattern) => Random(EdgeStructured(pattern, num)),
+                        None => panic!("Cannot find struct!"),
+                    },
                 }
             }
             "connected_semi_regular" | "conn" => {
                 let exponent = if args.len() > 2 {
-                        args[2].parse().unwrap()
-                    } else {
-                        1.0
-                    };
-                Random(ConnectedSemiregular(Order::of_string(args[0]), args[1].parse().unwrap(), exponent))
+                    args[2].parse().unwrap()
+                } else {
+                    1.0
+                };
+                Random(ConnectedSemiregular(
+                    Order::of_string(args[0]),
+                    args[1].parse().unwrap(),
+                    exponent,
+                ))
             }
-            "bfs" => Random(BFSOptimal(Order::of_string(args[0]), args[1].parse().unwrap(), args[2].parse().unwrap())),
+            "bfs" => Random(BFSOptimal(
+                Order::of_string(args[0]),
+                args[1].parse().unwrap(),
+                args[2].parse().unwrap(),
+            )),
             "spine" | "spinal" => {
                 let spine_proportion = args.get(1).map_or(0.667, |x| x.parse().unwrap());
-                let off_vert_degree = args.get(2).map_or(Degree::of_usize(3), |x| Degree::of_string(x));
-                Random(Spinal(Order::of_string(args[0]), spine_proportion, off_vert_degree))
+                let off_vert_degree = args
+                    .get(2)
+                    .map_or(Degree::of_usize(3), |x| Degree::of_string(x));
+                Random(Spinal(
+                    Order::of_string(args[0]),
+                    spine_proportion,
+                    off_vert_degree,
+                ))
             }
-            "hamilton_plus_matchings" | "hpm" => Random(HamiltonPlusMatchings(Order::of_string(args[0]), Degree::of_string(args[1]))),
+            "hamilton_plus_matchings" | "hpm" => Random(HamiltonPlusMatchings(
+                Order::of_string(args[0]),
+                Degree::of_string(args[1]),
+            )),
             "giant" => Structural(GiantComponent, Box::new(Self::of_string(args[0]))),
-            "2core" | "core" | "two_core" => Structural(TwoCore, Box::new(Self::of_string(args[0]))),
-            "grid" => {
-                Raw(Grid(Order::of_string(args[0]), Order::of_string(args[1])))
-            },
+            "2core" | "core" | "two_core" => {
+                Structural(TwoCore, Box::new(Self::of_string(args[0])))
+            }
+            "grid" => Raw(Grid(Order::of_string(args[0]), Order::of_string(args[1]))),
             "complete" | "k" => {
                 let n = Order::of_string(args[0]);
                 if args.len() == 1 {
@@ -268,7 +294,9 @@ impl Constructor {
                 } else if args.len() == 2 {
                     Raw(CompleteBipartite(n, Order::of_string(args[1])))
                 } else {
-                    Raw(CompleteMultipartite(args.iter().map(|arg| Order::of_string(arg)).collect()))
+                    Raw(CompleteMultipartite(
+                        args.iter().map(|arg| Order::of_string(arg)).collect(),
+                    ))
                 }
             }
             "turan" | "t" => Raw(Turan(Order::of_string(args[0]), args[1].parse().unwrap())),
@@ -290,10 +318,10 @@ impl Constructor {
             "octahedron" | "Eu6" => Raw(Octahedron),
             "icosahedron" | "Eu12" => Raw(Icosahedron),
             "dodecahedron" | "Eu20" => Raw(Dodecahedron),
-            "corona" => {
-                Recursive(CoronaProduct(Box::new(Self::of_string(args[0])), 
-                    Box::new(Self::of_string(args[1]))))
-            }
+            "corona" => Recursive(CoronaProduct(
+                Box::new(Self::of_string(args[0])),
+                Box::new(Self::of_string(args[1])),
+            )),
             "serial" => Serialised(args[0].to_string()),
             "chain" => PosetConstr(Chain(Order::of_string(args[0]))),
             "antichain" | "anti" => PosetConstr(Antichain(Order::of_string(args[0]))),
@@ -314,20 +342,26 @@ impl Constructor {
                 let max_p = args.get(2).map_or(1.0, |str| str.parse().unwrap());
                 DigraphConstr(Oriented(Order::of_string(args[0]), min_p, max_p))
             }
-            "random_out_regular" | "out" => DigraphConstr(OutRegular(Order::of_string(args[0]), Degree::of_string(args[1]))),
-            "out_oriented" => DigraphConstr(OutRegularOriented(Order::of_string(args[0]), Degree::of_string(args[1]))),
+            "random_out_regular" | "out" => DigraphConstr(OutRegular(
+                Order::of_string(args[0]),
+                Degree::of_string(args[1]),
+            )),
+            "out_oriented" => DigraphConstr(OutRegularOriented(
+                Order::of_string(args[0]),
+                Degree::of_string(args[1]),
+            )),
             str => File(str.to_owned()),
         }
     }
 
     pub fn new_entity(&self) -> Entity {
         use Constructor::*;
+        use DigraphConstructor::*;
+        use PosetConstructor::*;
         use RandomConstructor::*;
         use RawConstructor::*;
         use RecursiveConstructor::*;
         use StructuralConstructor::*;
-        use PosetConstructor::*;
-        use DigraphConstructor::*;
 
         fn g(g: Graph) -> Entity {
             Entity::Graph(g)
@@ -346,12 +380,14 @@ impl Constructor {
                 g(products::new_product(product, self, &g1, &g2))
             }
             RootedTree(parents) => g(tree::new_rooted(parents)),
-            Random(Biregular(order, left_deg, right_deg)) => {
-                g(random_regular_bipartite::new_biregular(*order, *left_deg, *right_deg))
-            }
+            Random(Biregular(order, left_deg, right_deg)) => g(
+                random_regular_bipartite::new_biregular(*order, *left_deg, *right_deg),
+            ),
             Random(ErdosRenyi(order, p)) => g(erdos_renyi::new(*order, *p)),
             Random(BasedErdosRenyi(order, p, base)) => g(erdos_renyi::new_based(*order, *p, base)),
-            Random(InducedErdosRenyi(order, p, base)) => g(erdos_renyi::new_induced(*order, *p, base)),
+            Random(InducedErdosRenyi(order, p, base)) => {
+                g(erdos_renyi::new_induced(*order, *p, base))
+            }
             Random(RandomBipartite(order, p)) => g(erdos_renyi::new_bipartite(*order, *p)),
             Random(RandomSubgraph(constructor, p)) => {
                 g(erdos_renyi::new_random_subgraph(constructor, *p))
@@ -364,14 +400,24 @@ impl Constructor {
             Random(PlanarGons(order, k)) => g(random_planar::k_gon_gluing(*order, *k)),
             Random(Bowties(scale, degree)) => g(bowties::new_bowties(*scale, *degree)),
             Random(Regular(order, degree)) => g(regular::new_regular(order, degree)),
-            Random(RegularIsh(order, degree)) => g(regular::new_approximately_regular(order, degree)),
+            Random(RegularIsh(order, degree)) => {
+                g(regular::new_approximately_regular(order, degree))
+            }
             Random(DegreeSequence(deg_seq)) => g(regular::new_from_degree_sequence(deg_seq, false)),
             Random(VertexStructured(pattern, num)) => g(pattern.new_graph(*num)),
             Random(EdgeStructured(pattern, num)) => g(pattern.new_graph(*num)),
-            Random(ConnectedSemiregular(order, p, exp)) => g(semiregular::new_semiregular(*order, *p, *exp)),
-            Random(BFSOptimal(order, width, density)) => g(random_bfs::new_bfs(*order, *width, *density)),
-            Random(Spinal(order, spine_propn, off_deg)) => g(random_bfs::new_spinal(*order, *spine_propn, off_deg)),
-            Random(HamiltonPlusMatchings(order, degree)) => g(regular::new_hamilton_plus_matchings(*order, *degree)),
+            Random(ConnectedSemiregular(order, p, exp)) => {
+                g(semiregular::new_semiregular(*order, *p, *exp))
+            }
+            Random(BFSOptimal(order, width, density)) => {
+                g(random_bfs::new_bfs(*order, *width, *density))
+            }
+            Random(Spinal(order, spine_propn, off_deg)) => {
+                g(random_bfs::new_spinal(*order, *spine_propn, off_deg))
+            }
+            Random(HamiltonPlusMatchings(order, degree)) => {
+                g(regular::new_hamilton_plus_matchings(*order, *degree))
+            }
             Raw(Grid(height, width)) => g(grid::new(height, width)),
             Raw(Complete(order)) => g(Graph::new_complete(*order)),
             Raw(CompleteBipartite(left, right)) => g(Graph::new_complete_bipartite(*left, *right)),
@@ -402,15 +448,23 @@ impl Constructor {
             }
             PosetConstr(Chain(order)) => p(Poset::new_chain(*order)),
             PosetConstr(Antichain(order)) => p(Poset::new_antichain(*order)),
-            PosetConstr(ChainIntersection(order, k)) => p(random_posets::new_random_intersection(*order, *k)),
-            PosetConstr(CorrelatedIntersection(order, k, prob)) => p(random_posets::new_correlated_intersection(*order, *k, *prob)),
+            PosetConstr(ChainIntersection(order, k)) => {
+                p(random_posets::new_random_intersection(*order, *k))
+            }
+            PosetConstr(CorrelatedIntersection(order, k, prob)) => p(
+                random_posets::new_correlated_intersection(*order, *k, *prob),
+            ),
             DigraphConstr(OfGraph(constr)) => {
                 let g = constr.new_entity().as_owned_graph();
                 d(Digraph::of_matrix(g.adj, vec![]))
             }
-            DigraphConstr(Oriented(order, min_p, max_p)) => d(random_digraphs::new_oriented(*order, *min_p, *max_p)),
+            DigraphConstr(Oriented(order, min_p, max_p)) => {
+                d(random_digraphs::new_oriented(*order, *min_p, *max_p))
+            }
             DigraphConstr(OutRegular(order, deg)) => d(random_digraphs::new_out(*order, *deg)),
-            DigraphConstr(OutRegularOriented(order, deg)) => d(random_digraphs::new_oriented_out(*order, *deg)),
+            DigraphConstr(OutRegularOriented(order, deg)) => {
+                d(random_digraphs::new_oriented_out(*order, *deg))
+            }
             File(filename) => from_file::new_entity(filename),
             Serialised(code) => g(Graph::deserialise(code)),
             Special => panic!("Cannot directly construct Special graph!"),
@@ -420,9 +474,7 @@ impl Constructor {
     pub fn is_random(&self) -> bool {
         use Constructor::*;
         match self {
-            Product(_, c1, c2) => {
-                c1.is_random() || c2.is_random()
-            }
+            Product(_, c1, c2) => c1.is_random() || c2.is_random(),
             Recursive(RecursiveConstructor::CoronaProduct(c1, c2)) => {
                 c1.is_random() || c2.is_random()
             }
@@ -436,9 +488,11 @@ impl Constructor {
 }
 
 impl ProductConstructor {
-    pub fn all() -> Vec<ProductConstructor> {
+    pub fn all() -> Vec<Self> {
         use ProductConstructor::*;
-        vec![Cartesian, Tensor, Lex, RevLex, Strong, Conormal, Rooted, RevRooted]
+        vec![
+            Cartesian, Tensor, Lex, RevLex, Strong, Conormal, Rooted, RevRooted,
+        ]
     }
 }
 
@@ -470,14 +524,14 @@ impl fmt::Display for Constructor {
         match self {
             Product(product, constr1, constr2) => {
                 write!(f, "{} product of ({}) and ({})", product, constr1, constr2)
-            },
+            }
             Random(constr) => write!(f, "Random({})", constr),
             Raw(constr) => write!(f, "{}", constr),
             Recursive(constr) => write!(f, "{}", constr),
             Structural(constr, c1) => write!(f, "Structural({}, {})", constr, c1),
             RootedTree(parents) => {
                 write!(f, "Rooted tree with parent pattern {:?}", parents)
-            },
+            }
             PosetConstr(constr) => write!(f, "{}", constr),
             DigraphConstr(constr) => write!(f, "{}", constr),
             File(filename) => write!(f, "From file {}", filename),
@@ -490,17 +544,16 @@ impl fmt::Display for Constructor {
 impl fmt::Display for ProductConstructor {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use ProductConstructor::*;
-        let str = 
-            match self {
-                Cartesian => "Box",
-                Tensor => "Tensor",
-                Lex => "Lex",
-                RevLex => "Reverse Lex",
-                Strong => "Strong",
-                Conormal => "Conormal",
-                Rooted => "Rooted",
-                RevRooted => "Reverse Rooted",
-            };
+        let str = match self {
+            Cartesian => "Box",
+            Tensor => "Tensor",
+            Lex => "Lex",
+            RevLex => "Reverse Lex",
+            Strong => "Strong",
+            Conormal => "Conormal",
+            Rooted => "Rooted",
+            RevRooted => "Reverse Rooted",
+        };
         write!(f, "{}", str)
     }
 }
@@ -510,22 +563,46 @@ impl fmt::Display for RandomConstructor {
         use RandomConstructor::*;
         match self {
             Biregular(order, left_deg, right_deg) => {
-                write!(f, "Biregular of left-order {}, left-degree {}, and right-degree {}", order, left_deg, right_deg)
-            },
+                write!(
+                    f,
+                    "Biregular of left-order {}, left-degree {}, and right-degree {}",
+                    order, left_deg, right_deg
+                )
+            }
             ErdosRenyi(order, p) => {
-                write!(f, "Erdos-Renyi graph of order {} with probability {}", order, p)
-            },
+                write!(
+                    f,
+                    "Erdos-Renyi graph of order {} with probability {}",
+                    order, p
+                )
+            }
             BasedErdosRenyi(order, p, base) => {
-                write!(f, "Erdos-Renyi graph of order {} with prob {} on top of {}", order, p, *base)
-            },
+                write!(
+                    f,
+                    "Erdos-Renyi graph of order {} with prob {} on top of {}",
+                    order, p, *base
+                )
+            }
             InducedErdosRenyi(order, p, base) => {
-                write!(f, "Erdos-Renyi graph of order {} with prob {} with induced {}", order, p, *base)
+                write!(
+                    f,
+                    "Erdos-Renyi graph of order {} with prob {} with induced {}",
+                    order, p, *base
+                )
             }
             RandomBipartite(order, p) => {
-                write!(f, "Random bipartite graph of order {} and probability {}", order, p)
+                write!(
+                    f,
+                    "Random bipartite graph of order {} and probability {}",
+                    order, p
+                )
             }
             RandomSubgraph(constructor, p) => {
-                write!(f, "Random subgraph of {}, keeping each edge with prob {}", **constructor, p)
+                write!(
+                    f,
+                    "Random subgraph of {}, keeping each edge with prob {}",
+                    **constructor, p
+                )
             }
             Triangulation(order) => {
                 write!(f, "Triangulation of order {}", order)
@@ -534,7 +611,11 @@ impl fmt::Display for RandomConstructor {
                 write!(f, "Maximal planar of order {}", order)
             }
             PlanarConditioned(order, max_deg, min_girth) => {
-                write!(f, "Planar with order {}, max_deg {:?}, and min_girth {:?}", order, max_deg, min_girth)
+                write!(
+                    f,
+                    "Planar with order {}, max_deg {:?}, and min_girth {:?}",
+                    order, max_deg, min_girth
+                )
             }
             PlanarGons(order, k) => {
                 write!(f, "Random gluing of {}-gons for order {}", *k, *order)
@@ -542,34 +623,64 @@ impl fmt::Display for RandomConstructor {
             Bowties(scale, degree) => {
                 let d = degree.to_usize();
                 let mult = if d % 2 == 0 { d / 2 } else { d };
-                write!(f, "Amalgamation of {} bowties of degree {}", mult * *scale, degree)
+                write!(
+                    f,
+                    "Amalgamation of {} bowties of degree {}",
+                    mult * *scale,
+                    degree
+                )
             }
             Regular(order, degree) => {
-                write!(f, "Random regular graph of order {} and degree {}", *order, *degree)
+                write!(
+                    f,
+                    "Random regular graph of order {} and degree {}",
+                    *order, *degree
+                )
             }
             RegularIsh(order, degree) => {
-                write!(f, "Approximately random regular graph of order {} and degree {}", *order, *degree)
+                write!(
+                    f,
+                    "Approximately random regular graph of order {} and degree {}",
+                    *order, *degree
+                )
             }
             DegreeSequence(seq) => {
                 write!(f, "Random graph with degree sequence {:?}", seq)
             }
             VertexStructured(pattern, num) => {
-                write!(f, "Structured vertex-gluing of {} copies of the {} pattern", num, pattern)
+                write!(
+                    f,
+                    "Structured vertex-gluing of {} copies of the {} pattern",
+                    num, pattern
+                )
             }
             EdgeStructured(pattern, num) => {
-                write!(f, "Structured edge-gluing of {} copies of the {} pattern", num, pattern)
+                write!(
+                    f,
+                    "Structured edge-gluing of {} copies of the {} pattern",
+                    num, pattern
+                )
             }
             ConnectedSemiregular(order, p, exp) => {
                 write!(f, "Connected semiregular graph of order {} and average degree {} with weighting exponent {}", order, p, exp)
             }
             BFSOptimal(order, width, density) => {
-                write!(f, "BFS optimised of order {}, edge-width {}, and edge-density {}", order, width, density)
+                write!(
+                    f,
+                    "BFS optimised of order {}, edge-width {}, and edge-density {}",
+                    order, width, density
+                )
             }
             Spinal(order, spine_propn, off_deg) => {
                 write!(f, "Spinal graph of order {}, with {:.3}-propn of edges in the spine. Off-spine degree = {}", order, spine_propn, off_deg)
             }
             HamiltonPlusMatchings(order, degree) => {
-                write!(f, "Hamilton cycle of order {} plus {} random matchings", order, degree.to_usize() - 2)
+                write!(
+                    f,
+                    "Hamilton cycle of order {} plus {} random matchings",
+                    order,
+                    degree.to_usize() - 2
+                )
             }
         }
     }
@@ -584,10 +695,10 @@ impl fmt::Display for RawConstructor {
             }
             Complete(order) => {
                 write!(f, "Complete of order {}", order)
-            },
+            }
             CompleteBipartite(left, right) => {
                 write!(f, "Complete bipartite of order ({}, {})", left, right)
-            },
+            }
             CompleteMultipartite(orders) => {
                 write!(f, "Complete multipartite with part sizes {:?}", orders)
             }
@@ -596,21 +707,25 @@ impl fmt::Display for RawConstructor {
             }
             Cyclic(order) => {
                 write!(f, "Cyclic of order {}", order)
-            },
+            }
             Path(order) => {
                 write!(f, "Path of order {}", order)
-            },
+            }
             Star(order) => {
                 write!(f, "Star of order {}", order)
-            },
+            }
             Empty(order) => {
                 write!(f, "Empty of order {}", order)
-            },
+            }
             Cube(dimension) => {
                 write!(f, "The Cube of dimension {}", dimension)
             }
             FanoPlane => write!(f, "The Fano plane"),
-            Petersen(cycles, skip) => write!(f, "The Petersen graph on {}-cycles with {}-skip", cycles, skip),
+            Petersen(cycles, skip) => write!(
+                f,
+                "The Petersen graph on {}-cycles with {}-skip",
+                cycles, skip
+            ),
             Octahedron => write!(f, "The Octahedron"),
             Icosahedron => write!(f, "The Icosahedron"),
             Dodecahedron => write!(f, "The Dodecahedron"),
@@ -646,10 +761,18 @@ impl fmt::Display for PosetConstructor {
             Chain(order) => write!(f, "Chain of {} elements", order),
             Antichain(order) => write!(f, "Antichain of {} elements", order),
             ChainIntersection(order, k) => {
-                write!(f, "Intersection of {} random chains of {} elements", k, order)
+                write!(
+                    f,
+                    "Intersection of {} random chains of {} elements",
+                    k, order
+                )
             }
             CorrelatedIntersection(order, k, prob) => {
-                write!(f, "Intersection of {} correlated (prob {} of swaps) random chains of {} elements", k, prob, order)
+                write!(
+                    f,
+                    "Intersection of {} correlated (prob {} of swaps) random chains of {} elements",
+                    k, prob, order
+                )
             }
         }
     }
@@ -660,9 +783,13 @@ impl fmt::Display for DigraphConstructor {
         use DigraphConstructor::*;
         match self {
             OfGraph(digraph) => write!(f, "Digraph of ({})", *digraph),
-            Oriented(n, min_p, max_p) => write!(f, "Random orientation of G({}, [{}, {}])", n, min_p, max_p),
+            Oriented(n, min_p, max_p) => {
+                write!(f, "Random orientation of G({}, [{}, {}])", n, min_p, max_p)
+            }
             OutRegular(n, deg) => write!(f, "Random order-{} digraph out out-deg {}", n, deg),
-            OutRegularOriented(n, deg) => write!(f, "Random order-{} oriented graph of out-deg {}", n, deg),
+            OutRegularOriented(n, deg) => {
+                write!(f, "Random order-{} oriented graph of out-deg {}", n, deg)
+            }
         }
     }
 }

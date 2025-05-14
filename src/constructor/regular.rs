@@ -1,9 +1,9 @@
 use rand::Rng;
-use utilities::*;
 use rand::{prelude::SliceRandom, thread_rng};
+use utilities::*;
 
-use super::*;
 use super::Constructor::*;
+use super::*;
 use utilities::vertex_tools::*;
 
 pub fn new_from_degree_sequence(deg_seq: &Vec<Degree>, is_regular: bool) -> Graph {
@@ -71,7 +71,7 @@ pub fn new_approximately_regular(n: &Order, degree: &Degree) -> Graph {
     while attempts_since_success < 50 && subdeg_verts.len() > 1 {
         let l = subdeg_verts.len();
         let i1 = rng.gen_range(0..l);
-        let mut i2 = rng.gen_range(0..(l-1));
+        let mut i2 = rng.gen_range(0..(l - 1));
         if i2 >= i1 {
             i2 += 1;
         }
@@ -114,7 +114,7 @@ pub fn new_hamilton_plus_matchings(n: Order, degree: Degree) -> Graph {
         for i in 0..half_n {
             if adj[ordering[2 * i]][ordering[2 * i + 1]] {
                 // Some edge has already been added.
-                continue 'find_matchings
+                continue 'find_matchings;
             }
         }
 
@@ -128,5 +128,8 @@ pub fn new_hamilton_plus_matchings(n: Order, degree: Degree) -> Graph {
         }
     }
 
-    Graph::of_matrix(adj, Random(RandomConstructor::HamiltonPlusMatchings(n, degree)))
+    Graph::of_matrix(
+        adj,
+        Random(RandomConstructor::HamiltonPlusMatchings(n, degree)),
+    )
 }

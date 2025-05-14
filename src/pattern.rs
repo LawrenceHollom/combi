@@ -1,13 +1,13 @@
 use crate::entity::graph::*;
 
-use utilities::*;
-use utilities::vertex_tools::*;
 use utilities::edge_tools::*;
+use utilities::vertex_tools::*;
+use utilities::*;
 
 use std::fmt;
 
-use rand::thread_rng;
 use rand::prelude::SliceRandom;
+use rand::thread_rng;
 
 mod bowties;
 mod triple_pentagons;
@@ -44,7 +44,7 @@ impl VertexPattern {
         }
     }
 
-    pub fn of_string(text: &str) -> Option<VertexPattern> {
+    pub fn of_string(text: &str) -> Option<Self> {
         let (pattern, args) = parse_function_like(text);
         use VertexPattern::*;
 
@@ -77,13 +77,16 @@ impl VertexPattern {
             for v in gwv.other_verts.iter() {
                 for w in gwv.h.adj_list[*v].iter() {
                     if gwv.other_verts.contains(w, Vertex::eq) {
-                        adj_list[other_verts_inv[*v].incr_by(offset)].push(other_verts_inv[*w].incr_by(offset));
+                        adj_list[other_verts_inv[*v].incr_by(offset)]
+                            .push(other_verts_inv[*w].incr_by(offset));
                     }
                 }
             }
         }
 
-        let mut ordering: VertexVec<Vertex> = (0..(num * gwv.num_verts)).map(|x| Vertex::of_usize(x / nav)).collect();
+        let mut ordering: VertexVec<Vertex> = (0..(num * gwv.num_verts))
+            .map(|x| Vertex::of_usize(x / nav))
+            .collect();
         let mut rng = thread_rng();
 
         'find_good_shuffle: loop {
@@ -115,12 +118,15 @@ impl VertexPattern {
         }
 
         use crate::constructor::*;
-        Graph::of_adj_list(adj_list, Constructor::Random(RandomConstructor::VertexStructured(*self, num)))
+        Graph::of_adj_list(
+            adj_list,
+            Constructor::Random(RandomConstructor::VertexStructured(*self, num)),
+        )
     }
 }
 
 impl GraphWithVertices {
-    pub fn new(pattern: &VertexPattern) -> GraphWithVertices {
+    pub fn new(pattern: &VertexPattern) -> Self {
         use VertexPattern::*;
         match pattern {
             Bowties(d) => bowties::new(d),
@@ -136,7 +142,7 @@ impl EdgePattern {
         }
     }
 
-    pub fn of_string(text: &str) -> Option<EdgePattern> {
+    pub fn of_string(text: &str) -> Option<Self> {
         let (pattern, _args) = parse_function_like(text);
         use EdgePattern::*;
 
@@ -169,7 +175,8 @@ impl EdgePattern {
             for v in gwe.verts_not_in_edge.iter() {
                 for w in gwe.h.adj_list[*v].iter() {
                     if gwe.verts_not_in_edge.contains(w, Vertex::eq) {
-                        adj_list[gwe_verts_inv[*v].incr_by(offset)].push(gwe_verts_inv[*w].incr_by(offset));
+                        adj_list[gwe_verts_inv[*v].incr_by(offset)]
+                            .push(gwe_verts_inv[*w].incr_by(offset));
                     }
                 }
             }
@@ -182,7 +189,7 @@ impl EdgePattern {
 
         let mut ordering: Vec<usize> = (0..(num * gwe.num_edges)).map(|x| x / nae).collect();
         let mut rng = thread_rng();
-        
+
         'find_good_shuffle: loop {
             ordering.shuffle(&mut rng);
             let mut last_part = vec![num; num_extra_edges];
@@ -223,15 +230,18 @@ impl EdgePattern {
         }
 
         use crate::constructor::*;
-        Graph::of_adj_list(adj_list, Constructor::Random(RandomConstructor::EdgeStructured(*self, num)))
+        Graph::of_adj_list(
+            adj_list,
+            Constructor::Random(RandomConstructor::EdgeStructured(*self, num)),
+        )
     }
 }
 
 impl GraphWithEdges {
-    pub fn new(pattern: &EdgePattern) -> GraphWithEdges {
+    pub fn new(pattern: &EdgePattern) -> Self {
         use EdgePattern::*;
         match pattern {
-            TriplePentagons => triple_pentagons::new()
+            TriplePentagons => triple_pentagons::new(),
         }
     }
 }

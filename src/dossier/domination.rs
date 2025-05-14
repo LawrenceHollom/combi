@@ -1,8 +1,8 @@
 use crate::entity::graph::*;
 
-use utilities::*;
 use utilities::rational::*;
 use utilities::vertex_tools::*;
+use utilities::*;
 
 fn get_nbhd_code(g: &Graph, v: Vertex) -> VertexSet {
     let mut dominion = VertexSet::new(g.n);
@@ -14,13 +14,21 @@ fn get_nbhd_code(g: &Graph, v: Vertex) -> VertexSet {
 }
 
 // use u128s to do domination considerations.
-fn min_dominator_bfs(g: &Graph, dominator: &mut VertexVec<bool>, best_dominator: &mut VertexVec<bool>, 
-        num_picked: usize, last_pick: Vertex, best_set: usize, lower_bound: Option<usize>,
-        max_nbrs: &VertexVec<Vertex>, predominations: VertexSet) -> usize {
+fn min_dominator_bfs(
+    g: &Graph,
+    dominator: &mut VertexVec<bool>,
+    best_dominator: &mut VertexVec<bool>,
+    num_picked: usize,
+    last_pick: Vertex,
+    best_set: usize,
+    lower_bound: Option<usize>,
+    max_nbrs: &VertexVec<Vertex>,
+    predominations: VertexSet,
+) -> usize {
     if num_picked >= best_set {
         return best_set;
     }
-    if lower_bound.map_or(false, |x| best_set < x) {
+    if lower_bound.is_some_and(|x| best_set < x) {
         // We've found a dominating set below the lower bound, so give up.
         return best_set;
     }
@@ -64,7 +72,7 @@ fn min_dominator_bfs(g: &Graph, dominator: &mut VertexVec<bool>, best_dominator:
     }
 
     let mut new_best_set = best_set;
-    
+
     let mut minimax_undominated_nbr = g.n.to_max_vertex();
     for u in g.n.iter_verts() {
         if !dominion.has_vert(u) && max_nbrs[u] < minimax_undominated_nbr {
@@ -80,8 +88,10 @@ fn min_dominator_bfs(g: &Graph, dominator: &mut VertexVec<bool>, best_dominator:
                 is_worth_adding = false;
                 break 'test_if_worth_it;
             }
-            if u != vert && subdominia[vert].inter(&subdominia[u].not()).is_empty() 
-                    && (subdominia[u] != subdominia[vert] || u < vert) {
+            if u != vert
+                && subdominia[vert].inter(&subdominia[u].not()).is_empty()
+                && (subdominia[u] != subdominia[vert] || u < vert)
+            {
                 // u is better than v
                 is_worth_adding = false;
                 break 'test_if_worth_it;
@@ -89,8 +99,17 @@ fn min_dominator_bfs(g: &Graph, dominator: &mut VertexVec<bool>, best_dominator:
         }
         if is_worth_adding {
             dominator[vert] = true;
-            let value = min_dominator_bfs(g, dominator, best_dominator, num_picked + 1, 
-            vert, new_best_set, lower_bound, max_nbrs, predominations);
+            let value = min_dominator_bfs(
+                g,
+                dominator,
+                best_dominator,
+                num_picked + 1,
+                vert,
+                new_best_set,
+                lower_bound,
+                max_nbrs,
+                predominations,
+            );
             if value < new_best_set {
                 new_best_set = value;
             }
@@ -101,7 +120,11 @@ fn min_dominator_bfs(g: &Graph, dominator: &mut VertexVec<bool>, best_dominator:
     new_best_set
 }
 
-fn dominate_greedy(g: &Graph, predominations: VertexSet, best_dominator: &mut VertexVec<bool>) -> usize {
+fn dominate_greedy(
+    g: &Graph,
+    predominations: VertexSet,
+    best_dominator: &mut VertexVec<bool>,
+) -> usize {
     let mut dominion = predominations;
     let mut dominator = VertexVec::new(g.n, &false);
     let mut gamma = 0;
@@ -134,7 +157,7 @@ fn dominate_greedy(g: &Graph, predominations: VertexSet, best_dominator: &mut Ve
                 gamma += 1;
                 dominion.add_all(get_nbhd_code(g, vert));
             }
-            None => panic!("Well, shit.")
+            None => panic!("Well, shit."),
         }
     }
 
@@ -157,7 +180,11 @@ fn get_max_nbrs(g: &Graph) -> VertexVec<Vertex> {
     max_nbrs
 }
 
-fn compute_domination_number_and_set(g: &Graph, predominations: VertexSet, best_dominator: &mut VertexVec<bool>) -> u32 {
+fn compute_domination_number_and_set(
+    g: &Graph,
+    predominations: VertexSet,
+    best_dominator: &mut VertexVec<bool>,
+) -> u32 {
     let mut dominator = VertexVec::new(g.n, &false);
     let mut number = dominate_greedy(g, predominations, best_dominator);
     if g.n.at_least(60) {
@@ -182,7 +209,17 @@ fn compute_domination_number_and_set(g: &Graph, predominations: VertexSet, best_
     }
     for i in Vertex::ZERO.iter_from_to_incl(max_nbrs[first_unpredominated]) {
         dominator[i] = true;
-        let this_number = min_dominator_bfs(&h, &mut dominator, best_dominator, 1, i, number, None, &max_nbrs, h_predominations);
+        let this_number = min_dominator_bfs(
+            &h,
+            &mut dominator,
+            best_dominator,
+            1,
+            i,
+            number,
+            None,
+            &max_nbrs,
+            h_predominations,
+        );
         if this_number < number {
             was_greedy_best = false;
             number = this_number;
@@ -213,25 +250,25 @@ pub fn domination_number(g: &Graph) -> u32 {
 pub fn print_random_dominator(g: &Graph) {
     let mut best_dominator = VertexVec::new(g.n, &false);
     let (h, ordering_inv) = g.randomly_permute_vertices();
-    
+
     let mut ordering = VertexVec::new(g.n, &Vertex::ZERO);
     for i in g.n.iter_verts() {
         ordering[ordering_inv[i]] = i;
     }
 
     let _ = compute_domination_number_and_set(&h, VertexSet::new(g.n), &mut best_dominator);
-    let mut dominator_verts: Vec<Vertex> = 
-        best_dominator.iter_enum()
-                    .filter(|(_i, x)| **x)
-                    .map(|(i, _x)| ordering[i])
-                    .collect();
+    let mut dominator_verts: Vec<Vertex> = best_dominator
+        .iter_enum()
+        .filter(|(_i, x)| **x)
+        .map(|(i, _x)| ordering[i])
+        .collect();
     dominator_verts.sort();
     println!("{:?}", dominator_verts);
 }
 
 pub fn is_domination_number_at_least(g: &Graph, lower_bound: usize) -> bool {
     let mut dominator = VertexVec::new(g.n, &false);
-    let mut best_dominator =  VertexVec::new(g.n, &false);
+    let mut best_dominator = VertexVec::new(g.n, &false);
     let mut number = dominate_greedy(g, VertexSet::new(g.n), &mut best_dominator);
 
     let (h, _ordering_inv) = g.order_by_nbhd();
@@ -241,8 +278,17 @@ pub fn is_domination_number_at_least(g: &Graph, lower_bound: usize) -> bool {
             break 'test_start;
         }
         dominator[i] = true;
-        let this_number = min_dominator_bfs(&h, &mut dominator, &mut best_dominator, 1, i, 
-            number, Some(lower_bound), &max_nbrs, VertexSet::new(g.n));
+        let this_number = min_dominator_bfs(
+            &h,
+            &mut dominator,
+            &mut best_dominator,
+            1,
+            i,
+            number,
+            Some(lower_bound),
+            &max_nbrs,
+            VertexSet::new(g.n),
+        );
         if this_number < number {
             number = this_number;
         }
@@ -260,8 +306,17 @@ pub fn domination_redundancy(g: &Graph) -> Rational {
     let max_nbrs = get_max_nbrs(&h);
     for i in Vertex::ZERO.iter_from_to_incl(max_nbrs[Vertex::ZERO]) {
         dominator[i] = true;
-        let this_number = min_dominator_bfs(&h, &mut dominator, &mut best_dominator, 1, i, 
-            number + 1, None, &max_nbrs, VertexSet::new(g.n));
+        let this_number = min_dominator_bfs(
+            &h,
+            &mut dominator,
+            &mut best_dominator,
+            1,
+            i,
+            number + 1,
+            None,
+            &max_nbrs,
+            VertexSet::new(g.n),
+        );
         if this_number < number {
             number = this_number;
         }
@@ -277,7 +332,14 @@ pub fn domination_redundancy(g: &Graph) -> Rational {
     Rational::new_fraction(dominations, g.n.to_usize()) - Rational::ONE
 }
 
-fn edge_domination_dfs(g: &Graph, dominator: &mut VertexVec<bool>, num_picked: usize, min_pick: Vertex, best_set: usize, lossless: bool) -> usize {
+fn edge_domination_dfs(
+    g: &Graph,
+    dominator: &mut VertexVec<bool>,
+    num_picked: usize,
+    min_pick: Vertex,
+    best_set: usize,
+    lossless: bool,
+) -> usize {
     if num_picked >= best_set {
         // We've already picked too much.
         return best_set;
@@ -307,7 +369,9 @@ fn edge_domination_dfs(g: &Graph, dominator: &mut VertexVec<bool>, num_picked: u
             for v in g.adj_list[u].iter() {
                 if !dominator[*v] {
                     is_dominating = false;
-                    if (u < min_pick && *v < min_pick) || (lossless && !pickable[u] && !pickable[*v]) {
+                    if (u < min_pick && *v < min_pick)
+                        || (lossless && !pickable[u] && !pickable[*v])
+                    {
                         could_ever_dominate = false;
                         break 'test_domination;
                     } else if u >= min_pick {
@@ -341,7 +405,7 @@ fn edge_domination_dfs(g: &Graph, dominator: &mut VertexVec<bool>, num_picked: u
     } else if !could_ever_dominate {
         return best_set;
     }
-    
+
     let mut vert = min_pick;
 
     while !vert.is_n(g.n) && !pickable[vert] {
@@ -349,20 +413,21 @@ fn edge_domination_dfs(g: &Graph, dominator: &mut VertexVec<bool>, num_picked: u
     }
 
     if vert.is_n(g.n) {
-        // end of the road. 
+        // end of the road.
         return best_set;
     }
 
     // It's not dominating and we can pick more. First try not picking anything.
     let mut number = edge_domination_dfs(g, dominator, num_picked, vert.incr(), best_set, lossless);
-    
+
     // Now try picking something.
     for u in g.adj_list[vert].iter() {
         if *u > vert && pickable[*u] {
             dominator[*u] = true;
             dominator[vert] = true;
             //println!("Picked {}~{}; calling.", vert, *u);
-            let value = edge_domination_dfs(g, dominator, num_picked + 1, vert.incr(), number, lossless);
+            let value =
+                edge_domination_dfs(g, dominator, num_picked + 1, vert.incr(), number, lossless);
             if value < number {
                 number = value;
             }
@@ -377,7 +442,14 @@ fn edge_domination_dfs(g: &Graph, dominator: &mut VertexVec<bool>, num_picked: u
 
 pub fn edge_domination_number(g: &Graph) -> u32 {
     let mut dominator = VertexVec::new(g.n, &false);
-    edge_domination_dfs(g, &mut dominator, 0, Vertex::ZERO, g.n.to_usize()/2, false) as u32
+    edge_domination_dfs(
+        g,
+        &mut dominator,
+        0,
+        Vertex::ZERO,
+        g.n.to_usize() / 2,
+        false,
+    ) as u32
 }
 
 pub fn has_regular_lossless_edge_dominator(g: &Graph) -> bool {
@@ -387,9 +459,16 @@ pub fn has_regular_lossless_edge_dominator(g: &Graph) -> bool {
         let n = g.n.to_usize();
         let mut dominator = VertexVec::new(g.n, &false);
         let delta = g.deg[Vertex::ZERO].to_usize();
-        let denom = if delta % 2 == 0 { 2 * delta - 1} else { 2 * (2 * delta - 1) };
+        let denom = if delta % 2 == 0 {
+            2 * delta - 1
+        } else {
+            2 * (2 * delta - 1)
+        };
         if n % denom != 0 {
-            panic!("Lossless edge domination only possible for Delta={} when n divisible by {}", delta, denom);
+            panic!(
+                "Lossless edge domination only possible for Delta={} when n divisible by {}",
+                delta, denom
+            );
         } else {
             let gamma_e = edge_domination_dfs(g, &mut dominator, 0, Vertex::ZERO, n, true);
             gamma_e == delta * n / (2 * (2 * delta - 1))
@@ -411,7 +490,7 @@ pub fn total_domination_game_length(g: &Graph) -> u32 {
     }
 
     let num_states = pow(2, n as u64) as usize;
-    let mut turns_left: Vec<usize> = vec![n+1; num_states];
+    let mut turns_left: Vec<usize> = vec![n + 1; num_states];
     let mut num_dominated: Vec<usize> = vec![0; num_states];
     let mut dominators_turn: Vec<bool> = vec![false; num_states];
 
@@ -430,7 +509,7 @@ pub fn total_domination_game_length(g: &Graph) -> u32 {
             }
             sta /= 2;
         }
-        num_dominated[i] = dominated.iter().map(|x| if *x { 1 } else { 0 }).sum();        
+        num_dominated[i] = dominated.iter().map(|x| if *x { 1 } else { 0 }).sum();
         dominators_turn[i] = num_played % 2 == 0;
     }
 
@@ -439,7 +518,7 @@ pub fn total_domination_game_length(g: &Graph) -> u32 {
         let mut sta = i;
         let mut can_be_added = false;
         let mut diff_to_add_v = 1;
-        for _v in g.n.iter_verts(){
+        for _v in g.n.iter_verts() {
             if sta % 2 == 0 {
                 // v is not in the set - can we add it?
                 if num_dominated[i + diff_to_add_v] > num_dominated[i] {
@@ -462,19 +541,21 @@ pub fn total_domination_game_length(g: &Graph) -> u32 {
             let mut diff_to_add_v = 1;
             let mut optimal = if dominators_turn[i] { n } else { 0 };
 
-            for _v in g.n.iter_verts(){
+            for _v in g.n.iter_verts() {
                 if sta % 2 == 0 && num_dominated[i + diff_to_add_v] > num_dominated[i] {
                     // v can played
                     let child = turns_left[i + diff_to_add_v];
-                    if child != n+1 && ((dominators_turn[i] && child < optimal) 
-                            || (!dominators_turn[i] && child > optimal)) {
+                    if child != n + 1
+                        && ((dominators_turn[i] && child < optimal)
+                            || (!dominators_turn[i] && child > optimal))
+                    {
                         optimal = child;
                     }
                 }
                 diff_to_add_v *= 2;
                 sta /= 2;
             }
-            
+
             turns_left[i] = optimal + 1;
         }
     }

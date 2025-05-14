@@ -6,7 +6,7 @@ impl Digraph {
     pub fn has_source(&self) -> bool {
         for v in self.iter_verts() {
             if self.in_deg[v].equals(0) {
-                return true
+                return true;
             }
         }
         false
@@ -15,7 +15,7 @@ impl Digraph {
     pub fn has_sink(&self) -> bool {
         for v in self.iter_verts() {
             if self.out_deg[v].equals(0) {
-                return true
+                return true;
             }
         }
         false
@@ -54,7 +54,7 @@ impl Digraph {
     }
 
     /**
-     * Returns a matrix m where m[x][y] is the min distance from x to y, or None if there 
+     * Returns a matrix m where m[x][y] is the min distance from x to y, or None if there
      * is no path from x to y.
      * Runs in n^3 time, small constant.
      * dist[x][x] is only returned as Some if there is a nonempty path from x to x; in particular,
@@ -62,7 +62,7 @@ impl Digraph {
      */
     pub fn floyd_warshall(&self) -> VertexVec<VertexVec<Option<u32>>> {
         let mut out = VertexVec::new(self.n, &VertexVec::new(self.n, &None));
-        
+
         for (u, v) in self.iter_pairs() {
             if self.adj[u][v] {
                 out[u][v] = Some(1);

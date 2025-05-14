@@ -1,9 +1,12 @@
-use std::{ops::{Add, AddAssign}, io::Write};
+use std::{
+    io::Write,
+    ops::{Add, AddAssign},
+};
 
 use crate::entity::graph::*;
 
 use rand::{rngs::ThreadRng, thread_rng, Rng};
-use utilities::{vertex_tools::*, rational::Rational};
+use utilities::{rational::Rational, vertex_tools::*};
 
 const REPS: usize = 100;
 const GREEDINESS: usize = 1;
@@ -18,10 +21,10 @@ struct Grabbed {
 }
 
 impl Add for Weight {
-    type Output = Weight;
+    type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        Weight(self.0 + rhs.0)
+        Self(self.0 + rhs.0)
     }
 }
 
@@ -32,24 +35,33 @@ impl AddAssign for Weight {
 }
 
 impl Grabbed {
-    const ZERO: Grabbed = Grabbed { alice: Weight(0), bob: Weight(0) };
+    const ZERO: Self = Self {
+        alice: Weight(0),
+        bob: Weight(0),
+    };
 
     #[allow(dead_code)]
-    fn new(alice: Weight, bob: Weight) -> Grabbed {
-        Grabbed { alice, bob }
+    fn new(alice: Weight, bob: Weight) -> Self {
+        Self { alice, bob }
     }
 
-    fn add_immutable(&self, w: Weight, is_alice_turn: bool) -> Grabbed {
+    fn add_immutable(&self, w: Weight, is_alice_turn: bool) -> Self {
         if is_alice_turn {
-            Grabbed { alice: self.alice + w, bob: self.bob }
+            Self {
+                alice: self.alice + w,
+                bob: self.bob,
+            }
         } else {
-            Grabbed { alice: self.alice, bob: self.bob + w }
+            Self {
+                alice: self.alice,
+                bob: self.bob + w,
+            }
         }
     }
 
     fn has_won(&self, total: Weight, is_alice_turn: bool) -> bool {
         if is_alice_turn {
-            self.alice.0 >= (total.0 + 1) / 2
+            self.alice.0 >= total.0.div_ceil(2)
         } else {
             self.bob.0 >= (total.0 + 2) / 2
         }
@@ -76,17 +88,27 @@ fn print_weighting(w: &VertexVec<Weight>) {
     println!();
 }
 
-fn get_random_weighting(g: &Graph, rng: &mut ThreadRng, max_weight: u32, zeroes: Option<&VertexVec<bool>>) -> VertexVec<Weight> {
+fn get_random_weighting(
+    g: &Graph,
+    rng: &mut ThreadRng,
+    max_weight: u32,
+    zeroes: Option<&VertexVec<bool>>,
+) -> VertexVec<Weight> {
     let mut w = VertexVec::new(g.n, &Weight(0));
     for v in g.iter_verts() {
-        if zeroes.map_or(true, |zs| !zs[v]) {
+        if zeroes.is_none_or(|zs| !zs[v]) {
             w[v] = Weight(rng.gen_range(0..=max_weight));
         }
     }
     w
 }
 
-fn is_weighting_reducable(g: &Graph, w: &VertexVec<Weight>, playable: &VertexVec<bool>, parent: &VertexVec<Option<Vertex>>) -> bool {
+fn is_weighting_reducable(
+    g: &Graph,
+    w: &VertexVec<Weight>,
+    playable: &VertexVec<bool>,
+    parent: &VertexVec<Option<Vertex>>,
+) -> bool {
     let mut max_playable_weight = Weight(0);
     let mut is_reducable = false;
 
@@ -132,30 +154,34 @@ fn get_random_good_weighting(g: &Graph, rng: &mut ThreadRng, max_weight: u32) ->
     }
 
     loop {
-        let max_weight = if max_weight <= 1 { 1 } else { rng.gen_range(2..=max_weight) };
+        let max_weight = if max_weight <= 1 {
+            1
+        } else {
+            rng.gen_range(2..=max_weight)
+        };
         let w = if rng.gen_bool(0.5) {
-                get_random_weighting(g, rng, max_weight, None)
-            } else if rng.gen_bool(0.1) {
-                // Give everything immediately playable weight 0.
-                get_random_weighting(g, rng, max_weight, Some(&playable))    
-            } else {
-                // Give cocut non-leaf vertices weight 0.
-                get_random_weighting(g, rng, max_weight, Some(&cocut_coleaf))
-            };
-        
+            get_random_weighting(g, rng, max_weight, None)
+        } else if rng.gen_bool(0.1) {
+            // Give everything immediately playable weight 0.
+            get_random_weighting(g, rng, max_weight, Some(&playable))
+        } else {
+            // Give cocut non-leaf vertices weight 0.
+            get_random_weighting(g, rng, max_weight, Some(&cocut_coleaf))
+        };
+
         if !is_weighting_reducable(g, &w, &playable, &parent) {
-            return w
-        }/* else {
-            let w2 = playable.iter().map(|play| if *play { Weight(0) });
-            if is_weighting_reducable(g, &w2, &playable, &parent) {
-                g.print();
-                g.print_matrix(true);
-                print_weighting(&w2);
-                println!("parents: {:?}", parent);
-                println!("playables: {:?}", playable);
-                panic!("AAAAAAAAAAAAA")
-            }
-        }*/
+            return w;
+        } /* else {
+              let w2 = playable.iter().map(|play| if *play { Weight(0) });
+              if is_weighting_reducable(g, &w2, &playable, &parent) {
+                  g.print();
+                  g.print_matrix(true);
+                  print_weighting(&w2);
+                  println!("parents: {:?}", parent);
+                  println!("playables: {:?}", playable);
+                  panic!("AAAAAAAAAAAAA")
+              }
+          }*/
     }
 }
 
@@ -184,7 +210,7 @@ fn get_playables(g: &Graph, w: &VertexVec<Weight>, played: VertexSet) -> Vec<Ver
     } else if GREEDINESS == 2 {
         let base = g.n.to_usize() as u32;
         let mut goodness = VertexVec::new(g.n, &0);
-        
+
         // precept 1: score points.
         for (v, w) in w.iter_enum() {
             goodness[v] += 2 * base * base * w.0;
@@ -237,8 +263,15 @@ fn get_playables(g: &Graph, w: &VertexVec<Weight>, played: VertexSet) -> Vec<Ver
     playables
 }
 
-fn grabbing_game_rec(g: &Graph, w: &VertexVec<Weight>, played: VertexSet, num_grabbed: usize, 
-        grabbed: Grabbed, total: Weight, debug: bool) -> bool {
+fn grabbing_game_rec(
+    g: &Graph,
+    w: &VertexVec<Weight>,
+    played: VertexSet,
+    num_grabbed: usize,
+    grabbed: Grabbed,
+    total: Weight,
+    debug: bool,
+) -> bool {
     let is_alice_turn = num_grabbed % 2 == 0;
     let mut does_alice_win = !is_alice_turn;
 
@@ -247,14 +280,15 @@ fn grabbing_game_rec(g: &Graph, w: &VertexVec<Weight>, played: VertexSet, num_gr
         let new_grabbed = grabbed.add_immutable(w[*v], is_alice_turn);
         if new_grabbed.has_won(total, is_alice_turn) {
             // The player has grabbed enough to win
-            if debug { 
+            if debug {
                 println!("Auto-win; is_alice_turn = {}", is_alice_turn);
             }
             does_alice_win = is_alice_turn;
             break 'test_verts;
         } else {
             // We need to go deeper.
-            let this_alice_win = grabbing_game_rec(g, w, new_played, num_grabbed + 1, new_grabbed, total, debug);
+            let this_alice_win =
+                grabbing_game_rec(g, w, new_played, num_grabbed + 1, new_grabbed, total, debug);
             if this_alice_win == is_alice_turn {
                 // This is a winning move for the current player
                 does_alice_win = this_alice_win;
@@ -263,7 +297,10 @@ fn grabbing_game_rec(g: &Graph, w: &VertexVec<Weight>, played: VertexSet, num_gr
         }
     }
     if debug {
-        println!("{:?}, grabbed = {:?}, A_win: {}", played, grabbed, does_alice_win);
+        println!(
+            "{:?}, grabbed = {:?}, A_win: {}",
+            played, grabbed, does_alice_win
+        );
     }
     does_alice_win
 }
@@ -277,7 +314,13 @@ fn sum(w: &VertexVec<Weight>) -> Weight {
 }
 
 // score_difference = Alice - Bob
-fn grabbing_game_scores(g: &Graph, w: &VertexVec<Weight>, root: Option<Vertex>, debug: bool, print_strat: bool) -> Grabbed {
+fn grabbing_game_scores(
+    g: &Graph,
+    w: &VertexVec<Weight>,
+    root: Option<Vertex>,
+    debug: bool,
+    print_strat: bool,
+) -> Grabbed {
     let mut score = VertexSetVec::new(g.n, &(None, Grabbed::ZERO));
     let nbhds = g.get_open_nbhds();
 
@@ -307,7 +350,9 @@ fn grabbing_game_scores(g: &Graph, w: &VertexVec<Weight>, root: Option<Vertex>, 
                 let is_alice_turn = cosize % 2 == 1;
                 let name = if is_alice_turn { "Alice" } else { "Bob" };
                 let new_score = grabbed.add_immutable(w[v], is_alice_turn);
-                if score[new_set].0.is_none() || new_score.get(is_alice_turn) > score[new_set].1.get(is_alice_turn) {
+                if score[new_set].0.is_none()
+                    || new_score.get(is_alice_turn) > score[new_set].1.get(is_alice_turn)
+                {
                     // This is better for Bob than old strat, so overwrite.
                     score[new_set] = (Some(v), new_score);
                     if debug && s.to_int() < 300 {
@@ -315,7 +360,12 @@ fn grabbing_game_scores(g: &Graph, w: &VertexVec<Weight>, root: Option<Vertex>, 
                             printed_debug_intro = true;
                             println!("From {} {:?}", s.to_int(), s.to_vec());
                         }
-                        println!("{} better for set {:?}: {:?}", name, new_set.to_vec(), new_score);
+                        println!(
+                            "{} better for set {:?}: {:?}",
+                            name,
+                            new_set.to_vec(),
+                            new_score
+                        );
                     }
                 }
             }
@@ -327,7 +377,12 @@ fn grabbing_game_scores(g: &Graph, w: &VertexVec<Weight>, root: Option<Vertex>, 
         let mut s = VertexSet::everything(g.n);
         let mut player = 0;
         while let Some(v) = score[s].0 {
-            println!("{} plays {} for {:?}", if player == 0 { "Alice" } else { "Bob" }, v, w[v]);
+            println!(
+                "{} plays {} for {:?}",
+                if player == 0 { "Alice" } else { "Bob" },
+                v,
+                w[v]
+            );
             player = (player + 1) % 2;
             s.remove_vert(v);
         }
@@ -339,10 +394,15 @@ fn grabbing_game_scores(g: &Graph, w: &VertexVec<Weight>, root: Option<Vertex>, 
 /**
  * filter (if Some) is true if a vertex should take 0 or 1 weight randomly.
  */
-fn get_coleaf_weighting(g: &Graph, filter: Option<&VertexVec<bool>>, max_weight: Weight, rng: &mut ThreadRng) -> VertexVec<Weight> {
+fn get_coleaf_weighting(
+    g: &Graph,
+    filter: Option<&VertexVec<bool>>,
+    max_weight: Weight,
+    rng: &mut ThreadRng,
+) -> VertexVec<Weight> {
     let mut w = VertexVec::new(g.n, &Weight(0));
     for (v, d) in g.deg.iter_enum() {
-        if filter.map_or(false, |f| *f.get(v).unwrap_or(&false)) {
+        if filter.is_some_and(|f| *f.get(v).unwrap_or(&false)) {
             w[v] = Weight(rng.gen_range(0..=max_weight.0));
         } else if d.more_than(1) {
             w[v] = Weight(rng.gen_range(1..=max_weight.0));
@@ -355,7 +415,7 @@ pub fn coleaf_weighted_score_difference(g: &Graph) -> Rational {
     let mut rng = thread_rng();
     let w = get_coleaf_weighting(g, None, Weight(1), &mut rng);
     let scores = grabbing_game_scores(g, &w, None, false, false);
-    
+
     Rational::new(scores.diff())
 }
 
@@ -451,12 +511,12 @@ pub fn can_bob_win_graph_grabbing(g: &Graph, max_weight: Option<usize>) -> bool 
     'rep: for i in 0..REPS {
         let w = get_random_good_weighting(g, &mut rng, max_weight);
         let debug = false;
-        
+
         if !grabbing_game_rec(g, &w, VertexSet::new(g.n), 0, Grabbed::ZERO, sum(&w), debug) {
             found_good_weighting = true;
             println!("Found Bob-friendly weighting after {} steps", i);
             print_weighting(&w);
-            break 'rep
+            break 'rep;
         }
     }
     found_good_weighting
@@ -482,7 +542,10 @@ pub fn print_bob_win_weighting(g: &Graph) {
         if !grabbing_game_rec(g, &w, played, 0, Grabbed::ZERO, total, debug) {
             max_weight = w.max(&Weight(0), Weight::cmp).unwrap().0;
             println!("Weighting (max_weight = {}): {:?}", max_weight, w);
-            println!("  Scores: {:?}", grabbing_game_scores(g, &w, None, false, false));
+            println!(
+                "  Scores: {:?}",
+                grabbing_game_scores(g, &w, None, false, false)
+            );
             max_weight -= 1;
         }
         w = get_random_good_weighting(g, &mut rng, max_weight);
@@ -535,7 +598,7 @@ fn get_internal_adj_list(g: &Graph, set: VertexSet) -> VertexVec<Vec<Vertex>> {
 fn has_corona_like_structure(g: &Graph, set: VertexSet) -> bool {
     let order = set.size();
     let mut is_corona_like = test_num_degs(g, set, &[0, order / 2, 0, order / 2], false);
-    
+
     if is_corona_like {
         // We actually need to test it properly now.
         let internal_adj_list = get_internal_adj_list(g, set);
@@ -561,7 +624,7 @@ fn has_corona_like_structure(g: &Graph, set: VertexSet) -> bool {
 fn has_semicorona_like_structure(g: &Graph, set: VertexSet) -> bool {
     let order = set.size();
     let mut is_corona_like = test_num_degs(g, set, &[0, 3, order - 6, 3], false);
-    
+
     if is_corona_like {
         // STP that each vtx of deg 3 has nbrs of degs 1 and 3, and that it's connected.
         let internal_adj_list = get_internal_adj_list(g, set);
@@ -615,7 +678,7 @@ fn has_semicorona_like_structure(g: &Graph, set: VertexSet) -> bool {
 fn has_filled_semicorona_like_structure(g: &Graph, set: VertexSet) -> bool {
     let order = set.size();
     let mut is_corona_like = test_num_degs(g, set, &[0, 3, 0, order - 4], true);
-    
+
     if is_corona_like {
         // STP that is non-cutvtx of deg = (order - 3), all of whose nbrs bar one have deg 3.
         let internal_adj_list = get_internal_adj_list(g, set);
@@ -703,7 +766,7 @@ fn has_partially_filled_semicorona_like_structure(g: &Graph, set: VertexSet) -> 
                 break 'test_nbrs;
             }
         }
-        if let Some(_) = leaf {
+        if leaf.is_some() {
             if prongs.len() == 2 {
                 // Prongs are adjacent to precisely one leaf and the centre.
                 let mut cycle_len = 2;
@@ -714,11 +777,17 @@ fn has_partially_filled_semicorona_like_structure(g: &Graph, set: VertexSet) -> 
                     let mut next = None;
                     if nbrs.len() == 3 {
                         // should be adj to prev and centre and next
-                        if (nbrs[0], nbrs[1]) == (prev, centre) || (nbrs[0], nbrs[1]) == (centre, prev) {
+                        if (nbrs[0], nbrs[1]) == (prev, centre)
+                            || (nbrs[0], nbrs[1]) == (centre, prev)
+                        {
                             next = Some(nbrs[2])
-                        } else if (nbrs[1], nbrs[2]) == (prev, centre) || (nbrs[1], nbrs[2]) == (centre, prev) {
+                        } else if (nbrs[1], nbrs[2]) == (prev, centre)
+                            || (nbrs[1], nbrs[2]) == (centre, prev)
+                        {
                             next = Some(nbrs[0])
-                        } else if (nbrs[0], nbrs[2]) == (prev, centre) || (nbrs[0], nbrs[2]) == (centre, prev) {
+                        } else if (nbrs[0], nbrs[2]) == (prev, centre)
+                            || (nbrs[0], nbrs[2]) == (centre, prev)
+                        {
                             next = Some(nbrs[1])
                         }
                     } else if nbrs.len() == 2 {
@@ -806,11 +875,9 @@ pub fn has_induced_odd_cycle_corona(g: &Graph) -> bool {
     let mut found_corona = false;
     'search_sets: for set in g.iter_vertex_subsets() {
         let size = set.size();
-        if size >= 6 && size % 4 == 2 {
-            if has_corona_like_structure(g, set) {
-                found_corona = true;
-                break 'search_sets;
-            }
+        if size >= 6 && size % 4 == 2 && has_corona_like_structure(g, set) {
+            found_corona = true;
+            break 'search_sets;
         }
     }
     found_corona
@@ -820,11 +887,14 @@ pub fn has_induced_odd_cycle_semicorona(g: &Graph) -> bool {
     let mut found_corona = false;
     'search_sets: for set in g.iter_vertex_subsets() {
         let size = set.size();
-        if size >= 6 && size % 2 == 0 {
-            if has_semicorona_like_structure(g, set) || has_filled_semicorona_like_structure(g, set) || has_partially_filled_semicorona_like_structure(g, set) {
-                found_corona = true;
-                break 'search_sets;
-            }
+        if size >= 6
+            && size % 2 == 0
+            && (has_semicorona_like_structure(g, set)
+                || has_filled_semicorona_like_structure(g, set)
+                || has_partially_filled_semicorona_like_structure(g, set))
+        {
+            found_corona = true;
+            break 'search_sets;
         }
     }
     found_corona
@@ -834,11 +904,9 @@ pub fn has_induced_fork(g: &Graph) -> bool {
     let mut found_fork = false;
     'search_sets: for set in g.iter_vertex_subsets() {
         let size = set.size();
-        if size == 6 {
-            if is_induced_fork(g, set) {
-                found_fork = true;
-                break 'search_sets;
-            }
+        if size == 6 && is_induced_fork(g, set) {
+            found_fork = true;
+            break 'search_sets;
         }
     }
     found_fork
@@ -847,8 +915,8 @@ pub fn has_induced_fork(g: &Graph) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use utilities::*;
     use crate::constructor::*;
+    use utilities::*;
 
     fn grab(x: u32, y: u32) -> Grabbed {
         Grabbed::new(Weight(x), Weight(y))
@@ -862,32 +930,47 @@ mod tests {
     fn test_grabbing_p3() {
         let g = Graph::new_path(Order::of_usize(3));
         let weights = weight(vec![1, 3, 1]);
-        assert_eq!(grabbing_game_scores(&g, &weights, None, false, false), grab(2, 3));
+        assert_eq!(
+            grabbing_game_scores(&g, &weights, None, false, false),
+            grab(2, 3)
+        );
     }
 
     #[test]
     fn test_grabbing_p4() {
         let g = Graph::new_path(Order::of_usize(4));
         let weights = weight(vec![0, 2, 3, 1]);
-        assert_eq!(grabbing_game_scores(&g, &weights, None, false, false), grab(3, 3));
+        assert_eq!(
+            grabbing_game_scores(&g, &weights, None, false, false),
+            grab(3, 3)
+        );
     }
 
     #[test]
     fn test_coleaf_weighted_c5_corona() {
-        let g = Constructor::of_string("corona(c(5),k(1))").new_entity().as_owned_graph();
+        let g = Constructor::of_string("corona(c(5),k(1))")
+            .new_entity()
+            .as_owned_graph();
         assert_eq!(coleaf_weighted_score_difference(&g), Rational::new(-1));
     }
 
     #[test]
     fn test_coleaf_weighted_c4_corona() {
-        let g = Constructor::of_string("corona(c(4),k(1))").new_entity().as_owned_graph();
+        let g = Constructor::of_string("corona(c(4),k(1))")
+            .new_entity()
+            .as_owned_graph();
         assert_eq!(coleaf_weighted_score_difference(&g), Rational::new(0));
     }
 
     #[test]
     fn test_corona_counterexample() {
-        let g = Constructor::of_string("corona(c(5),k(1))").new_entity().as_owned_graph();
+        let g = Constructor::of_string("corona(c(5),k(1))")
+            .new_entity()
+            .as_owned_graph();
         let weights = weight(vec![1, 2, 1, 0, 0, 0, 1, 0, 0, 0]);
-        assert_eq!(grabbing_game_scores(&g, &weights, None, false, false), grab(2, 3));
+        assert_eq!(
+            grabbing_game_scores(&g, &weights, None, false, false),
+            grab(2, 3)
+        );
     }
 }

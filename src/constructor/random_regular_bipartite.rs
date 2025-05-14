@@ -121,6 +121,8 @@ pub fn new_biregular(left_order: Order, left_deg: Degree, right_deg: Degree) -> 
         adj,
         adj_list,
         deg,
-        constructor: Constructor::Random(crate::constructor::RandomConstructor::Biregular(n, left_deg, right_deg))
+        constructor: Constructor::Random(crate::constructor::RandomConstructor::Biregular(
+            n, left_deg, right_deg,
+        )),
     }
 }

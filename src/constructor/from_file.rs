@@ -79,7 +79,12 @@ fn new_poset(contents: String, filename: &String) -> Poset {
     let mut gt: VertexVec<VertexVec<bool>> = VertexVec::new(order, &VertexVec::new(order, &false));
 
     // u > v
-    fn update_relation(gt: &mut VertexVec<VertexVec<bool>>, us_str: &str, vs_str: &str, order: Order) {
+    fn update_relation(
+        gt: &mut VertexVec<VertexVec<bool>>,
+        us_str: &str,
+        vs_str: &str,
+        order: Order,
+    ) {
         for u_str in us_str.split(',') {
             let u: Vertex = Vertex::of_string(u_str);
             for v_str in vs_str.split(',') {
@@ -104,7 +109,7 @@ fn new_poset(contents: String, filename: &String) -> Poset {
     for line in lines.iter().skip(1) {
         if line.contains('>') {
             let pars: Vec<&str> = line.split('>').collect();
-            update_relation(&mut gt, pars[0], pars[1], order);            
+            update_relation(&mut gt, pars[0], pars[1], order);
         } else {
             let pars: Vec<&str> = line.split('<').collect();
             update_relation(&mut gt, pars[1], pars[0], order);
@@ -142,10 +147,12 @@ pub fn new_entity(filename: &String) -> Entity {
     } else if digraph_pathbuf.exists() {
         match fs::read_to_string(digraph_pathbuf) {
             Ok(contents) => Entity::Digraph(new_digraph(contents)),
-            Err(e) => panic!("Cannot find digraph constructor {} (Error: {})", filename, e),
+            Err(e) => panic!(
+                "Cannot find digraph constructor {} (Error: {})",
+                filename, e
+            ),
         }
     } else {
         panic!("Could not find constructor {}", filename)
     }
-
 }

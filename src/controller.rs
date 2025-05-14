@@ -1,27 +1,27 @@
 use std::collections::HashSet;
 use std::fmt;
-use std::time::*;
 use std::io::*;
+use std::time::*;
 
-use rand::Rng;
 use rand::rngs::ThreadRng;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
-use utilities::*;
+use rand::Rng;
 use utilities::edge_tools::*;
 use utilities::vertex_tools::*;
+use utilities::*;
 
 use crate::constructor::*;
-use crate::operation::int_operation::IntOperation;
-use crate::operation::string_list_operation::StringListOperation;
 use crate::dossier::AnnotationsBox;
 use crate::dossier::Dossier;
 use crate::entity::graph::Graph;
 use crate::entity::Entity;
+use crate::operation::int_operation::IntOperation;
+use crate::operation::string_list_operation::StringListOperation;
 
-use crate::operation::*;
 use crate::operation::bool_operation::*;
 use crate::operation::rational_operation::*;
+use crate::operation::*;
 
 pub struct Tabulation {
     pub order: Order,
@@ -64,15 +64,23 @@ pub struct Controller {
 }
 
 impl Tabulation {
-    pub fn new(order: Order, start: f64, end: f64, step: f64) -> Tabulation {
-        Tabulation { order, start, end, step }
+    pub fn new(order: Order, start: f64, end: f64, step: f64) -> Self {
+        Self {
+            order,
+            start,
+            end,
+            step,
+        }
     }
 }
 
 impl fmt::Display for Tabulation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Tabulate results for simulations of G({}, p) for p from {} to {} in steps of {}",
-            self.order, self.start, self.end, self.step)
+        write!(
+            f,
+            "Tabulate results for simulations of G({}, p) for p from {} to {} in steps of {}",
+            self.order, self.start, self.end, self.step
+        )
     }
 }
 
@@ -84,83 +92,107 @@ impl fmt::Display for LineGraphMetadata {
 }
 
 impl Instruction {
-    pub fn of_string(text: &str) -> Instruction {
+    pub fn of_string(text: &str) -> Self {
         use Instruction::*;
         let (func, args) = parse_function_like(text);
 
         match func.to_lowercase().as_str() {
-            "rep" | "repeat" => {
-                Repeat(Constructor::of_string(args[0]), 
-                    args[1].parse().unwrap())
-            },
-            "tabulate" | "tab" => {
-                Tabulate(Tabulation::new(Order::of_string(args[0]),
-                    args[1].parse().unwrap(), args[2].parse().unwrap(), 
-                    args[3].parse().unwrap()))
-            },
-            "until" => {
-                Until(Constructor::of_string(args[0]), 
-                    args.iter().skip(1).map(|arg| BoolOperation::of_string_result(arg).unwrap()).collect())
-            },
-            "forever" => {
-                Forever(Constructor::of_string(args[0]), 
-                    args.iter().skip(1).map(|arg| BoolOperation::of_string_result(arg).unwrap()).collect())
-            },
+            "rep" | "repeat" => Repeat(Constructor::of_string(args[0]), args[1].parse().unwrap()),
+            "tabulate" | "tab" => Tabulate(Tabulation::new(
+                Order::of_string(args[0]),
+                args[1].parse().unwrap(),
+                args[2].parse().unwrap(),
+                args[3].parse().unwrap(),
+            )),
+            "until" => Until(
+                Constructor::of_string(args[0]),
+                args.iter()
+                    .skip(1)
+                    .map(|arg| BoolOperation::of_string_result(arg).unwrap())
+                    .collect(),
+            ),
+            "forever" => Forever(
+                Constructor::of_string(args[0]),
+                args.iter()
+                    .skip(1)
+                    .map(|arg| BoolOperation::of_string_result(arg).unwrap())
+                    .collect(),
+            ),
             "search_trees" | "trees" => {
                 let n: usize = args[0].parse().unwrap();
-                SearchTrees(n, BoolOperation::of_string_result(args[1]).unwrap(),
-                    if args.len() >= 3 { Degree::of_string(args[2]) } else { Degree::of_usize(n) })
-            }
-            "kitchen" | "kitchen_sink" | "sink" => {
-                KitchenSink(args.iter().map(|arg| 
-                    BoolOperation::of_string_result(*arg).unwrap()).collect())
-            }
-            "sink_all" => {
-                KitchenSinkAll(args.iter().map(|arg| 
-                    BoolOperation::of_string_result(*arg).unwrap()).collect())
-            }
-            "process" | "proc" => {
-                Process(Order::of_string(args[0]))
-            }
-            "bip_process" | "bip_proc" => {
-                BipartiteProcess(Order::of_string(args[0]))
-            }
-            "process_until" | "proc_until" => {
-                ProcessUntil(Order::of_string(args[0]),
-                    args.iter().skip(1).map(|arg| BoolOperation::of_string_result(*arg).unwrap()).collect())
-            }
-            "process_until_decreasing" | "proc_until_dec" => {
-                ProcessUntilDecreasing(Order::of_string(args[0]), IntOperation::of_string_result(args[1]).unwrap(),
-                    args.iter().skip(2).map(|arg| BoolOperation::of_string_result(*arg).unwrap()).collect())
-            }
-            "search_all" | "all" => {
-                SearchAll(Order::of_string(args[0]),
-                    args.iter().skip(1).map(|arg| BoolOperation::of_string_result(*arg).unwrap()).collect())
-            }
-            "collate" => {
-                Collate(Constructor::of_string(args[0]), args[1].parse().unwrap(),
-                    StringListOperation::of_string_result(args[2]).unwrap())
-            }
-            "plot" | "line_graph" => {
-                let x_axis = 
-                    if let Some(op) = RationalOperation::of_string_result(args[1]) {
-                        op
+                SearchTrees(
+                    n,
+                    BoolOperation::of_string_result(args[1]).unwrap(),
+                    if args.len() >= 3 {
+                        Degree::of_string(args[2])
                     } else {
-                        RationalOperation::OfInt(IntOperation::of_string_result(args[1]).unwrap())
-                    };
-                LineGraph(Constructor::of_string(args[0]), LineGraphMetadata {
-                    x_axis,
-                    min_x: args[2].trim().parse().unwrap(),
-                    max_x: args[3].trim().parse().unwrap(),
-                    num_x_divisions: args[4].trim().parse().unwrap(),
-                    num_reps: args[5].trim().parse().unwrap(),
-                    conditions: args.iter().skip(6).map(|x| BoolOperation::of_string_result(x).unwrap()).collect(),
-                })
+                        Degree::of_usize(n)
+                    },
+                )
+            }
+            "kitchen" | "kitchen_sink" | "sink" => KitchenSink(
+                args.iter()
+                    .map(|arg| BoolOperation::of_string_result(arg).unwrap())
+                    .collect(),
+            ),
+            "sink_all" => KitchenSinkAll(
+                args.iter()
+                    .map(|arg| BoolOperation::of_string_result(arg).unwrap())
+                    .collect(),
+            ),
+            "process" | "proc" => Process(Order::of_string(args[0])),
+            "bip_process" | "bip_proc" => BipartiteProcess(Order::of_string(args[0])),
+            "process_until" | "proc_until" => ProcessUntil(
+                Order::of_string(args[0]),
+                args.iter()
+                    .skip(1)
+                    .map(|arg| BoolOperation::of_string_result(arg).unwrap())
+                    .collect(),
+            ),
+            "process_until_decreasing" | "proc_until_dec" => ProcessUntilDecreasing(
+                Order::of_string(args[0]),
+                IntOperation::of_string_result(args[1]).unwrap(),
+                args.iter()
+                    .skip(2)
+                    .map(|arg| BoolOperation::of_string_result(arg).unwrap())
+                    .collect(),
+            ),
+            "search_all" | "all" => SearchAll(
+                Order::of_string(args[0]),
+                args.iter()
+                    .skip(1)
+                    .map(|arg| BoolOperation::of_string_result(arg).unwrap())
+                    .collect(),
+            ),
+            "collate" => Collate(
+                Constructor::of_string(args[0]),
+                args[1].parse().unwrap(),
+                StringListOperation::of_string_result(args[2]).unwrap(),
+            ),
+            "plot" | "line_graph" => {
+                let x_axis = if let Some(op) = RationalOperation::of_string_result(args[1]) {
+                    op
+                } else {
+                    RationalOperation::OfInt(IntOperation::of_string_result(args[1]).unwrap())
+                };
+                LineGraph(
+                    Constructor::of_string(args[0]),
+                    LineGraphMetadata {
+                        x_axis,
+                        min_x: args[2].trim().parse().unwrap(),
+                        max_x: args[3].trim().parse().unwrap(),
+                        num_x_divisions: args[4].trim().parse().unwrap(),
+                        num_reps: args[5].trim().parse().unwrap(),
+                        conditions: args
+                            .iter()
+                            .skip(6)
+                            .map(|x| BoolOperation::of_string_result(x).unwrap())
+                            .collect(),
+                    },
+                )
             }
             "help" | "h" => Help,
-            &_ => {
-                Single(Constructor::of_string(text))
-            }
+            &_ => Single(Constructor::of_string(text)),
         }
     }
 }
@@ -171,27 +203,43 @@ impl fmt::Display for Instruction {
         match self {
             Repeat(constr, num) => {
                 write!(f, "Repeat ({}) {} times", constr, num)
-            },
+            }
             Tabulate(tabulation) => {
                 write!(f, "{}", tabulation)
-            },
+            }
             Until(constr, conditions) => {
                 write!(f, "Repeat ({}) until ({:?})", constr, conditions)
-            },
+            }
             Forever(constr, conditions) => {
-                write!(f, "Repeat ({}) forever, processing whenever ({:?})", constr, conditions)
-            },
+                write!(
+                    f,
+                    "Repeat ({}) forever, processing whenever ({:?})",
+                    constr, conditions
+                )
+            }
             Single(constr) => {
                 write!(f, "{}", constr)
             }
             SearchTrees(n, condition, max_degree) => {
-                write!(f, "Search all trees of order {} and max_degree {} until ({})", n, max_degree, condition)
+                write!(
+                    f,
+                    "Search all trees of order {} and max_degree {} until ({})",
+                    n, max_degree, condition
+                )
             }
             KitchenSink(conditions) => {
-                write!(f, "Search the kiLineGraphtchen sink for a graph satisfying {:?}", *conditions)
+                write!(
+                    f,
+                    "Search the kiLineGraphtchen sink for a graph satisfying {:?}",
+                    *conditions
+                )
             }
             KitchenSinkAll(conditions) => {
-                write!(f, "Search the kitchen sink for all graphs satisfying {:?}", *conditions)
+                write!(
+                    f,
+                    "Search the kitchen sink for all graphs satisfying {:?}",
+                    *conditions
+                )
             }
             Process(order) => {
                 write!(f, "Random graph process of order {}", order)
@@ -200,20 +248,36 @@ impl fmt::Display for Instruction {
                 write!(f, "Random bipartite graph process of order {}", order)
             }
             ProcessUntil(order, conditions) => {
-                write!(f, "Run graph processes of order {} until {:?}", order, conditions)
+                write!(
+                    f,
+                    "Run graph processes of order {} until {:?}",
+                    order, conditions
+                )
             }
             ProcessUntilDecreasing(order, int_op, conditions) => {
                 write!(f, "Run graph processes of order {} until {:?} decreases from one graph to the next and {:?} holds",
                     order, int_op, conditions)
             }
             SearchAll(order, conditions) => {
-                write!(f, "Search all graphs of order {} until {:?}", order, conditions)
+                write!(
+                    f,
+                    "Search all graphs of order {} until {:?}",
+                    order, conditions
+                )
             }
             Collate(constr, reps, op) => {
-                write!(f, "Collate {} values of ({}) over {} reps", op, constr, reps)
+                write!(
+                    f,
+                    "Collate {} values of ({}) over {} reps",
+                    op, constr, reps
+                )
             }
             LineGraph(constr, metadata) => {
-                write!(f, "Plot line graph of {} with metadata: {}", constr, metadata)
+                write!(
+                    f,
+                    "Plot line graph of {} with metadata: {}",
+                    constr, metadata
+                )
             }
             Help => write!(f, "Print help text"),
         }
@@ -221,7 +285,7 @@ impl fmt::Display for Instruction {
 }
 
 impl Controller {
-    pub fn of_string(text: &str) -> Controller {
+    pub fn of_string(text: &str) -> Self {
         /*let re = regex::Regex::new(r"->|=>").unwrap();
         let pars: Vec<&str> = re.split(text).map(|par| par.trim()).collect();*/
         let pars = match parse_infix_like_restricted(text, vec!['-', '=', '>']) {
@@ -230,14 +294,16 @@ impl Controller {
         };
 
         let controller = Instruction::of_string(pars[0]);
-        let operations = 
-            if pars.len() > 1 {
-                split_list(pars[1]).iter().map(|x| Operation::of_string(x)).collect()
-            } else {
-                vec![]
-            };
+        let operations = if pars.len() > 1 {
+            split_list(pars[1])
+                .iter()
+                .map(|x| Operation::of_string(x))
+                .collect()
+        } else {
+            vec![]
+        };
 
-        Controller {
+        Self {
             instruction: controller,
             operations,
         }
@@ -250,12 +316,17 @@ impl Controller {
 
     fn compute_and_print(&self, dossier: &mut Dossier, ann: &mut AnnotationsBox) {
         let rep_start = SystemTime::now();
-        let numbers: Vec<String> = self.operations
-                .iter()
-                .map(|op| dossier.operate(ann, op))
-                .collect();
-        println!("{}: [{}], time: {}", self.operations_string(), numbers.join(", "),
-            rep_start.elapsed().unwrap().as_millis());
+        let numbers: Vec<String> = self
+            .operations
+            .iter()
+            .map(|op| dossier.operate(ann, op))
+            .collect();
+        println!(
+            "{}: [{}], time: {}",
+            self.operations_string(),
+            numbers.join(", "),
+            rep_start.elapsed().unwrap().as_millis()
+        );
     }
 
     fn execute_single_return(&self, constr: &Constructor) -> Dossier {
@@ -281,7 +352,8 @@ impl Controller {
         let reps = 100;
         let propn = f64::round((tab.end - tab.start) / tab.step) as usize;
         use Operation::*;
-        let operators: Vec<RationalOperation> = self.operations
+        let operators: Vec<RationalOperation> = self
+            .operations
             .iter()
             .filter_map(|x| match x {
                 Int(op) => Some(RationalOperation::OfInt(*op)),
@@ -338,7 +410,7 @@ impl Controller {
             let g = Graph::of_adj_list(adj_list.to_owned(), Constructor::Special);
             let mut ann = AnnotationsBox::new();
             let mut dossier = Dossier::new(Entity::Graph(g));
-            print!("[{} / {}]: ", i+1, edges.len());
+            print!("[{} / {}]: ", i + 1, edges.len());
             self.compute_and_print(&mut dossier, &mut ann);
         }
     }
@@ -375,8 +447,13 @@ impl Controller {
         }
     }
 
-    fn do_all_conditions_hold(&self, dossier: &mut Dossier, ann_box: &mut AnnotationsBox, 
-            conditions: &[BoolOperation], should_print: bool) -> bool {
+    fn do_all_conditions_hold(
+        &self,
+        dossier: &mut Dossier,
+        ann_box: &mut AnnotationsBox,
+        conditions: &[BoolOperation],
+        should_print: bool,
+    ) -> bool {
         let mut is_good = true;
         'test_conditions: for operation in conditions.iter() {
             if !dossier.operate_bool(ann_box, operation) {
@@ -411,14 +488,26 @@ impl Controller {
                 }
             }
             rep += 1;
-            if rep <= 10 || (rep <= 100 && rep % 10 == 0) || (rep <= 1000 && rep % 100 == 0) || rep % 1000 == 0 {
+            if rep <= 10
+                || (rep <= 100 && rep % 10 == 0)
+                || (rep <= 1000 && rep % 100 == 0)
+                || rep % 1000 == 0
+            {
                 let avg_time = start_time.elapsed().unwrap().as_millis() / rep;
-                println!("Completed process {}, no example found. Average duration: {}", rep, avg_time);
+                println!(
+                    "Completed process {}, no example found. Average duration: {}",
+                    rep, avg_time
+                );
             }
         }
     }
 
-    fn execute_process_until_decreasing(&self, order: Order, int_op: &IntOperation, conditions: &[BoolOperation]) {
+    fn execute_process_until_decreasing(
+        &self,
+        order: Order,
+        int_op: &IntOperation,
+        conditions: &[BoolOperation],
+    ) {
         let mut rng = thread_rng();
         let mut rep = 0;
         let start_time = SystemTime::now();
@@ -449,9 +538,16 @@ impl Controller {
                 }
             }
             rep += 1;
-            if rep <= 10 || (rep <= 100 && rep % 10 == 0) || (rep <= 1000 && rep % 100 == 0) || rep % 1000 == 0 {
+            if rep <= 10
+                || (rep <= 100 && rep % 10 == 0)
+                || (rep <= 1000 && rep % 100 == 0)
+                || rep % 1000 == 0
+            {
                 let avg_time = start_time.elapsed().unwrap().as_millis() / rep;
-                println!("Completed process {}, no example found. Average duration: {}", rep, avg_time);
+                println!(
+                    "Completed process {}, no example found. Average duration: {}",
+                    rep, avg_time
+                );
             }
         }
     }
@@ -526,26 +622,42 @@ impl Controller {
             i += 1;
             println!("{}", line)
         }
-        println!("{} distinct values found! Last index of change: {}", i, last_index_of_change);
+        println!(
+            "{} distinct values found! Last index of change: {}",
+            i, last_index_of_change
+        );
     }
 
     fn execute_until(&self, constr: &Constructor, conditions: &[BoolOperation], forever: bool) {
-        fn print_success_proportions(conditions: &[BoolOperation], num_passing_step: &Vec<usize>, total_time_spent: &Vec<u128>, rep: usize) {
+        fn print_success_proportions(
+            conditions: &[BoolOperation],
+            num_passing_step: &Vec<usize>,
+            total_time_spent: &Vec<u128>,
+            rep: usize,
+        ) {
             fn f(x: usize, y: usize) -> f64 {
                 (100.0 * x as f64) / (y as f64)
             }
             let propn = f(num_passing_step[0], rep);
             let ns = total_time_spent[0] / (rep as u128);
-            println!("SUCCESS RATES:\n\t[0. {}: {} ; {:.1}% ; ~{}/rep]", conditions[0], num_passing_step[0], propn, pretty_format_time(ns));
+            println!(
+                "SUCCESS RATES:\n\t[0. {}: {} ; {:.1}% ; ~{}/rep]",
+                conditions[0],
+                num_passing_step[0],
+                propn,
+                pretty_format_time(ns)
+            );
             for (i, condition) in conditions.iter().enumerate().skip(1) {
                 let propn = f(num_passing_step[i], num_passing_step[i - 1]);
-                let ns = 
-                    if num_passing_step[i - 1] == 0 {
-                        "??".to_owned()
-                    } else {
-                        pretty_format_time(total_time_spent[i] / (num_passing_step[i - 1] as u128))
-                    };
-                println!("\t[{}. {}: {} ; {:.1}% ; ~{}/rep]", i, condition, num_passing_step[i], propn, ns)
+                let ns = if num_passing_step[i - 1] == 0 {
+                    "??".to_owned()
+                } else {
+                    pretty_format_time(total_time_spent[i] / (num_passing_step[i - 1] as u128))
+                };
+                println!(
+                    "\t[{}. {}: {} ; {:.1}% ; ~{}/rep]",
+                    i, condition, num_passing_step[i], propn, ns
+                )
             }
         }
 
@@ -571,7 +683,10 @@ impl Controller {
             } else if round_lines_printed >= 5 {
                 if checkpoint_time.elapsed().unwrap().as_secs() < 10 {
                     regular_rep_printing *= 10;
-                    println!("Cutting round-number verbosity! {} {}", rep, regular_rep_printing );
+                    println!(
+                        "Cutting round-number verbosity! {} {}",
+                        rep, regular_rep_printing
+                    );
                 }
                 checkpointed = true;
             }
@@ -601,7 +716,10 @@ impl Controller {
             'test_conditions: for condition in conditions.iter() {
                 let start_time = SystemTime::now();
                 let operation_result = dossier.operate_bool(&mut ann, condition);
-                let duration = SystemTime::now().duration_since(start_time).unwrap().as_nanos();
+                let duration = SystemTime::now()
+                    .duration_since(start_time)
+                    .unwrap()
+                    .as_nanos();
                 time_spent[num_satisfied] += duration;
                 total_operation_time_spent += duration;
                 if operation_result {
@@ -619,7 +737,6 @@ impl Controller {
                         print!("X ");
                         std::io::stdout().flush().unwrap();
                     }
-                    
                 } else {
                     all_satisfied = false;
                     break 'test_conditions;
@@ -631,8 +748,16 @@ impl Controller {
             if printed_round_number {
                 print_success_proportions(conditions, &num_passing_step, &time_spent, rep);
                 let op_time = total_operation_time_spent / (rep as u128);
-                let net_time = (SystemTime::now().duration_since(start_time).unwrap().as_nanos()) / (rep as u128);
-                println!("Total time/rep: \t operations: {}\t total: {}", pretty_format_time(op_time), pretty_format_time(net_time));
+                let net_time = (SystemTime::now()
+                    .duration_since(start_time)
+                    .unwrap()
+                    .as_nanos())
+                    / (rep as u128);
+                println!(
+                    "Total time/rep: \t operations: {}\t total: {}",
+                    pretty_format_time(op_time),
+                    pretty_format_time(net_time)
+                );
             }
             if all_satisfied {
                 if !forever {
@@ -640,7 +765,7 @@ impl Controller {
                     println!("Entity: ");
                     dossier.print_entity();
                 }
-                if self.operations.len() > 0 {
+                if !self.operations.is_empty() {
                     self.compute_and_print(&mut dossier, &mut ann);
                 }
                 satisfied = true;
@@ -652,7 +777,8 @@ impl Controller {
         use Operation::*;
         let mut num_reps = 0;
         let mut last_percentage = 0;
-        let y_vars: Vec<RationalOperation> = self.operations
+        let y_vars: Vec<RationalOperation> = self
+            .operations
             .iter()
             .filter_map(|x| match x {
                 Int(op) => Some(RationalOperation::OfInt(*op)),
@@ -662,7 +788,8 @@ impl Controller {
                 StringList(_op) => None,
             })
             .collect();
-        let mut buckets: Vec<Vec<f64>> = vec![vec![0.0; y_vars.len() + 1]; metadata.num_x_divisions];
+        let mut buckets: Vec<Vec<f64>> =
+            vec![vec![0.0; y_vars.len() + 1]; metadata.num_x_divisions];
         while num_reps < metadata.num_reps {
             let percentage = (100 * num_reps) / metadata.num_reps;
             if percentage > last_percentage {
@@ -683,17 +810,24 @@ impl Controller {
             if passes_conditions {
                 // Great, now actually record the data.
                 num_reps += 1;
-                let x = dossier.operate_rational(&mut ann_box, &metadata.x_axis).to_f64();
-                let ys: Vec<f64> = y_vars.iter().map(|y| dossier.operate_rational(&mut ann_box, y).to_f64()).collect();
+                let x = dossier
+                    .operate_rational(&mut ann_box, &metadata.x_axis)
+                    .to_f64();
+                let ys: Vec<f64> = y_vars
+                    .iter()
+                    .map(|y| dossier.operate_rational(&mut ann_box, y).to_f64())
+                    .collect();
                 let bucket_propn = (x - metadata.min_x) / (metadata.max_x - metadata.min_x);
-                let bucket_number = (((metadata.num_x_divisions as f64) * bucket_propn).floor() as usize).clamp(0, buckets.len() - 1);
+                let bucket_number = (((metadata.num_x_divisions as f64) * bucket_propn).floor()
+                    as usize)
+                    .clamp(0, buckets.len() - 1);
                 buckets[bucket_number][0] += 1.0;
                 for (i, y) in ys.iter().enumerate() {
                     buckets[bucket_number][i + 1] += y;
                 }
             }
         }
-        
+
         // Normalise the values in the buckets by the bucket counts.
         for row in buckets.iter_mut() {
             let denominator = row[0];
@@ -716,7 +850,9 @@ impl Controller {
         for (i, row) in buckets.iter().enumerate() {
             // Only print rows which contain data.
             if row[0] > 0.5 {
-                let x = (i as f64 / metadata.num_x_divisions as f64) * (metadata.max_x - metadata.min_x) + metadata.min_x;
+                let x = (i as f64 / metadata.num_x_divisions as f64)
+                    * (metadata.max_x - metadata.min_x)
+                    + metadata.min_x;
                 print!("{:.4},{:.0}", x, row[0]);
                 for value in row.iter().skip(1) {
                     print!(",{:.4}", value);
@@ -730,12 +866,12 @@ impl Controller {
         fn construct_tree(n: usize, parents: &[usize], condition: &BoolOperation) -> bool {
             // Check all children of any node are in decreasing order of degree.
             let mut num_children: Vec<usize> = vec![0; n];
-            for i in 0..(n-1) {
+            for i in 0..(n - 1) {
                 num_children[parents[i]] += 1;
             }
             let mut is_in_order = true;
-            for i in 0..(n-2) {
-                if parents[i] == parents[i+1] && num_children[i+1] < num_children[i+2] {
+            for i in 0..(n - 2) {
+                if parents[i] == parents[i + 1] && num_children[i + 1] < num_children[i + 2] {
                     is_in_order = false;
                 }
             }
@@ -744,7 +880,7 @@ impl Controller {
                 let g = Constructor::RootedTree(parents.to_vec()).new_entity();
                 let mut dossier = Dossier::new(g);
                 let mut ann = AnnotationsBox::new();
-                
+
                 let success = dossier.operate_bool(&mut ann, condition);
                 if success {
                     println!("Success!");
@@ -757,21 +893,37 @@ impl Controller {
             }
         }
 
-        fn search_trees_rec(n: usize, pos: usize, min: usize, parents: &mut Vec<usize>, condition: &BoolOperation, max_deg: usize) -> bool {
+        fn search_trees_rec(
+            n: usize,
+            pos: usize,
+            min: usize,
+            parents: &mut Vec<usize>,
+            condition: &BoolOperation,
+            max_deg: usize,
+        ) -> bool {
             if pos == 11 {
                 println!("{:?}", parents);
                 println!("{} {} {}", pos, min, max_deg);
             }
 
-            if pos == n-1 {
+            if pos == n - 1 {
                 construct_tree(n, parents, condition)
             } else {
-                for i in min..(pos+1) {
+                for i in min..(pos + 1) {
                     parents[pos] = i;
                     // change max deg so that 0 is the weakly highest degree node.
-                    let new_max_deg = if min == 0 && i != 0 && pos < max_deg { pos } else { max_deg };
-                    let min = if pos < max_deg - 1 { i } else { i.max(parents[(pos + 2) - max_deg] + 1)};
-                    let success = search_trees_rec(n, pos + 1, min, parents, condition, new_max_deg);
+                    let new_max_deg = if min == 0 && i != 0 && pos < max_deg {
+                        pos
+                    } else {
+                        max_deg
+                    };
+                    let min = if pos < max_deg - 1 {
+                        i
+                    } else {
+                        i.max(parents[(pos + 2) - max_deg] + 1)
+                    };
+                    let success =
+                        search_trees_rec(n, pos + 1, min, parents, condition, new_max_deg);
                     if success {
                         return true;
                     }
@@ -780,7 +932,7 @@ impl Controller {
             }
         }
 
-        let mut parents = vec![0; n-1];
+        let mut parents = vec![0; n - 1];
         let success = search_trees_rec(n, 0, 0, &mut parents, condition, max_degree.to_usize());
         if success {
             println!("Above tree found!")
@@ -788,7 +940,7 @@ impl Controller {
             println!("No tree found!")
         }
     }
-            
+
     fn test_sink_graph(&self, g: Graph, conditions: &[BoolOperation], find_all: bool) -> bool {
         let mut dossier = Dossier::new(Entity::Graph(g));
         let mut ann = AnnotationsBox::new();
@@ -825,7 +977,11 @@ impl Controller {
             Order::of_usize(n)
         }
         constructors[2].append(&mut vec![Raw(Complete(ous(2))), Raw(Empty(ous(2)))]);
-        constructors[3].append(&mut vec![Raw(Complete(ous(3))), Raw(Path(ous(3))), Raw(Empty(ous(3)))]);
+        constructors[3].append(&mut vec![
+            Raw(Complete(ous(3))),
+            Raw(Path(ous(3))),
+            Raw(Empty(ous(3))),
+        ]);
 
         for verts in 4..max_verts {
             let order = ous(verts);
@@ -847,7 +1003,7 @@ impl Controller {
 
         let mut verts = 4;
         let mut num_new_graphs = 0;
-        
+
         'main: loop {
             let mut new_constructors: Vec<Constructor> = vec![];
             let mut graphs: Vec<Graph> = vec![];
@@ -870,7 +1026,11 @@ impl Controller {
                             // Don't construct duplicate products.
                             if factor < verts / factor || i <= j {
                                 for product in ProductConstructor::all() {
-                                    let constr = Product(product, Box::new((*c1).to_owned()), Box::new((*c2).to_owned()));
+                                    let constr = Product(
+                                        product,
+                                        Box::new((*c1).to_owned()),
+                                        Box::new((*c2).to_owned()),
+                                    );
                                     let g = constr.new_entity().as_owned_graph();
                                     let mut is_already_there = false;
                                     'find_graph: for h in graphs.iter() {
@@ -881,7 +1041,9 @@ impl Controller {
                                     }
                                     if !is_already_there {
                                         // Actually test the graph
-                                        if self.test_sink_graph(g.clone(), conditions, find_all) && !find_all {
+                                        if self.test_sink_graph(g.clone(), conditions, find_all)
+                                            && !find_all
+                                        {
                                             break 'main;
                                         }
                                         graphs.push(g);
@@ -904,8 +1066,12 @@ impl Controller {
             for c in new_constructors.iter() {
                 constructors[verts].push((*c).to_owned());
             }
-            
-            println!("  Added kitchen sink graphs with {} vertices. There are {} of them.", verts, constructors[verts].len());
+
+            println!(
+                "  Added kitchen sink graphs with {} vertices. There are {} of them.",
+                verts,
+                constructors[verts].len()
+            );
             if num_new_graphs >= max_new_graphs {
                 break 'main;
             }
@@ -918,7 +1084,10 @@ impl Controller {
                 let nf = verts as f64;
                 random_constructors.push(Random(ErdosRenyi(ous(verts), 1.0 / nf)));
                 for i in (-1)..4 {
-                    random_constructors.push(Random(ErdosRenyi(ous(verts), (nf.ln() + (i as f64 * nf.ln().ln())) / nf)));
+                    random_constructors.push(Random(ErdosRenyi(
+                        ous(verts),
+                        (nf.ln() + (i as f64 * nf.ln().ln())) / nf,
+                    )));
                 }
                 random_constructors.push(Random(ErdosRenyi(ous(verts), 0.1)));
                 random_constructors.push(Random(ErdosRenyi(ous(verts), 0.2)));
@@ -987,6 +1156,11 @@ impl Controller {
 
 impl fmt::Display for Controller {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Constructor: {}\nOperations: [{}]", self.instruction, self.operations_string())
+        write!(
+            f,
+            "Constructor: {}\nOperations: [{}]",
+            self.instruction,
+            self.operations_string()
+        )
     }
 }

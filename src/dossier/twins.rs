@@ -1,7 +1,7 @@
-use crate::entity::*;
-use crate::entity::poset::*;
-use crate::entity::graph::*;
 use crate::entity::digraph::*;
+use crate::entity::graph::*;
+use crate::entity::poset::*;
+use crate::entity::*;
 
 use utilities::vertex_tools::*;
 
@@ -9,14 +9,14 @@ use utilities::vertex_tools::*;
  * Elements are twin elements if they cannot be distinguished by their
  * neighbours; e.g. they cover and are covered by the same elements,
  * or have the same adj, or similar.
- * 
+ *
  * Algorithms could probably be n log n by e.g. sorting a list of vertex sets.
  */
 
 fn poset_has_twin_elements(p: &Poset) -> bool {
     for (u, v) in p.iter_pairs() {
         if p.upper_covers[u] == p.upper_covers[v] && p.lower_covers[u] == p.lower_covers[v] {
-            return true
+            return true;
         }
     }
     false
@@ -25,7 +25,7 @@ fn poset_has_twin_elements(p: &Poset) -> bool {
 fn graph_has_twin_elements(g: &Graph) -> bool {
     for (u, v) in g.iter_pairs() {
         if g.adj_list[u].len() != g.adj_list[v].len() {
-            continue
+            continue;
         }
         let mut u_nbrs = VertexSet::new(g.n);
         let mut v_nbrs = VertexSet::new(g.n);
@@ -36,7 +36,7 @@ fn graph_has_twin_elements(g: &Graph) -> bool {
             v_nbrs.add_vert(*x);
         }
         if u_nbrs == v_nbrs {
-            return true
+            return true;
         }
     }
     false
@@ -44,8 +44,10 @@ fn graph_has_twin_elements(g: &Graph) -> bool {
 
 fn digraph_has_twin_elements(d: &Digraph) -> bool {
     for (u, v) in d.iter_pairs() {
-        if d.out_adj_list[u].len() != d.out_adj_list[v].len() || d.in_adj_list[u].len() != d.in_adj_list[v].len() {
-            continue
+        if d.out_adj_list[u].len() != d.out_adj_list[v].len()
+            || d.in_adj_list[u].len() != d.in_adj_list[v].len()
+        {
+            continue;
         }
         let mut u_in_nbrs = VertexSet::new(d.n);
         let mut v_in_nbrs = VertexSet::new(d.n);
@@ -64,7 +66,7 @@ fn digraph_has_twin_elements(d: &Digraph) -> bool {
             v_out_nbrs.add_vert(*x);
         }
         if u_in_nbrs == v_in_nbrs && u_out_nbrs == v_out_nbrs {
-            return true
+            return true;
         }
     }
     false
@@ -87,20 +89,21 @@ pub fn has_twin_elements(e: &Entity) -> bool {
  */
 fn has_almost_twins(p: &Poset, should_include_maximal: bool) -> bool {
     for (u, v) in p.iter_pairs() {
-        if should_include_maximal || !(p.upper_covers[u].is_empty() || p.upper_covers[v].is_empty()) {
+        if should_include_maximal || !(p.upper_covers[u].is_empty() || p.upper_covers[v].is_empty())
+        {
             if p.upper_covers[u] == p.upper_covers[v] {
                 // We need that the downsets subtract to give chains
                 let x = p.downsets[u].setminus(p.downsets[v]);
                 let y = p.downsets[v].setminus(p.downsets[u]);
                 if p.is_chain(x) && p.is_chain(y) {
-                    return true
+                    return true;
                 }
             } else if p.lower_covers[u] == p.lower_covers[v] {
                 // We need that the upsets subtract to give chains
                 let x = p.upsets[u].setminus(p.upsets[v]);
                 let y = p.upsets[v].setminus(p.upsets[u]);
                 if p.is_chain(x) && p.is_chain(y) {
-                    return true
+                    return true;
                 }
             }
         }

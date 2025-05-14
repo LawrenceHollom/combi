@@ -1,6 +1,6 @@
-use rand::{thread_rng, Rng};
 use queues::*;
-use utilities::{*, vertex_tools::*, edge_tools::*};
+use rand::{thread_rng, Rng};
+use utilities::{edge_tools::*, vertex_tools::*, *};
 
 use crate::entity::graph::*;
 
@@ -23,7 +23,7 @@ pub struct EdgeIterator<'a> {
 }
 
 impl Digraph {
-    pub fn of_matrix(adj: VertexVec<VertexVec<bool>>, parameters: Vec<f64>) -> Digraph {
+    pub fn of_matrix(adj: VertexVec<VertexVec<bool>>, parameters: Vec<f64>) -> Self {
         let n = adj.len();
         let mut out_adj_list = VertexVec::new(n, &vec![]);
         let mut in_adj_list = VertexVec::new(n, &vec![]);
@@ -41,10 +41,18 @@ impl Digraph {
             }
         }
 
-        Digraph { n, adj, out_adj_list, in_adj_list, out_deg, in_deg, parameters }
+        Self {
+            n,
+            adj,
+            out_adj_list,
+            in_adj_list,
+            out_deg,
+            in_deg,
+            parameters,
+        }
     }
 
-    pub fn of_out_adj_list(out_adj_list: VertexVec<Vec<Vertex>>, parameters: Vec<f64>) -> Digraph {
+    pub fn of_out_adj_list(out_adj_list: VertexVec<Vec<Vertex>>, parameters: Vec<f64>) -> Self {
         let n = out_adj_list.len();
         let mut in_adj_list = VertexVec::new(n, &vec![]);
         let mut out_deg = VertexVec::new(n, &Degree::ZERO);
@@ -60,7 +68,15 @@ impl Digraph {
             }
         }
 
-        Digraph { n, adj, out_adj_list, in_adj_list, out_deg, in_deg, parameters }
+        Self {
+            n,
+            adj,
+            out_adj_list,
+            in_adj_list,
+            out_deg,
+            in_deg,
+            parameters,
+        }
     }
 
     pub fn undirect(&self) -> Graph {
@@ -69,17 +85,23 @@ impl Digraph {
 
     pub fn reverse_edge(&mut self, e: Edge) {
         let (x, y) = if self.adj[e.fst()][e.snd()] {
-                (e.fst(), e.snd())
-            } else {
-                (e.snd(), e.fst())
-            };
+            (e.fst(), e.snd())
+        } else {
+            (e.snd(), e.fst())
+        };
         if self.adj[x][y] && !self.adj[y][x] {
             self.adj[x][y] = false;
             self.adj[y][x] = true;
 
-            let sta = self.out_adj_list[x].iter().position(|z| *z == y).expect("wut");
+            let sta = self.out_adj_list[x]
+                .iter()
+                .position(|z| *z == y)
+                .expect("wut");
             self.out_adj_list[x].remove(sta);
-            let sta = self.in_adj_list[y].iter().position(|z| *z == x).expect("wut");
+            let sta = self.in_adj_list[y]
+                .iter()
+                .position(|z| *z == x)
+                .expect("wut");
             self.in_adj_list[y].remove(sta);
 
             self.out_adj_list[y].push(x);
@@ -95,8 +117,8 @@ impl Digraph {
      * Randomly orient edges, with a set probability that an edge is in
      * fact bidirectional
      */
-    pub fn random_semiorientation(g: &Graph, bidirectional_prob: f64) -> Digraph {
-        let mut rng = thread_rng();   
+    pub fn random_semiorientation(g: &Graph, bidirectional_prob: f64) -> Self {
+        let mut rng = thread_rng();
         let mut adj = VertexVec::new(g.n, &VertexVec::new(g.n, &false));
         for (i, j) in g.iter_pairs() {
             if g.adj[i][j] {
@@ -110,11 +132,11 @@ impl Digraph {
                 }
             }
         }
-        Digraph::of_matrix(adj, vec![bidirectional_prob])
+        Self::of_matrix(adj, vec![bidirectional_prob])
     }
 
-    pub fn random_orientation(g: &Graph) -> Digraph {
-        let mut rng = thread_rng();   
+    pub fn random_orientation(g: &Graph) -> Self {
+        let mut rng = thread_rng();
         let mut adj = VertexVec::new(g.n, &VertexVec::new(g.n, &false));
         for (i, j) in g.iter_pairs() {
             if g.adj[i][j] {
@@ -125,7 +147,7 @@ impl Digraph {
                 }
             }
         }
-        Digraph::of_matrix(adj, vec![])
+        Self::of_matrix(adj, vec![])
     }
 
     /**
@@ -148,7 +170,7 @@ impl Digraph {
                 }
             }
             if num_found < self.n.to_usize() {
-                return false
+                return false;
             }
         }
         true
@@ -176,8 +198,20 @@ impl Digraph {
 
     pub fn print(&self) {
         println!("n: {}", self.n);
-        println!("in degs: {:?}", self.in_deg.iter().map(|x| x.to_usize()).collect::<Vec<usize>>());
-        println!("out degs: {:?}", self.out_deg.iter().map(|x| x.to_usize()).collect::<Vec<usize>>());
+        println!(
+            "in degs: {:?}",
+            self.in_deg
+                .iter()
+                .map(|x| x.to_usize())
+                .collect::<Vec<usize>>()
+        );
+        println!(
+            "out degs: {:?}",
+            self.out_deg
+                .iter()
+                .map(|x| x.to_usize())
+                .collect::<Vec<usize>>()
+        );
         println!("parameters: {:?}", self.parameters);
         for u in self.n.iter_verts() {
             if self.out_deg[u].at_least(1) {

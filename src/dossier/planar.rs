@@ -1,13 +1,20 @@
 use crate::entity::graph::*;
 
-use utilities::vertex_tools::*;
-use utilities::edge_tools::*;
 use utilities::component_tools::*;
+use utilities::edge_tools::*;
+use utilities::vertex_tools::*;
 
 use std::collections::HashSet;
 
-fn dmp_embed_edge(g: &Graph, coprime: &mut VertexVec<bool>, prime_edges: &mut VertexVec<VertexVec<bool>>,
-        faces: &mut HashSet<Vec<Vertex>>, admissible_face: &Vec<Vertex>, e: Edge, depth: u32) -> bool {
+fn dmp_embed_edge(
+    g: &Graph,
+    coprime: &mut VertexVec<bool>,
+    prime_edges: &mut VertexVec<VertexVec<bool>>,
+    faces: &mut HashSet<Vec<Vertex>>,
+    admissible_face: &Vec<Vertex>,
+    e: Edge,
+    depth: u32,
+) -> bool {
     let i = e.fst();
     let j = e.snd();
     prime_edges[i][j] = true;
@@ -43,9 +50,15 @@ fn dmp_embed_edge(g: &Graph, coprime: &mut VertexVec<bool>, prime_edges: &mut Ve
     dmp_rec(g, coprime, prime_edges, faces, depth + 1)
 }
 
-fn dmp_embed_fragment(g: &Graph, coprime: &mut VertexVec<bool>, prime_edges: &mut VertexVec<VertexVec<bool>>,
-        faces: &mut HashSet<Vec<Vertex>>, admissible_face: &Vec<Vertex>,
-        contact_edge: Edge, depth: u32) -> bool {
+fn dmp_embed_fragment(
+    g: &Graph,
+    coprime: &mut VertexVec<bool>,
+    prime_edges: &mut VertexVec<VertexVec<bool>>,
+    faces: &mut HashSet<Vec<Vertex>>,
+    admissible_face: &Vec<Vertex>,
+    contact_edge: Edge,
+    depth: u32,
+) -> bool {
     // Flood fill to find a path through the fragment from u to v.
     let contact_u = contact_edge.fst();
     let contact_v = contact_edge.snd();
@@ -93,7 +106,7 @@ fn dmp_embed_fragment(g: &Graph, coprime: &mut VertexVec<bool>, prime_edges: &mu
     for u in admissible_face.iter().take(max).skip(min + 1) {
         face2.push(*u);
     }
-    
+
     // This could surely be rewritten to avoid the code repetition.
     if v_index < u_index {
         for x in alpha_path.iter() {
@@ -121,8 +134,13 @@ fn dmp_embed_fragment(g: &Graph, coprime: &mut VertexVec<bool>, prime_edges: &mu
 }
 
 // Actually run the DMP algorithm recursively
-fn dmp_rec(g: &Graph, coprime: &mut VertexVec<bool>, prime_edges: &mut VertexVec<VertexVec<bool>>, 
-        faces: &mut HashSet<Vec<Vertex>>, depth: u32) -> bool {
+fn dmp_rec(
+    g: &Graph,
+    coprime: &mut VertexVec<bool>,
+    prime_edges: &mut VertexVec<VertexVec<bool>>,
+    faces: &mut HashSet<Vec<Vertex>>,
+    depth: u32,
+) -> bool {
     if depth > 10000 {
         println!("TOO DEEP!");
         g.print_matrix(false, true);
@@ -198,8 +216,15 @@ fn dmp_rec(g: &Graph, coprime: &mut VertexVec<bool>, prime_edges: &mut VertexVec
         }
         if num_found == 1 {
             // We can embed this edge and move on.
-            return dmp_embed_edge(g, coprime, prime_edges, &mut faces.to_owned(), 
-                admissible_face, *e, depth);
+            return dmp_embed_edge(
+                g,
+                coprime,
+                prime_edges,
+                &mut faces.to_owned(),
+                admissible_face,
+                *e,
+                depth,
+            );
         }
     }
 
@@ -232,7 +257,8 @@ fn dmp_rec(g: &Graph, coprime: &mut VertexVec<bool>, prime_edges: &mut VertexVec
                     admissible_face = face;
                     if frag_index == 0 {
                         first_frag_admissible_face = face;
-                        first_frag_contact_edge = Some(Edge::of_pair(contact_verts[0], contact_verts[1]));
+                        first_frag_contact_edge =
+                            Some(Edge::of_pair(contact_verts[0], contact_verts[1]));
                     }
                 } else if num_found == 2 {
                     break 'test_faces;
@@ -245,18 +271,39 @@ fn dmp_rec(g: &Graph, coprime: &mut VertexVec<bool>, prime_edges: &mut VertexVec
         }
         if num_found == 1 {
             // We need to embed a path from this fragment.
-            return dmp_embed_fragment(g, coprime, prime_edges, &mut faces.to_owned(), 
-                admissible_face, first_frag_contact_edge.unwrap(), depth);
+            return dmp_embed_fragment(
+                g,
+                coprime,
+                prime_edges,
+                &mut faces.to_owned(),
+                admissible_face,
+                first_frag_contact_edge.unwrap(),
+                depth,
+            );
         }
     }
-    
+
     // We still haven't embedded anything, so we need to just embed something and recurse
     if num_edge_frags > 0 {
-        dmp_embed_edge(g, coprime, prime_edges, &mut faces.to_owned(), 
-            first_edge_admissible_face, edge_fragments[0], depth)
+        dmp_embed_edge(
+            g,
+            coprime,
+            prime_edges,
+            &mut faces.to_owned(),
+            first_edge_admissible_face,
+            edge_fragments[0],
+            depth,
+        )
     } else {
-        dmp_embed_fragment(g, coprime, prime_edges, &mut faces.to_owned(), 
-            first_frag_admissible_face, first_frag_contact_edge.unwrap(), depth)
+        dmp_embed_fragment(
+            g,
+            coprime,
+            prime_edges,
+            &mut faces.to_owned(),
+            first_frag_admissible_face,
+            first_frag_contact_edge.unwrap(),
+            depth,
+        )
     }
 }
 
@@ -265,7 +312,8 @@ fn is_two_connected_planar(g: &Graph) -> bool {
     // Find a cycle of G.
     let mut cocycle = VertexVec::new(g.n, &true);
     let mut face = vec![];
-    let mut cycle_edges: VertexVec<VertexVec<bool>> = VertexVec::new(g.n, &VertexVec::new(g.n, &false));
+    let mut cycle_edges: VertexVec<VertexVec<bool>> =
+        VertexVec::new(g.n, &VertexVec::new(g.n, &false));
     let mut head = Vertex::ZERO;
     let mut prev = None;
     // This probably has to succeed due to 2-connectedness.
@@ -309,9 +357,9 @@ fn is_component_planar_rec(g: &Graph, filter: &mut VertexVec<bool>) -> bool {
     }
 
     // Check it's not obviously planar
-    let verts= filter.iter().filter(|x| **x).count();
+    let verts = filter.iter().filter(|x| **x).count();
     let edges = g.filtered_size(filter);
-    if verts <= 4 { 
+    if verts <= 4 {
         true
     } else if edges > 3 * verts - 6 {
         false
@@ -354,7 +402,6 @@ fn is_component_planar_rec(g: &Graph, filter: &mut VertexVec<bool>) -> bool {
                 is_planar
             }
         }
-        
     }
 }
 

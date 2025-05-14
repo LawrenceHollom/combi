@@ -4,31 +4,31 @@ use colored::*;
 pub struct EquivalenceClass(usize);
 
 impl EquivalenceClass {
-    pub const ZERO: EquivalenceClass = EquivalenceClass(0);
+    pub const ZERO: Self = Self(0);
 
-    pub fn new(c: usize) -> EquivalenceClass {
-        EquivalenceClass(c)
+    pub fn new(c: usize) -> Self {
+        Self(c)
     }
 
-	pub fn incr_inplace(&mut self) {
-		self.0 += 1
-	}
-
-    pub fn incr(&self) -> EquivalenceClass {
-        EquivalenceClass(self.0 + 1)
+    pub fn incr_inplace(&mut self) {
+        self.0 += 1
     }
 
-	pub fn decr_inplace(&mut self) {
-		self.0 -= 1
-	}
-
-    pub fn decr(&self) -> EquivalenceClass {
-        EquivalenceClass(self.0 - 1)
+    pub fn incr(&self) -> Self {
+        Self(self.0 + 1)
     }
 
-	pub fn to_string(&self) -> String {
-		self.0.to_string()
-	}
+    pub fn decr_inplace(&mut self) {
+        self.0 -= 1
+    }
+
+    pub fn decr(&self) -> Self {
+        Self(self.0 - 1)
+    }
+
+    pub fn to_string(&self) -> String {
+        self.0.to_string()
+    }
 
     pub fn to_char(&self) -> u8 {
         self.0 as u8 + b'0'
@@ -55,8 +55,8 @@ impl EquivalenceClass {
 pub struct EquivalenceClassSet(u64);
 
 impl EquivalenceClassSet {
-    pub fn new() -> EquivalenceClassSet {
-        EquivalenceClassSet(0)
+    pub fn new() -> Self {
+        Self(0)
     }
 
     pub fn add(&mut self, c: EquivalenceClass) {
@@ -72,15 +72,15 @@ impl EquivalenceClassSet {
 pub struct FastVec(u128);
 
 impl FastVec {
-    pub fn new() -> FastVec {
-        FastVec(0)
+    pub fn new() -> Self {
+        Self(0)
     }
 
-    pub fn of_array(arr: &[usize; 2]) -> FastVec {
-        FastVec(((arr[1] << 5) + arr[0]) as u128)
+    pub fn of_array(arr: &[usize; 2]) -> Self {
+        Self(((arr[1] << 5) + arr[0]) as u128)
     }
 
-    pub fn of_range(start: usize, skip: usize, num: usize) -> FastVec {
+    pub fn of_range(start: usize, skip: usize, num: usize) -> Self {
         let mut v = Self::new();
         for index in 0..num {
             v.set(index, EquivalenceClass(start + index * skip))

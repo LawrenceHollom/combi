@@ -1,16 +1,16 @@
 use std::fmt;
 
 pub mod bool_operation;
-pub mod rational_operation;
 pub mod int_operation;
-pub mod unit_operation;
+pub mod rational_operation;
 pub mod string_list_operation;
+pub mod unit_operation;
 
 use bool_operation::*;
-use rational_operation::*;
 use int_operation::*;
-use unit_operation::*;
+use rational_operation::*;
 use string_list_operation::*;
+use unit_operation::*;
 
 pub enum Operation {
     Int(IntOperation),
@@ -21,8 +21,9 @@ pub enum Operation {
 }
 
 impl Operation {
-    pub fn of_string(text: &str) -> Operation {
-        IntOperation::of_string_result(text).map(Operation::Int)
+    pub fn of_string(text: &str) -> Self {
+        IntOperation::of_string_result(text)
+            .map(Operation::Int)
             .or_else(|| BoolOperation::of_string_result(text).map(Operation::Bool))
             .or_else(|| RationalOperation::of_string_result(text).map(Operation::Rational))
             .or_else(|| UnitOperation::of_string_result(text).map(Operation::Unit))

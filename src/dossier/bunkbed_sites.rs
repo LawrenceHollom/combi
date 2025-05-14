@@ -1,4 +1,4 @@
-use crate::entity::{graph::*, digraph::Digraph};
+use crate::entity::{digraph::Digraph, graph::*};
 
 use rand::{thread_rng, Rng};
 use utilities::vertex_tools::*;
@@ -17,7 +17,7 @@ enum VertexState {
 }
 
 impl VertexState {
-    fn flip(&self) -> VertexState {
+    fn flip(&self) -> Self {
         use VertexState::*;
         match self {
             DOWN => UP,
@@ -26,7 +26,7 @@ impl VertexState {
         }
     }
 
-    fn connects_to(&self, other: VertexState) -> bool {
+    fn connects_to(&self, other: Self) -> bool {
         use VertexState::*;
         match self {
             DOWN => other != UP,
@@ -43,7 +43,7 @@ struct Counts {
 }
 
 impl Counts {
-    const ZERO: Counts = Counts { down: 0, up: 0 };
+    const ZERO: Self = Self { down: 0, up: 0 };
 
     fn add_inplace(&mut self, state: VertexState) {
         use VertexState::*;
@@ -51,7 +51,7 @@ impl Counts {
             DOWN => self.down += 1,
             UP => self.up += 1,
             POST => {
-                self.down += 1; 
+                self.down += 1;
                 self.up += 1
             }
         }
@@ -62,7 +62,12 @@ impl Counts {
     }
 }
 
-fn process_config(g: &Graph, states: &VertexVec<VertexState>, counts: &mut VertexVec<Counts>, unreachable: VertexSet) {
+fn process_config(
+    g: &Graph,
+    states: &VertexVec<VertexState>,
+    counts: &mut VertexVec<Counts>,
+    unreachable: VertexSet,
+) {
     // Check what is reachable.
     let mut found = VertexVec::new(g.n, &false);
     found[Vertex::ZERO] = true;
@@ -94,7 +99,11 @@ fn process_config(g: &Graph, states: &VertexVec<VertexState>, counts: &mut Verte
 fn get_counts_conditional(g: &Graph, unreachable: VertexSet) -> VertexVec<Counts> {
     use VertexState::*;
     // could read posts from user input?
-    let posts = vec![Vertex::of_usize(1), Vertex::of_usize(4), Vertex::of_usize(7)];
+    let posts = [
+        Vertex::of_usize(1),
+        Vertex::of_usize(4),
+        Vertex::of_usize(7),
+    ];
     let mut states = VertexVec::new(g.n, &DOWN);
     for post in posts.iter() {
         if post.less_than(g.n) {
@@ -129,7 +138,6 @@ pub fn print_counts(g: &Graph) {
     println!("Counts:");
     for (v, count) in counts.iter_enum() {
         println!("{}: {:?}", v, count);
-
     }
 }
 
@@ -155,7 +163,7 @@ pub fn has_bad_conditioning(g: &Graph) -> bool {
 }
 
 /**
- * This returns the bunkbed signatures of the graph: assuming that 
+ * This returns the bunkbed signatures of the graph: assuming that
  * zero is the start point, this is the hypercube of which configs
  * lead to a particular vertex being reachable.
  * For the proof of the conjecture, there needs to be a closed,
@@ -169,7 +177,7 @@ pub fn signatures(g: &Graph) -> Vec<String> {
     let mut reachable = VertexVec::new(g.n, &vec![false; pow]);
     let mut is_post = VertexVec::new(g.n, &false);
     let mut rng = thread_rng();
-    let b = Digraph::random_semiorientation(&g, 0.3333);
+    let b = Digraph::random_semiorientation(g, 0.3333);
     for v in g.iter_verts() {
         if rng.gen_bool(0.3) {
             is_post[v] = true;
@@ -237,7 +245,7 @@ pub fn signatures(g: &Graph) -> Vec<String> {
             let mut new_code: u128 = 0;
             for (s_code, b) in reachable[v].iter().enumerate() {
                 if *b {
-                    let s = VertexSet::of_int(s_code as u128, g.n).permute(&sigma);
+                    let s = VertexSet::of_int(s_code as u128, g.n).permute(sigma);
                     new_code += 1 << s.to_usize();
                 }
             }

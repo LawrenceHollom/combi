@@ -112,8 +112,8 @@ pub fn max_rigid_component(g: &Graph) -> u32 {
         if m == 0 {
             break 'combine;
         }
-        for i in 0..m-1 {
-            for j in (i+1)..m {
+        for i in 0..m - 1 {
+            for j in (i + 1)..m {
                 if components[i].intersection(&components[j]).count() >= 2 {
                     let comp_j_copy: HashSet<Vertex> = components[j].iter().copied().collect();
                     components[i].extend(&comp_j_copy);

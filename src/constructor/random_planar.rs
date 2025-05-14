@@ -8,7 +8,7 @@ pub fn new_triangulation(order: Order) -> Graph {
     let n = order.to_usize();
     let mut rng = thread_rng();
     let mut faces = vec![[0, 1, 2], [0, 1, 3], [0, 2, 3], [1, 2, 3]];
-    let pairs = vec![(0,1), (1,0), (0,2), (2,0), (1,2), (2,1)];
+    let pairs = [(0, 1), (1, 0), (0, 2), (2, 0), (1, 2), (2, 1)];
 
     for v in 4..n {
         // Add a new vertex
@@ -26,7 +26,10 @@ pub fn new_triangulation(order: Order) -> Graph {
         }
     }
 
-    Graph::of_adj_list(adj_list, Constructor::Random(crate::constructor::RandomConstructor::Triangulation(order)))
+    Graph::of_adj_list(
+        adj_list,
+        Constructor::Random(crate::constructor::RandomConstructor::Triangulation(order)),
+    )
 }
 
 pub fn new_maximal(order: Order) -> Graph {
@@ -35,7 +38,7 @@ pub fn new_maximal(order: Order) -> Graph {
     let mut next_vert_around_face = vec![n; n];
     let mut adj = vec![vec![false; n]; n];
     let mut adj_list = VertexVec::new(order, &vec![]);
-    let pairs = vec![(0,1), (1,0), (0,2), (2,0), (1,2), (2,1)];
+    let pairs = [(0, 1), (1, 0), (0, 2), (2, 0), (1, 2), (2, 1)];
 
     for (i, j) in pairs.iter() {
         adj[*i][*j] = true;
@@ -57,9 +60,11 @@ pub fn new_maximal(order: Order) -> Graph {
     }
 
     // We now need to add n-3 more edges to actually make it maximal.
-    for _ in 0..(n-3) {
+    for _ in 0..(n - 3) {
         let mut u = rng.gen_range(0..n);
-        while next_vert_around_face[u] == n || adj[u][next_vert_around_face[next_vert_around_face[u]]] {
+        while next_vert_around_face[u] == n
+            || adj[u][next_vert_around_face[next_vert_around_face[u]]]
+        {
             u = (u + 1) % n;
         }
         let v = next_vert_around_face[u];
@@ -78,7 +83,10 @@ pub fn new_maximal(order: Order) -> Graph {
         }
     }
 
-    Graph::of_adj_list(adj_list, Constructor::Random(crate::constructor::RandomConstructor::MaximalPlanar(order)))
+    Graph::of_adj_list(
+        adj_list,
+        Constructor::Random(crate::constructor::RandomConstructor::MaximalPlanar(order)),
+    )
 }
 
 pub fn new_conditioned(order: Order, max_deg: Option<Degree>, min_girth: Option<usize>) -> Graph {
@@ -115,7 +123,11 @@ pub fn k_gon_gluing(order: Order, k: usize) -> Graph {
         }
         // pick a random overlap length.
         // This will crash due to usize underflow.
-        let min = if k + num_placed > n + 1 { k + num_placed - n } else { 2 };
+        let min = if k + num_placed > n + 1 {
+            k + num_placed - n
+        } else {
+            2
+        };
         let overlap_len = rng.gen_range(min..=k.min(outer_face.len() - 1));
         // pick the interval to connect to
         let outer_len = outer_face.len();
@@ -127,7 +139,8 @@ pub fn k_gon_gluing(order: Order, k: usize) -> Graph {
             new_face.push(outer_face[pos]);
         }
         for i in 0..(outer_len - overlap_len + 2) {
-            new_outer_face.push(outer_face[(outer_len + interval_start + overlap_len + i - 1) % outer_len]);
+            new_outer_face
+                .push(outer_face[(outer_len + interval_start + overlap_len + i - 1) % outer_len]);
         }
         for _i in 0..(k - overlap_len) {
             new_face.push(next_vert);
@@ -139,7 +152,10 @@ pub fn k_gon_gluing(order: Order, k: usize) -> Graph {
         num_placed += k - overlap_len;
         outer_face = new_outer_face;
     }
-    let g = Graph::of_adj_list(adj_list, Constructor::Random(RandomConstructor::PlanarGons(order, k)));
+    let g = Graph::of_adj_list(
+        adj_list,
+        Constructor::Random(RandomConstructor::PlanarGons(order, k)),
+    );
     if !g.is_adj_commutative() {
         panic!("Not commutative!");
     }

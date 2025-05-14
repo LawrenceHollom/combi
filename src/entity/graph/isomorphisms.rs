@@ -1,5 +1,5 @@
-use utilities::vertex_tools::*;
 use crate::entity::graph::*;
+use utilities::vertex_tools::*;
 
 fn codeg_code(u: Vertex, v: Vertex) -> usize {
     Edge::of_pair(u, v).encode()
@@ -32,14 +32,21 @@ fn is_map_isomorphism(h: &Graph, g: &Graph, map: &VertexVec<Option<Vertex>>) -> 
             }
             (Some(_), None) | (None, Some(_)) => return false,
             (None, None) => return false,
-
         }
     }
     true
 }
 
-fn is_isomorphic_to_rec(h: &Graph, g: &Graph, ordering: &VertexVec<Vertex>, map: &mut VertexVec<Option<Vertex>>, 
-        covered: &mut VertexVec<bool>, node: Vertex, self_codegs: &Vec<usize>, g_codegs: &Vec<usize>) -> bool {
+fn is_isomorphic_to_rec(
+    h: &Graph,
+    g: &Graph,
+    ordering: &VertexVec<Vertex>,
+    map: &mut VertexVec<Option<Vertex>>,
+    covered: &mut VertexVec<bool>,
+    node: Vertex,
+    self_codegs: &Vec<usize>,
+    g_codegs: &Vec<usize>,
+) -> bool {
     if node.is_n(h.n) {
         is_map_isomorphism(h, g, map)
     } else {
@@ -50,8 +57,9 @@ fn is_isomorphic_to_rec(h: &Graph, g: &Graph, ordering: &VertexVec<Vertex>, map:
             if h.deg[v] == g.deg[i] && !covered[i] {
                 let mut adj_check = true;
                 'adj_test: for u in h.adj_list[v].iter() {
-                    if map[*u].map_or(false, |x| !g.adj[x][i]
-                            || self_codegs[codeg_code(*u, v)] != g_codegs[codeg_code(x, i)]) {
+                    if map[*u].is_some_and(|x| {
+                        !g.adj[x][i] || self_codegs[codeg_code(*u, v)] != g_codegs[codeg_code(x, i)]
+                    }) {
                         adj_check = false;
                         break 'adj_test;
                     }
@@ -59,7 +67,16 @@ fn is_isomorphic_to_rec(h: &Graph, g: &Graph, ordering: &VertexVec<Vertex>, map:
                 if adj_check {
                     map[v] = Some(i);
                     covered[i] = true;
-                    if is_isomorphic_to_rec(h, g, ordering, map, covered, node.incr(), self_codegs, g_codegs) {
+                    if is_isomorphic_to_rec(
+                        h,
+                        g,
+                        ordering,
+                        map,
+                        covered,
+                        node.incr(),
+                        self_codegs,
+                        g_codegs,
+                    ) {
                         is_any_iso = true;
                         break 'find_iso;
                     }
@@ -92,7 +109,11 @@ pub fn is_isomorphic_to(h: &Graph, g: &Graph) -> bool {
     self_codegs.sort();
     g_codegs.sort();
 
-    if !self_codegs.iter().zip(g_codegs.iter()).all(|(x, y)| *x == *y) {
+    if !self_codegs
+        .iter()
+        .zip(g_codegs.iter())
+        .all(|(x, y)| *x == *y)
+    {
         //println!("Gottem! {} ~ {}", h.constructor, g.constructor);
         return false;
     }
@@ -107,7 +128,7 @@ pub fn is_isomorphic_to(h: &Graph, g: &Graph) -> bool {
         return false;
     }
 
-    if n > 15 { 
+    if n > 15 {
         // give up; would be too slow
         return false;
     }
@@ -133,14 +154,22 @@ pub fn is_isomorphic_to(h: &Graph, g: &Graph) -> bool {
                             let _ = q.add(*v);
                         }
                     }
-                },
+                }
                 Err(_) => break 'bfs,
             }
         }
     }
 
-    let is_iso = is_isomorphic_to_rec(h, g, &ordering, &mut VertexVec::new(h.n, &None), &mut VertexVec::new(h.n, &false), Vertex::ZERO,
-            &codegree_sequence(h), &codegree_sequence(g));
+    let is_iso = is_isomorphic_to_rec(
+        h,
+        g,
+        &ordering,
+        &mut VertexVec::new(h.n, &None),
+        &mut VertexVec::new(h.n, &false),
+        Vertex::ZERO,
+        &codegree_sequence(h),
+        &codegree_sequence(g),
+    );
     if !is_iso {
         println!("Missed: {} !~ {}", h.constructor, g.constructor);
     }

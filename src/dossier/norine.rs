@@ -1,9 +1,14 @@
-use std::{io::{self, Write}, ops::{Index, IndexMut}, time::SystemTime, u32};
+use std::{
+    io::{self, Write},
+    ops::{Index, IndexMut},
+    time::SystemTime,
+    u32,
+};
 
 use component_tools::*;
 use queues::*;
 use rand::{seq::SliceRandom, thread_rng, Rng};
-use utilities::{*, edge_tools::*, rational::Rational, vertex_tools::*};
+use utilities::{edge_tools::*, rational::Rational, vertex_tools::*, *};
 
 use crate::entity::graph::*;
 
@@ -14,7 +19,7 @@ enum Colour {
 }
 
 impl Colour {
-    fn of_bool(x: bool) -> Colour {
+    fn of_bool(x: bool) -> Self {
         use Colour::*;
         if x {
             Red
@@ -23,7 +28,7 @@ impl Colour {
         }
     }
 
-    fn other(c: Colour) -> Colour {
+    fn other(c: Self) -> Self {
         use Colour::*;
         match c {
             Red => Blue,
@@ -39,11 +44,8 @@ struct ColourPair {
 }
 
 impl ColourPair {
-    fn new() -> ColourPair {
-        ColourPair {
-            r: 1000,
-            b: 1000,
-        }
+    fn new() -> Self {
+        Self { r: 1000, b: 1000 }
     }
 
     fn min(&self) -> u32 {
@@ -84,8 +86,8 @@ struct Distances {
 }
 
 impl Distances {
-    fn of_pairs(blue_dists: ColourPair, red_dists: ColourPair) -> Distances {
-        Distances {
+    fn of_pairs(blue_dists: ColourPair, red_dists: ColourPair) -> Self {
+        Self {
             from_red: red_dists,
             from_blue: blue_dists,
         }
@@ -112,7 +114,7 @@ fn distance_to_antipode(g: &Graph, v: Vertex, reds: &BigEdgeSet, print_debug: bo
     let mut blue_dists = VertexVec::new(g.n, &ColourPair::new());
     // Red dists if for paths starting with a red edge.
     let mut red_dists = VertexVec::new(g.n, &ColourPair::new());
-    
+
     // Set up the distances with the first steps from v.
     for u_sta in g.adj_list[Vertex::ZERO].iter() {
         let u = u_sta.xor(v);
@@ -129,7 +131,13 @@ fn distance_to_antipode(g: &Graph, v: Vertex, reds: &BigEdgeSet, print_debug: bo
     'iter_verts: for u_sta in g.iter_verts().skip(1) {
         let u = u_sta.xor(v);
         if print_debug {
-            println!("u_sta = {} (b = {}), u = {} (b = {})", u_sta, u_sta.to_binary_string(), u, u.to_binary_string());
+            println!(
+                "u_sta = {} (b = {}), u = {} (b = {})",
+                u_sta,
+                u_sta.to_binary_string(),
+                u,
+                u.to_binary_string()
+            );
         }
         if g.adj[Vertex::ZERO][u_sta] {
             // We don't go through nbrs of ZERO again, as they've already been done.
@@ -143,7 +151,7 @@ fn distance_to_antipode(g: &Graph, v: Vertex, reds: &BigEdgeSet, print_debug: bo
             let e = Edge::of_pair(u, *w);
             let e_col = Colour::of_bool(reds.has_edge(e));
             let other_col = Colour::other(e_col);
-            
+
             let new_red_dist = red_dists[*w][e_col].min(red_dists[*w][other_col] + 1);
             if new_red_dist < red_dists[u][e_col] {
                 red_dists[u][e_col] = new_red_dist;
@@ -178,7 +186,7 @@ fn is_colouring_representative(g: &Graph, indexer: &EdgeIndexer, reds: EdgeSet) 
         if is_red {
             // Can't go red and then back again.
             if !reds.has_edge(e, indexer) {
-                return false
+                return false;
             }
         } else if reds.has_edge(e, indexer) {
             is_red = true;
@@ -201,7 +209,7 @@ fn is_colouring_representative(g: &Graph, indexer: &EdgeIndexer, reds: EdgeSet) 
             }
         }
         if this_num_blue > num_blue {
-            return false
+            return false;
         }
     }
 
@@ -242,7 +250,7 @@ fn is_choosable(g: &Graph, indexer: &EdgeIndexer, reds: EdgeSet) -> bool {
             let v_e = Edge::of_pair(v, v_prime);
             let u_prime = u.xor(xorand);
             let u_e = Edge::of_pair(u, u_prime);
-            
+
             // Record for which directions we get red or blue
             if reds.has_edge(v_e, indexer) {
                 v_reds.add_vert(xorand);
@@ -259,13 +267,13 @@ fn is_choosable(g: &Graph, indexer: &EdgeIndexer, reds: EdgeSet) -> bool {
         }
 
         if v_reds.is_empty() || v_blues.is_empty() || u_reds.is_empty() || u_blues.is_empty() {
-            return false
+            return false;
         }
         if v_reds.size() == 1 && u_blues == v_reds {
-            return false
+            return false;
         }
         if v_blues.size() == 1 && u_reds == v_blues {
-            return false
+            return false;
         }
     }
     true
@@ -274,7 +282,12 @@ fn is_choosable(g: &Graph, indexer: &EdgeIndexer, reds: EdgeSet) -> bool {
 /**
  * Print some information about what percentage of the way there we are.
  */
-fn print_update_info(num_colourings_found: u64, num_colourings: u64, last_percentage: &mut u64, resolution: u64) -> bool {
+fn print_update_info(
+    num_colourings_found: u64,
+    num_colourings: u64,
+    last_percentage: &mut u64,
+    resolution: u64,
+) -> bool {
     let percentage = (num_colourings_found * resolution) / num_colourings;
     if percentage > *last_percentage {
         print!("{}/{} ", percentage, pretty_format_int(resolution as usize));
@@ -304,7 +317,12 @@ pub fn partition_colourings(g: &Graph) {
     let num_colourings = 2_u64.pow(g.size() as u32);
     'iter_colourings: for reds in g.iter_edge_sets() {
         num_colourings_found += 1;
-        print_update_info(num_colourings_found, num_colourings, &mut last_percentage, 100);
+        print_update_info(
+            num_colourings_found,
+            num_colourings,
+            &mut last_percentage,
+            100,
+        );
         if !is_colouring_representative(g, &indexer, reds) {
             continue 'iter_colourings;
         }
@@ -333,13 +351,19 @@ pub fn partition_colourings(g: &Graph) {
             num_extremal += 1;
         }
 
-        if choosable && total_alternating_distance > max_choosable_dist && total_antipode_distance > 4 {
+        if choosable
+            && total_alternating_distance > max_choosable_dist
+            && total_antipode_distance > 4
+        {
             // We only care about choosable things if they don't have very good antipode stuff to start with.
             max_choosable_dist = total_alternating_distance;
 
             println!("New choosable maximum!");
             //print_colouring(&indexer, reds);
-            println!("Total alternating distance = {} (antipode = {})\n", total_alternating_distance, total_antipode_distance);
+            println!(
+                "Total alternating distance = {} (antipode = {})\n",
+                total_alternating_distance, total_antipode_distance
+            );
         }
         if !choosable && total_antipode_distance > max_unchoosable_dist {
             max_unchoosable_dist = total_antipode_distance;
@@ -352,7 +376,10 @@ pub fn partition_colourings(g: &Graph) {
         }
     }
     println!("\nNum extremal configurations: {}", num_extremal);
-    println!("There are {} colourings in total, of which {} survived reduction", num_colourings, num_colourings_after_reduction);
+    println!(
+        "There are {} colourings in total, of which {} survived reduction",
+        num_colourings, num_colourings_after_reduction
+    );
     println!("Max choosable dist = {}", max_choosable_dist);
     println!("Max unchoosable dist = {}", max_unchoosable_dist);
 }
@@ -367,7 +394,12 @@ pub fn partition_symmetric_colourings(g: &Graph, slice: usize, out_of: usize) {
         Edge::of_pair(cube_antipode(g, e.fst()), cube_antipode(g, e.snd()))
     }
 
-    fn get_reds_from_index(g: &Graph, index: u64, half_edges: &Vec<Edge>, indexer: &EdgeIndexer) -> EdgeSet {
+    fn get_reds_from_index(
+        g: &Graph,
+        index: u64,
+        half_edges: &Vec<Edge>,
+        indexer: &EdgeIndexer,
+    ) -> EdgeSet {
         let mut sta = index;
         let mut i = 0;
         let mut out = EdgeSet::new(indexer);
@@ -407,7 +439,11 @@ pub fn partition_symmetric_colourings(g: &Graph, slice: usize, out_of: usize) {
     let resolution = if g.n.to_usize() > 24 { 1_000 } else { 100 };
 
     let start = slice as u64 * (num_colourings / (out_of as u64));
-    let end = if slice == out_of - 1 { num_colourings } else { (slice as u64 + 1) * (num_colourings / (out_of as u64)) };
+    let end = if slice == out_of - 1 {
+        num_colourings
+    } else {
+        (slice as u64 + 1) * (num_colourings / (out_of as u64))
+    };
 
     'iter_colourings: for index in start..end {
         // We need to convert index into an actual colouring.
@@ -417,9 +453,20 @@ pub fn partition_symmetric_colourings(g: &Graph, slice: usize, out_of: usize) {
             continue 'iter_colourings;
         }
 
-        if print_update_info(num_colourings_found, num_colourings / (out_of as u64), &mut last_percentage, resolution) {
-            let duration = SystemTime::now().duration_since(start_time).unwrap().as_nanos();
-            println!("Time per operation: {}", pretty_format_time(duration / ((index - start) as u128)));
+        if print_update_info(
+            num_colourings_found,
+            num_colourings / (out_of as u64),
+            &mut last_percentage,
+            resolution,
+        ) {
+            let duration = SystemTime::now()
+                .duration_since(start_time)
+                .unwrap()
+                .as_nanos();
+            println!(
+                "Time per operation: {}",
+                pretty_format_time(duration / ((index - start) as u128))
+            );
         }
         let reds = BigEdgeSet::of_edge_set(small_reds, &indexer);
         num_colourings_after_reduction += 1;
@@ -444,21 +491,45 @@ pub fn partition_symmetric_colourings(g: &Graph, slice: usize, out_of: usize) {
             }
 
             println!("\n\nNew maximum! Index = {}", index);
-            println!("There are {} colourings in total, of which {} survived reduction", num_colourings_found, num_colourings_after_reduction);
+            println!(
+                "There are {} colourings in total, of which {} survived reduction",
+                num_colourings_found, num_colourings_after_reduction
+            );
             print_colouring(g, &reds);
-            println!("Total antipode distance = {} (max = {} with index {})", total_antipode_distance, max_dist, best_dist_index);
-            println!("Num dists at least two = {} (max = {} with index {})\n", num_at_least_two, max_num_at_least_two, best_count_index);
+            println!(
+                "Total antipode distance = {} (max = {} with index {})",
+                total_antipode_distance, max_dist, best_dist_index
+            );
+            println!(
+                "Num dists at least two = {} (max = {} with index {})\n",
+                num_at_least_two, max_num_at_least_two, best_count_index
+            );
 
             //distance_to_antipode(g, &indexer, Vertex::ZERO, reds, true);
         }
     }
 
-    println!("\nThere are {} symmetric colourings in total, of which {} survived reduction", num_colourings, num_colourings_after_reduction);
-    println!("Max total antipode distance = {} with index {}", max_dist, best_dist_index);
-    println!("Max num dists at least two = {} with index {}\n", max_num_at_least_two, best_count_index);
+    println!(
+        "\nThere are {} symmetric colourings in total, of which {} survived reduction",
+        num_colourings, num_colourings_after_reduction
+    );
+    println!(
+        "Max total antipode distance = {} with index {}",
+        max_dist, best_dist_index
+    );
+    println!(
+        "Max num dists at least two = {} with index {}\n",
+        max_num_at_least_two, best_count_index
+    );
     let mut lines = vec![];
-    lines.push(format!("Max total antipode distance = {} with index {}", max_dist, best_dist_index));
-    lines.push(format!("Max num dists at least two = {} with index {}\n", max_num_at_least_two, best_count_index));
+    lines.push(format!(
+        "Max total antipode distance = {} with index {}",
+        max_dist, best_dist_index
+    ));
+    lines.push(format!(
+        "Max num dists at least two = {} with index {}\n",
+        max_num_at_least_two, best_count_index
+    ));
     file_write::write("norine", "out", lines, true)
 }
 
@@ -471,7 +542,7 @@ fn get_random_shell_colouring(g: &Graph) -> BigEdgeSet {
     let indexer = EdgeIndexer::new(&g.adj_list);
     let mut step = BigVertexSet::new(g.n);
     let mut next_step;
-    
+
     let mut rng = thread_rng();
     let num_starters: usize = rng.gen_range(2..=g.n.to_usize()); // No idea what a sensible number to put here is...
     for _i in 0..num_starters {
@@ -533,7 +604,7 @@ fn get_unfriendly_random_colouring(g: &Graph) -> BigEdgeSet {
     /**
      * Produce the probability that an edge is red given what the resulting sizes
      * of the red and blue components would be if the edge was red or blue respectively.
-     * 
+     *
      * Weights towards trying to make lots of small components, but it's not clear how
      * best to do this.
      */
@@ -545,9 +616,9 @@ fn get_unfriendly_random_colouring(g: &Graph) -> BigEdgeSet {
             // This does it really quickly:
             if r > b {
                 // r is bigger, so don't make the edge red.
-                return 0.0
+                0.0
             } else {
-                return 1.0
+                1.0
             }
         }
         fn magic_cutoff(n: Order) -> usize {
@@ -570,7 +641,8 @@ fn get_unfriendly_random_colouring(g: &Graph) -> BigEdgeSet {
             0.0
         } else if r0 * r1 < b0 * b1 {
             1.0
-        } else { // They are equal.
+        } else {
+            // They are equal.
             0.5
         }
     }
@@ -579,15 +651,23 @@ fn get_unfriendly_random_colouring(g: &Graph) -> BigEdgeSet {
      * If we have red components of sizes r0 and r1, and blues of b0 and b1 around an edge e,
      * what should the probability be that we make the edge red?
      * This should be symmetric, i.e. get_red_prob(x, y) + get_red_prob(y, x) = 1.
-     * 
+     *
      * If the connection bools are false, that means that there are genuine different components
      * at both ends. If these variables are true, then the components might be empty.
-     * 
+     *
      * Currently tries to avoid joining components together
      */
-    fn get_red_prob(n: Order, r0: usize, b0: usize, r1: usize, b1: usize, are_red_joined: bool, are_blue_joined: bool) -> f64 {
+    fn get_red_prob(
+        n: Order,
+        r0: usize,
+        b0: usize,
+        r1: usize,
+        b1: usize,
+        are_red_joined: bool,
+        are_blue_joined: bool,
+    ) -> f64 {
         match (are_red_joined, are_blue_joined) {
-            (false, false) => get_raw_red_prob_2(r0, b0, r1, b1),//get_raw_red_prob(n, r0 + r1 + 1, b0 + b1 + 1),
+            (false, false) => get_raw_red_prob_2(r0, b0, r1, b1), //get_raw_red_prob(n, r0 + r1 + 1, b0 + b1 + 1),
             (true, false) => get_raw_red_prob_2(r0.max(r1), b0, 1, b1),
             (false, true) => get_raw_red_prob_2(r0, b0.max(b1), r1, 1),
             (true, true) => get_raw_red_prob(n, r0.max(r1) + 1, b0.max(b1) + 1),
@@ -597,11 +677,16 @@ fn get_unfriendly_random_colouring(g: &Graph) -> BigEdgeSet {
     /**
      * Returns an edge at the given vertex in the given class.
      */
-    fn get_component_at_vertex(g: &Graph, class: &BigEdgeSet, components: &EdgeUnionFind, v: Vertex) -> Option<EdgeComponent> {
+    fn get_component_at_vertex(
+        g: &Graph,
+        class: &BigEdgeSet,
+        components: &EdgeUnionFind,
+        v: Vertex,
+    ) -> Option<EdgeComponent> {
         for u in g.adj_list[v].iter() {
             let e = Edge::of_pair(*u, v);
             if class.has_edge(e) {
-                return Some(components.get_component(e))
+                return Some(components.get_component(e));
             }
         }
         None
@@ -620,15 +705,26 @@ fn get_unfriendly_random_colouring(g: &Graph) -> BigEdgeSet {
      * then we return true; we only return false if both components exist and are different.
      */
     fn are_components_joined(c1: Option<EdgeComponent>, c2: Option<EdgeComponent>) -> bool {
-        c1.map_or(true, |c1| c2.map_or(true, |c2| c1 == c2))
+        c1.is_none_or(|c1| c2.is_none_or(|c2| c1 == c2))
     }
 
     /**
      * Merge all edges in class around e together into the same component.
      * This is called when e is added to this class.
      */
-    fn merge_components_at_edge(g: &Graph, class: &BigEdgeSet, components: &mut EdgeUnionFind, e: Edge) {
-        fn merge_components_at_vertex(g: &Graph, class: &BigEdgeSet, components: &mut EdgeUnionFind, e: Edge, u: Vertex) {
+    fn merge_components_at_edge(
+        g: &Graph,
+        class: &BigEdgeSet,
+        components: &mut EdgeUnionFind,
+        e: Edge,
+    ) {
+        fn merge_components_at_vertex(
+            g: &Graph,
+            class: &BigEdgeSet,
+            components: &mut EdgeUnionFind,
+            e: Edge,
+            u: Vertex,
+        ) {
             for v in g.adj_list[u].iter() {
                 let f = Edge::of_pair(u, *v);
                 if e != f && class.has_edge(f) {
@@ -636,7 +732,7 @@ fn get_unfriendly_random_colouring(g: &Graph) -> BigEdgeSet {
                 }
             }
         }
-        
+
         merge_components_at_vertex(g, class, components, e, e.fst());
         merge_components_at_vertex(g, class, components, e, e.snd());
     }
@@ -651,7 +747,7 @@ fn get_unfriendly_random_colouring(g: &Graph) -> BigEdgeSet {
     shuffled_edges.shuffle(&mut rng);
 
     for e in shuffled_edges.iter() {
-        let fst_red_comp = get_component_at_vertex(g, &reds, &components, e.fst()) ;
+        let fst_red_comp = get_component_at_vertex(g, &reds, &components, e.fst());
         let snd_red_comp = get_component_at_vertex(g, &reds, &components, e.snd());
         let fst_blue_comp = get_component_at_vertex(g, &blues, &components, e.fst());
         let snd_blue_comp = get_component_at_vertex(g, &blues, &components, e.snd());
@@ -746,7 +842,7 @@ fn print_colouring(g: &Graph, reds: &BigEdgeSet) {
 /**
  * Just runs a direct check on all antipodal pairs and finds the furthers away pair.
  * Here, furthest of course means distance in terms of min colour swaps.
- * 
+ *
  * We apply this to a random colouring, which is produced by colouring in shells.
  */
 pub fn min_antipode_distance(g: &Graph, colouring_type: usize) -> u32 {
@@ -768,7 +864,7 @@ pub fn min_antipode_distance(g: &Graph, colouring_type: usize) -> u32 {
         let dist = distance_to_antipode(g, v, &reds, false).min();
         min_dist = dist.min(min_dist);
         if dist == 0 {
-            break 'test_verts
+            break 'test_verts;
         }
     }
 

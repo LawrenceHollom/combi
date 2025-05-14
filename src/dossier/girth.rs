@@ -1,4 +1,4 @@
-use crate::entity::{*, graph::*, poset::*};
+use crate::entity::{graph::*, poset::*, *};
 use utilities::vertex_tools::*;
 
 fn graph_girth(g: &Graph) -> u32 {
@@ -8,7 +8,7 @@ fn graph_girth(g: &Graph) -> u32 {
     for (u, d) in dist.iter_enum() {
         for v in u.incr().iter_from(g.n) {
             // If they're far away there's no point trying
-            if d[v] < (girth + 1) / 2 {
+            if d[v] < girth.div_ceil(2) {
                 let mut num_less = 0;
                 let mut num_equal = 0;
                 for w in g.adj_list[v].iter() {
@@ -16,7 +16,7 @@ fn graph_girth(g: &Graph) -> u32 {
                     match d[*w].cmp(&d[v]) {
                         Less => num_less += 1,
                         Equal => num_equal += 1,
-                        Greater => ()
+                        Greater => (),
                     }
                 }
                 if num_less >= 2 {

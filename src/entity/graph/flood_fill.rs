@@ -1,5 +1,5 @@
-use utilities::vertex_tools::*;
 use crate::entity::graph::*;
+use utilities::vertex_tools::*;
 
 // Test components, but only considering vertices in the filter.
 pub fn filtered_components(g: &Graph, filter: Option<BigVertexSet>) -> VertexVec<Component> {
@@ -9,18 +9,20 @@ pub fn filtered_components(g: &Graph, filter: Option<BigVertexSet>) -> VertexVec
     for i in g.n.iter_verts() {
         if comp[i].is_none() {
             comp[i] = Some(i);
-            if filter.as_ref().map_or(true, |f| f.has_vert(i)) {
+            if filter.as_ref().is_none_or(|f| f.has_vert(i)) {
                 let _ = q.add(i);
                 'flood_fill: loop {
                     match q.remove() {
                         Ok(node) => {
                             for j in g.adj_list[node].iter() {
-                                if comp[*j].is_none() && filter.as_ref().map_or(true, |f| f.has_vert(*j)) {
+                                if comp[*j].is_none()
+                                    && filter.as_ref().is_none_or(|f| f.has_vert(*j))
+                                {
                                     comp[*j] = Some(i);
                                     let _ = q.add(*j);
                                 }
                             }
-                        },
+                        }
                         Err(_err) => break 'flood_fill,
                     }
                 }
@@ -28,11 +30,17 @@ pub fn filtered_components(g: &Graph, filter: Option<BigVertexSet>) -> VertexVec
         }
     }
 
-    comp.iter().map(|x| Component::of_vertex(x.unwrap())).collect::<VertexVec<Component>>()
+    comp.iter()
+        .map(|x| Component::of_vertex(x.unwrap()))
+        .collect::<VertexVec<Component>>()
 }
 
 // Test components, but only considering edges in the EdgeSet.
-pub fn edge_subset_components(g: &Graph, edges: EdgeSet, indexer: &EdgeIndexer) -> VertexVec<Component> {
+pub fn edge_subset_components(
+    g: &Graph,
+    edges: EdgeSet,
+    indexer: &EdgeIndexer,
+) -> VertexVec<Component> {
     let mut comp: VertexVec<Option<Vertex>> = VertexVec::new(g.n, &None);
     let mut q: Queue<Vertex> = queue![];
 
@@ -50,17 +58,24 @@ pub fn edge_subset_components(g: &Graph, edges: EdgeSet, indexer: &EdgeIndexer) 
                                 let _ = q.add(*j);
                             }
                         }
-                    },
+                    }
                     Err(_err) => break 'flood_fill,
                 }
             }
         }
     }
 
-    comp.iter().map(|x| Component::of_vertex(x.unwrap())).collect::<VertexVec<Component>>()
+    comp.iter()
+        .map(|x| Component::of_vertex(x.unwrap()))
+        .collect::<VertexVec<Component>>()
 }
 
-pub fn flood_fill(g: &Graph, start: Vertex, end: Option<Vertex>, filter: Option<&VertexVec<bool>>) -> VertexVec<Option<Vertex>> {
+pub fn flood_fill(
+    g: &Graph,
+    start: Vertex,
+    end: Option<Vertex>,
+    filter: Option<&VertexVec<bool>>,
+) -> VertexVec<Option<Vertex>> {
     let mut prev = VertexVec::new(g.n, &None);
     let mut q: Queue<Vertex> = queue![];
     prev[start] = Some(start);
@@ -69,10 +84,10 @@ pub fn flood_fill(g: &Graph, start: Vertex, end: Option<Vertex>, filter: Option<
         match q.remove() {
             Ok(node) => {
                 for next in g.adj_list[node].iter() {
-                    if node != start && end.map_or(false, |x| *next == x) {
+                    if node != start && (end == Some(*next)) {
                         prev[end.unwrap()] = Some(node);
                         break 'flood_fill;
-                    } else if prev[*next].is_none() && filter.map_or(true, |f| f[*next]) {
+                    } else if prev[*next].is_none() && filter.is_none_or(|f| f[*next]) {
                         prev[*next] = Some(node);
                         let _ = q.add(*next);
                     }
@@ -132,7 +147,11 @@ pub fn flood_fill_two_colourable(g: &Graph, edge_filter: &EdgeSet, indexer: &Edg
     is_two_colourable
 }
 
-pub fn flood_fill_edge_components(g: &Graph, edge_filter: &EdgeSet, indexer: &EdgeIndexer) -> EdgeVec<Option<Component>> {
+pub fn flood_fill_edge_components(
+    g: &Graph,
+    edge_filter: &EdgeSet,
+    indexer: &EdgeIndexer,
+) -> EdgeVec<Option<Component>> {
     let mut components = EdgeVec::new(&g.adj_list, None);
     let mut q: Queue<Vertex> = queue![];
     let mut visited: VertexVec<bool> = VertexVec::new(g.n, &false);

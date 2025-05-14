@@ -1,9 +1,9 @@
-extern crate utilities;
 extern crate queues;
+extern crate utilities;
 
-use utilities::*;
-use utilities::vertex_tools::*;
 use crate::entity::graph::*;
+use utilities::vertex_tools::*;
+use utilities::*;
 
 use queues::*;
 
@@ -17,12 +17,13 @@ pub fn max_acyclic_subgraph(g: &Graph) -> u32 {
         let mut is_cycle = false;
         let size = subset.size();
 
-        if size > max_acyclic { // no point testing stuff that's too small
+        if size > max_acyclic {
+            // no point testing stuff that's too small
             // now test if there is a cycle amongst the vertices of the subset
             // we use flood fill to test this. Takes N^2 time, could be optd
             let mut flood: VertexVec<Option<Vertex>> = VertexVec::new(g.n, &None);
             let mut found;
-            let mut q : Queue<Vertex> = queue![];
+            let mut q: Queue<Vertex> = queue![];
 
             'cycle_search: loop {
                 found = false;
@@ -35,7 +36,8 @@ pub fn max_acyclic_subgraph(g: &Graph) -> u32 {
                     }
                 }
 
-                if !found { // We have flood filled everything in subset (and found no cycle)
+                if !found {
+                    // We have flood filled everything in subset (and found no cycle)
                     break 'cycle_search;
                 }
 
@@ -44,16 +46,18 @@ pub fn max_acyclic_subgraph(g: &Graph) -> u32 {
                         Ok(node) => {
                             for i in g.n.iter_verts() {
                                 if subset.has_vert(i) && g.adj[node][i] {
-                                    if flood[i].is_some() && flood[node] != Some(i) { // it's already been found from somewhere else, so there's a cycle
+                                    if flood[i].is_some() && flood[node] != Some(i) {
+                                        // it's already been found from somewhere else, so there's a cycle
                                         is_cycle = true;
                                         break 'cycle_search;
-                                    } else if flood[i].is_none() { // First time this is found
+                                    } else if flood[i].is_none() {
+                                        // First time this is found
                                         flood[i] = Some(node);
                                         let _ = q.add(i);
                                     }
                                 }
                             }
-                        },
+                        }
                         Err(_err) => break 'flood_fill,
                     }
                 }
@@ -88,11 +92,17 @@ mod tests {
 
     #[test]
     fn test_max_acyclic_subgraph_k10() {
-        assert_eq!(max_acyclic_subgraph(&Graph::new_complete(Order::of_usize(10))), 2);
+        assert_eq!(
+            max_acyclic_subgraph(&Graph::new_complete(Order::of_usize(10))),
+            2
+        );
     }
 
     #[test]
     fn test_max_acyclic_subgraph_p5() {
-        assert_eq!(max_acyclic_subgraph(&Graph::new_path(Order::of_usize(5))), 5);
+        assert_eq!(
+            max_acyclic_subgraph(&Graph::new_path(Order::of_usize(5))),
+            5
+        );
     }
 }

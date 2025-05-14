@@ -1,5 +1,5 @@
-use crate::entity::graph::*;
 use crate::dossier::percolate::*;
+use crate::entity::graph::*;
 
 use utilities::polynomial::*;
 use utilities::vertex_tools::*;
@@ -58,7 +58,10 @@ pub fn print_polynomials(g: &Graph) {
     for v in g.n.iter_verts() {
         let poly = percolator.polys[v].sub(&percolator.polys[v.incr_by_order(g.n)]);
         println!("old {}: {}", v, poly);
-        println!("new {}: {}", v, poly.add(&poly.apply(&Polynomial::of_vec(&vec![1, -1]))));
+        println!(
+            "new {}: {}",
+            v,
+            poly.add(&poly.apply(&Polynomial::of_vec(&vec![1, -1])))
+        );
     }
-
 }

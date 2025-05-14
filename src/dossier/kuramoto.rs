@@ -2,9 +2,9 @@ use std::f64::consts::PI;
 
 use rand::rngs::ThreadRng;
 use rand::{thread_rng, Rng};
-use utilities::*;
-use utilities::vertex_tools::*;
 use utilities::edge_tools::*;
+use utilities::vertex_tools::*;
+use utilities::*;
 
 use crate::entity::graph::*;
 
@@ -23,27 +23,39 @@ struct Theta {
 }
 
 impl Theta {
-    pub fn new_random(g: &Graph, rng: &mut ThreadRng) -> Theta {
+    pub fn new_random(g: &Graph, rng: &mut ThreadRng) -> Self {
         let mut theta = VertexVec::new(g.n, &0.0);
         for x in theta.iter_mut() {
             *x = rng.gen_range(0.0..(2.0 * PI));
         }
         let delta = 1.0 / (1.0 + g.max_degree().to_usize() as f64);
-        Theta { n: g.n, delta, theta }
+        Self {
+            n: g.n,
+            delta,
+            theta,
+        }
     }
 
-    pub fn new_mapped(&self, n: Order, map: VertexVec<Vertex>) -> Theta {
+    pub fn new_mapped(&self, n: Order, map: VertexVec<Vertex>) -> Self {
         let mut theta = VertexVec::new(n, &0.0);
         for i in n.iter_verts() {
             theta[i] = self.theta[map[i]];
         }
-        Theta { n, delta: self.delta, theta }
+        Self {
+            n,
+            delta: self.delta,
+            theta,
+        }
     }
 
-    pub fn new_cyclic(g: &Graph) -> Theta {
+    pub fn new_cyclic(g: &Graph) -> Self {
         let theta = VertexVec::new_fn(g.n, |v| v.as_fraction_of(g.n) * 2.0 * PI);
         let delta = 1.0 / (1.0 + g.max_degree().to_usize() as f64);
-        Theta { n: g.n, delta, theta }
+        Self {
+            n: g.n,
+            delta,
+            theta,
+        }
     }
 
     /**
@@ -99,7 +111,7 @@ impl Theta {
     fn simulate_until_stable(&mut self, edges: &Vec<Edge>) {
         let mut motion = 1.0;
         while motion > 0.002 * self.delta {
-            motion = self.run_simulation_step(&edges);
+            motion = self.run_simulation_step(edges);
         }
     }
 
@@ -116,7 +128,7 @@ impl Theta {
             let diff2 = 2.0 * PI - diff1;
             if diff1.min(diff2) > (PI / 2.0) - EPS {
                 is_synchronised = false;
-                break 'test_angles
+                break 'test_angles;
             }
         }
         is_synchronised
@@ -161,7 +173,7 @@ pub fn does_random_config_synchronise(g: &Graph, attempts: usize) -> bool {
     let edges = g.iter_edges().collect::<Vec<Edge>>();
     let mut theta = Theta::new_random(g, &mut rng);
     let mut out = true;
-    
+
     'attempt: for _j in 0..attempts {
         theta = Theta::new_random(g, &mut rng);
         theta.simulate_until_stable(&edges);
@@ -172,7 +184,6 @@ pub fn does_random_config_synchronise(g: &Graph, attempts: usize) -> bool {
     }
     pretty::print_graph_hued(g, &theta.theta, 2.0 * PI, false);
     out
-
 }
 
 fn pretty_print_important_bit(g: &Graph, theta: &Theta) {
@@ -203,7 +214,7 @@ pub fn find_simplest_unsynchronised(g: &Graph, attempts: usize) -> bool {
     let mut theta;
     let mut simplest_theta = None;
     let mut minimal_energy = f64::MAX;
-    
+
     for j in 0..attempts {
         theta = Theta::new_random(g, &mut rng);
         theta.simulate_until_stable(&edges);
@@ -211,7 +222,10 @@ pub fn find_simplest_unsynchronised(g: &Graph, attempts: usize) -> bool {
         if !theta.is_synchronised() {
             // This is a stable, non-synchronised state.
             let energy = theta.total_energy(&edges);
-            println!("Found unsync'd, \t attempt {} / {}, \t energy = {:.2}", j, attempts, energy);
+            println!(
+                "Found unsync'd, \t attempt {} / {}, \t energy = {:.2}",
+                j, attempts, energy
+            );
             if energy < minimal_energy {
                 minimal_energy = energy;
                 simplest_theta = Some(theta.to_owned());
@@ -223,7 +237,6 @@ pub fn find_simplest_unsynchronised(g: &Graph, attempts: usize) -> bool {
         pretty_print_important_bit(g, theta);
     }
     simplest_theta.is_none()
-
 }
 
 pub fn does_cyclic_config_synchronise(g: &Graph) -> bool {

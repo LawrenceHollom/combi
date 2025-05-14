@@ -28,7 +28,7 @@ fn min_kernel_internal(d: &Digraph, stop_threshold: usize) -> VertexSet {
                 let w = inter.get_biggest_element().unwrap();
                 // v and w can't both be present, so we can increment s to avoid this conflict.
                 s.incr_inplace_to_remove_vertex(v.min(w));
-                continue 'iter_subsets
+                continue 'iter_subsets;
             }
         }
 
@@ -36,7 +36,7 @@ fn min_kernel_internal(d: &Digraph, stop_threshold: usize) -> VertexSet {
         if size >= min_kernel_size {
             // Don't bother with big things.
             s.incr_inplace();
-            continue 'iter_subsets
+            continue 'iter_subsets;
         }
 
         // This is now a candidate optimal kernel, but is it a kernel?

@@ -4,9 +4,15 @@ use utilities::vertex_tools::*;
 
 use queues::*;
 
-fn is_k_connected_rec(g: &Graph, picked: &mut VertexVec<bool>, next_vert: Vertex, picks_left: usize, filter: Option<&VertexVec<bool>>) -> bool {
+fn is_k_connected_rec(
+    g: &Graph,
+    picked: &mut VertexVec<bool>,
+    next_vert: Vertex,
+    picks_left: usize,
+    filter: Option<&VertexVec<bool>>,
+) -> bool {
     fn passes_filter(filter: Option<&VertexVec<bool>>, v: Vertex) -> bool {
-        filter.map_or(true, |filter| filter[v])
+        filter.is_none_or(|filter| filter[v])
     }
     if picks_left == 0 {
         // test if g is connected without picked vertices.
@@ -123,24 +129,27 @@ mod tests {
     fn test_connectedness_k10() {
         assert_eq!(connectedness(&Graph::new_complete(Order::of_usize(10))), 9);
     }
-    
+
     #[test]
     fn test_num_cutvertices_1() {
         assert_eq!(num_cutvertices(&Graph::test_graph(1)), 3);
     }
-    
+
     #[test]
     fn test_num_cutvertices_3() {
         assert_eq!(num_cutvertices(&Graph::test_graph(3)), 0);
     }
-    
+
     #[test]
     fn test_num_cutvertices_p10() {
         assert_eq!(num_cutvertices(&Graph::new_path(Order::of_usize(10))), 8);
     }
-    
+
     #[test]
     fn test_num_cutvertices_k10() {
-        assert_eq!(num_cutvertices(&Graph::new_complete(Order::of_usize(10))), 0);
+        assert_eq!(
+            num_cutvertices(&Graph::new_complete(Order::of_usize(10))),
+            0
+        );
     }
 }

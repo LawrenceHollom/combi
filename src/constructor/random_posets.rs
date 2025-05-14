@@ -1,7 +1,7 @@
 use rand::{rngs::ThreadRng, thread_rng, Rng};
 
-use utilities::*;
 use utilities::vertex_tools::*;
+use utilities::*;
 
 use crate::constructor::*;
 
@@ -13,9 +13,9 @@ fn random_permutation(rng: &mut ThreadRng, order: Order, prob: f64) -> VertexVec
     let mut perm = VertexVec::new_fn(order, |v| v);
     let n = order.to_usize();
 
-    for i in 0..(n-1) {
+    for i in 0..(n - 1) {
         if rng.gen_range(0.0..1.0) <= prob {
-            let j = i + rng.gen_range(0..(n-i));
+            let j = i + rng.gen_range(0..(n - i));
             let u = Vertex::of_usize(i);
             let v = Vertex::of_usize(j);
             (perm[u], perm[v]) = (perm[v], perm[u]);
@@ -31,19 +31,27 @@ pub fn new_scrambled_order(order: Order, prob: f64) -> VertexVec<VertexVec<bool>
     VertexVec::new_fn(order, |u| VertexVec::new_fn(order, |v| perm[u] > perm[v]))
 }
 
-pub fn get_ordering_from_weighted_random_intersection(order: Order, k: usize, prob: f64) -> VertexVec<VertexVec<bool>> {
-    let mut gt = VertexVec::new_fn(order, 
-        |u| VertexVec::new_fn(order, |v| u > v));
-    for _i in 0..k-1 {
+pub fn get_ordering_from_weighted_random_intersection(
+    order: Order,
+    k: usize,
+    prob: f64,
+) -> VertexVec<VertexVec<bool>> {
+    let mut gt = VertexVec::new_fn(order, |u| VertexVec::new_fn(order, |v| u > v));
+    for _i in 0..k - 1 {
         let ht = self::new_scrambled_order(order, prob);
-        gt = VertexVec::new_fn(order, |u| VertexVec::new_fn(order, |v| gt[u][v] && ht[u][v]))
+        gt = VertexVec::new_fn(order, |u| {
+            VertexVec::new_fn(order, |v| gt[u][v] && ht[u][v])
+        })
     }
     gt
 }
 
 pub fn new_random_intersection(order: Order, k: usize) -> Poset {
     let gt = get_ordering_from_weighted_random_intersection(order, k, 1.0);
-    Poset::of_ordering(gt, Constructor::PosetConstr(PosetConstructor::ChainIntersection(order, k)))
+    Poset::of_ordering(
+        gt,
+        Constructor::PosetConstr(PosetConstructor::ChainIntersection(order, k)),
+    )
 }
 
 /**
@@ -52,5 +60,8 @@ pub fn new_random_intersection(order: Order, k: usize) -> Poset {
  */
 pub fn new_correlated_intersection(order: Order, k: usize, prob: f64) -> Poset {
     let gt = get_ordering_from_weighted_random_intersection(order, k, prob);
-    Poset::of_ordering(gt, Constructor::PosetConstr(PosetConstructor::CorrelatedIntersection(order, k, prob)))
+    Poset::of_ordering(
+        gt,
+        Constructor::PosetConstr(PosetConstructor::CorrelatedIntersection(order, k, prob)),
+    )
 }

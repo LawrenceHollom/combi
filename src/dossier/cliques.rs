@@ -2,7 +2,13 @@ use crate::entity::graph::*;
 
 use utilities::vertex_tools::*;
 
-fn largest_rec(g: &Graph, target_edgeness: bool, picks: &mut Vec<Vertex>, num_made: usize, remaining_picks: usize) -> bool {
+fn largest_rec(
+    g: &Graph,
+    target_edgeness: bool,
+    picks: &mut Vec<Vertex>,
+    num_made: usize,
+    remaining_picks: usize,
+) -> bool {
     if remaining_picks == 0 {
         true
     } else if remaining_picks > picks[num_made - 1].num_verts_after(g.n) {
@@ -35,7 +41,7 @@ fn largest(g: &Graph, target_edgeness: bool) -> u32 {
     'test_size: for size in 2..=n {
         let mut progress = false;
         'first_pick: for first_pick in g.n.iter_verts().take(g.n.to_usize() + 1 - size) {
-            if largest_rec(g, target_edgeness, &mut vec![first_pick; n], 1, size-1) {
+            if largest_rec(g, target_edgeness, &mut vec![first_pick; n], 1, size - 1) {
                 out = size;
                 progress = true;
                 break 'first_pick;
@@ -82,6 +88,9 @@ mod tests {
     #[test]
     fn test_cliques_e10() {
         assert_eq!(largest_clique(&Graph::new_empty(Order::of_usize(10))), 1);
-        assert_eq!(independence_number(&Graph::new_empty(Order::of_usize(10))), 10);
+        assert_eq!(
+            independence_number(&Graph::new_empty(Order::of_usize(10))),
+            10
+        );
     }
 }

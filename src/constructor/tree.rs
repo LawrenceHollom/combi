@@ -14,6 +14,6 @@ pub fn new_rooted(parents: &Vec<usize>) -> Graph {
         adj_list[u].push(v);
         adj_list[v].push(u);
     }
-    
+
     Graph::of_adj_list(adj_list, Constructor::RootedTree(parents.to_owned()))
 }

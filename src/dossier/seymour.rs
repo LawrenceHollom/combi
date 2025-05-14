@@ -1,11 +1,11 @@
-use rand::Rng;
 use rand::rngs::ThreadRng;
 use rand::thread_rng;
+use rand::Rng;
 
-use utilities::{*, vertex_tools::*, edge_tools::*};
+use utilities::{edge_tools::*, vertex_tools::*, *};
 
-use crate::entity::graph::*;
 use crate::entity::digraph::*;
+use crate::entity::graph::*;
 
 const MAX_ATTEMPTS_MULT: usize = 1;
 const NUM_TESTS: usize = 100;
@@ -13,20 +13,27 @@ const NUM_TESTS: usize = 100;
 fn must_trivially_have_seymour_vertex(g: &Graph) -> bool {
     for v in g.iter_verts() {
         if g.deg[v].at_most(5) {
-            return true
+            return true;
         }
     }
     false
 }
 
-fn fix_vertex(d: &mut Digraph, rng: &mut ThreadRng, v: Vertex, avoid: Option<Vertex>, max_in_deg: usize, depth: usize) {
+fn fix_vertex(
+    d: &mut Digraph,
+    rng: &mut ThreadRng,
+    v: Vertex,
+    avoid: Option<Vertex>,
+    max_in_deg: usize,
+    depth: usize,
+) {
     let mut flip_to = None;
     let mut recurse = false;
     if depth > 100 {
         panic!("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
     }
     'find_good_flipper: for u in d.in_adj_list[v].iter() {
-        if d.in_deg[*u].at_most(max_in_deg - 1) && avoid.map_or(true, |x| x != *u) {
+        if d.in_deg[*u].at_most(max_in_deg - 1) && (avoid != Some(*u)) {
             // We can use u
             flip_to = Some(*u);
             break 'find_good_flipper;
@@ -40,7 +47,7 @@ fn fix_vertex(d: &mut Digraph, rng: &mut ThreadRng, v: Vertex, avoid: Option<Ver
             let mut u;
             'find_random_flipper: loop {
                 u = d.in_adj_list[v][rng.gen_range(0..d.in_deg[v].to_usize())];
-                if avoid.map_or(true, |x| x != u) {
+                if avoid != Some(u) {
                     break 'find_random_flipper;
                 }
             }
@@ -51,7 +58,7 @@ fn fix_vertex(d: &mut Digraph, rng: &mut ThreadRng, v: Vertex, avoid: Option<Ver
     let u = flip_to.unwrap();
     d.reverse_edge(Edge::of_pair(u, v));
     if recurse {
-        fix_vertex(d, rng, u, Some(v), max_in_deg, depth+1)
+        fix_vertex(d, rng, u, Some(v), max_in_deg, depth + 1)
     }
 }
 
@@ -101,7 +108,7 @@ fn does_digraph_have_seymour_vertex(d: &Digraph) -> bool {
             }
         }
         if d.out_deg[u].at_most(second_nbhd_size) {
-            return true
+            return true;
         }
     }
     false
@@ -110,13 +117,13 @@ fn does_digraph_have_seymour_vertex(d: &Digraph) -> bool {
 pub fn has_seymour_vertex(g: &Graph) -> bool {
     if !must_trivially_have_seymour_vertex(g) {
         let delta = g.deg.max(&Degree::ZERO, Degree::cmp).unwrap();
-        let max_in_deg = (1 + delta.to_usize()) / 2;
+        let max_in_deg = delta.to_usize().div_ceil(2);
         for _i in 0..NUM_TESTS {
             if let Some(d) = construct_candidate_orientation(g, max_in_deg) {
                 if !does_digraph_have_seymour_vertex(&d) {
                     println!("FOUND COUNTEREXAMPLE!");
                     d.print();
-                    return false
+                    return false;
                 }
             }
         }
