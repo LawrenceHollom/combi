@@ -1,5 +1,4 @@
 use crate::entity::graph::*;
-use utilities::vertex_tools::*;
 
 impl Graph {
     fn list_cycles_rec(
