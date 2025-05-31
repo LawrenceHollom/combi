@@ -108,11 +108,11 @@ pub enum DigraphConstructor {
 
 #[derive(Clone)]
 pub enum Constructor {
-    Product(ProductConstructor, Box<Constructor>, Box<Constructor>),
+    Product(ProductConstructor, Box<Self>, Box<Self>),
     Random(RandomConstructor),
     Raw(RawConstructor),
     Recursive(RecursiveConstructor),
-    Structural(StructuralConstructor, Box<Constructor>),
+    Structural(StructuralConstructor, Box<Self>),
     RootedTree(Vec<usize>),
     PosetConstr(PosetConstructor),
     DigraphConstr(DigraphConstructor),

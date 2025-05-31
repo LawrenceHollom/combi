@@ -312,8 +312,7 @@ fn is_two_connected_planar(g: &Graph) -> bool {
     // Find a cycle of G.
     let mut cocycle = VertexVec::new(g.n, &true);
     let mut face = vec![];
-    let mut cycle_edges: VertexVec<VertexVec<bool>> =
-        VertexVec::new(g.n, &VertexVec::new(g.n, &false));
+    let mut cycle_edges = VertexVec::new(g.n, &VertexVec::new(g.n, &false));
     let mut head = Vertex::ZERO;
     let mut prev = None;
     // This probably has to succeed due to 2-connectedness.
