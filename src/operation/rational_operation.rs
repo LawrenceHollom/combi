@@ -20,8 +20,8 @@ pub enum RationalOperation {
     OfBool(Box<BoolOperation>),
     Arithmetic(
         ArithmeticOperation,
-        Box<RationalOperation>,
-        Box<RationalOperation>,
+        Box<Self>,
+        Box<Self>,
     ),
     DominationRedundancy,
     GrabbingColeafWeightedDifference,

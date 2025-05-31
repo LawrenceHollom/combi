@@ -24,10 +24,10 @@ impl Operation {
     pub fn of_string(text: &str) -> Self {
         IntOperation::of_string_result(text)
             .map(Operation::Int)
-            .or_else(|| BoolOperation::of_string_result(text).map(Operation::Bool))
-            .or_else(|| RationalOperation::of_string_result(text).map(Operation::Rational))
-            .or_else(|| UnitOperation::of_string_result(text).map(Operation::Unit))
-            .or_else(|| StringListOperation::of_string_result(text).map(Operation::StringList))
+            .or_else(|| BoolOperation::of_string_result(text).map(Self::Bool))
+            .or_else(|| RationalOperation::of_string_result(text).map(Self::Rational))
+            .or_else(|| UnitOperation::of_string_result(text).map(Self::Unit))
+            .or_else(|| StringListOperation::of_string_result(text).map(Self::StringList))
             .unwrap_or_else(|| panic!("Unknown operation {}", text))
     }
 }

@@ -17,27 +17,27 @@ pub enum Modality {
 }
 
 impl Polynomial {
-    pub fn new() -> Polynomial {
-        Polynomial { coefs: vec![], var_name: "p".to_owned() }
+    pub fn new() -> Self {
+        Self { coefs: vec![], var_name: "p".to_owned() }
     }
 
-    pub fn of_vec(coefs: &Vec<i64>) -> Polynomial {
+    pub fn of_vec(coefs: &Vec<i64>) -> Self {
         let mut new_coefs: Vec<i64> = vec![];
         for x in coefs {
             new_coefs.push(*x);
         }
-        Polynomial { coefs: new_coefs, var_name: "p".to_owned() }
+        Self { coefs: new_coefs, var_name: "p".to_owned() }
     }
 
-    pub fn monomial(coef: i64, power: usize) -> Polynomial {
+    pub fn monomial(coef: i64, power: usize) -> Self {
         let mut coefs = vec![0; power];
         coefs.push(coef);
-        Polynomial { coefs, var_name: "p".to_owned() }
+        Self { coefs, var_name: "p".to_owned() }
     }
 
-    pub fn pow(&self, exp: usize) -> Polynomial {
+    pub fn pow(&self, exp: usize) -> Self {
         if exp == 0 {
-            Polynomial::of_vec(&vec![1])
+            Self::of_vec(&vec![1])
         } else if exp == 1 {
             self.to_owned()
         } else {
@@ -45,7 +45,7 @@ impl Polynomial {
         }
     }
 
-    fn add_vec_inplace(coefs: &mut Vec<i64>, rhs: &Polynomial) {
+    fn add_vec_inplace(coefs: &mut Vec<i64>, rhs: &Self) {
         for (pos, y) in rhs.coefs.iter().enumerate() {
             if pos >= coefs.len() {
                 coefs.push(*y);
@@ -55,20 +55,20 @@ impl Polynomial {
         }
     }
 
-    pub fn add(&self, rhs: &Polynomial) -> Polynomial {
+    pub fn add(&self, rhs: &Self) -> Self {
         let mut coefs: Vec<i64> = vec![];
         for x in self.coefs.iter() {
             coefs.push(*x);
         }
         Self::add_vec_inplace(&mut coefs, rhs);
-        Polynomial::of_vec(&coefs)
+        Self::of_vec(&coefs)
     }
 
-    pub fn add_inplace(&mut self, rhs: &Polynomial) {
+    pub fn add_inplace(&mut self, rhs: &Self) {
         Self::add_vec_inplace(&mut self.coefs, rhs)
     }
 
-    fn sub_vec_inplace(coefs: &mut Vec<i64>, rhs: &Polynomial) {
+    fn sub_vec_inplace(coefs: &mut Vec<i64>, rhs: &Self) {
         for (pos, y) in rhs.coefs.iter().enumerate() {
             if pos >= coefs.len() {
                 coefs.push(-*y);
@@ -78,20 +78,20 @@ impl Polynomial {
         }
     }
 
-    pub fn sub(&self, rhs: &Polynomial) -> Polynomial {
+    pub fn sub(&self, rhs: &Self) -> Self {
         let mut coefs: Vec<i64> = vec![];
         for x in self.coefs.iter() {
             coefs.push(*x);
         }
         Self::sub_vec_inplace(&mut coefs, rhs);
-        Polynomial::of_vec(&coefs)
+        Self::of_vec(&coefs)
     }
 
-    pub fn sub_inplace(&mut self, rhs: &Polynomial) {
+    pub fn sub_inplace(&mut self, rhs: &Self) {
         Self::sub_vec_inplace(&mut self.coefs, rhs)
     }
 
-    pub fn mul(&self, rhs: &Polynomial) -> Polynomial {
+    pub fn mul(&self, rhs: &Self) -> Self {
         let mut coefs: Vec<i64> = vec![];
         for (i, xi) in self.coefs.iter().enumerate() {
             for (j, yj) in rhs.coefs.iter().enumerate() {
@@ -102,11 +102,11 @@ impl Polynomial {
                 }
             }
         }
-        Polynomial::of_vec(&coefs)
+        Self::of_vec(&coefs)
     }
 
-    pub fn apply(&self, g: &Polynomial) -> Polynomial {
-        let mut out = Polynomial::new();
+    pub fn apply(&self, g: &Self) -> Self {
+        let mut out = Self::new();
         for (i, xi) in self.coefs.iter().enumerate() {
             // Highly efficient, as always
             out.add_inplace(&g.pow(i).mul(&Self::of_vec(&vec![*xi])));
@@ -122,14 +122,14 @@ impl Polynomial {
         out
     }
 
-    pub fn differentiate(&self) -> Polynomial {
+    pub fn differentiate(&self) -> Self {
         let mut coefs: Vec<i64> = vec![];
         for (i, xi) in self.coefs.iter().enumerate() {
             if i > 0 {
                 coefs.push(*xi * (i as i64));
             }
         }
-        Polynomial::of_vec(&coefs)
+        Self::of_vec(&coefs)
     }
 
     pub fn is_zero(&self) -> bool {
@@ -140,8 +140,8 @@ impl Polynomial {
         unimode::find_unimode(&self, 0.0, 1.0)
     }
 
-    pub fn with_var_name(&self, var_name: &str) -> Polynomial {
-        Polynomial { coefs: self.coefs.to_owned(), var_name: var_name.to_owned() }
+    pub fn with_var_name(&self, var_name: &str) -> Self {
+        Self { coefs: self.coefs.to_owned(), var_name: var_name.to_owned() }
     }
 }
 

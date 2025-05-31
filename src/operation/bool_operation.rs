@@ -27,8 +27,8 @@ pub enum BoolToBoolInfix {
 pub enum BoolOperation {
     IntInfix(NumToBoolInfix, IntOperation, IntOperation),
     FloatInfix(NumToBoolInfix, RationalOperation, RationalOperation),
-    BoolInfix(BoolToBoolInfix, Box<BoolOperation>, Box<BoolOperation>),
-    Not(Box<BoolOperation>),
+    BoolInfix(BoolToBoolInfix, Box<Self>, Box<Self>),
+    Not(Box<Self>),
     Const(bool),
     IsConnected,
     HasLongMonotone,
