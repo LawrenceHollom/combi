@@ -184,6 +184,7 @@ impl Factorisation {
                     }
                     if !self.is_collection_connected(&in_use, g) {
                         // This collection is disconnected so we must increase r
+                        println!("Moving to r = {}", r + 1);
                         continue 'test_r
                     }
                 }
