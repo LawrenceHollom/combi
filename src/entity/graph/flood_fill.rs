@@ -1,5 +1,4 @@
 use crate::entity::graph::*;
-use utilities::vertex_tools::*;
 
 // Test components, but only considering vertices in the filter.
 pub fn filtered_components(g: &Graph, filter: Option<BigVertexSet>) -> VertexVec<Component> {

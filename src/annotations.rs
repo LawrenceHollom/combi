@@ -305,6 +305,8 @@ impl Annotations {
                                 allowed_fails_remaining -= 1;
                             }
                         }
+                    } else {
+                        allowed_fails_remaining -= 1;
                     }
                 }
                 let reps = comps.get_representatives();
