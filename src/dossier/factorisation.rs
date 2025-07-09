@@ -4,8 +4,8 @@ use rand::rngs::ThreadRng;
 use rand::seq::SliceRandom;
 use rand::{thread_rng, Rng};
 
-use utilities::{*, edge_tools::*, vertex_tools::*};
 use crate::entity::graph::*;
+use utilities::{edge_tools::*, vertex_tools::*, *};
 
 const DEBUG: bool = false;
 
@@ -18,28 +18,36 @@ const DEBUG: bool = false;
 
 struct Factorisation {
     n: Order,
-    factors: EdgeVec<usize>
+    factors: EdgeVec<usize>,
 }
 
 impl Factorisation {
-
     fn new(g: &Graph) -> Factorisation {
-        Factorisation { 
-            n: g.n, 
-            factors: EdgeVec::new(&g.adj_list, 0) }
+        Factorisation {
+            n: g.n,
+            factors: EdgeVec::new(&g.adj_list, 0),
+        }
     }
 
     /**
      * Run the alternating path algorithm recursively to increase
-     * the size of the matching. 
+     * the size of the matching.
      * v is the currect active vertex
      * covered stores whether the vertex is in an edge of this partial-factor
      * traced stores whether the vertex has been used in this alternation
-     * 
+     *
      * Returns true if an alternating path is found, and then the alternation
      * is applied on the way back down the DFS tree.
      */
-    fn cover_vertex(&mut self, v: Vertex, covered: &mut VertexVec<Option<Vertex>>, traced: &mut BigVertexSet, g: &Graph, rng: &mut ThreadRng, factor: usize) -> bool {
+    fn cover_vertex(
+        &mut self,
+        v: Vertex,
+        covered: &mut VertexVec<Option<Vertex>>,
+        traced: &mut BigVertexSet,
+        g: &Graph,
+        rng: &mut ThreadRng,
+        factor: usize,
+    ) -> bool {
         let mut nbrs = vec![];
         for u in g.adj_list[v].iter() {
             if covered[*u].is_none() && self.factors[Edge::of_pair(*u, v)] == 0 {
@@ -81,7 +89,7 @@ impl Factorisation {
                     if self.cover_vertex(w, covered, traced, g, rng, factor) {
                         covered[*u] = Some(v);
                         covered[v] = Some(*u);
-                        return true
+                        return true;
                     } else {
                         traced.remove_vert(*u);
                         traced.remove_vert(v);
@@ -90,7 +98,7 @@ impl Factorisation {
                         self.factors[f] = factor;
                     }
                 }
-                return false
+                return false;
             }
         }
     }
@@ -185,13 +193,13 @@ impl Factorisation {
                     if !self.is_collection_connected(&in_use, g) {
                         // This collection is disconnected so we must increase r
                         println!("Moving to r = {}", r + 1);
-                        continue 'test_r
+                        continue 'test_r;
                     }
                 }
             }
         }
 
-        return 0
+        return 0;
     }
 
     fn print_covered(&self, covered: &VertexVec<Option<Vertex>>) {
@@ -221,7 +229,7 @@ impl Factorisation {
 }
 
 /**
- * Generate a u.a.r. 1-factorisation, and test the 
+ * Generate a u.a.r. 1-factorisation, and test the
  * connectivity cutoff.
  */
 pub fn randomly_factorise(g: &Graph) -> u32 {

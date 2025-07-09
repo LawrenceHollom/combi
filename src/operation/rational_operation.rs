@@ -18,11 +18,7 @@ pub enum ArithmeticOperation {
 pub enum RationalOperation {
     OfInt(IntOperation),
     OfBool(Box<BoolOperation>),
-    Arithmetic(
-        ArithmeticOperation,
-        Box<Self>,
-        Box<Self>,
-    ),
+    Arithmetic(ArithmeticOperation, Box<Self>, Box<Self>),
     DominationRedundancy,
     GrabbingColeafWeightedDifference,
     PosetBalance,

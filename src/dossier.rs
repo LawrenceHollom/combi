@@ -13,6 +13,7 @@ mod degeneracy;
 mod directed;
 mod domination;
 mod edge_partitions;
+mod factorisation;
 mod girth;
 mod grabbing;
 mod grundy;
@@ -35,7 +36,6 @@ mod seymour;
 mod signature;
 mod subgraphs;
 mod twins;
-mod factorisation;
 
 use std::collections::HashMap;
 
