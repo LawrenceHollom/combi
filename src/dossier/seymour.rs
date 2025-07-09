@@ -11,12 +11,7 @@ const MAX_ATTEMPTS_MULT: usize = 1;
 const NUM_TESTS: usize = 100;
 
 fn must_trivially_have_seymour_vertex(g: &Graph) -> bool {
-    for v in g.iter_verts() {
-        if g.deg[v].at_most(5) {
-            return true;
-        }
-    }
-    false
+    g.iter_verts().any(|v| g.deg[v].at_most(5))
 }
 
 fn fix_vertex(

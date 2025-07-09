@@ -4,21 +4,11 @@ use utilities::vertex_tools::*;
 
 impl Digraph {
     pub fn has_source(&self) -> bool {
-        for v in self.iter_verts() {
-            if self.in_deg[v].equals(0) {
-                return true;
-            }
-        }
-        false
+        self.iter_verts().any(|v| self.in_deg[v].equals(0))
     }
 
     pub fn has_sink(&self) -> bool {
-        for v in self.iter_verts() {
-            if self.out_deg[v].equals(0) {
-                return true;
-            }
-        }
-        false
+        self.iter_verts().any(|v| self.out_deg[v].equals(0))
     }
 
     /**

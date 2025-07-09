@@ -418,12 +418,7 @@ impl <T: Debug + Clone> VertexSetVec<T> {
     }
 
     pub fn contains(&self, other: &T, eq: fn(&T, &T) -> bool) -> bool {
-        for t in self.vec.iter() {
-            if eq(t, other) {
-                return true;
-            }
-        }
-        false
+        self.vec.iter().any(|t| eq(t, other))
     }
 
     pub fn drop_vertices(&self) -> &Vec<T> {
