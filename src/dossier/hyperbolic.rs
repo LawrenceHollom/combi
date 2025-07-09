@@ -22,11 +22,11 @@ impl Point {
     }
 
     pub fn euc_length(&self) -> f64 {
-        (self.x * self.x + self.y * self.y).sqrt()
+        self.x.hypot(self.y)
     }
 
     pub fn euc_dist_to(&self, other: Self) -> f64 {
-        ((self.x - other.x) * (self.x - other.x) + (self.y - other.y) * (self.y - other.y)).sqrt()
+        (*self - other).euc_length()
     }
 
     pub fn hyp_dist_to(&self, other: Self) -> f64 {

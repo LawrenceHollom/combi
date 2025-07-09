@@ -22,8 +22,8 @@ struct Factorisation {
 }
 
 impl Factorisation {
-    fn new(g: &Graph) -> Factorisation {
-        Factorisation {
+    fn new(g: &Graph) -> Self {
+        Self {
             n: g.n,
             factors: EdgeVec::new(&g.adj_list, 0),
         }

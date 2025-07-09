@@ -135,13 +135,13 @@ fn make_indexer(adj_list: &VertexVec<Vec<Vertex>>) -> (Vec<Option<usize>>, Vec<E
 }
 
 impl EdgeIndexer {
-    pub fn new(adj_list: &VertexVec<Vec<Vertex>>) -> EdgeIndexer {
+    pub fn new(adj_list: &VertexVec<Vec<Vertex>>) -> Self {
         let (indexer, indexer_inv, num_edges) = make_indexer(adj_list);
         let hash = Self::default_hash(&indexer);
-        EdgeIndexer { indexer, indexer_inv, num_edges, hash }
+        Self { indexer, indexer_inv, num_edges, hash }
     }
 
-    pub fn new_complete(order: Order) -> EdgeIndexer {
+    pub fn new_complete(order: Order) -> Self {
         let mut indexer: Vec<Option<usize>> = vec![None; order.triangle()];
         let mut indexer_inv: Vec<Edge> = vec![];
         let mut i = 0;
@@ -152,7 +152,7 @@ impl EdgeIndexer {
             i += 1;
         }
         let hash = Self::default_hash(&indexer);
-        EdgeIndexer { indexer, indexer_inv, num_edges: i, hash }
+        Self { indexer, indexer_inv, num_edges: i, hash }
     }
 
     pub fn index(&self, e: Edge) -> Option<usize> {
@@ -183,8 +183,8 @@ impl EdgeIndexer {
 }
 
 impl AllEdgeSetsIterator {
-    pub fn new(adj_list: &VertexVec<Vec<Vertex>>) -> AllEdgeSetsIterator {
-        AllEdgeSetsIterator {
+    pub fn new(adj_list: &VertexVec<Vec<Vertex>>) -> Self {
+        Self {
             indexer: EdgeIndexer::new(adj_list),
             edges: 0,
         }
@@ -212,15 +212,15 @@ impl BigEdgeSetIterator<'_> {
 }
 
 impl EdgeSet {
-    pub fn new(indexer: &EdgeIndexer) -> EdgeSet {
-        EdgeSet { 
+    pub fn new(indexer: &EdgeIndexer) -> Self {
+        Self { 
             edges: 0,
             indexer_hash: indexer.hash,
         }
     }
 
-    fn of_int(code: u128, indexer: &EdgeIndexer) -> EdgeSet {
-        EdgeSet { 
+    fn of_int(code: u128, indexer: &EdgeIndexer) -> Self {
+        Self { 
             edges: code,
             indexer_hash: indexer.hash,
         }
@@ -296,16 +296,16 @@ impl EdgeSet {
 impl BigEdgeSet {
     const BITS: usize = 128;
 
-    pub fn new(indexer: &EdgeIndexer) -> BigEdgeSet {
+    pub fn new(indexer: &EdgeIndexer) -> Self {
         let parts = (indexer.num_edges + Self::BITS - 1) / Self::BITS;
-        BigEdgeSet { 
+        Self { 
             edges: vec![0; parts],
             indexer: indexer.to_owned(),
         }
     }
 
-    pub fn of_edge_set(edge_set: EdgeSet, indexer: &EdgeIndexer) -> BigEdgeSet {
-        BigEdgeSet {
+    pub fn of_edge_set(edge_set: EdgeSet, indexer: &EdgeIndexer) -> Self {
+        Self {
             edges: vec![edge_set.edges],
             indexer: indexer.to_owned(),
         }
@@ -350,23 +350,23 @@ impl BigEdgeSet {
 }
 
 impl<T: Debug + Copy> EdgeVec<T> {
-    pub fn new(adj_list: &VertexVec<Vec<Vertex>>, value: T) -> EdgeVec<T> {
+    pub fn new(adj_list: &VertexVec<Vec<Vertex>>, value: T) -> Self {
         let indexer = EdgeIndexer::new(adj_list);
         let num_edges = indexer.num_edges;
-        EdgeVec {
+        Self {
             indexer,
             vec: vec![value; num_edges],
         }
     }
-    pub fn new_with_indexer(indexer: &EdgeIndexer, value: T) -> EdgeVec<T> {
+    pub fn new_with_indexer(indexer: &EdgeIndexer, value: T) -> Self {
         let num_edges = indexer.num_edges;
-        EdgeVec {
+        Self {
             indexer: indexer.to_owned(),
             vec: vec![value; num_edges],
         }
     }
 
-    pub fn new_fn(adj_list: &VertexVec<Vec<Vertex>>, f: fn(Edge) -> T) -> EdgeVec<T> {
+    pub fn new_fn(adj_list: &VertexVec<Vec<Vertex>>, f: fn(Edge) -> T) -> Self {
         let indexer = EdgeIndexer::new(adj_list);
         let mut vec = vec![f(Edge::FILLER); indexer.num_edges];
 
@@ -379,7 +379,7 @@ impl<T: Debug + Copy> EdgeVec<T> {
             }
         }
 
-        EdgeVec { indexer, vec }
+        Self { indexer, vec }
     }
 
     pub fn set(&mut self, e: Edge, value: T) {
@@ -399,7 +399,7 @@ impl<T: Debug + Copy> EdgeVec<T> {
         let mut max = min;
 
         for (i, val) in self.vec.iter().enumerate() {
-            if cmp(val, &max) == Ordering::Greater {
+            if cmp(val, &max).is_gt() {
                 max = *val;
                 best_edge = Some(self.indexer.invert(i));
             }

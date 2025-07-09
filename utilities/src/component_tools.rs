@@ -44,10 +44,10 @@ pub struct EdgeUnionFind {
 }
 
 impl Component {
-    pub const ZERO: Component = Component(Vertex::ZERO);
+    pub const ZERO: Self = Self(Vertex::ZERO);
 
-    pub fn of_vertex(v: Vertex) -> Component {
-        Component(v)
+    pub fn of_vertex(v: Vertex) -> Self {
+        Self(v)
     }
 
     pub fn to_vertex(&self) -> Vertex {
@@ -64,8 +64,8 @@ impl Component {
 }
 
 impl EdgeComponent {
-    pub fn of_edge(e: Edge) -> EdgeComponent {
-        EdgeComponent(e)
+    pub fn of_edge(e: Edge) -> Self {
+        Self(e)
     }
 
     pub fn to_edge(&self) -> Edge {
@@ -78,12 +78,12 @@ impl EdgeComponent {
 }
 
 impl <T: Debug + Clone> ComponentVec<T> {
-    pub fn new_fn(n: Order, f: fn(Vertex) -> T) -> ComponentVec<T> {
-        ComponentVec { vec: n.iter_verts().map(|x| f(x)).collect() }
+    pub fn new_fn(n: Order, f: fn(Vertex) -> T) -> Self {
+        Self { vec: n.iter_verts().map(|x| f(x)).collect() }
     }
 
-    pub fn new(n: Order, t: &T) -> ComponentVec<T> {
-        ComponentVec { vec: VertexVec::new(n, t) }
+    pub fn new(n: Order, t: &T) -> Self {
+        Self { vec: VertexVec::new(n, t) }
     }
 
     pub fn new_sizes(components: &VertexVec<Component>) -> ComponentVec<usize> {
@@ -150,12 +150,7 @@ impl <T: Debug + Clone> ComponentVec<T> {
     }
 
     pub fn contains(&self, other: &T, eq: fn(&T, &T) -> bool) -> bool {
-        for t in self.vec.iter() {
-            if eq(t, other) {
-                return true;
-            }
-        }
-        false
+        self.vec.iter().any(|t| eq(t, other))
     }
 
     pub fn println(&self) {
@@ -164,17 +159,17 @@ impl <T: Debug + Clone> ComponentVec<T> {
 }
 
 impl <T: Debug + Copy> EdgeComponentVec<T> {
-    pub fn new(adj_list: &VertexVec<Vec<Vertex>>, value: T) -> EdgeComponentVec<T> {
-        EdgeComponentVec(EdgeVec::new(adj_list, value))
+    pub fn new(adj_list: &VertexVec<Vec<Vertex>>, value: T) -> Self {
+        Self(EdgeVec::new(adj_list, value))
     }
-    pub fn new_with_indexer(indexer: &EdgeIndexer, value: T) -> EdgeComponentVec<T> {
-        EdgeComponentVec(EdgeVec::new_with_indexer(indexer, value))
+    pub fn new_with_indexer(indexer: &EdgeIndexer, value: T) -> Self {
+        Self(EdgeVec::new_with_indexer(indexer, value))
     }
 }
 
 impl UnionFind {
-    pub fn new(n: Order) -> UnionFind {
-        UnionFind { vec: VertexVec::new_fn(n, |x| x) }
+    pub fn new(n: Order) -> Self {
+        Self { vec: VertexVec::new_fn(n, |x| x) }
     }
 
     fn flatten_to(&mut self, x: Vertex, root: Vertex) {
@@ -235,8 +230,8 @@ impl UnionFind {
 }
 
 impl EdgeUnionFind {
-    pub fn new(adj_list: &VertexVec<Vec<Vertex>>) -> EdgeUnionFind {
-        EdgeUnionFind { 
+    pub fn new(adj_list: &VertexVec<Vec<Vertex>>) -> Self {
+        Self { 
             vec: EdgeVec::new_fn(adj_list, |e| e),
             component_sizes: EdgeComponentVec::new(adj_list, 1),
         }

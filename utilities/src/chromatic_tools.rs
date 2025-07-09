@@ -12,7 +12,7 @@ pub struct Coder {
 }
 
 impl Coder {
-    pub fn new(n: Order, k: usize) -> Coder {
+    pub fn new(n: Order, k: usize) -> Self {
         if (n.to_usize() as f64) * (k as f64 + 1.0).log2() >= 127.0 {
             panic!("Parameters too large for chromatic_tools! (n, k) = ({}, {})", n, k);
         }
@@ -20,7 +20,7 @@ impl Coder {
         for (i, v) in n.iter_verts().enumerate() {
             pows[v] = ((k + 1) as u128).pow(i as u32);
         }
-        Coder { n, k, pows }
+        Self { n, k, pows }
     }
     
     pub fn get_colour(&self, config: Config, u: &Vertex) -> Option<usize> {
