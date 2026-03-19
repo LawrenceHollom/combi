@@ -1,5 +1,6 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::Hasher;
+use std::time::SystemTime;
 use std::{cmp::Ordering, hash::Hash};
 use std::fmt;
 use std::fmt::Debug;
@@ -37,7 +38,7 @@ pub struct BigEdgeSetIterator<'a> {
     i: usize,
 }
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct EdgeIndexer {
     indexer: Vec<Option<usize>>,
     indexer_inv: Vec<Edge>,
@@ -51,7 +52,7 @@ pub struct AllEdgeSetsIterator {
     edges: u128,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct EdgeVec<T: Debug + Copy> {
     indexer: EdgeIndexer,
     vec: Vec<T>,
@@ -137,7 +138,8 @@ fn make_indexer(adj_list: &VertexVec<Vec<Vertex>>) -> (Vec<Option<usize>>, Vec<E
 impl EdgeIndexer {
     pub fn new(adj_list: &VertexVec<Vec<Vertex>>) -> EdgeIndexer {
         let (indexer, indexer_inv, num_edges) = make_indexer(adj_list);
-        let hash = Self::default_hash(&indexer);
+        let dur = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+        let hash = (dur.as_nanos() % 1_000_000_007_u128) as u64;
         EdgeIndexer { indexer, indexer_inv, num_edges, hash }
     }
 
@@ -151,7 +153,8 @@ impl EdgeIndexer {
             indexer_inv.push(e);
             i += 1;
         }
-        let hash = Self::default_hash(&indexer);
+        let dur = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+        let hash = (dur.as_nanos() % 1_000_000_007_u128) as u64;
         EdgeIndexer { indexer, indexer_inv, num_edges: i, hash }
     }
 
@@ -165,12 +168,6 @@ impl EdgeIndexer {
 
     pub fn invert(&self, i: usize) -> Edge {
         self.indexer_inv[i]
-    }
-
-    fn default_hash(indexer: &Vec<Option<usize>>) -> u64 {
-        let mut s = DefaultHasher::new();
-        indexer.hash(&mut s);
-        s.finish()
     }
 
     pub fn iter_edges(&self) -> impl Iterator<Item = &Edge> {

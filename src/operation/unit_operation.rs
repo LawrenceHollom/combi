@@ -42,6 +42,8 @@ pub enum UnitOperation {
     PrintSiteKozmaNitzan,
     PrettyPrint,
     PrettyPrintCyclic,
+    ArborealGasTriples,
+    HypergraphArborealGasTriples,
     Signature,
     Unit,
 }
@@ -114,6 +116,8 @@ impl UnitOperation {
             "kuramoto" => Some(SimulateKuramoto),
             "print_kozma_nitzan" | "pkn" => Some(PrintKozmaNitzan),
             "pskn" => Some(PrintSiteKozmaNitzan),
+            "ags" => Some(ArborealGasTriples),
+            "hags" => Some(HypergraphArborealGasTriples),
             "pretty" => Some(PrettyPrint),
             "pretty_cyclic" => Some(PrettyPrintCyclic),
             "()" | "(" => Some(Unit),
@@ -195,6 +199,8 @@ impl fmt::Display for UnitOperation {
             PrettyPrintCyclic => "Produce cyclic image of the graph",
             PrintKozmaNitzan => "Print the Kozma-Nitzan probabilities",
             PrintSiteKozmaNitzan => "Print the site Kozma-Nitzan probabilities",
+            ArborealGasTriples => "Print triple connectivity probabilities for arboreal gas",
+            HypergraphArborealGasTriples => "Test the given subcubic graph as a hypergraph for positive correlation",
             Unit => "Do nothing",
         };
         write!(f, "{}", name)

@@ -121,6 +121,14 @@ impl Vertex {
         Vertex((self.0 + n.to_usize() - 1) % n.to_usize())
     }
 
+    /**
+     * When self is the next vertex which would be added to G
+     * (but was not added)
+     */
+    pub fn to_order(&self) -> Order {
+        Order::of_usize(self.0)
+    }
+
     pub fn div(&self, denom: usize) -> Vertex {
         Vertex(self.0 / denom)
     }

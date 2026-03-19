@@ -291,6 +291,10 @@ impl Graph {
         isomorphisms::is_isomorphic_to(self, g)
     }
 
+    pub fn get_edge_indexer(&self) -> EdgeIndexer {
+        EdgeIndexer::new(&self.adj_list)
+    }
+
     /**
      * Only consider vertices for which filter[v] == true
      */
@@ -552,6 +556,9 @@ impl Graph {
         }
     }
 
+    /**
+     * The size is the number of edges
+     */
     pub fn size(&self) -> usize {
         self.deg.iter().fold(0, |accum, val| accum + val.to_usize()) / 2
     }

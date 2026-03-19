@@ -41,6 +41,9 @@ impl Graph {
         }
     }
 
+    /**
+     * Test whether g is acyclic, only counting edges which are present in the filter.
+     */
     pub fn is_filtered_acyclic(&self, filter: EdgeSet, indexer: &EdgeIndexer) -> bool {
         // Just bfs, and if we hit the same vertex twice then that's an L.
         let mut is_acyclic = true;
