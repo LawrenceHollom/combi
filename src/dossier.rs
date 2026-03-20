@@ -36,6 +36,7 @@ mod signature;
 mod subgraphs;
 mod twins;
 mod factorisation;
+mod unfriendly;
 
 use std::collections::HashMap;
 
@@ -165,6 +166,7 @@ impl Dossier {
                     MinKernelSize => kernels::min_kernel_size(self.e.as_digraph(), false),
                     MaxCodegree => self.e.as_graph().max_codegree() as u32,
                     OneFactorSubsets => factorisation::randomly_factorise(self.e.as_graph()),
+                    NumUnfriendly => unfriendly::num_unfriendly(self.e.as_graph()),
                     Number(k) => *k,
                 };
                 self.previous_int_values.insert(*operation, value);
@@ -420,6 +422,9 @@ impl Dossier {
                     }
                     HasFewEdgesHyperbolic => {
                         hyperbolic::has_hereditarily_few_edges(self.e.as_graph())
+                    }
+                    IsRandomUnfriendlyForcing(should_print) => {
+                        unfriendly::can_force_random(self.e.as_graph(), *should_print)
                     }
                     Debug => debug::debug(self.e.as_graph()),
                 };

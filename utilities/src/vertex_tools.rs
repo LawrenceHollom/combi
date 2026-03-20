@@ -137,6 +137,10 @@ impl Vertex {
         Vertex(self.0 ^ other.0)
     }
 
+    pub fn and(&self, other: Vertex) -> Vertex {
+        Vertex(self.0 & other.0)
+    }
+
     pub fn encode_with(&self, other: Vertex) -> usize {
         fn tri(x: usize) -> usize { (x * (x - 1)) / 2 }
         if self.0 > other.0 {

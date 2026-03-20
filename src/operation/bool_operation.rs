@@ -90,6 +90,7 @@ pub enum BoolOperation {
     HasFourCycle,
     IsGenericallyHyperbolicEmbeddable(bool),
     HasFewEdgesHyperbolic,
+    IsRandomUnfriendlyForcing(bool),
     Debug,
 }
 
@@ -259,6 +260,7 @@ impl BoolOperation {
                         args.first()?.parse().unwrap_or(false),
                     )),
                     "few_edges_h" => Some(HasFewEdgesHyperbolic),
+                    "unfriendly" => Some(IsRandomUnfriendlyForcing(args[0].parse().unwrap())),
                     "debug" => Some(Debug),
                     &_ => None,
                 }
@@ -456,6 +458,7 @@ impl fmt::Display for BoolOperation {
                 "Can be embedded as d-distance in hyperbolic plane".to_owned()
             }
             HasFewEdgesHyperbolic => "Has at most 2n-3 edges hereditarily".to_owned(),
+            IsRandomUnfriendlyForcing(_) => "Are two vertices forced into the same unfriendly class".to_owned(),
             Debug => "Returns true if some debugging tests trip".to_owned(),
         };
         write!(f, "{}", name)

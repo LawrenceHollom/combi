@@ -764,6 +764,9 @@ impl Graph {
         bfs_iterator.max_width
     }
 
+    /**
+     * Iterates through all the 2^n sets of vertices of self.
+     */
     pub fn iter_vertex_subsets(&self) -> VertexSubsetIterator {
         VertexSubsetIterator::new(self.n)
     }

@@ -7,6 +7,8 @@ use rand::{thread_rng, Rng};
 use utilities::{*, edge_tools::*, vertex_tools::*};
 use crate::entity::graph::*;
 
+use std::{thread, time};
+
 const DEBUG: bool = false;
 
 /**
@@ -228,6 +230,7 @@ pub fn randomly_factorise(g: &Graph) -> u32 {
     let mut factorisation = Factorisation::new(g);
     let mut rng = thread_rng();
     let degree = g.adj_list[Vertex::ZERO].len();
+
     for factor in 1..=degree {
         // Add a random 1-factor, with the given index.
         factorisation.add_random_one_factor(g, &mut rng, factor);
@@ -236,6 +239,9 @@ pub fn randomly_factorise(g: &Graph) -> u32 {
     if DEBUG {
         factorisation.print_factorisation();
     }
+
+    let dur = time::Duration::from_secs(5);
+    thread::sleep(dur);
 
     factorisation.get_connectedness_cutoff(g, degree) as u32
 }
