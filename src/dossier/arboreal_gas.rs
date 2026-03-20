@@ -5,10 +5,13 @@ use rand::rngs::ThreadRng;
 use rand::thread_rng;
 use utilities::Order;
 use utilities::edge_tools::*;
+use utilities::file_write;
 use utilities::vertex_tools::*;
 use utilities::component_tools::*;
 
 use crate::entity::graph::*;
+
+const EPS: f64 = 0.00000001;
 
 #[derive(Clone, Copy, Debug)]
 struct Counts {
@@ -44,7 +47,7 @@ struct VertexTriple {
     pub c: Vertex,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 enum EdgeState {
     NONE,
     AB,
@@ -83,6 +86,10 @@ impl Counts {
         }
     }
 
+    pub fn is_balanced(&self) -> bool {
+        self.ab == self.bc && self.ab == self.ac
+    }
+
     pub fn print(&self) {
         Probabilities::of_counts(&self).print()
     }
@@ -103,38 +110,65 @@ impl PairCounts {
      * is_ei_full is for if ei is in an ALL triple, in which case it should
      * be down-weighted.
      */
-    pub fn add(&mut self, p: f64, has_e1: bool, is_e1_full: bool, has_e2: bool, is_e2_full: bool) {
+    pub fn add(&mut self, p: f64, has_e1: bool, is_e1_full: bool, has_e2: bool, is_e2_full: bool, print_debug: bool) {
         if has_e1 && has_e2 {
             if is_e1_full && is_e2_full {
                 self.both += p * 4.0 / 9.0;
                 self.left += p * 2.0 / 9.0;
                 self.right += p * 2.0 / 9.0;
                 self.neither += p * 1.0 / 9.0;
+                if print_debug {
+                    println!("1 {:.3}", p)
+                }
             } else if is_e1_full {
                 self.both += p * 2.0 / 3.0;
                 self.right += p * 1.0 / 3.0;
+                if print_debug {
+                    println!("2 {:.3}", p)
+                }
             } else if is_e2_full {
                 self.both += p * 2.0 / 3.0;
                 self.left += p * 1.0 / 3.0;
+                if print_debug {
+                    println!("3 {:.3}", p)
+                }
             } else {
                 self.both += p;
+                if print_debug {
+                    println!("4 {:.3}", p)
+                }
             }
         } else if has_e1 {
             if is_e1_full {
                 self.left += p * 2.0 / 3.0;
                 self.neither += p * 1.0 / 3.0;
+                if print_debug {
+                    println!("5")
+                }
             } else {
                 self.left += p;
+                if print_debug {
+                    println!("6")
+                }
             }
         } else if has_e2 {
             if is_e2_full {
                 self.right += p * 2.0 / 3.0;
                 self.neither += p * 1.0 / 3.0;
+                if print_debug {
+                    println!("7")
+                }
             } else {
                 self.right += p;
+                if print_debug {
+                    println!("8")
+                }
             }
         } else {
             self.neither += p;
+            if print_debug {
+                println!("9")
+            }
         }
         self.total += p;
     }
@@ -143,11 +177,11 @@ impl PairCounts {
      * Returns true if the two edges are positively correlated.
      */
     pub fn is_positively_correlated(&self) -> bool {
-        self.both * self.total > (self.both + self.left) * (self.both + self.right)
+        self.both * self.total > (self.both + self.left) * (self.both + self.right) + EPS
     }
 
     pub fn print(&self) {
-        println!("({:.3}, {:.3}, {:.3}, {:.3}) sum = {:.3}", self.neither, self.left, self.right, self.both, self.total);
+        println!("(neither, left, right, both) = ({:.3}, {:.3}, {:.3}, {:.3}) sum = {:.3}", self.neither, self.left, self.right, self.both, self.total);
         println!("P(both | left) = {:.3}", self.both / (self.left + self.both));
         println!("P(right) = {:.3}", (self.right + self.both) / self.total);
         println!("P(both | right) = {:.3}", self.both / (self.right + self.both));
@@ -167,26 +201,26 @@ impl Probabilities {
     }
 
     pub fn new_random(rng: &mut ThreadRng) -> Probabilities {
-        // let a = rng.gen_range(0.0..1.0);
-        // let b = rng.gen_range(0.0..1.0);
-        // let c = rng.gen_range(0.0..1.0);
-        // let d = rng.gen_range(0.0..1.0);
-        // let e = rng.gen_range(0.0..1.0);
-        // let sum = a + b + c + d + e;
-        // Probabilities { 
-        //     none: a / sum,
-        //     ab: b / sum,
-        //     bc: c / sum,
-        //     ac: d / sum,
-        //     all: e / sum,
-        // }
+        let a = rng.gen_range(0.0..1.0);
+        let b = rng.gen_range(0.0..1.0);
+        let c = b;//rng.gen_range(0.0..1.0);
+        let d = b;//rng.gen_range(0.0..1.0);
+        let e = rng.gen_range(0.0..1.0);
+        let sum = a + b + c + d + e;
         Probabilities { 
-            none: 1.0 / 7.0, 
-            ab: 1.0 / 7.0, 
-            bc: 1.0 / 7.0, 
-            ac: 1.0 / 7.0, 
-            all: 3.0 / 7.0,
+            none: a / sum,
+            ab: b / sum,
+            bc: c / sum,
+            ac: d / sum,
+            all: e / sum,
         }
+        // Probabilities { 
+        //     none: 1.0,// / 7.0, 
+        //     ab: 1.0,// / 7.0, 
+        //     bc: 1.0,// / 7.0, 
+        //     ac: 1.0,// / 7.0, 
+        //     all: 3.0,// / 7.0,
+        // }
     }
 
     pub fn get_prob(&self, state: &EdgeState) -> f64 {
@@ -231,7 +265,7 @@ impl VertexTriple {
         }
     }
 
-    pub fn get_present_edges(&self, state: EdgeState) -> Vec<Edge> {
+    pub fn get_present_edges(&self, state: EdgeState, maintain_acyclicity: bool) -> Vec<Edge> {
         use EdgeState::*;
         let ab = Edge::of_pair(self.a, self.b);
         let bc = Edge::of_pair(self.c, self.b);
@@ -241,17 +275,23 @@ impl VertexTriple {
             AB => vec![ab],
             BC => vec![bc],
             AC => vec![ac],
-            ALL => vec![ab, bc],
+            ALL => {
+                if maintain_acyclicity {
+                    vec![ab, bc]
+                } else {
+                    vec![ab, bc, ac]
+                }
+            }
         }
     }
 
-    pub fn has_vertex(&self, v: Vertex) -> bool {
-        self.a == v || self.b == v || self.c == v
-    }
+    // pub fn has_vertex(&self, v: Vertex) -> bool {
+    //     self.a == v || self.b == v || self.c == v
+    // }
 
-    pub fn has_edge(&self, e: Edge) -> bool {
-        self.has_vertex(e.fst()) && self.has_vertex(e.snd())
-    }
+    // pub fn has_edge(&self, e: Edge) -> bool {
+    //     self.has_vertex(e.fst()) && self.has_vertex(e.snd())
+    // }
 
     /**
      * This is terrible coding practise as the constructor makes it
@@ -296,6 +336,7 @@ impl EdgeState {
  * under the arboreal gas.
  */
 pub fn print_connectivities(g: &Graph) {
+    // println!("Num edges = {}", g.size());
     let mut counts = HashMap::new();
     let indexer = g.get_edge_indexer();
     // We're just going straight in with a huge iteration.
@@ -306,14 +347,22 @@ pub fn print_connectivities(g: &Graph) {
         }
     }
 
-    println!("(a, b, c)  ( none,   ab ,   bc ,   ac ,  all )");
+    // println!("(a, b, c)  ( none,   ab ,   bc ,   ac ,  all )");
 
     for a in g.iter_verts() {
         for b in g.iter_verts() {
             for c in g.iter_verts() {
                 if let Some(triple) = VertexTriple::new_ordered(a, b, c) {
-                    triple.print();
-                    counts.get(&triple).unwrap().print();
+                    // triple.print();
+                    // counts.get(&triple).unwrap().print();
+                    if let Some(count) = counts.get(&triple) {
+                        if count.is_balanced() {
+                            let probs = Probabilities::of_counts(count);
+                            println!("gottem");
+                            let line = format!("{:.5},{:.5}", probs.none, probs.all);
+                            file_write::write("out", "possible", vec![line], true);
+                        }
+                    }
                 }
             }
         }
@@ -388,7 +437,10 @@ fn get_hypergraph_from_subcubic(g: &Graph, rng: &mut ThreadRng) -> (Vec<VertexTr
  * Takes a random Counts (representing probabilities)
  * Tests whether there are positive correlations in the resulting structure
  */
-pub fn test_hypergraph(g: &Graph) {
+pub fn test_hypergraph(g: &Graph, print_debug: bool) {
+    fn f(x: usize, y: usize) -> Edge {
+        Edge::of_pair(Vertex::of_usize(x), Vertex::of_usize(y))
+    }
     let mut rng = thread_rng();
     let (edge_list, n) = get_hypergraph_from_subcubic(g, &mut rng);
     let num_edges = edge_list.len();
@@ -415,37 +467,49 @@ pub fn test_hypergraph(g: &Graph) {
         containing_triple[Edge::of_pair(triple.a, triple.c)] = i;
     }
 
+    let mut edge_probs = EdgeVec::new_with_indexer(&h_indexer, 0.0);
+
     let mut states = vec![EdgeState::NONE; num_edges];
     'iter_states: loop {
-        let mut filter = EdgeSet::new(&h_indexer);
+        let mut filter_for_acyclicity = EdgeSet::new(&h_indexer);
+        let mut filter_for_presence = EdgeSet::new(&h_indexer);
         for (j, triple) in edge_list.iter().enumerate() {
-            let edges = triple.get_present_edges(states[j]);
+            let edges = triple.get_present_edges(states[j], true);
             for e in edges {
-                filter.add_edge(e, &h_indexer);
+                filter_for_acyclicity.add_edge(e, &h_indexer);
+            }
+            let edges = triple.get_present_edges(states[j], false);
+            for e in edges {
+                filter_for_presence.add_edge(e, &h_indexer);
             }
         }
 
-        if h.is_filtered_acyclic(filter, &h_indexer) {
+        if h.is_filtered_acyclic(filter_for_acyclicity, &h_indexer) {
             // This state counts.
             let p = probabilities.get_product(&states);
             for (i, e1) in h.iter_edges().enumerate() {
-                let has_e1 = filter.has_edge(e1, &h_indexer);
+                let has_e1 = filter_for_presence.has_edge(e1, &h_indexer);
                 let is_e1_full = states[containing_triple[e1]] == EdgeState::ALL;
                 'iter_e2: for e2 in h.iter_edges().skip(i + 1) {
+                    let print_debug = print_debug && e1 == f(0,1) && e2 == f(1,5);
                     if containing_triple[e1] == containing_triple[e2] {
                         continue 'iter_e2;
                     }
-                    let has_e2 = filter.has_edge(e2, &h_indexer);
+                    let has_e2 = filter_for_presence.has_edge(e2, &h_indexer);
                     let is_e2_full = states[containing_triple[e2]] == EdgeState::ALL;
                     if let Some(counts) = correlations.get_mut(&(e1, e2)) {
-                        counts.add(p, has_e1, is_e1_full, has_e2, is_e2_full);
+                        counts.add(p, has_e1, is_e1_full, has_e2, is_e2_full, print_debug);
                     } else {
                         let mut counts = PairCounts::new();
-                        counts.add(p, has_e1, is_e1_full, has_e2, is_e2_full);
+                        counts.add(p, has_e1, is_e1_full, has_e2, is_e2_full, print_debug);
                         correlations.insert((e1, e2), counts);
                     }
                 }
+                edge_probs[e1] += p * if is_e1_full { 2.0 / 3.0 } else { 1.0 };
             }
+            // println!("State counts: {:?}\n", states);
+        } else {
+            // println!("State doesn't count: {:?}\n", states);
         }
 
         let mut i = 0;
@@ -457,20 +521,73 @@ pub fn test_hypergraph(g: &Graph) {
         }
     }
 
+    // for e in h.iter_edges() {
+    //     println!("{}: {:.5}", e, edge_probs[e]);
+    // }
+
     // Test if there is a positively correlated pair.
 
-    for (i, e1) in h.iter_edges().enumerate() {
+    let mut found_positive = false;
+    'iter_e1: for (i, e1) in h.iter_edges().enumerate() {
         for e2 in h.iter_edges().skip(i + 1) {
             if let Some(counts) = correlations.get(&(e1, e2)) {
                 if counts.is_positively_correlated() {
-                    print!("Probabilities: ");
-                    probabilities.print();
-                    print!("Counts: ");
-                    counts.print();
-                    h.print();
-                    panic!("Wow, correlation for pair {} {}.", e1, e2)
+                    // print!("Counts: ");
+                    // counts.print();
+                    // h.print();
+                    // test_correlation_edges(&h, e1, e2);
+                    // print!("Probabilities: ");
+                    // probabilities.print();
+                    // println!("Wow, positive correlation for pair {} {}.", e1, e2);
+                    found_positive = true;
+                    let line = format!("{:.5},{:.5}", probabilities.none, probabilities.all);
+                    file_write::write("out", "coefficients", vec![line], true);
+                    break 'iter_e1;
                 }
             }
         }
     }
+    // if !found_positive {
+    //     println!("Valid probabilities: (all correlations negative)");
+    //     probabilities.print();
+    // }
+}
+
+/**
+ * Manually test the correlation by running the process with
+ * genuine bond percolation
+ */
+fn test_correlation_edges(h: &Graph, e1: Edge, e2: Edge) {
+    let mut counts = PairCounts::new();
+    let indexer = h.get_edge_indexer();
+    let mut e1_count = 0;
+    let mut e2_count = 0;
+
+    for filter in h.iter_edge_sets() {
+        if h.is_filtered_acyclic(filter, &indexer) {
+            let has_e1 = filter.has_edge(e1, &indexer);
+            let has_e2 = filter.has_edge(e2, &indexer);
+            if has_e1 && has_e2 {
+                counts.both += 1.0;
+            } else if has_e1 {
+                counts.left += 1.0;
+            } else if has_e2 {
+                counts.right += 1.0;
+            } else {
+                counts.neither += 1.0;
+            }
+            counts.total += 1.0;
+            if has_e1 {
+                e1_count += 1;
+            }
+            if has_e2 {
+                e2_count += 1;
+            }
+        }
+    }
+
+    println!("\nRaw counts: e1 = {}, e2 = {}", e1_count, e2_count);
+
+    println!("Directly:");
+    counts.print();
 }

@@ -14,7 +14,6 @@ pub struct Edge(Vertex, Vertex);
 #[derive(Hash, Clone, Copy, PartialEq, Eq)]
 pub struct EdgeSet {
     edges: u128,
-    indexer_hash: u64,
 }
 
 #[derive(Hash, Clone, PartialEq, Eq)]
@@ -43,7 +42,6 @@ pub struct EdgeIndexer {
     indexer: Vec<Option<usize>>,
     indexer_inv: Vec<Edge>,
     num_edges: usize,
-    pub hash: u64,
 }
 
 #[derive(Clone, PartialEq, Eq)]
@@ -138,9 +136,7 @@ fn make_indexer(adj_list: &VertexVec<Vec<Vertex>>) -> (Vec<Option<usize>>, Vec<E
 impl EdgeIndexer {
     pub fn new(adj_list: &VertexVec<Vec<Vertex>>) -> EdgeIndexer {
         let (indexer, indexer_inv, num_edges) = make_indexer(adj_list);
-        let dur = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
-        let hash = (dur.as_nanos() % 1_000_000_007_u128) as u64;
-        EdgeIndexer { indexer, indexer_inv, num_edges, hash }
+        EdgeIndexer { indexer, indexer_inv, num_edges }
     }
 
     pub fn new_complete(order: Order) -> EdgeIndexer {
@@ -153,9 +149,7 @@ impl EdgeIndexer {
             indexer_inv.push(e);
             i += 1;
         }
-        let dur = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
-        let hash = (dur.as_nanos() % 1_000_000_007_u128) as u64;
-        EdgeIndexer { indexer, indexer_inv, num_edges: i, hash }
+        EdgeIndexer { indexer, indexer_inv, num_edges: i }
     }
 
     pub fn index(&self, e: Edge) -> Option<usize> {
@@ -209,38 +203,27 @@ impl BigEdgeSetIterator<'_> {
 }
 
 impl EdgeSet {
-    pub fn new(indexer: &EdgeIndexer) -> EdgeSet {
+    pub fn new(_indexer: &EdgeIndexer) -> EdgeSet {
         EdgeSet { 
             edges: 0,
-            indexer_hash: indexer.hash,
         }
     }
 
-    fn of_int(code: u128, indexer: &EdgeIndexer) -> EdgeSet {
+    fn of_int(code: u128, _indexer: &EdgeIndexer) -> EdgeSet {
         EdgeSet { 
             edges: code,
-            indexer_hash: indexer.hash,
-        }
-    }
-
-    fn check_indexer(&self, indexer: &EdgeIndexer) {
-        if self.indexer_hash != indexer.hash {
-            panic!("Indexer and EdgeSet hash values do not agree!")
         }
     }
 
     pub fn add_edge(&mut self, e: Edge, indexer: &EdgeIndexer) {
-        self.check_indexer(indexer);
         self.edges |= 1 << indexer[e].unwrap();
     }
 
     pub fn remove_edge(&mut self, e: Edge, indexer: &EdgeIndexer) {
-        self.check_indexer(indexer);
         self.edges &= !(1 << indexer[e].unwrap());
     }
 
     pub fn flip_edge(&mut self, e: Edge, indexer: &EdgeIndexer) {
-        self.check_indexer(indexer);
         self.edges ^= 1 << indexer[e].unwrap();
     }
 
@@ -248,14 +231,12 @@ impl EdgeSet {
      * Returns the edge set with the exact opposite edges in.
      */
     pub fn inverse(&self, indexer: &EdgeIndexer) -> EdgeSet {
-        self.check_indexer(indexer);
         let mut set = self.to_owned();
         set.edges ^= (1 << indexer.num_edges) - 1;
         set
     }
 
     pub fn has_edge(&self, e: Edge, indexer: &EdgeIndexer) -> bool {
-        self.check_indexer(indexer);
         (self.edges >> indexer[e].unwrap()) % 2 == 1
     }
 
@@ -275,13 +256,8 @@ impl EdgeSet {
 
     // No safety net; perhaps there should be.
     pub fn inter(&self, other: &EdgeSet) -> EdgeSet {
-        if self.indexer_hash == other.indexer_hash {
-            EdgeSet {
-                edges: self.edges & other.edges,
-                indexer_hash: self.indexer_hash,
-            }
-        } else {
-            panic!("Cannot intersect EdgeSets corresponding to different graphs!")
+        EdgeSet {
+            edges: self.edges & other.edges,
         }
     }
 

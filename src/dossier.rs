@@ -562,7 +562,7 @@ impl Dossier {
             PrintKozmaNitzan => kozma_nitzan::print(self.e.as_graph()),
             PrintSiteKozmaNitzan => kozma_nitzan::print_site(self.e.as_graph()),
             ArborealGasTriples => arboreal_gas::print_connectivities(self.e.as_graph()),
-            HypergraphArborealGasTriples => arboreal_gas::test_hypergraph(self.e.as_graph()),
+            HypergraphArborealGasTriples => arboreal_gas::test_hypergraph(self.e.as_graph(), false),
             Unit => (),
         }
     }
