@@ -37,6 +37,7 @@ mod subgraphs;
 mod twins;
 mod factorisation;
 mod unfriendly;
+mod arboreal_gas;
 
 use std::collections::HashMap;
 
@@ -565,6 +566,8 @@ impl Dossier {
             PrettyPrintCyclic => pretty::print_entity_cyclic(&self.e),
             PrintKozmaNitzan => kozma_nitzan::print(self.e.as_graph()),
             PrintSiteKozmaNitzan => kozma_nitzan::print_site(self.e.as_graph()),
+            ArborealGasTriples => arboreal_gas::print_connectivities(self.e.as_graph()),
+            HypergraphArborealGasTriples => arboreal_gas::test_hypergraph(self.e.as_graph(), false),
             Unit => (),
         }
     }
