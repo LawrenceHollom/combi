@@ -68,6 +68,14 @@ impl Edge {
         Edge(Vertex::of_string(pars[0]), Vertex::of_string(pars[1]))
     }
 
+	pub fn new(x: Vertex, y: Vertex) -> Edge {
+		if x < y {
+			Edge::of_pair(x, y)
+		} else {
+			Edge::of_pair(y, x)
+		}
+	}
+
     pub fn of_pair(x: Vertex, y: Vertex) -> Edge {
         Edge(x, y)
     }

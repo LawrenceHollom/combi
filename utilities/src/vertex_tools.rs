@@ -82,6 +82,10 @@ impl Vertex {
         Vertex(x)
     }
 
+	pub fn to_usize(&self) -> usize {
+		self.0
+	}
+
     pub fn incr(&self) -> Vertex {
         Vertex(self.0 + 1)
     }
